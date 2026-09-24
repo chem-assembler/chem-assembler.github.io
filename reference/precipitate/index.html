@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -928,7 +933,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/flame-color/">炎色反応とイオンの色のページへ</a></p>
 <section class="ref-sec" id="ref-sec-by-anion"><h4 class="ref-sec-h">陰イオンごとの沈殿</h4><p class="ref-sec-lead">Cl⁻・SO₄²⁻・CO₃²⁻・CrO₄²⁻ の4つは、沈む相手が少ないので名前で覚えます。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">陰イオンごとの沈殿と色</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">加える陰イオン</th><th style="text-align: left;">沈殿する陽イオン</th><th style="text-align: left;">沈殿と色</th><th style="text-align: left;">強酸を加えると</th></tr></thead><tbody><tr><td style="text-align: left;">塩化物イオン Cl⁻</td><td style="text-align: left;">Ag⁺・Pb²⁺</td><td style="text-align: left;">AgCl（白）・PbCl₂（白）</td><td style="text-align: left;">溶けない</td></tr><tr><td style="text-align: left;">硫酸イオン SO₄²⁻</td><td style="text-align: left;">Ca²⁺・Ba²⁺・Pb²⁺</td><td style="text-align: left;">CaSO₄（白）・BaSO₄（白）・PbSO₄（白）</td><td style="text-align: left;">溶けない</td></tr><tr><td style="text-align: left;">炭酸イオン CO₃²⁻</td><td style="text-align: left;">Ca²⁺・Ba²⁺ など</td><td style="text-align: left;">CaCO₃（白）・BaCO₃（白）</td><td style="text-align: left;">CO₂ を出して溶ける</td></tr><tr><td style="text-align: left;">クロム酸イオン CrO₄²⁻</td><td style="text-align: left;">Ag⁺・Pb²⁺・Ba²⁺</td><td style="text-align: left;">Ag₂CrO₄（暗赤・赤褐とも）・PbCrO₄（黄）・BaCrO₄（黄）</td><td style="text-align: left;">——</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/precipitate-app-list.png" alt="暗い地の画面に、陽イオンと陰イオンの組み合わせと、できる沈殿が1行ずつ並んだ一覧。AgCl は白、Ag₂O は褐色、Cu(OH)₂ は青白色、CuCO₃ は青緑色の文字で書かれ、BaSO₄・BaCO₃・CaSO₄・CaCO₃ は白い文字" loading="lazy"><figcaption class="ref-figure-cap">沈殿の一覧の画面。<b>沈殿の化学式の文字の色が、沈殿の色</b>です（イオンの文字の色は見分けるための色で、水溶液の色ではありません）。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/precipitate-app-list.png?h=5bf4d147" alt="暗い地の画面に、陽イオンと陰イオンの組み合わせと、できる沈殿が1行ずつ並んだ一覧。AgCl は白、Ag₂O は褐色、Cu(OH)₂ は青白色、CuCO₃ は青緑色の文字で書かれ、BaSO₄・BaCO₃・CaSO₄・CaCO₃ は白い文字" loading="lazy"><figcaption class="ref-figure-cap">沈殿の一覧の画面。<b>沈殿の化学式の文字の色が、沈殿の色</b>です（イオンの文字の色は見分けるための色で、水溶液の色ではありません）。</figcaption></figure>
 <p class="ref-p"><b>Cl⁻ で沈むのは Ag⁺ と Pb²⁺ だけ、SO₄²⁻ で沈むのは Ca²⁺・Ba²⁺・Pb²⁺ だけ</b>と、相手の名前で覚えてください。どれも白色なので、色では区別できません。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Ag⁺ ＋ Cl⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">AgCl↓</span></div><p class="ref-note">白色。Cl⁻ の検出に使います。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Pb²⁺ ＋ 2Cl⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">PbCl₂↓</span></div><p class="ref-note">白色。PbCl₂ は<b>熱水には溶けます</b>（AgCl は溶けない）。</p></div>
@@ -1041,6 +1046,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

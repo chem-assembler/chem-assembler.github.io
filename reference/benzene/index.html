@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -918,13 +923,13 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">炭化水素のうち、分子の中にベンゼン環を含むものが<b>芳香族炭化水素</b>です。その出発点がベンゼン C₆H₆ で、芳香族の反応は、ほとんどすべてこの環の性質から決まります。</p>
 <section class="ref-sec" id="ref-sec-shape"><h4 class="ref-sec-h">ベンゼンのかたち</h4><p class="ref-sec-lead">炭素6個が正六角形に並んだ平面分子で、結合角は120°。6個の C と6個の H はすべて同等です。</p></section>
 <p class="ref-p">ベンゼン C₆H₆ は、<b>炭素原子6個が正六角形に並んだ平面分子</b>です。結合角はすべて <b>120°</b> で、6個の C 原子と6個の H 原子は、どれも同じ環境にあります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/benzene-structure.png" alt="ベンゼンの構造式。炭素6個の正六角形に、単結合と二重結合が交互に書かれ、それぞれの炭素に水素が1個ずつ付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>ベンゼン C₆H₆</b> の構造式。二重結合を交互に書きますが、実際には6本の C−C 結合はすべて同じです（次の節）。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/benzene-structure.png?h=39f533d1" alt="ベンゼンの構造式。炭素6個の正六角形に、単結合と二重結合が交互に書かれ、それぞれの炭素に水素が1個ずつ付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>ベンゼン C₆H₆</b> の構造式。二重結合を交互に書きますが、実際には6本の C−C 結合はすべて同じです（次の節）。</figcaption></figure>
 <div class="ref-example"><h4>例題：ベンゼン をつくる</h4><p class="ref-p" style="margin: 0px;">ベンゼンを組んで、六角形と 120° の角度を手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.aro.aromatic-def&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=benzene">▶ ベンゼンを組んでみる</a><p class="ref-note">二重結合を3本、1本おきに置くと組み上がります。どこから置き始めても同じ分子です。</p></div>
 <section class="ref-sec" id="ref-sec-bond"><h4 class="ref-sec-h">結合はすべて同じ長さ</h4><p class="ref-sec-lead">構造式は単結合と二重結合を交互に書きますが、実際の C−C 結合は6本とも同じ長さで、単結合と二重結合の中間です。</p></section>
 <p class="ref-p">ベンゼンの構造式は、単結合と二重結合を1本おきに書きます。しかし実際に測ると、<b>6本の C−C 結合はすべて同じ長さ（約 0.140 nm）</b>で、単結合（約 0.154 nm）と二重結合（約 0.134 nm）の<b>中間</b>になっています。</p>
 <div class="ref-table-wrap"><div class="ref-cap">炭素原子どうしの結合の長さ</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">結合</th><th style="text-align: left;">例</th><th style="text-align: right;">長さ</th></tr></thead><tbody><tr><td style="text-align: left;">単結合 C−C</td><td style="text-align: left;">エタン</td><td style="text-align: right;">約 0.154 nm</td></tr><tr><td style="text-align: left;"><b>ベンゼンの C−C</b></td><td style="text-align: left;">ベンゼン</td><td style="text-align: right;"><b>約 0.140 nm</b></td></tr><tr><td style="text-align: left;">二重結合 C=C</td><td style="text-align: left;">エテン</td><td style="text-align: right;">約 0.134 nm</td></tr></tbody></table></div>
 <p class="ref-p"><b>「6本とも同等で、単結合と二重結合の中間」までは必ず覚えてください。</b>結合距離の数値そのものは覚えなくて構いません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/benzene-kekule-resonance.png" alt="二重結合の位置だけが違うベンゼンの構造式2つを、両向きの矢印でつないだ図。矢印の上に「実際はこの中間」と書いてある" loading="lazy"><figcaption class="ref-figure-cap">二重結合の位置が違う2つの書き方（<b>ケクレ構造</b>）のどちらかに決まっているのではなく、<b>実際のベンゼンは2つの中間</b>の状態です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/benzene-kekule-resonance.png?h=92d90697" alt="二重結合の位置だけが違うベンゼンの構造式2つを、両向きの矢印でつないだ図。矢印の上に「実際はこの中間」と書いてある" loading="lazy"><figcaption class="ref-figure-cap">二重結合の位置が違う2つの書き方（<b>ケクレ構造</b>）のどちらかに決まっているのではなく、<b>実際のベンゼンは2つの中間</b>の状態です。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-substitution-first"><h4 class="ref-sec-h">だから付加ではなく置換が起こる</h4><p class="ref-sec-lead">環がひとまとまりで安定なので、二重結合を切る付加反応は起こりにくく、H が入れ替わる置換反応が起こりやすくなります。</p></section>
 <p class="ref-p">二重結合をもつアルケンは、臭素水に加えるとすぐに付加反応が起こり、<b>臭素水の赤褐色が消えます</b>。ところが、ベンゼンに臭素水を加えても<b>色は消えません</b>。</p>
 <p class="ref-p">これは、6本の結合が同等にならされて<b>環全体がひとつのまとまりとして安定になっている</b>ためです。付加反応をすると、このまとまりが壊れてしまいます。そのため、<b>環を壊さずに H だけを入れ替える置換反応</b>のほうが起こりやすくなります。</p>
@@ -1028,6 +1033,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

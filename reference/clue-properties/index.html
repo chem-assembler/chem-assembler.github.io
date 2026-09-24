@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -921,7 +926,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">数値や状態で名指しできる物質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">問題文の書きぶり</th><th style="text-align: left;">物質</th><th style="text-align: left;">ひとこと</th></tr></thead><tbody><tr><td style="text-align: left;">沸点 <b>34℃</b>、引火しやすい無色の液体</td><td style="text-align: left;"><b>ジエチルエーテル</b> C₂H₅OC₂H₅</td><td style="text-align: left;">麻酔作用がある。沸点34℃がそのまま目印になる</td></tr><tr><td style="text-align: left;">融点約 <b>17℃</b>、冬に凍ることがある刺激臭の液体</td><td style="text-align: left;"><b>酢酸</b> CH₃COOH</td><td style="text-align: left;">純度の高いものを<b>氷酢酸</b>という</td></tr><tr><td style="text-align: left;"><b>常温で気体</b>のアルデヒド</td><td style="text-align: left;"><b>ホルムアルデヒド</b> HCHO</td><td style="text-align: left;">沸点は約 −19℃。水溶液はホルマリン</td></tr><tr><td style="text-align: left;">分子量のわりに<b>融点が非常に高く</b>、水に溶けやすく有機溶媒に溶けにくい固体</td><td style="text-align: left;"><b>アミノ酸</b></td><td style="text-align: left;">結晶の中で双性イオンになっている</td></tr></tbody></table></div>
 <p class="ref-p"><b>酢酸の融点17℃は、ジエチルエーテルの沸点34℃の半分</b>と結び付けておくと、2つまとめて思い出せます。</p>
 <p class="ref-p">アセトアルデヒドは沸点が約20℃で気体になりやすいですが、高校化学では揮発しやすい液体として扱います。「常温で気体のアルデヒド」と書かれたら、ホルムアルデヒドと読みましょう。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/clue-properties-diethyl-ether.png" alt="ジエチルエーテルの構造式。酸素原子の両側に、2個の炭素からなるエチル基が1つずつ付いている" loading="lazy"><figcaption class="ref-figure-cap">ジエチルエーテル。O に H が付いていないので、分子どうしで水素結合をつくれず、沸点が34℃と低くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/clue-properties-diethyl-ether.png?h=7f9aca3e" alt="ジエチルエーテルの構造式。酸素原子の両側に、2個の炭素からなるエチル基が1つずつ付いている" loading="lazy"><figcaption class="ref-figure-cap">ジエチルエーテル。O に H が付いていないので、分子どうしで水素結合をつくれず、沸点が34℃と低くなります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/ether/">ジエチルエーテルの性質とつくり方はエーテルのページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/amino-acid/">アミノ酸の双性イオンと融点はアミノ酸のページへ</a></p>
 <section class="ref-sec" id="ref-sec-look-smell"><h4 class="ref-sec-h">見た目・においで名指しできるもの</h4><p class="ref-sec-lead">淡黄色で水より重いニトロベンゼン、空気中で褐色になるアニリン、昇華するナフタレン、果実のにおいのエステル。</p></section>
@@ -1025,6 +1030,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

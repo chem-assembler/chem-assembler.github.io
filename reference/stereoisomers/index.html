@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -920,14 +925,14 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-what"><h4 class="ref-sec-h">立体異性体とは —— 構造異性体との違い</h4><p class="ref-sec-lead">分子式が同じなら異性体。さらに示性式まで同じなら立体異性体です。</p></section>
 <p class="ref-p">異性体は2つに分けられます。<b>原子の結合の順序（つながり方）が違う</b>ものが<b>構造異性体</b>、<b>結合の順序は同じで、立体的な構造が違う</b>ものが<b>立体異性体</b>です。</p>
 <p class="ref-p">たとえば、<b>酢酸 CH₃COOH とギ酸メチル HCOOCH₃</b> は、分子式がどちらも C₂H₄O₂ ですが、つながり方が違います。示性式を書くと別の式になるので、この2つは<b>構造異性体</b>です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-structural-pair.png" alt="左に酢酸、右にギ酸メチルの構造式。どちらも炭素2個・酸素2個・水素4個だが、酢酸は炭素にカルボキシ基が付き、ギ酸メチルは酸素をはさんで炭素どうしがつながっている" loading="lazy"><figcaption class="ref-figure-cap">酢酸（左）とギ酸メチル（右）。分子式は同じ C₂H₄O₂ でも、<b>つながり方が違う</b> ＝ 構造異性体です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-structural-pair.png?h=e5e473ff" alt="左に酢酸、右にギ酸メチルの構造式。どちらも炭素2個・酸素2個・水素4個だが、酢酸は炭素にカルボキシ基が付き、ギ酸メチルは酸素をはさんで炭素どうしがつながっている" loading="lazy"><figcaption class="ref-figure-cap">酢酸（左）とギ酸メチル（右）。分子式は同じ C₂H₄O₂ でも、<b>つながり方が違う</b> ＝ 構造異性体です。</figcaption></figure>
 <p class="ref-p">一方、<b>シス-2-ブテンとトランス-2-ブテン</b>は、示性式を書くとどちらも <b>CH₃CH=CHCH₃</b> で、まったく同じ式になります。それでも、メチル基 −CH₃ が二重結合の同じ側にあるか逆側にあるかで、別の分子になります。これが<b>立体異性体</b>です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">異性体の分け方</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">種類</th><th style="text-align: left;">何が違うか</th><th style="text-align: center;">示性式</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;"><b>構造異性体</b></td><td style="text-align: left;">原子のつながり方</td><td style="text-align: center;">違う</td><td style="text-align: left;">酢酸とギ酸メチル／ブタンと 2-メチルプロパン</td></tr><tr><td style="text-align: left;"><b>立体異性体</b>（シス－トランス異性体）</td><td style="text-align: left;">二重結合に対する置換基の配置</td><td style="text-align: center;">同じ</td><td style="text-align: left;">シス-2-ブテンとトランス-2-ブテン</td></tr><tr><td style="text-align: left;"><b>立体異性体</b>（鏡像異性体）</td><td style="text-align: left;">不斉炭素原子に対する置換基の配置</td><td style="text-align: center;">同じ</td><td style="text-align: left;">乳酸の1対</td></tr></tbody></table></div>
 <p class="ref-p"><b>「分子式が同じなら異性体、示性式まで同じなら立体異性体」</b>と覚えてしまいましょう。示性式は結合の順序を表しているので、示性式が同じなら、違いは立体の形にしかありません。</p>
 <div class="ref-callout ref-callout-note"><b class="ref-callout-tag">補足</b><p class="ref-callout-text">シス－トランス異性体は<b>幾何異性体</b>、鏡像異性体は<b>光学異性体</b>ともよばれます。どちらも古い呼び名ですが、問題文に出てくることがあるので、同じものだと分かるようにしておいてください。</p></div>
 <section class="ref-sec" id="ref-sec-cis-trans"><h4 class="ref-sec-h">シス－トランス異性体 —— 二重結合が回らないから生じる</h4><p class="ref-sec-lead">二重結合は回転できないので、置換基が同じ側のシス形と、逆側のトランス形が別の分子になります。</p></section>
 <p class="ref-p"><b>炭素間の二重結合 C=C は回転できません。</b>そのため、二重結合に結合している置換基（ここでは −CH₃）の並び方が固定され、<b>同じ側にあるシス形</b>と、<b>逆側にあるトランス形</b>の2つの立体異性体が生じます。この2つを互いに<b>シス－トランス異性体</b>といいます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-cis-trans-2-butene.png" alt="左にシス-2-ブテン、右にトランス-2-ブテンの構造式。左では2個のメチル基が二重結合の同じ側（上側）にあり、右では1個が上、もう1個が下と、二重結合をはさんで逆側にある" loading="lazy"><figcaption class="ref-figure-cap">シス-2-ブテン（左）とトランス-2-ブテン（右）。メチル基 −CH₃ が C=C の<b>同じ側ならシス形、逆側ならトランス形</b>です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-cis-trans-2-butene.png?h=16aac826" alt="左にシス-2-ブテン、右にトランス-2-ブテンの構造式。左では2個のメチル基が二重結合の同じ側（上側）にあり、右では1個が上、もう1個が下と、二重結合をはさんで逆側にある" loading="lazy"><figcaption class="ref-figure-cap">シス-2-ブテン（左）とトランス-2-ブテン（右）。メチル基 −CH₃ が C=C の<b>同じ側ならシス形、逆側ならトランス形</b>です。</figcaption></figure>
 <p class="ref-p">単結合は自由に回転できるので、単結合のまわりでは同じことは起こりません。二重結合がなぜ回らないのかは、アルケンのページで説明しています。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">二重結合が回転できない理由と、アルケンの性質・反応はアルケンのページに</a></p>
 <h5 class="ref-h5">シス－トランス異性体が生じる条件</h5>
@@ -944,8 +949,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>4つの結合の手に、すべて異なる原子または原子団が結合している炭素原子</b>を<b>不斉炭素原子</b>といいます。不斉炭素原子をもつ化合物には、<b>互いに鏡に映した像の関係にある鏡像異性体が1対（2種類）</b>存在します。</p>
 <p class="ref-p">鏡像異性体の関係は、<b>右手と左手</b>の関係と同じです。右手と左手は同じ形ですが、どう回しても重ね合わせることはできません。手袋の左右を逆にはめられないのはこのためです。鏡像異性体も、<b>どのように回転させても互いに重ね合わせることができません。</b></p>
 <p class="ref-p">例として<b>乳酸 CH₃CH(OH)COOH</b> を見てみましょう。中央の炭素には、<b>−CH₃・−OH・−COOH・−H</b> の4つが結合しています。4つとも違うので、この炭素は不斉炭素原子です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-lactic-acid-asymmetric.png" alt="乳酸の構造式。中央の炭素に、メチル基・ヒドロキシ基・カルボキシ基・水素原子の4つが結合しており、中央の炭素だけが破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap">乳酸の中央の炭素（囲んだもの）には、4つとも違うものが付いています。これが<b>不斉炭素原子</b>です。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-lactic-acid-mirror.png" alt="乳酸の鏡像異性体の1対をくさび形で描いた図。中央の縦の破線が鏡で、左右どちらも中央の炭素の上に COOH、下に CH₃ が破線のくさびでつながる。左は左に H・右に OH、右は左に OH・右に H が、塗りつぶしたくさびでつながっている" loading="lazy"><figcaption class="ref-figure-cap">乳酸の鏡像異性体の1対。まん中の破線を鏡として、左の分子（D-乳酸）を映すと右の分子（L-乳酸）になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-lactic-acid-asymmetric.png?h=9b95b159" alt="乳酸の構造式。中央の炭素に、メチル基・ヒドロキシ基・カルボキシ基・水素原子の4つが結合しており、中央の炭素だけが破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap">乳酸の中央の炭素（囲んだもの）には、4つとも違うものが付いています。これが<b>不斉炭素原子</b>です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-lactic-acid-mirror.png?h=a69f32ef" alt="乳酸の鏡像異性体の1対をくさび形で描いた図。中央の縦の破線が鏡で、左右どちらも中央の炭素の上に COOH、下に CH₃ が破線のくさびでつながる。左は左に H・右に OH、右は左に OH・右に H が、塗りつぶしたくさびでつながっている" loading="lazy"><figcaption class="ref-figure-cap">乳酸の鏡像異性体の1対。まん中の破線を鏡として、左の分子（D-乳酸）を映すと右の分子（L-乳酸）になります。</figcaption></figure>
 <p class="ref-p">くさび形の表し方では、<b>塗りつぶした三角形は紙面の手前</b>、<b>破線（しましま）の三角形は紙面の奥</b>に伸びている結合を表します。4つの結合は正四面体の頂点の向きに伸びているので、平面の構造式ではこの違いが見えません。<b>鏡像異性体は、平面の構造式ではまったく同じ式になる</b>ことに注意してください。</p>
 <p class="ref-p">乳酸の2つの鏡像異性体は、<b>D-乳酸・L-乳酸</b>のように D・L の記号で区別されます。<b>D形・L形の見分け方は覚えなくて構いません。</b>「不斉炭素原子が1個あれば鏡像異性体が1対ある」が言えれば十分です。</p>
 <div class="ref-example"><h4>例題：乳酸 をつくる</h4><p class="ref-p" style="margin: 0px;">乳酸を組んでみましょう。組み上がったら、分子の画面の「🧊 立体で見る」で、不斉炭素原子のまわりをくさびの図で見られます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.ali.chirality-def&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=stereoisomers">▶ 乳酸を組んでみる</a><p class="ref-note">組み上がりの判定は、いつものパズルと同じお題（カルボン酸とエステルの乳酸）がそのまま受け持ちます。</p></div>
@@ -953,7 +958,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">構造式の中の不斉炭素原子は、次の手順で探します。</p>
 <ol class="ref-list"><li><b>「枝の付け根」の炭素だけを候補にする。</b><div class="ref-li-hang">鎖の途中の −CH₂− や端の −CH₃ は、<b>水素が2個以上付いている</b>ので不斉炭素原子ではありません。二重結合をつくっている炭素も、4つの手に4つの別々のものが付いていないので外します。</div></li><li><b>候補の炭素の4つの手に付いているものを書き出す。</b><div class="ref-li-hang">2-ブタノールの2番の炭素なら「H・OH・CH₃・C₂H₅」です。</div></li><li><b>4つがすべて違えば不斉炭素原子。1組でも同じなら不斉炭素原子ではない。</b><div class="ref-li-hang">原子団が同じかどうかは、<b>その炭素から先へたどって、最初に違いが出るところまで</b>比べます。</div></li></ol>
 <p class="ref-p">具体例で見てみましょう。<b>2-ブタノール CH₃CH(OH)CH₂CH₃</b> の2番の炭素には「H・OH・CH₃・C₂H₅」が付いていて、4つとも違うので不斉炭素原子です。ところが <b>3-ペンタノール CH₃CH₂CH(OH)CH₂CH₃</b> の3番の炭素は、同じ枝の付け根でも「H・OH・C₂H₅・C₂H₅」で、<b>エチル基が2つ</b>付いているので不斉炭素原子ではありません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-find-butanol-pentanol.png" alt="左に2-ブタノール、右に3-ペンタノールの構造式。2-ブタノールでは OH の付いた炭素が破線の丸で囲まれているが、3-ペンタノールの OH の付いた炭素は囲まれていない" loading="lazy"><figcaption class="ref-figure-cap">左の 2-ブタノールは OH の付いた炭素が不斉炭素原子（囲んだもの）。右の 3-ペンタノールは、OH の付いた炭素の左右がどちらもエチル基なので<b>不斉炭素原子ではありません。</b></figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-find-butanol-pentanol.png?h=423693b4" alt="左に2-ブタノール、右に3-ペンタノールの構造式。2-ブタノールでは OH の付いた炭素が破線の丸で囲まれているが、3-ペンタノールの OH の付いた炭素は囲まれていない" loading="lazy"><figcaption class="ref-figure-cap">左の 2-ブタノールは OH の付いた炭素が不斉炭素原子（囲んだもの）。右の 3-ペンタノールは、OH の付いた炭素の左右がどちらもエチル基なので<b>不斉炭素原子ではありません。</b></figcaption></figure>
 <h5 class="ref-h5">不斉炭素原子をもつアルキル基は、炭素4個から</h5>
 <p class="ref-p">アルキル基の付け根の炭素が不斉炭素原子になるには、付け根に <b>H・メチル基・エチル基と、残りの手</b>の4つの違うものが要ります。そのため、付け根が不斉炭素原子になれる<b>いちばん小さいアルキル基は sec-ブチル基 −CH(CH₃)CH₂CH₃（炭素4個）</b>です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">炭素4個のアルキル基（ブチル基）4種と、付け根の炭素</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名前</th><th style="text-align: left;">示性式</th><th style="text-align: left;">付け根の炭素に付くもの（残りの手を除く）</th><th style="text-align: center;">付け根は不斉炭素原子か</th></tr></thead><tbody><tr><td style="text-align: left;">n-ブチル基</td><td style="text-align: left;">−CH₂CH₂CH₂CH₃</td><td style="text-align: left;">H・H・C₃H₇</td><td style="text-align: center;">いいえ</td></tr><tr><td style="text-align: left;"><b>sec-ブチル基</b></td><td style="text-align: left;">−CH(CH₃)CH₂CH₃</td><td style="text-align: left;">H・CH₃・C₂H₅</td><td style="text-align: center;"><b>はい</b></td></tr><tr><td style="text-align: left;">イソブチル基</td><td style="text-align: left;">−CH₂CH(CH₃)₂</td><td style="text-align: left;">H・H・CH(CH₃)₂</td><td style="text-align: center;">いいえ</td></tr><tr><td style="text-align: left;">tert-ブチル基</td><td style="text-align: left;">−C(CH₃)₃</td><td style="text-align: left;">CH₃・CH₃・CH₃</td><td style="text-align: center;">いいえ</td></tr></tbody></table></div>
@@ -974,7 +979,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">1対の鏡像異性体は、物理的性質がすべて同じである。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">融点・沸点・密度・溶解度は同じですが、<b>旋光性（偏光面を回す向き）が逆</b>です。旋光性も物理的性質なので、「すべて同じ」は誤りです。</span></p><p class="ref-mistake-why">「鏡像異性体は性質がほとんど同じ」と覚えていると、「すべて」まで言い切ってしまいます。正誤問題でねらわれるのはこの一語です。</p></div>
 <p class="ref-p"><b>「融点・沸点は同じ、旋光性と生理作用が違う」</b>の3点は必ず覚えてください。偏光面を回す角度の値や、D形・L形と右回り・左回りの対応を覚える必要はありません（D・L は立体の配置で決めた記号で、回す向きとは対応していません）。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/disaccharide/">旋光性が逆に転じることから名前が付いた「転化糖」は二糖類のページに</a></p>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-meso"><summary class="ref-adv-sum"><h4 class="ref-sec-h">不斉炭素原子が2個あるとき —— メソ体<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">不斉炭素原子が n 個あると立体異性体は最大 2ⁿ 種類ですが、分子の中に対称性があると、それより少なくなります。</p></summary><div class="ref-adv-body"><p class="ref-p">不斉炭素原子1個ごとに、置換基の配置は2通りあります。そのため、<b>不斉炭素原子を n 個もつ化合物の立体異性体は、最大で 2ⁿ 種類</b>になります。</p><p class="ref-p">ところが、<b>複数の不斉炭素原子をもち、しかも分子の中に対称性がある</b>と、2ⁿ 種類のうちのいくつかが重なって、<b>数が 2ⁿ より少なくなります。</b>鏡に映した像と重なってしまう立体異性体が生じるためで、これを<b>メソ体（メソ化合物）</b>といいます。</p><p class="ref-p">例は<b>酒石酸 HOOC−CH(OH)−CH(OH)−COOH</b> です。2個の炭素がどちらも「H・OH・COOH・残りの半分」をもつので、不斉炭素原子は2個です。</p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-tartaric-acid-asymmetric.png" alt="酒石酸の構造式。炭素4個の鎖の両端がカルボキシ基で、中央の2個の炭素にヒドロキシ基が1個ずつ付いており、その中央の2個の炭素が破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap">酒石酸の不斉炭素原子（囲んだ2個）。左右が同じ形をしているので、分子の中に対称性が生まれることがあります。</figcaption></figure><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-tartaric-acid-meso.png" alt="酒石酸の立体異性体3種をフィッシャー投影で並べた図。どれも上下が COOH で、間の2個の炭素に H と OH が左右に付く。左は上の OH が左・下の OH が右、中央は上の OH が右・下の OH が左、右は2個の OH がどちらも右で、右の分子だけ2個の炭素の間を横切る破線（対称面）が引かれている" loading="lazy"><figcaption class="ref-figure-cap">酒石酸の立体異性体（フィッシャー投影：縦の線は紙面の奥へ、横の線は紙面の手前へ伸びる結合）。左の2つ（D形・L形）は互いに鏡像の関係です。右のメソ体は、破線の上下が鏡に映した形になっていて（対称面）、自分自身の鏡像と重なります。</figcaption></figure><p class="ref-p">不斉炭素原子2個なら 2² ＝ 4 種類のはずですが、そのうち2つは<b>分子の中に対称面をもつ同じ分子（メソ体）</b>なので、酒石酸の立体異性体は <b>D形・L形・メソ体の3種類</b>です。<b>メソ体は自分自身の鏡像と重なるので、旋光性を示しません。</b></p><p class="ref-p">同じことは 2,3-ブタンジオール CH₃CH(OH)CH(OH)CH₃ や、環をもつ 1,2-ジメチルシクロプロパンでも起こり、どちらも立体異性体は3種類です。</p><p class="ref-p"><b>メソ体まで覚える必要はありません。</b>教科書では発展の扱いです。「不斉炭素原子が n 個なら最大 2ⁿ、左右対称なら減ることがある」とだけ知っておけば、入試の発展問題にも対応できます。</p><p class="ref-link-row"><a class="ref-link" href="/assembler/?open=countquiz">立体異性体が何種類あるかを当てる（2ⁿ が崩れる場合も出てきます）</a></p><p class="ref-link-row"><a class="ref-link" href="/assembler/?open=stereoquiz">立体異性体クイズをひらく（2つの図が同じ分子か、鏡像異性体かを見分ける）</a></p></div></details>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-meso"><summary class="ref-adv-sum"><h4 class="ref-sec-h">不斉炭素原子が2個あるとき —— メソ体<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">不斉炭素原子が n 個あると立体異性体は最大 2ⁿ 種類ですが、分子の中に対称性があると、それより少なくなります。</p></summary><div class="ref-adv-body"><p class="ref-p">不斉炭素原子1個ごとに、置換基の配置は2通りあります。そのため、<b>不斉炭素原子を n 個もつ化合物の立体異性体は、最大で 2ⁿ 種類</b>になります。</p><p class="ref-p">ところが、<b>複数の不斉炭素原子をもち、しかも分子の中に対称性がある</b>と、2ⁿ 種類のうちのいくつかが重なって、<b>数が 2ⁿ より少なくなります。</b>鏡に映した像と重なってしまう立体異性体が生じるためで、これを<b>メソ体（メソ化合物）</b>といいます。</p><p class="ref-p">例は<b>酒石酸 HOOC−CH(OH)−CH(OH)−COOH</b> です。2個の炭素がどちらも「H・OH・COOH・残りの半分」をもつので、不斉炭素原子は2個です。</p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-tartaric-acid-asymmetric.png?h=edb85cc4" alt="酒石酸の構造式。炭素4個の鎖の両端がカルボキシ基で、中央の2個の炭素にヒドロキシ基が1個ずつ付いており、その中央の2個の炭素が破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap">酒石酸の不斉炭素原子（囲んだ2個）。左右が同じ形をしているので、分子の中に対称性が生まれることがあります。</figcaption></figure><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stereoisomers-tartaric-acid-meso.png?h=b5a3bb75" alt="酒石酸の立体異性体3種をフィッシャー投影で並べた図。どれも上下が COOH で、間の2個の炭素に H と OH が左右に付く。左は上の OH が左・下の OH が右、中央は上の OH が右・下の OH が左、右は2個の OH がどちらも右で、右の分子だけ2個の炭素の間を横切る破線（対称面）が引かれている" loading="lazy"><figcaption class="ref-figure-cap">酒石酸の立体異性体（フィッシャー投影：縦の線は紙面の奥へ、横の線は紙面の手前へ伸びる結合）。左の2つ（D形・L形）は互いに鏡像の関係です。右のメソ体は、破線の上下が鏡に映した形になっていて（対称面）、自分自身の鏡像と重なります。</figcaption></figure><p class="ref-p">不斉炭素原子2個なら 2² ＝ 4 種類のはずですが、そのうち2つは<b>分子の中に対称面をもつ同じ分子（メソ体）</b>なので、酒石酸の立体異性体は <b>D形・L形・メソ体の3種類</b>です。<b>メソ体は自分自身の鏡像と重なるので、旋光性を示しません。</b></p><p class="ref-p">同じことは 2,3-ブタンジオール CH₃CH(OH)CH(OH)CH₃ や、環をもつ 1,2-ジメチルシクロプロパンでも起こり、どちらも立体異性体は3種類です。</p><p class="ref-p"><b>メソ体まで覚える必要はありません。</b>教科書では発展の扱いです。「不斉炭素原子が n 個なら最大 2ⁿ、左右対称なら減ることがある」とだけ知っておけば、入試の発展問題にも対応できます。</p><p class="ref-link-row"><a class="ref-link" href="/assembler/?open=countquiz">立体異性体が何種類あるかを当てる（2ⁿ が崩れる場合も出てきます）</a></p><p class="ref-link-row"><a class="ref-link" href="/assembler/?open=stereoquiz">立体異性体クイズをひらく（2つの図が同じ分子か、鏡像異性体かを見分ける）</a></p></div></details>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の文の空欄に適する語を入れよ。同じ分子式をもつが構造が異なる化合物を（ア）という。（ア）のうち、示性式が異なり原子の結合の順序が異なるものを（イ）といい、示性式が同じで分子の立体的な構造が異なるものを（ウ）という。（ウ）にはさらに、炭素間二重結合に対する置換基の配置の違いによって生じる（エ）と、不斉炭素原子に対する置換基の配置の違いによって生じる（オ）がある。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>（ア）<b>異性体</b>、（イ）<b>構造異性体</b>、（ウ）<b>立体異性体</b>、（エ）<b>シス－トランス異性体</b>、（オ）<b>鏡像異性体</b>。分子式が同じものが異性体、さらに示性式も同じものが立体異性体です。</p></div></details></div>
@@ -1055,6 +1060,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

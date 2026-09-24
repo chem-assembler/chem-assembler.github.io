@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -950,7 +955,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-alloy-why"><h4 class="ref-sec-h">合金の性質が変わるしくみと、特別なはたらきの合金<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">合金が硬くなるのは、大きさの違う原子が原子の面のずれを妨げるからです。融点が下がる・さびにくくなる理由と合わせて3つに分けて理解し、特別なはたらきをもつ合金は名前と役目を結びつけます。</p></section>
 <p class="ref-p">混ぜると性質が変わる理由は、次の3つに分けて覚えます。</p>
 <ol class="ref-list"><li><b>硬く、強くなる。</b><div class="ref-li-hang">純金属は同じ大きさの原子が並んでいるので、力を加えると原子の面がずれやすく、軟らかい。大きさの違う原子が混ざると、面のずれが妨げられて、硬く強くなる。（例：青銅・ジュラルミン）</div></li><li><b>融点が下がる。</b><div class="ref-li-hang">スズ Sn（融点 232℃）と鉛 Pb（327℃）を混ぜたはんだは、どちらよりも低い約 180℃ で融ける。（例：はんだ）</div></li><li><b>さびにくくなる。</b><div class="ref-li-hang">鉄にクロムを混ぜると、表面にクロムを含むごく薄い酸化物の膜ができて、内部を守る。（例：ステンレス鋼）</div></li></ol>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alloy-lattice.png" alt="原子を丸で描いた2つの枠を並べた図。左の「純金属」では同じ大きさの原子がそろって並び、上から2段目と3段目の間の破線に沿って、横向きの力で原子の面がずれやすい。右の「合金」では、ところどころに大きさの違う原子（橙色）が混ざり、同じ破線をまたいで引っかかるので、面のずれが妨げられる" loading="lazy"><figcaption class="ref-figure-cap">大きさの違う原子が混ざると、<b>原子の面がずれにくくなる</b>ので、合金は純金属より硬く強くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alloy-lattice.png?h=a1de7017" alt="原子を丸で描いた2つの枠を並べた図。左の「純金属」では同じ大きさの原子がそろって並び、上から2段目と3段目の間の破線に沿って、横向きの力で原子の面がずれやすい。右の「合金」では、ところどころに大きさの違う原子（橙色）が混ざり、同じ破線をまたいで引っかかるので、面のずれが妨げられる" loading="lazy"><figcaption class="ref-figure-cap">大きさの違う原子が混ざると、<b>原子の面がずれにくくなる</b>ので、合金は純金属より硬く強くなります。</figcaption></figure>
 <p class="ref-p">ジュラルミンは、アルミニウムの「軽い」を残したまま、銅・マグネシウムなどを混ぜて「強い」を足した合金です。はんだは、鉛の有毒性が問題になり、今は鉛を含まない<b>無鉛はんだ</b>（スズに銀・銅を混ぜたもの）が広く使われています。</p>
 <p class="ref-p">形状記憶合金のほかにも、特別なはたらきをもつ合金が実用化されています。</p>
 <div class="ref-table-wrap"><div class="ref-cap">特別なはたらきをもつ合金</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名前</th><th style="text-align: left;">例</th><th style="text-align: left;">はたらき</th><th style="text-align: left;">用途</th></tr></thead><tbody><tr><td style="text-align: left;">水素吸蔵合金</td><td style="text-align: left;">La－Ni・Ti－Fe</td><td style="text-align: left;">結晶のすき間に水素原子を取り込み、体積の約1000倍の水素をたくわえる</td><td style="text-align: left;">ニッケル・水素電池の負極</td></tr><tr><td style="text-align: left;">アモルファス合金</td><td style="text-align: left;">Fe 系など</td><td style="text-align: left;">融けた合金を急に冷やして、原子が不規則に並んだまま固めたもの。強さやさびにくさに優れる</td><td style="text-align: left;">変圧器の鉄心など</td></tr><tr><td style="text-align: left;">超伝導合金</td><td style="text-align: left;">Nb－Ti</td><td style="text-align: left;">ある温度以下で電気抵抗がほぼ 0 になる</td><td style="text-align: left;">MRI・リニアモーターカーの電磁石</td></tr></tbody></table></div>
@@ -1047,6 +1052,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

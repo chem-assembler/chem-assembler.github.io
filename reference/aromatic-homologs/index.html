@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -918,13 +923,13 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">ベンゼン環の H を炭化水素基に置き換えたものを、ベンゼンの<b>同族体</b>といいます。環そのものは丈夫なので、同族体の反応はほとんどが<b>側鎖（環に付いた炭化水素基）</b>のところで起こります。</p>
 <section class="ref-sec" id="ref-sec-toluene"><h4 class="ref-sec-h">トルエン</h4><p class="ref-sec-lead">ベンゼンの H を1個メチル基に置き換えたもの。メチルベンゼンともいいます。</p></section>
 <p class="ref-p">トルエン C₆H₅CH₃ は、ベンゼンの H を1個<b>メチル基 −CH₃</b> に置き換えた化合物で、<b>メチルベンゼン</b>ともいいます。特有のにおいをもつ無色の液体で、溶媒に使われます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-toluene.png" alt="トルエンの構造式。ベンゼン環の炭素1個にメチル基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>トルエン C₆H₅CH₃</b>。環に付いたメチル基が、このページでいう「側鎖」です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-toluene.png?h=aa04791a" alt="トルエンの構造式。ベンゼン環の炭素1個にメチル基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>トルエン C₆H₅CH₃</b>。環に付いたメチル基が、このページでいう「側鎖」です。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-omp"><h4 class="ref-sec-h">二置換体の位置の呼び方 o・m・p</h4><p class="ref-sec-lead">置換基が2個付いたとき、隣り合うものが o-、1つおきが m-、向かい合うものが p- です。</p></section>
 <p class="ref-p">ベンゼン環に置換基が2個付くと、2個の位置関係は3通りあります。<b>隣り合う（1,2-）ものを o-（オルト）</b>、<b>1つおき（1,3-）を m-（メタ）</b>、<b>向かい合う（1,4-）ものを p-（パラ）</b>といいます。</p>
 <p class="ref-p">メチル基が2個付いたものが<b>キシレン</b> C₆H₄(CH₃)₂ で、位置によって o-キシレン・m-キシレン・p-キシレンの3種があります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-o-xylene.png" alt="o-キシレンの構造式。ベンゼン環の隣り合う2個の炭素に、メチル基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>o-キシレン</b>。2個のメチル基が隣り合っています（1,2-）。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-m-xylene.png" alt="m-キシレンの構造式。ベンゼン環の炭素を1個はさんだ位置に、メチル基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>m-キシレン</b>。2個のメチル基が1つおきに付いています（1,3-）。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-p-xylene.png" alt="p-キシレンの構造式。ベンゼン環の向かい合う2個の炭素に、メチル基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>p-キシレン</b>。2個のメチル基が向かい合っています（1,4-）。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-o-xylene.png?h=2b4bb711" alt="o-キシレンの構造式。ベンゼン環の隣り合う2個の炭素に、メチル基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>o-キシレン</b>。2個のメチル基が隣り合っています（1,2-）。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-m-xylene.png?h=9f5804bd" alt="m-キシレンの構造式。ベンゼン環の炭素を1個はさんだ位置に、メチル基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>m-キシレン</b>。2個のメチル基が1つおきに付いています（1,3-）。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-p-xylene.png?h=ceabfe85" alt="p-キシレンの構造式。ベンゼン環の向かい合う2個の炭素に、メチル基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>p-キシレン</b>。2個のメチル基が向かい合っています（1,4-）。</figcaption></figure>
 <p class="ref-p"><b>o・m・p の3つの位置の呼び方は必ず覚えてください。</b>「メチル基が2個なら『<span class="ref-blank">○○</span>-キシレン』の <span class="ref-blank">○○</span> に o・m・p を入れる」と、名前の型ごと覚えてしまうのが確実です。</p>
 <section class="ref-sec" id="ref-sec-c8h10"><h4 class="ref-sec-h">分子式 C₈H₁₀ の芳香族炭化水素は4種</h4><p class="ref-sec-lead">ベンゼン環の外にある炭素2個を、1本にまとめるか2本に分けるかで場合分けします。</p></section>
 <p class="ref-p">分子式 C₈H₁₀ の芳香族炭化水素は、ベンゼン環 C₆ の外に炭素が2個あります。次の手順で数えると、もれなく数えられます。</p>
@@ -937,7 +942,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CH(C₆H₅)</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CH(C₆H₅)］ₙ</span></div><p class="ref-note">スチレンが付加重合してポリスチレンになります。反応するのは側鎖の C=C だけで、ベンゼン環はそのまま残ります。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">ポリスチレンなど、付加重合でできる合成樹脂のページへ</a></p>
 <p class="ref-p">ナフタレン C₁₀H₈ は、ベンゼン環2個が<b>1辺を共有してつながった</b>化合物です。<b>昇華しやすい無色の板状の結晶</b>で、防虫剤に使われます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-naphthalene.png" alt="ナフタレンの構造式。ベンゼン環2個が1本の辺を共有してつながっている" loading="lazy"><figcaption class="ref-figure-cap"><b>ナフタレン C₁₀H₈</b>。2個の環が真ん中の1辺を共有しています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-naphthalene.png?h=0a62c5d9" alt="ナフタレンの構造式。ベンゼン環2個が1本の辺を共有してつながっている" loading="lazy"><figcaption class="ref-figure-cap"><b>ナフタレン C₁₀H₈</b>。2個の環が真ん中の1辺を共有しています。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-oxidation"><h4 class="ref-sec-h">側鎖の酸化 —— 環は酸化されない</h4><p class="ref-sec-lead">過マンガン酸カリウムで酸化すると、側鎖は長さにかかわらず根もとの炭素1個だけが残って −COOH になります。</p></section>
 <p class="ref-p">ベンゼン環に炭化水素基が付いた化合物を過マンガン酸カリウム KMnO₄ で酸化すると、<b>ベンゼン環は変化せず、側鎖だけが酸化されてカルボキシ基 −COOH になります</b>。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅CH₃ ＋ 3［O］</span><span class="ref-rx-arrow"><span class="ref-rx-over">KMnO₄</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">C₆H₅COOH ＋ H₂O</span></div><p class="ref-note">トルエンのメチル基がカルボキシ基になって、安息香酸ができます。</p></div>
@@ -953,7 +958,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-carboxylic-acid/">できた安息香酸の性質は芳香族カルボン酸のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">カルボキシ基2個から水がとれる酸無水物（無水マレイン酸と同じ形）</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/synthetic-fiber/">テレフタル酸からつくる PET（ポリエチレンテレフタラート）のページへ</a></p>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-ortho-hbond"><summary class="ref-adv-sum"><h4 class="ref-sec-h">o- 体だけ性質が違うことがある<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">水素結合をつくれる置換基が隣り合う o- 体は、分子の中で水素結合をつくるので、m- 体・p- 体より沸点が低くなります。</p></summary><div class="ref-adv-body"><p class="ref-p">−OH や −COOH のように水素結合をつくれる置換基が隣り合っている o- 体は、<b>1つの分子の中で水素結合</b>をつくることができます。そのぶん<b>分子どうしの水素結合が減る</b>ので、m- 体や p- 体より<b>沸点や融点が低く、水に溶けにくく</b>なります。</p><p class="ref-p">たとえば o-ニトロフェノールは、分子内で −OH と −NO₂ が水素結合するので、p-ニトロフェノールより沸点が低くなります。サリチル酸でも同じことが起こります。</p><p class="ref-p"><b>この理由は覚えなくて構いませんが、「o- 体だけ沸点が低い」という結果を問題文で見たら、分子内水素結合を思い出せるようにしておきましょう。</b></p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-o-nitrophenol-hbond.png" alt="o-ニトロフェノールの構造式で、隣り合う −OH の H と −NO₂ の O が点線で結ばれ、「水素結合」と書いてある図" loading="lazy"><figcaption class="ref-figure-cap">o-ニトロフェノールでは、隣り合う <b>−OH の H</b> と <b>−NO₂ の O</b> が同じ分子の中で水素結合します（点線）。</figcaption></figure><p class="ref-link-row"><a class="ref-link" href="/reference/intermolecular-force/">水素結合と沸点の関係をもう少し詳しく</a></p></div></details>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-ortho-hbond"><summary class="ref-adv-sum"><h4 class="ref-sec-h">o- 体だけ性質が違うことがある<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">水素結合をつくれる置換基が隣り合う o- 体は、分子の中で水素結合をつくるので、m- 体・p- 体より沸点が低くなります。</p></summary><div class="ref-adv-body"><p class="ref-p">−OH や −COOH のように水素結合をつくれる置換基が隣り合っている o- 体は、<b>1つの分子の中で水素結合</b>をつくることができます。そのぶん<b>分子どうしの水素結合が減る</b>ので、m- 体や p- 体より<b>沸点や融点が低く、水に溶けにくく</b>なります。</p><p class="ref-p">たとえば o-ニトロフェノールは、分子内で −OH と −NO₂ が水素結合するので、p-ニトロフェノールより沸点が低くなります。サリチル酸でも同じことが起こります。</p><p class="ref-p"><b>この理由は覚えなくて構いませんが、「o- 体だけ沸点が低い」という結果を問題文で見たら、分子内水素結合を思い出せるようにしておきましょう。</b></p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-o-nitrophenol-hbond.png?h=58d0250a" alt="o-ニトロフェノールの構造式で、隣り合う −OH の H と −NO₂ の O が点線で結ばれ、「水素結合」と書いてある図" loading="lazy"><figcaption class="ref-figure-cap">o-ニトロフェノールでは、隣り合う <b>−OH の H</b> と <b>−NO₂ の O</b> が同じ分子の中で水素結合します（点線）。</figcaption></figure><p class="ref-link-row"><a class="ref-link" href="/reference/intermolecular-force/">水素結合と沸点の関係をもう少し詳しく</a></p></div></details>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">分子式 C₈H₁₀ の芳香族炭化水素の名称をすべて答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>エチルベンゼン・o-キシレン・m-キシレン・p-キシレン</b>の4種です。環の外の炭素2個を、1本にまとめる（エチル基）か、2本に分ける（メチル基2本で o・m・p）かで場合分けします。</p></div></details></div>
@@ -1033,6 +1038,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

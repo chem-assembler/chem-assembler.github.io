@@ -28,6 +28,7 @@
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
@@ -378,6 +379,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -729,6 +735,41 @@ window.addEventListener('message', function (e) {
  *     ＝ **7,000px のうち印が出ているのは見出しが帯を通る一瞬だけだった。**
  *   ★★ 正しい問いは「**どの節を通り過ぎたか**」＝ **帯の線より上に来た最後の節**。
  *      節の高さに依らないので、見出しが1行でも図が10枚でも同じように効く。 */
+/* ★ 図を押すと大きく出す（2026-09-24 ユーザー「拡大表示はあったほうがよい」）。
+   本文の幅（680px）に縮めて出している図を、元の大きさ（画面に入るまで）で重ねて出す。
+   ⚠ 狭い画面（スマホ）では元の大きさのまま出して横にスクロールできるようにする（縮めたままだと字が読めないため）。
+   閉じる: 画面のどこかを押す・Esc。⚠ 見た目だけ（ページの中身・印刷には影響しない） */
+const ZOOM_JS = `<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+})();
+</script>`;
+
 const TOC_JS = `<script>
 (function () {
   var d = document.querySelector('.ref-toc details');
@@ -870,6 +911,15 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
        （2026-09-24 ユーザー「基礎のページからのリンクで、無機など化学のページから飛ばすときはかならず表示してください」）。
        ★ 科目は目次（TOC.txt）が持つ ＝ 読めるのはこの生成器。資料ペイン（面B）は有機（化学）のページしか開かないので、
          化学基礎 → 化学 のリンクが出るのは面Aだけ。⚠ 原稿に書かせない（書き忘れると黙って札が出ない）ので、ここで機械的に付ける */
+    /* ★ 図の URL に「中身が変わると変わる印」（画像の中身の短いハッシュ）を付ける（2026-09-24）。
+       ⚠ 無いと、図を焼き直しても同じ名前なので、ブラウザが控え（Pages は画像を4時間）を使い続け、
+         直した図が見えない（ユーザー「周期表と H2O の図が直ってない」—— 実際は控えが残っていた） */
+    blocks = blocks.replace(/src="\/reference-img\/([a-z0-9-]+\.(?:png|jpg))"/g, (m, file) => {
+        const p = path.join(ROOT, 'reference-img', file);
+        if (!existsSync(p)) return m;
+        const h = createHash('sha1').update(readFileSync(p)).digest('hex').slice(0, 8);
+        return `src="/reference-img/${file}?h=${h}"`;
+    });
     if (home.course === 'basic') {
         blocks = blocks.replace(/(<a class="ref-link" href="\/reference\/([a-z0-9-]+)\/"[^>]*>)([\s\S]*?)(<\/a>)/g, (m, open, id, text, close) => {
             const to = TOC_HOME[id];
@@ -903,6 +953,7 @@ ${next ? `<a href="/reference/${next.id}/">${esc(next.title)} →</a>` : ''}</na
 ${EMBED_JS}
 ${embedLinks.length ? EMBED_MSG_JS : ''}
 ${tocHtml ? TOC_JS : ''}
+${blocks.indexOf('ref-figure-img') >= 0 ? ZOOM_JS : ''}
 ${(p.blocks || []).some(b => b.kind === 'section' && b.advanced) ? advJs() : ''}`;
 
     return { crumb, body, utm, foot: isOrg ? FOOT_ORG : '' };

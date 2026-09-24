@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -943,10 +948,10 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">金属が希酸に溶解する反応</h5>
 <p class="ref-p">亜鉛を希塩酸に入れると、イオン化傾向は Zn ＞ H₂ なので、Zn が陽イオンになり、H⁺ が e⁻ を受け取って H₂ が発生します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Zn ＋ 2H⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Zn²⁺ ＋ H₂↑</span></div><p class="ref-note">化学反応式では Zn ＋ 2HCl → ZnCl₂ ＋ H₂（希塩酸）、Zn ＋ H₂SO₄ → ZnSO₄ ＋ H₂（希硫酸）。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ionization-tendency-tree.png" alt="左は硫酸銅(Ⅱ)水溶液に亜鉛板を入れ、亜鉛が e⁻ を渡して Zn²⁺ になり、Cu²⁺ が受け取って銅樹になる図。右は希酸に亜鉛板を入れ、H⁺ が e⁻ を受け取って H₂ が発生する図。それぞれに2本の半反応式と、足し合わせた式を添えている" loading="lazy"><figcaption class="ref-figure-cap">金属樹の生成（左）と、金属が希酸に溶解する反応（右）は<b>同じしくみ</b>です。生じた単体が「金属の固体」か「非金属の気体」かの違いしかありません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ionization-tendency-tree.png?h=4fd25845" alt="左は硫酸銅(Ⅱ)水溶液に亜鉛板を入れ、亜鉛が e⁻ を渡して Zn²⁺ になり、Cu²⁺ が受け取って銅樹になる図。右は希酸に亜鉛板を入れ、H⁺ が e⁻ を受け取って H₂ が発生する図。それぞれに2本の半反応式と、足し合わせた式を添えている" loading="lazy"><figcaption class="ref-figure-cap">金属樹の生成（左）と、金属が希酸に溶解する反応（右）は<b>同じしくみ</b>です。生じた単体が「金属の固体」か「非金属の気体」かの違いしかありません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/cell-basics/">亜鉛と銅(Ⅱ)イオンの反応の、酸化剤と還元剤の場所を引き離したものがダニエル電池（「電池の仕組み」）</a></p>
 <section class="ref-sec" id="ref-sec-reactivity"><h4 class="ref-sec-h">水・酸との反応</h4><p class="ref-sec-lead">イオン化列の左にある金属ほど、水や酸と反応しやすくなります。</p></section>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ionization-tendency-table.png" alt="イオン化列を Li K Ca Na／Mg／Al Zn Fe／Ni Sn Pb／H₂／Cu Hg Ag／Pt Au に区切った表。水との反応は、常温の水と反応・熱水と反応・高温の水蒸気と反応・反応しない。酸との反応は、希酸と反応・酸化力のある酸と反応・王水と反応" loading="lazy"><figcaption class="ref-figure-cap">イオン化列の区切りと、水・酸との反応。<b>区切りの位置まで含めて暗記</b>します。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ionization-tendency-table.png?h=d63605c5" alt="イオン化列を Li K Ca Na／Mg／Al Zn Fe／Ni Sn Pb／H₂／Cu Hg Ag／Pt Au に区切った表。水との反応は、常温の水と反応・熱水と反応・高温の水蒸気と反応・反応しない。酸との反応は、希酸と反応・酸化力のある酸と反応・王水と反応" loading="lazy"><figcaption class="ref-figure-cap">イオン化列の区切りと、水・酸との反応。<b>区切りの位置まで含めて暗記</b>します。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">イオン化傾向と金属の単体の反応</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">金属</th><th style="text-align: left;">水との反応</th><th style="text-align: left;">酸との反応</th></tr></thead><tbody><tr><td style="text-align: left;">Li・K・Ca・Na</td><td style="text-align: left;">常温の水と反応</td><td style="text-align: left;">希酸（希塩酸・希硫酸）と反応</td></tr><tr><td style="text-align: left;">Mg</td><td style="text-align: left;">熱水と反応</td><td style="text-align: left;">希酸と反応</td></tr><tr><td style="text-align: left;">Al・Zn・Fe</td><td style="text-align: left;">高温の水蒸気と反応</td><td style="text-align: left;">希酸と反応</td></tr><tr><td style="text-align: left;">Ni・Sn・Pb</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">希酸と反応</td></tr><tr><td style="text-align: left;">Cu・Hg・Ag</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">酸化力のある酸と反応</td></tr><tr><td style="text-align: left;">Pt・Au</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">王水と反応</td></tr></tbody></table></div>
 <h5 class="ref-h5">水との反応</h5>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2Na ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2NaOH ＋ H₂↑</span></div><p class="ref-note">常温の水。Na → Na⁺ ＋ e⁻ を2倍し、水が酸化剤としてはたらく 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻ と足します。</p></div>
@@ -1038,6 +1043,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

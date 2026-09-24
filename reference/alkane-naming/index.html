@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,9 +927,9 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">直鎖アルカン C1〜C10（10行）</div><table class="ref-table" data-ref-series="アルカン（直鎖）"><thead><tr><th>C の数</th><th>名称</th><th>分子式</th></tr></thead><tbody><tr><td class="ref-c">1</td><td>メタン</td><td class="ref-formula">CH₄</td></tr><tr><td class="ref-c">2</td><td>エタン</td><td class="ref-formula">C₂H₆</td></tr><tr><td class="ref-c">3</td><td>プロパン</td><td class="ref-formula">C₃H₈</td></tr><tr><td class="ref-c">4</td><td>ブタン</td><td class="ref-formula">C₄H₁₀</td></tr><tr><td class="ref-c">5</td><td>ペンタン</td><td class="ref-formula">C₅H₁₂</td></tr><tr><td class="ref-c">6</td><td>ヘキサン</td><td class="ref-formula">C₆H₁₄</td></tr><tr><td class="ref-c">7</td><td>ヘプタン</td><td class="ref-formula">C₇H₁₆</td></tr><tr><td class="ref-c">8</td><td>オクタン</td><td class="ref-formula">C₈H₁₈</td></tr><tr><td class="ref-c">9</td><td>ノナン</td><td class="ref-formula">C₉H₂₀</td></tr><tr><td class="ref-c">10</td><td>デカン</td><td class="ref-formula">C₁₀H₂₂</td></tr></tbody></table></div>
 <p class="ref-p">枝分かれがない（直鎖の）アルカンの名称は表の通りです。ヘキサンまでは確実に覚えましょう。</p>
 <p class="ref-p">名前と構造式を並べて見ておきましょう。炭素が1個ずつ増え、両端と途中の炭素が水素でうまっているだけで、どれも同じ形をしています。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-propane.png" alt="プロパンの構造式。炭素3個が横一直線に並び、左端と右端の炭素に水素が3個ずつ、真ん中の炭素に水素が2個ついている" loading="lazy"><figcaption class="ref-figure-cap">プロパン C₃H₈</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-butane.png" alt="ブタンの構造式。炭素4個が横一直線に並び、両端の炭素に水素が3個ずつ、間の2個の炭素に水素が2個ずつついている" loading="lazy"><figcaption class="ref-figure-cap">ブタン C₄H₁₀</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-hexane.png" alt="ヘキサンの構造式。炭素6個が横一直線に並び、両端の炭素に水素が3個ずつ、間の4個の炭素に水素が2個ずつついている" loading="lazy"><figcaption class="ref-figure-cap">ヘキサン C₆H₁₄。炭素が増えても、つなぎ方は1通りしかありません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-propane.png?h=f02c7628" alt="プロパンの構造式。炭素3個が横一直線に並び、左端と右端の炭素に水素が3個ずつ、真ん中の炭素に水素が2個ついている" loading="lazy"><figcaption class="ref-figure-cap">プロパン C₃H₈</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-butane.png?h=af1ef7f8" alt="ブタンの構造式。炭素4個が横一直線に並び、両端の炭素に水素が3個ずつ、間の2個の炭素に水素が2個ずつついている" loading="lazy"><figcaption class="ref-figure-cap">ブタン C₄H₁₀</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-hexane.png?h=da8aab35" alt="ヘキサンの構造式。炭素6個が横一直線に並び、両端の炭素に水素が3個ずつ、間の4個の炭素に水素が2個ずつついている" loading="lazy"><figcaption class="ref-figure-cap">ヘキサン C₆H₁₄。炭素が増えても、つなぎ方は1通りしかありません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane-isomers/">同じ分子式で何種類の分子ができるか（構造異性体の数え方）は「同じ分子式で、別の分子」で</a></p>
 <div class="ref-example"><h4>例題：ヘキサン をつくる</h4><p class="ref-p" style="margin: 0px;">ひとつ作ってみましょう。<b>表を閉じてから</b>、炭素を6個つないでヘキサンを組みます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.ali.alkane-names&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=alkane-naming">▶ ヘキサンを組んでみる</a><p class="ref-note">組み上がりの判定は、いつものパズルと同じお題（アルカン（直鎖）の6問目）がそのまま受け持ちます。</p></div>
 <section class="ref-sec" id="ref-sec-branched"><h4 class="ref-sec-h">枝分かれしたアルカンの名前</h4><p class="ref-sec-lead">主鎖と同じ炭素数のアルカンを基準に、「何が」「何個」「どこに」を読み取って、後ろから順に組み立てます。</p></section>
@@ -934,25 +939,25 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">高校で出てくる名前に実際に現れるのは<b>ジ（2）・トリ（3）・テトラ（4）まで</b>がほとんどです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane/">アルキル基（メチル基・エチル基…）そのものの説明は「アルカン」のページに</a></p>
 <h5 class="ref-h5">具体例1</h5>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-example-chain.png" alt="2,3-ジメチルペンタンの構造式。CH₃−CH−CH−CH₂−CH₃ が横一直線に並び、2番目と3番目の CH の上にメチル基 CH₃ が1つずつ付いていて、主鎖の下にオレンジの矢印が引いてある" loading="lazy"><figcaption class="ref-figure-cap">今回の分子です。オレンジの矢印が主鎖（いちばん長い炭素の鎖）で、<b>構造式を書くときは主鎖を横一直線に書きます</b>。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-example-chain.png?h=73f9af33" alt="2,3-ジメチルペンタンの構造式。CH₃−CH−CH−CH₂−CH₃ が横一直線に並び、2番目と3番目の CH の上にメチル基 CH₃ が1つずつ付いていて、主鎖の下にオレンジの矢印が引いてある" loading="lazy"><figcaption class="ref-figure-cap">今回の分子です。オレンジの矢印が主鎖（いちばん長い炭素の鎖）で、<b>構造式を書くときは主鎖を横一直線に書きます</b>。</figcaption></figure>
 <p class="ref-p">1. まず最も長い炭素鎖（主鎖）を見つけます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-wrong-chain.png" alt="同じ分子を、横に並んだ炭素4個のほうを主鎖と取り違えて描いた構造式。その4個に端から4・3・2・1の番号が振ってある" loading="lazy"><figcaption class="ref-figure-cap">主鎖を取り違えた図。この4個を主鎖にすると「2-エチル-3-メチルブタン」になってしまいます。<b>いちばん長い鎖は、紙の上でまっすぐ並んでいるとは限りません。</b></figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-wrong-chain.png?h=e8ac377e" alt="同じ分子を、横に並んだ炭素4個のほうを主鎖と取り違えて描いた構造式。その4個に端から4・3・2・1の番号が振ってある" loading="lazy"><figcaption class="ref-figure-cap">主鎖を取り違えた図。この4個を主鎖にすると「2-エチル-3-メチルブタン」になってしまいます。<b>いちばん長い鎖は、紙の上でまっすぐ並んでいるとは限りません。</b></figcaption></figure>
 <p class="ref-p">主鎖の炭素数は5なので、この分子の名称は「<span class="ref-blank">○○</span>ペンタン」になります。分子式はC₇H₁₆でヘプタンの構造異性体ですが、名称は主鎖に着目して「ペンタンを基準にどこがどう違うか」で表します。</p>
 <p class="ref-p">2. 次に主鎖に付いている枝（側鎖）を調べます。</p>
 <p class="ref-p">この分子の側鎖はメチル基 −CH₃ が2個ですので、名称は「<span class="ref-blank">○○</span>ジメチルペンタン」です。</p>
 <p class="ref-p">3. 最後に側鎖の位置を調べます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-numbered.png" alt="同じ分子に主鎖の番号を振った構造式。左端の CH₃ が1、その右の CH が2、次の CH が3、そこから上へ折れた CH₂ が4、その先の CH₃ が5" loading="lazy"><figcaption class="ref-figure-cap">主鎖に端から番号を振ります。4と5が上へ折れているのは、主鎖がそこで曲がっているからです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-numbered.png?h=eaafdfc6" alt="同じ分子に主鎖の番号を振った構造式。左端の CH₃ が1、その右の CH が2、次の CH が3、そこから上へ折れた CH₂ が4、その先の CH₃ が5" loading="lazy"><figcaption class="ref-figure-cap">主鎖に端から番号を振ります。4と5が上へ折れているのは、主鎖がそこで曲がっているからです。</figcaption></figure>
 <p class="ref-p">2個のメチル基は主鎖の「2番目と3番目の炭素原子」に付いていますので、この分子の名称は「2,3-ジメチルペンタン」になります。</p>
 <h5 class="ref-h5">注意</h5>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">主鎖はどちらの端から数えても同じ長さなのだから、番号は好きな向きに振ってよい</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">番号は「<b>名称の数字が小さくなるように</b>」振ります。さっきの分子なら <b>2,3-ジメチルペンタン</b>の1通りで、逆から振った「3,4-ジメチルペンタン」は名前として認められません。</span></p><p class="ref-mistake-why">向きを1つに決めておかないと、同じ構造式に2つの名前が付いてしまいます。⚠ 番号の向きを決めるのは、<b>構造式と名称を1:1で対応させる</b>ためです。</p></div>
 <h5 class="ref-h5">置換基が2種類以上ある場合</h5>
 <p class="ref-p">置換基が2種類以上ある場合は、続けて書き並べて名称にします。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-ethyl-dimethyl-hexane.png" alt="3-エチル-2,3-ジメチルヘキサンの構造式。炭素6個の主鎖が横一直線に並び、オレンジの帯が主鎖の上を通って左端から C₁ C₂ C₃ C₄ C₅ C₆ と番号が振ってある。C₂ と C₃ にメチル基 CH₃ が1個ずつ、C₃ にはさらにエチル基 CH₂CH₃ が1個付いている" loading="lazy"><figcaption class="ref-figure-cap">オレンジの帯が主鎖（炭素6個）で、番号は端から数えた位置です。枝は C₂ にメチル基、C₃ にメチル基とエチル基。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-ethyl-dimethyl-hexane.png?h=d1c6ec84" alt="3-エチル-2,3-ジメチルヘキサンの構造式。炭素6個の主鎖が横一直線に並び、オレンジの帯が主鎖の上を通って左端から C₁ C₂ C₃ C₄ C₅ C₆ と番号が振ってある。C₂ と C₃ にメチル基 CH₃ が1個ずつ、C₃ にはさらにエチル基 CH₂CH₃ が1個付いている" loading="lazy"><figcaption class="ref-figure-cap">オレンジの帯が主鎖（炭素6個）で、番号は端から数えた位置です。枝は C₂ にメチル基、C₃ にメチル基とエチル基。</figcaption></figure>
 <p class="ref-p">この分子は主鎖の炭素数が6で、2,3番の炭素原子にメチル基が2個、3番の炭素原子にエチル基が1個付いているので「3-エチル-2,3-ジメチルヘキサン」になります。メチル基（methyl）とエチル基（ethyl）を書く順番はアルファベット順ですが、この順番については覚えなくても困ることはないと思います。一般に「名称→構造式」よりも「構造式→名称」の方が難しいです。複雑な分子については「名称→構造式」がわかれば十分でしょう。</p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">ここからは紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物の構造式を書け。<b>2,3-ジメチルブタン</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>基準は<b>ブタン</b>なので、まず炭素を4個つないで主鎖にします。そこへ<b>メチル基</b>を2個、端から数えて2番目と3番目の炭素に1つずつ付けます。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex1-answer.png" alt="2,3-ジメチルブタンの構造式。CH₃−CH−CH−CH₃ の主鎖に端から1・2・3・4の番号が振ってあり、2番目と3番目の CH の上にメチル基 CH₃ が1つずつ付いている。" loading="lazy"></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物を命名せよ。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-prompt.png" alt="構造式。左から CH₃−CH−C−CH₃ と並び、CH の上にメチル基 CH₃ が1つ、C の上にメチル基 CH₃ が1つ、C の下に CH₃−CH₂ が1つ付いている。番号は振っていない。" loading="lazy"><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>2,3,3-トリメチルペンタン</b>。いちばん長い鎖は炭素5個なので基準はペンタンで、メチル基が3個、端から2・3・3番目の炭素に付いています。主鎖は左右にまっすぐ並んでいる4個ではなく、右下へ折れて5個つながるほうです。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-answer.png" alt="同じ構造式に主鎖の番号を振った図。左端の CH₃ が1、CH が2、C が3、そこから下へ折れた CH₂ が4、その先の CH₃ が5で、炭素5個の主鎖が右下へ折れている。" loading="lazy"></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物の構造式を書け。<b>2,3-ジメチルブタン</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>基準は<b>ブタン</b>なので、まず炭素を4個つないで主鎖にします。そこへ<b>メチル基</b>を2個、端から数えて2番目と3番目の炭素に1つずつ付けます。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex1-answer.png?h=4c104bf1" alt="2,3-ジメチルブタンの構造式。CH₃−CH−CH−CH₃ の主鎖に端から1・2・3・4の番号が振ってあり、2番目と3番目の CH の上にメチル基 CH₃ が1つずつ付いている。" loading="lazy"></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物を命名せよ。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-prompt.png?h=a9b3a6c5" alt="構造式。左から CH₃−CH−C−CH₃ と並び、CH の上にメチル基 CH₃ が1つ、C の上にメチル基 CH₃ が1つ、C の下に CH₃−CH₂ が1つ付いている。番号は振っていない。" loading="lazy"><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>2,3,3-トリメチルペンタン</b>。いちばん長い鎖は炭素5個なので基準はペンタンで、メチル基が3個、端から2・3・3番目の炭素に付いています。主鎖は左右にまっすぐ並んでいる4個ではなく、右下へ折れて5個つながるほうです。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-answer.png?h=912a6ad9" alt="同じ構造式に主鎖の番号を振った図。左端の CH₃ が1、CH が2、C が3、そこから下へ折れた CH₂ が4、その先の CH₃ が5で、炭素5個の主鎖が右下へ折れている。" loading="lazy"></div></details></div>
 </div>
 </div>
 
@@ -1027,6 +1032,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

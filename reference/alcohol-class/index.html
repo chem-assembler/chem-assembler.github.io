@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -921,13 +926,13 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">メタノール CH₃OH もエタノール C₂H₅OH も −OH は1個なので、どちらも1価アルコールです。高校化学で出てくるアルコールは、ほとんどがこの1価です。</p>
 <p class="ref-p">2価のアルコールとして出てくるのは<b>エチレングリコール</b> CH₂(OH)CH₂(OH) の1つだけです。規則どおりの名称は 1,2-エタンジオールで、エタンの1位と2位に −OH が1個ずつ付いています。融点が −12.6℃ と低いため、不凍液として自動車の冷却液などに使われます。</p>
 <p class="ref-p">3価のアルコールとして出てくるのは<b>グリセリン</b> CH₂(OH)CH(OH)CH₂(OH) の1つだけです。規則どおりの名称は 1,2,3-プロパントリオールで、プロパンの1位・2位・3位に −OH が1個ずつ付いています。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-class-glycerin.png" alt="グリセリンの構造式。炭素3個が並び、それぞれの炭素にヒドロキシ基 OH が1個ずつ、合計3個付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>グリセリン</b>。炭素3個に −OH が1個ずつ付いているので<b>3価</b>です。価数を数えるときは、−OH の個数だけを見ます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-class-glycerin.png?h=2052974d" alt="グリセリンの構造式。炭素3個が並び、それぞれの炭素にヒドロキシ基 OH が1個ずつ、合計3個付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>グリセリン</b>。炭素3個に −OH が1個ずつ付いているので<b>3価</b>です。価数を数えるときは、−OH の個数だけを見ます。</figcaption></figure>
 <p class="ref-p"><b>エチレングリコールとグリセリンは、慣用名と構造の両方を必ず暗記してください。</b>高校化学で出てくる多価アルコールはこの2つだけなので、覚える量は多くありません。一方、1,2-エタンジオール・1,2,3-プロパントリオールという規則どおりの名称のほうは、命名の手順から自分でつくれるので<b>覚える必要はありません</b>。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/fat/">グリセリンに高級脂肪酸が3つ結合してできる油脂はこちら</a></p>
 <p class="ref-p">炭素数の少ないアルコールを低級アルコール、多いものを高級アルコールという言い方もありますが、高校化学で扱うのは低級アルコールばかりです。<b>この2語は、そういう言い方があると知っていれば十分で、覚える必要はありません。</b></p>
 <section class="ref-sec" id="ref-sec-class"><h4 class="ref-sec-h">アルコールの級</h4><p class="ref-sec-lead">−OH が付いた炭素のとなりに、ほかの炭素がいくつあるかで決まります。0個か1個で第1級、2個で第2級、3個で第3級。</p></section>
 <p class="ref-p">「ヒドロキシ基 −OH が結合している炭素原子に結合している炭素原子の数」を<b>アルコールの級</b>といいます。0個または1個なら<b>第1級</b>、2個なら<b>第2級</b>、3個なら<b>第3級</b>です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-class.png" alt="アルコールの級の図。ヒドロキシ基が付いた炭素を丸で囲み、その炭素に結合している炭素が1個なら1級、2個なら2級、3個なら3級と示している" loading="lazy"><figcaption class="ref-figure-cap">丸で囲んだ炭素に、<b>ほかの炭素がいくつ結合しているか</b>を数えるだけです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-class.png?h=78ba7b8b" alt="アルコールの級の図。ヒドロキシ基が付いた炭素を丸で囲み、その炭素に結合している炭素が1個なら1級、2個なら2級、3個なら3級と示している" loading="lazy"><figcaption class="ref-figure-cap">丸で囲んだ炭素に、<b>ほかの炭素がいくつ結合しているか</b>を数えるだけです。</figcaption></figure>
 <p class="ref-p">数え方は次の3段です。</p>
 <ol class="ref-list"><li>ヒドロキシ基 −OH を探し、それが結合している炭素原子に印を付ける。<div class="ref-li-hang">この炭素だけが数える相手で、ほかの炭素は関係ありません</div></li><li>印を付けた炭素から出ている結合の先を見て、<b>炭素原子</b>がいくつあるかを数える。<div class="ref-li-hang">水素 H や −OH の酸素は数えません</div></li><li>数えた個数がそのまま級になる。<div class="ref-li-hang">0個か1個なら「第1級」、2個なら「第2級」、3個なら「第3級」</div></li></ol>
 <p class="ref-p">具体例で数えてみます。2-ブタノール CH₃CH(OH)CH₂CH₃ では、−OH が付いているのは左から2番目の炭素です。この炭素には1番目の炭素と3番目の炭素の<b>2個</b>が結合しているので、<b>第2級アルコール</b>です。</p>
@@ -1021,6 +1026,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

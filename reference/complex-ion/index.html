@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -918,7 +923,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">硫酸銅(Ⅱ) 水溶液にアンモニア水を過剰に加えると、深青色の水溶液になります。これは、Cu²⁺ に NH₃ 分子が4個結びついて、<b>[Cu(NH₃)₄]²⁺</b> というイオンができたためです。中心に金属イオンが1つあり、そのまわりに分子や陰イオンが<b>配位結合</b>でつながったもの —— これが<b>錯イオン</b>です。[Cu(NH₃)₄]²⁺ はその代表です。</p>
 <section class="ref-sec" id="ref-sec-definition"><h4 class="ref-sec-h">錯イオンのつくり —— 中心の金属イオンと配位子</h4><p class="ref-sec-lead">非共有電子対をもつ分子や陰イオン（配位子）が、中心の金属イオンに配位結合します。結びついた配位子の数を配位数といいます。</p></section>
 <p class="ref-p">NH₃ の N 原子には<b>非共有電子対</b>が1組あります。この電子対を Cu²⁺ に一方的に提供して結合するのが<b>配位結合</b>です。配位結合する分子や陰イオンを<b>配位子</b>、1つの金属イオンに結合した配位子の数を<b>配位数</b>といいます。[Cu(NH₃)₄]²⁺ なら、配位子は NH₃、配位数は4です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/complex-ion-app-cu-nh3.png" alt="ビーカーの模式図。中央の Cu のまわりを NH₃ が4個取り囲んだ粒（電荷 2+）が1個あり、離れたところに SO₄²⁻ が1個ある" loading="lazy"><figcaption class="ref-figure-cap">CuSO₄ に NH₃ を4個ぶん加えたあと。<b>Cu²⁺ のまわりを NH₃ 4個が取り囲んで [Cu(NH₃)₄]²⁺</b> になり、SO₄²⁻ は反応に加わらずに残ります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/complex-ion-app-cu-nh3.png?h=348d8be6" alt="ビーカーの模式図。中央の Cu のまわりを NH₃ が4個取り囲んだ粒（電荷 2+）が1個あり、離れたところに SO₄²⁻ が1個ある" loading="lazy"><figcaption class="ref-figure-cap">CuSO₄ に NH₃ を4個ぶん加えたあと。<b>Cu²⁺ のまわりを NH₃ 4個が取り囲んで [Cu(NH₃)₄]²⁺</b> になり、SO₄²⁻ は反応に加わらずに残ります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=complex-cu-nh3&amp;from=reference&amp;page=complex-ion">硫酸銅とアンモニア（錯イオン）</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/portal.html?from=reference&amp;page=complex-ion#u-complex">錯イオンと沈殿の再溶解をまとめて試す</a></p>
 <p class="ref-p">錯イオンの化学式は、<b>全体を [ ] で囲み、右上に錯イオン全体の電荷</b>を書きます。電荷は「中心の金属イオンの電荷 ＋ 配位子の電荷の合計」です。NH₃ や H₂O は電荷をもたないので [Cu(NH₃)₄]²⁺ は ＋2 のまま、OH⁻ は −1 なので Al³⁺ に4個つくと [Al(OH)₄]⁻（3 − 4 ＝ −1）になります。</p>
@@ -1030,6 +1035,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

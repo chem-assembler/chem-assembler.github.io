@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -921,7 +926,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-procedure"><h4 class="ref-sec-h">分離の手順 —— 試薬を加える順番</h4><p class="ref-sec-lead">希塩酸 → 硫化水素（酸性）→ 煮沸・希硝酸・アンモニア水 → 硫化水素（塩基性）→ 炭酸アンモニウム → 炎色反応、の順です。</p></section>
 <p class="ref-p">Ag⁺・Cu²⁺・Fe³⁺・Zn²⁺・Ca²⁺・Na⁺ を含む水溶液を例に、手順を見ていきます。各操作のあとは<b>ろ過して沈殿とろ液に分け、ろ液に次の試薬を加えます。</b></p>
 <div class="ref-table-wrap"><div class="ref-cap">系統分離の手順</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">順</th><th style="text-align: left;">操作</th><th style="text-align: left;">沈殿するもの（例）</th><th style="text-align: left;">同じ段で沈むもの</th></tr></thead><tbody><tr><td style="text-align: center;">1</td><td style="text-align: left;">希塩酸を加える</td><td style="text-align: left;">AgCl（白）</td><td style="text-align: left;">PbCl₂（白）</td></tr><tr><td style="text-align: center;">2</td><td style="text-align: left;">酸性のまま硫化水素を通す</td><td style="text-align: left;">CuS（黒）</td><td style="text-align: left;">PbS・Ag₂S など（イオン化傾向の小さい金属の硫化物）</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: left;">煮沸し、希硝酸を加えてから、塩化アンモニウムとアンモニア水を十分に加える</td><td style="text-align: left;">FeO(OH)（赤褐）</td><td style="text-align: left;">Al(OH)₃（白）</td></tr><tr><td style="text-align: center;">4</td><td style="text-align: left;">塩基性のまま硫化水素を通す</td><td style="text-align: left;">ZnS（白）</td><td style="text-align: left;">FeS・MnS など（段3で残った場合）</td></tr><tr><td style="text-align: center;">5</td><td style="text-align: left;">炭酸アンモニウム水溶液を加える</td><td style="text-align: left;">CaCO₃（白）</td><td style="text-align: left;">BaCO₃（白）</td></tr><tr><td style="text-align: center;">6</td><td style="text-align: left;">残ったろ液で炎色反応を見る</td><td style="text-align: left;">——（Na⁺ は黄）</td><td style="text-align: left;">K⁺（赤紫）</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/cation-separation-app-tree.png" alt="暗い地の画面に、系統分離の流れが上から下へ一直線に並んだ図。「この容器 Ag⁺ Cu²⁺ Fe³⁺ Zn²⁺ Ca²⁺ Na⁺」から始まり、希塩酸で沈殿 Ag⁺、ろ液に硫化水素で沈殿 Cu²⁺、煮沸・希硝酸・アンモニア水で沈殿 Fe³⁺、硫化水素で沈殿 Zn²⁺、炭酸アンモニウムで沈殿 Ca²⁺、最後のろ液に Na⁺ が残る" loading="lazy"><figcaption class="ref-figure-cap">6種類のイオンを1つずつ沈殿として取り出す流れ。<b>主流のろ液は1本で、各段で1つずつ沈殿を横へ出していきます。</b>最後のろ液に残る Na⁺ は、炎色反応で確かめます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/cation-separation-app-tree.png?h=21618bdc" alt="暗い地の画面に、系統分離の流れが上から下へ一直線に並んだ図。「この容器 Ag⁺ Cu²⁺ Fe³⁺ Zn²⁺ Ca²⁺ Na⁺」から始まり、希塩酸で沈殿 Ag⁺、ろ液に硫化水素で沈殿 Cu²⁺、煮沸・希硝酸・アンモニア水で沈殿 Fe³⁺、硫化水素で沈殿 Zn²⁺、炭酸アンモニウムで沈殿 Ca²⁺、最後のろ液に Na⁺ が残る" loading="lazy"><figcaption class="ref-figure-cap">6種類のイオンを1つずつ沈殿として取り出す流れ。<b>主流のろ液は1本で、各段で1つずつ沈殿を横へ出していきます。</b>最後のろ液に残る Na⁺ は、炎色反応で確かめます。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/muki/tree.html?from=reference&amp;page=cation-separation">すべてのイオンを単離する手順を、札を並べて組む</a></p>
 <p class="ref-p"><b>この6段の順番は必ず覚えてください。</b>段ごとに加える試薬が決めている陰イオン（Cl⁻ → 酸性の S²⁻ → OH⁻ → 塩基性の S²⁻ → CO₃²⁻）の順で覚えると、沈殿の知識とつながります。</p>
 <p class="ref-p">参考書によっては、各段で沈むイオンのまとまりを「第1属」〜「第6属」と呼びます。呼び名は覚えなくても構いません。</p>
@@ -1020,6 +1025,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

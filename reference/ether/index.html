@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -919,14 +924,14 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">一般式はアルコールと同じ CₙH₂ₙ₊₂O</h4><p class="ref-sec-lead">アルカンの C−C のあいだに O を1個入れた形。だから炭素の数が同じアルコールとは構造異性体です。</p></section>
 <p class="ref-p">鎖状で飽和のエーテルの一般式は <b>C<sub>n</sub>H<sub>2n+2</sub>O</b> です。n=2 を代入すると C₂H₆O で、これがいちばん小さいエーテルであるジメチルエーテル CH₃OCH₃ の分子式です。</p>
 <p class="ref-p">この式は、アルカンの一般式 C<sub>n</sub>H<sub>2n+2</sub> の <b>C−C 結合のあいだに O 原子を1個割り込ませた</b>形をしています。酸素が1個増えるだけなので、C<sub>n</sub>H<sub>2n+2</sub>O になります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ether-from-alkane.png" alt="アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O" loading="lazy"><figcaption class="ref-figure-cap">同じ O を <b>C−H のあいだ</b>に入れるとアルコールになります。入れる場所が違うだけで、分子式はどちらも同じです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ether-from-alkane.png?h=348d5b1b" alt="アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O" loading="lazy"><figcaption class="ref-figure-cap">同じ O を <b>C−H のあいだ</b>に入れるとアルコールになります。入れる場所が違うだけで、分子式はどちらも同じです。</figcaption></figure>
 <p class="ref-p">だから<b>炭素の数が同じエーテルとアルコールは、互いに構造異性体</b>です。ジメチルエーテル C₂H₆O とエタノール C₂H₆O が、いちばん小さい組み合わせになります。</p>
 <p class="ref-p"><b>一般式 C<sub>n</sub>H<sub>2n+2</sub>O は必ず暗記してください。</b>この式が「アルコールとエーテルのどちらか」を意味することが、構造決定の出発点になります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">アルコールの側から見た一般式・級・沸点・命名はこちら</a></p>
 <section class="ref-sec" id="ref-sec-naming"><h4 class="ref-sec-h">エーテルの命名</h4><p class="ref-sec-lead">両側の2つのアルキル基の名称をアルファベット順に続けて、語尾に「エーテル」を付けた慣用名を使います。</p></section>
 <p class="ref-p">規則どおりの名称は「（側鎖のアルキル基）オキシ（主鎖のアルカン）」の形で、ジエチルエーテルなら「エトキシエタン」です。ただし高校化学でこの名前を見かけることはまずありません。</p>
 <p class="ref-p"><b>覚えるのは慣用名のほう</b>です。エーテル結合の両側にあるアルキル基の名称を<b>アルファベット順</b>に2つ続け、語尾に「エーテル」を付けます。2つが同じなら「ジ<span class="ref-blank">○○</span>エーテル」です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ether-naming.png" alt="ジメチルエーテル・エチルメチルエーテル・ジエチルエーテルの構造式に、両側のアルキル基の名前と命名の注意を書き添えた図" loading="lazy"><figcaption class="ref-figure-cap">まん中の例は、エチル（ethyl）とメチル（methyl）を<b>アルファベット順</b>に並べて「エチルメチルエーテル」です。炭素の数の順ではありません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ether-naming.png?h=822ba3c0" alt="ジメチルエーテル・エチルメチルエーテル・ジエチルエーテルの構造式に、両側のアルキル基の名前と命名の注意を書き添えた図" loading="lazy"><figcaption class="ref-figure-cap">まん中の例は、エチル（ethyl）とメチル（methyl）を<b>アルファベット順</b>に並べて「エチルメチルエーテル」です。炭素の数の順ではありません。</figcaption></figure>
 <p class="ref-p"><b>ジエチルエーテル C₂H₅OC₂H₅ は、名称も示性式も必ず暗記してください。</b>エーテルのうち出題されるのはほとんどがこれです。</p>
 <p class="ref-p"><b>エトキシエタン・メトキシメタンといった規則どおりの名称のほうは、覚える必要はありません。</b></p>
 <section class="ref-sec" id="ref-sec-props"><h4 class="ref-sec-h">エーテルの性質</h4><p class="ref-sec-lead">反応しない・沸点が低い・水に溶けにくい・引火しやすい。どれも「−O−H をもたない」ことから出てきます。</p></section>
@@ -954,7 +959,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">炭素4個の C₄H₁₀O で数えてみます。残る割り振りは「1と3」と「2と2」の2通り。「1と3」はメチル基1種類とプロピル基2種類で2個、「2と2」はエチル基どうしで1個。合わせて<b>3種類</b>です。</p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">分子式が C₄H₁₀O である構造異性体 A〜G がある。金属ナトリウムを加えたところ、A〜D は水素を発生したが、E・F・G は反応しなかった。A〜D を硫酸酸性過マンガン酸カリウムで十分に酸化させたところ、A と C は酸性の物質を、B は中性の物質を生じたが、D は酸化されなかった。A・D・F は炭素鎖に枝分かれをもち、G はエタノールに濃硫酸を加えて加熱すると生じる物質である。<b>A〜G の構造式を書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>金属ナトリウムで水素が出た <b>A〜D はアルコール</b>、出なかった <b>E〜G はエーテル</b>です。「十分に酸化」して酸性の物質（カルボン酸）ができた <b>A と C は1級</b>、中性の物質（ケトン）ができた <b>B は2級</b>、酸化されなかった <b>D は3級</b>。2級と3級はそれぞれ1種類しかないので <b>B は 2-ブタノール</b>、<b>D は 2-メチル-2-プロパノール</b>。1級は2種類あり、枝分かれをもつほうが <b>A ＝ 2-メチル-1-プロパノール</b>、残る <b>C ＝ 1-ブタノール</b> です。エーテルは3種類で、エタノールの分子間脱水でできる <b>G ＝ ジエチルエーテル</b>、枝分かれをもつ <b>F ＝ 2-メトキシプロパン（イソプロピルメチルエーテル）</b>、残る <b>E ＝ 1-メトキシプロパン（メチルプロピルエーテル）</b> です。</p><img class="ref-figure-img" src="/reference-img/ether-c4-isomers.png" alt="C4H10O のエーテル3種類の構造式。1-メトキシプロパン（メチルプロピルエーテル）、2-メトキシプロパン（イソプロピルメチルエーテル）、エトキシエタン（ジエチルエーテル）" loading="lazy"></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">分子式が C₄H₁₀O である構造異性体 A〜G がある。金属ナトリウムを加えたところ、A〜D は水素を発生したが、E・F・G は反応しなかった。A〜D を硫酸酸性過マンガン酸カリウムで十分に酸化させたところ、A と C は酸性の物質を、B は中性の物質を生じたが、D は酸化されなかった。A・D・F は炭素鎖に枝分かれをもち、G はエタノールに濃硫酸を加えて加熱すると生じる物質である。<b>A〜G の構造式を書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>金属ナトリウムで水素が出た <b>A〜D はアルコール</b>、出なかった <b>E〜G はエーテル</b>です。「十分に酸化」して酸性の物質（カルボン酸）ができた <b>A と C は1級</b>、中性の物質（ケトン）ができた <b>B は2級</b>、酸化されなかった <b>D は3級</b>。2級と3級はそれぞれ1種類しかないので <b>B は 2-ブタノール</b>、<b>D は 2-メチル-2-プロパノール</b>。1級は2種類あり、枝分かれをもつほうが <b>A ＝ 2-メチル-1-プロパノール</b>、残る <b>C ＝ 1-ブタノール</b> です。エーテルは3種類で、エタノールの分子間脱水でできる <b>G ＝ ジエチルエーテル</b>、枝分かれをもつ <b>F ＝ 2-メトキシプロパン（イソプロピルメチルエーテル）</b>、残る <b>E ＝ 1-メトキシプロパン（メチルプロピルエーテル）</b> です。</p><img class="ref-figure-img" src="/reference-img/ether-c4-isomers.png?h=32fd5529" alt="C4H10O のエーテル3種類の構造式。1-メトキシプロパン（メチルプロピルエーテル）、2-メトキシプロパン（イソプロピルメチルエーテル）、エトキシエタン（ジエチルエーテル）" loading="lazy"></div></details></div>
 <p class="ref-p">エーテルの構造異性体が1種類しか出てこない問題では、<b>ほとんどの場合ジエチルエーテルが答え</b>になります。エーテルは反応を起こさないので、ほかのエーテルを1つに指定する手がかりがつくりにくいためです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">エーテル結合・ヒドロキシ基など、官能基そのものの一覧はこちら</a></p>
 </div>
@@ -1031,6 +1036,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

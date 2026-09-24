@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -926,7 +931,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">具体例1で、メタン CH₄ 1mol を完全に燃やすと 891kJ の熱が出ます。反応前（CH₄ 1mol と O₂ 2mol）のエンタルピーの合計は、反応後（CO₂ 1mol と H₂O（液）2mol）の合計より 891kJ 高いので、ΔH ＝ −891kJ です。</p>
 <p class="ref-p">具体例2で、C（黒鉛）1mol と H₂O（気）1mol から CO と H₂ ができると、131kJ の熱を吸収します。反応後のほうが 131kJ 高いので、ΔH ＝ ＋131kJ です。</p>
 <p class="ref-p">この関係は、<b>エネルギーの高いものを上、低いものを下</b>に並べた図で見るのがいちばん確かです。これを<b>エネルギー図</b>といいます。上から下へ向かう矢印が発熱（ΔH が負）、下から上へ向かう矢印が吸熱（ΔH が正）です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/reaction-enthalpy-app-graphite.png" alt="エネルギー図。上の準位が C（黒鉛）＋ O₂（気）、下の準位が CO₂（気）。上から下へ向かう矢印に −394kJ、下から上へ向かう矢印は答える前なので「?」になっている" loading="lazy"><figcaption class="ref-figure-cap">黒鉛の燃焼のエネルギー図。上から下へ 394kJ 下がるので ΔH ＝ −394kJ です。<b>逆向き（下から上）にたどると符号が反転して ＋394kJ</b> になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/reaction-enthalpy-app-graphite.png?h=df3d5e66" alt="エネルギー図。上の準位が C（黒鉛）＋ O₂（気）、下の準位が CO₂（気）。上から下へ向かう矢印に −394kJ、下から上へ向かう矢印は答える前なので「?」になっている" loading="lazy"><figcaption class="ref-figure-cap">黒鉛の燃焼のエネルギー図。上から下へ 394kJ 下がるので ΔH ＝ −394kJ です。<b>逆向き（下から上）にたどると符号が反転して ＋394kJ</b> になります。</figcaption></figure>
 <p class="ref-p"><b>逆向きの反応の ΔH は、符号だけを反転させた値</b>になります。CO₂ を C（黒鉛）と O₂ に分けるには ＋394kJ が要ります。エネルギー図で矢印の向きを逆にしただけなので、高さの差は同じで、向きが逆になるためです。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">発熱反応は熱が「出る」ので、ΔH はプラスで書く</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">ΔH は<b>物質の側から見た</b>エンタルピーの変化です。発熱反応では物質のエンタルピーが下がるので <b>ΔH は負</b>、吸熱反応では上がるので <b>ΔH は正</b>です。</span></p><p class="ref-mistake-why">「出てきた熱の量」を主語にすると符号が逆になります。★ エネルギー図を描いて、矢印が下向きなら負、上向きなら正と決めれば迷いません。</p></div>
 <section class="ref-sec" id="ref-sec-write"><h4 class="ref-sec-h">反応エンタルピーの書き方</h4><p class="ref-sec-lead">着目する物質の係数を1にした化学反応式を書き、状態を添え、右に ΔH ＝ <span class="ref-blank">○○</span>kJ を書き加えます。</p></section>
@@ -1025,6 +1030,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

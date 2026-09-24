@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -920,7 +925,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-classification"><h4 class="ref-sec-h">繊維の分類</h4><p class="ref-sec-lead">繊維は天然繊維と化学繊維に分かれ、化学繊維はさらに再生繊維・半合成繊維・合成繊維に分かれます。</p></section>
 <p class="ref-p">繊維は、自然にあるものをそのまま使う<b>天然繊維</b>と、化学的な処理や合成でつくる<b>化学繊維</b>に分けられます。化学繊維はさらに、原料と処理のしかたで3つに分かれます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">繊維の分類</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">大分類</th><th style="text-align: left;">小分類</th><th style="text-align: left;">原料</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">天然繊維</td><td style="text-align: left;">植物繊維</td><td style="text-align: left;">セルロース</td><td style="text-align: left;">綿・麻</td></tr><tr><td style="text-align: left;">天然繊維</td><td style="text-align: left;">動物繊維</td><td style="text-align: left;">タンパク質</td><td style="text-align: left;">絹・羊毛</td></tr><tr><td style="text-align: left;">化学繊維</td><td style="text-align: left;">再生繊維</td><td style="text-align: left;">セルロースを溶かし、繊維にもどす</td><td style="text-align: left;">レーヨン</td></tr><tr><td style="text-align: left;">化学繊維</td><td style="text-align: left;">半合成繊維</td><td style="text-align: left;">セルロースの一部を化学的に変える</td><td style="text-align: left;">アセテート</td></tr><tr><td style="text-align: left;">化学繊維</td><td style="text-align: left;">合成繊維</td><td style="text-align: left;">石油などからつくった単量体</td><td style="text-align: left;">ナイロン・ポリエステル・アクリル繊維・ビニロン</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-classification.png" alt="繊維から2本に枝分かれし、天然繊維が植物繊維と動物繊維に、化学繊維が再生繊維・半合成繊維・合成繊維に分かれる樹形図。それぞれの右に原料と代表例が添えてある" loading="lazy"><figcaption class="ref-figure-cap">分かれ目は<b>どこまで人の手が入っているか</b>で、下へ行くほど元の天然の形から遠くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-classification.png?h=a552cc77" alt="繊維から2本に枝分かれし、天然繊維が植物繊維と動物繊維に、化学繊維が再生繊維・半合成繊維・合成繊維に分かれる樹形図。それぞれの右に原料と代表例が添えてある" loading="lazy"><figcaption class="ref-figure-cap">分かれ目は<b>どこまで人の手が入っているか</b>で、下へ行くほど元の天然の形から遠くなります。</figcaption></figure>
 <p class="ref-p">「<b>再生はもどす、半合成は一部を変える、合成は一からつくる</b>」と区別しましょう。再生繊維と半合成繊維の原料は、どちらも天然のセルロース（木材パルプなど）です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/polysaccharide/">再生繊維・半合成繊維の原料になるセルロース</a></p>
 <section class="ref-sec" id="ref-sec-by-type"><h4 class="ref-sec-h">合成繊維を重合の型で整理する</h4><p class="ref-sec-lead">合成繊維を、重合の型・単量体・主鎖の結合で並べます。開環重合でできるのはナイロン6だけです。</p></section>
@@ -931,7 +936,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-nylon66"><h4 class="ref-sec-h">ナイロン66</h4><p class="ref-sec-lead">アジピン酸とヘキサメチレンジアミンの縮合重合でできます。主鎖がアミド結合でつながったポリアミドです。</p></section>
 <p class="ref-p">アジピン酸 HOOC−(CH₂)₄−COOH とヘキサメチレンジアミン H₂N−(CH₂)₆−NH₂ を縮合重合させると、<b>ナイロン66</b> ができます。−COOH と −NH₂ から水がとれて、<b>アミド結合 −CO−NH−</b> でつながります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n HOOC−(CH₂)₄−COOH ＋ n H₂N−(CH₂)₆−NH₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CO−(CH₂)₄−CO−NH−(CH₂)₆−NH］ₙ ＋ 2n H₂O</span></div><p class="ref-note">1つの繰り返し単位の中にアミド結合が2か所あるので、n 組つなぐと水は 2n 個とれます。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-nylon66-unit.png" alt="ナイロン66の繰り返し単位1つぶんの構造式。R−NH−(CH₂)₆−NH−CO−(CH₂)₄−CO−R の並びで、単位の中のアミド結合が破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap">ナイロン66の<b>繰り返し単位</b>。ヘキサメチレンジアミン由来の −NH−(CH₂)₆−NH− と、アジピン酸由来の −CO−(CH₂)₄−CO− が、<b>アミド結合</b>（破線の丸）でつながっています。右端の −CO− も、次の単位の −NH− とアミド結合をつくります（1単位にアミド結合2か所）。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-nylon66-unit.png?h=f15366d7" alt="ナイロン66の繰り返し単位1つぶんの構造式。R−NH−(CH₂)₆−NH−CO−(CH₂)₄−CO−R の並びで、単位の中のアミド結合が破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap">ナイロン66の<b>繰り返し単位</b>。ヘキサメチレンジアミン由来の −NH−(CH₂)₆−NH− と、アジピン酸由来の −CO−(CH₂)₄−CO− が、<b>アミド結合</b>（破線の丸）でつながっています。右端の −CO− も、次の単位の −NH− とアミド結合をつくります（1単位にアミド結合2か所）。</figcaption></figure>
 <p class="ref-p">名前の「66」は、<b>ヘキサメチレンジアミンの炭素が6個、アジピン酸の炭素が6個</b>であることを表しています。アジピン酸の式の (CH₂)₄ は、両端の −COOH の炭素2個を除いた数なので、合わせて6個です。他の類似の化合物でナイロン610などもあります。<b>数字はジアミンの炭素数、ジカルボン酸の炭素数の順</b>なので、ナイロン610 は<b>ヘキサメチレンジアミン（炭素6個）とセバシン酸 HOOC−(CH₂)₈−COOH（炭素10個）</b>からできます。</p>
 <p class="ref-p">アミド結合をくり返しもつ高分子を<b>ポリアミド</b>といいます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">アジピン酸のような、−COOH を2個もつカルボン酸</a></p>
@@ -961,7 +966,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-acrylic"><h4 class="ref-sec-h">アクリル繊維</h4><p class="ref-sec-lead">アクリロニトリルの付加重合でできるポリアクリロニトリルが主成分です。やわらかく保温性があり、羊毛に似た風合いになります。</p></section>
 <p class="ref-p">アクリロニトリル CH₂=CH−CN を付加重合させると、ポリアクリロニトリルができます。これを主成分とする繊維が<b>アクリル繊維</b>です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CH−CN</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CH(CN)］ₙ</span></div><p class="ref-note">X ＝ −CN のビニル化合物の付加重合です。実際には、染まりやすくするために他の単量体と共重合させることが多いです。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-polyacrylonitrile.png" alt="ポリアクリロニトリルの鎖の一部の構造式。炭素が一列につながり、1個おきの炭素にシアノ基 C≡N が付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリアクリロニトリル。<b>1個おきの炭素に −C≡N</b> がぶら下がっています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-polyacrylonitrile.png?h=86dfe649" alt="ポリアクリロニトリルの鎖の一部の構造式。炭素が一列につながり、1個おきの炭素にシアノ基 C≡N が付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリアクリロニトリル。<b>1個おきの炭素に −C≡N</b> がぶら下がっています。</figcaption></figure>
 <p class="ref-p"><b>やわらかく、かさ高くて保温性がよい</b>ので、羊毛に似た風合いになり、セーターや毛布に使われます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">ポリアクリロニトリルをはじめ、ビニル化合物からできる重合体の一覧</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/polymer-basics/">2種類以上の単量体をまぜて重合させる共重合</a></p>
@@ -969,9 +974,9 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">ビニロンは、酢酸ビニルから次の順につくります。</p>
 <ol class="ref-list"><li>酢酸ビニル CH₂=CH−OCOCH₃ を<b>付加重合</b>させて、ポリ酢酸ビニルにする</li><li>ポリ酢酸ビニルを水酸化ナトリウム水溶液で<b>けん化</b>して、<b>ポリビニルアルコール（PVA）</b>にする。側鎖の −OCOCH₃ が −OH に変わり、炭素の主鎖はそのまま残る</li><li>PVA の水溶液を細い穴から押し出して、繊維の形に固める（紡糸）</li><li>繊維にした PVA をホルムアルデヒドの水溶液で処理し、−OH の一部を<b>アセタール化</b>して<b>ビニロン</b>にする</li></ol>
 <p class="ref-p">ポリビニルアルコール（PVA）は −OH を多くもつので、<b>水に溶けてしまい、そのままでは繊維になりません。</b>そこで、紡糸した PVA をホルムアルデヒドの水溶液で処理し、となりあう −OH 2個を −O−CH₂−O− の橋でつなぎます。これを<b>アセタール化</b>といい、できた繊維が<b>ビニロン</b>です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-pva.png" alt="ポリビニルアルコールの鎖の一部の構造式。炭素が一列につながり、1個おきの炭素にヒドロキシ基が付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">アセタール化する前のポリビニルアルコール。<b>1個おきの炭素に −OH</b> が付いています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-pva.png?h=320c03bc" alt="ポリビニルアルコールの鎖の一部の構造式。炭素が一列につながり、1個おきの炭素にヒドロキシ基が付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">アセタール化する前のポリビニルアルコール。<b>1個おきの炭素に −OH</b> が付いています。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">［CH₂−CH(OH)−CH₂−CH(OH)］ ＋ HCHO</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CH−O−CH₂−O−CH−CH₂］ ＋ H₂O</span></div><p class="ref-note">右辺の2個の CH は、どちらも −O−CH₂−O− の O に結合していて、主鎖の CH₂ と合わせて六員環をつくります。1か所つなぐごとに水が1個とれます。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-vinylon.png" alt="ビニロンの鎖の一部の構造式。主鎖の炭素のうち2個が、O と CH₂ と O を介して六員環をつくり、残りの炭素にヒドロキシ基が付いている図" loading="lazy"><figcaption class="ref-figure-cap">ビニロン。<b>−O−CH₂−O− の橋</b>で六員環になった所と、<b>−OH のまま残った所</b>の両方があります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/synthetic-fiber-vinylon.png?h=f6bc11b7" alt="ビニロンの鎖の一部の構造式。主鎖の炭素のうち2個が、O と CH₂ と O を介して六員環をつくり、残りの炭素にヒドロキシ基が付いている図" loading="lazy"><figcaption class="ref-figure-cap">ビニロン。<b>−O−CH₂−O− の橋</b>で六員環になった所と、<b>−OH のまま残った所</b>の両方があります。</figcaption></figure>
 <p class="ref-p"><b>アセタール化するのは −OH の一部（30〜40% 程度）だけ</b>なので、−OH が残ります。そのため、ビニロンは合成繊維としてはめずらしく<b>吸湿性</b>があり、木綿に似た性質をもちます。<b>日本で開発された合成繊維</b>で、ロープや漁網、作業服などに使われます。</p>
 <p class="ref-p">「<b>PVA は水に溶ける → −OH の一部をアセタール化 → 残った −OH で吸湿性</b>」の流れで覚えましょう。PVA までの2段（酢酸ビニルの付加重合とけん化）は、合成樹脂のページで扱います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">酢酸ビニル → ポリ酢酸ビニル → ポリビニルアルコールの2つの反応式</a></p>
@@ -1055,6 +1060,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

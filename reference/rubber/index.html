@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -920,7 +925,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-natural"><h4 class="ref-sec-h">天然ゴム</h4><p class="ref-sec-lead">ゴムノキの樹液（ラテックス）を酸で固めたものが生ゴムで、主成分はイソプレンが付加重合したポリイソプレンです。</p></section>
 <p class="ref-p">ゴムノキの樹皮に傷をつけると、<b>ラテックス</b>とよばれる白い乳液が出てきます。これに酸を加えて固めたものが<b>生ゴム（天然ゴム）</b>です。</p>
 <p class="ref-p">天然ゴムの主成分は、<b>イソプレン C₅H₈</b> が付加重合した<b>ポリイソプレン</b>です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-isoprene.png" alt="イソプレンの構造式。4個の炭素が一列に並んで1番と2番、3番と4番の間が二重結合になり、2番の炭素にメチル基が付いている図" loading="lazy"><figcaption class="ref-figure-cap">イソプレン CH₂=C(CH₃)−CH=CH₂。<b>C=C を2本</b>もち、2番の炭素に −CH₃ が付いています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-isoprene.png?h=c5a92596" alt="イソプレンの構造式。4個の炭素が一列に並んで1番と2番、3番と4番の間が二重結合になり、2番の炭素にメチル基が付いている図" loading="lazy"><figcaption class="ref-figure-cap">イソプレン CH₂=C(CH₃)−CH=CH₂。<b>C=C を2本</b>もち、2番の炭素に −CH₃ が付いています。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=C(CH₃)−CH=CH₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−C(CH₃)=CH−CH₂］ₙ</span></div><p class="ref-note">繰り返し単位の真ん中に C=C が1本残っていることに注目してください。原子の出入りはないので、繰り返し単位の組成はイソプレンと同じ C₅H₈ です。</p></div>
 <p class="ref-p"><b>イソプレンからポリイソプレンへの反応式は、必ず書けるようにしてください。</b></p>
 <section class="ref-sec" id="ref-sec-why-cc"><h4 class="ref-sec-h">なぜ主鎖に C=C が残るのか</h4><p class="ref-sec-lead">イソプレンは C=C を2本もち、両端の1番と4番の炭素でつながります。そのため、2番と3番の炭素の間に新しく C=C ができます。</p></section>
@@ -934,7 +939,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">主鎖に残った C=C は回転できないので、C=C の両側の鎖が<b>同じ側にあるシス形</b>と、<b>反対側にあるトランス形</b>の2通りがありえます。</p>
 <p class="ref-p"><b>天然ゴムのポリイソプレンは、すべてシス形</b>です。シス形の C=C のところで鎖が折れ曲がり、鎖全体が<b>不規則に丸まった形</b>をとります。引っぱると丸まった鎖が伸び、力を抜くと元の丸まった形に戻ろうとするので、<b>弾性</b>を示します。</p>
 <p class="ref-p">同じポリイソプレンでも、<b>すべてトランス形のものはグタペルカ</b>とよばれます。トランス形では鎖がまっすぐに近い形になり、<b>鎖どうしが規則正しく並んで結晶化しやすいので、硬くて弾性がほとんどありません。</b>ゴルフボールの外皮などに使われました。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-cis-trans-chains.png" alt="左は2本の鎖が不規則に折れ曲がって丸まっている絵、右は3本の鎖がほぼまっすぐのまま上下に平行に並んでいる絵" loading="lazy"><figcaption class="ref-figure-cap">同じポリイソプレンでも、<b>鎖のとる形</b>が違います。丸まった鎖は伸ばせますが、そろって並んだ鎖は動けません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-cis-trans-chains.png?h=611331ab" alt="左は2本の鎖が不規則に折れ曲がって丸まっている絵、右は3本の鎖がほぼまっすぐのまま上下に平行に並んでいる絵" loading="lazy"><figcaption class="ref-figure-cap">同じポリイソプレンでも、<b>鎖のとる形</b>が違います。丸まった鎖は伸ばせますが、そろって並んだ鎖は動けません。</figcaption></figure>
 <p class="ref-p">「<b>天然ゴムはシス形で弾性、グタペルカはトランス形で硬い</b>」と対にして覚えましょう。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">天然ゴムとグタペルカは分子式が違うので、性質が違う</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">どちらも<b>同じポリイソプレン</b>で、分子式もつながり方も同じです。違うのは主鎖の C=C が<b>シス形かトランス形か</b>だけです。</span></p><p class="ref-mistake-why">性質がまったく違うので、別の物質だと思ってしまうためです。★ シス－トランス異性体の違いだけで、材料の性質がここまで変わる実例です。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">シス－トランス異性体</a></p>
@@ -957,7 +962,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CH−CH=CH₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CH=CH−CH₂］ₙ</span></div><p class="ref-note">イソプレンから −CH₃ を取った形です。ポリイソプレンの式と並べると、そのまま見比べられます。</p></div>
 <h5 class="ref-h5">クロロプレンゴム</h5>
 <p class="ref-p">クロロプレン（2-クロロ-1,3-ブタジエン）を 1,4-付加重合させると、<b>クロロプレンゴム</b>ができます。<b>塩素原子を含むので、油や薬品、天候に強く、</b>ホースやベルトなどに使われます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-chloroprene.png" alt="クロロプレンの構造式。4個の炭素が一列に並んで1番と2番、3番と4番の間が二重結合になり、2番の炭素に塩素原子が付いている図" loading="lazy"><figcaption class="ref-figure-cap">クロロプレン CH₂=CCl−CH=CH₂。イソプレンの −CH₃ が <b>−Cl</b> に変わった形です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-chloroprene.png?h=048d22c2" alt="クロロプレンの構造式。4個の炭素が一列に並んで1番と2番、3番と4番の間が二重結合になり、2番の炭素に塩素原子が付いている図" loading="lazy"><figcaption class="ref-figure-cap">クロロプレン CH₂=CCl−CH=CH₂。イソプレンの −CH₃ が <b>−Cl</b> に変わった形です。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CCl−CH=CH₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CCl=CH−CH₂］ₙ</span></div><p class="ref-note">1,3-ブタジエンの2番の炭素の H が Cl に変わっただけです。</p></div>
 <h5 class="ref-h5">スチレン-ブタジエンゴム（SBR）</h5>
 <p class="ref-p">スチレンと 1,3-ブタジエンを<b>共重合</b>させると、<b>スチレン-ブタジエンゴム（SBR）</b>ができます。<b>すり減りにくいので、自動車のタイヤ</b>に多く使われます。</p>
@@ -965,7 +970,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/polymer-basics/">2種類以上の単量体をまぜて重合させる共重合</a></p>
 <h5 class="ref-h5">シリコーンゴム</h5>
 <p class="ref-p">ケイ素原子 Si と酸素原子 O が交互に並んだ −Si−O−Si−O− を主鎖にもつゴムを<b>シリコーンゴム</b>といいます。ケイ素にはメチル基などが付いています。<b>主鎖に炭素原子を含まず、Si−O 結合が強いので、熱にも寒さにも強く、化学的に安定</b>です。医療用のチューブや調理器具に使われます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-silicone.png" alt="シリコーンの鎖の一部の構造式。ケイ素原子 Si と酸素原子 O が交互に一列につながり、どのケイ素にもメチル基が上下に1つずつ付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">主鎖は <b>−Si−O−Si−O−</b> で、炭素を含みません。炭素はケイ素に付いたメチル基 −CH₃ にだけあります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-silicone.png?h=11eef9a1" alt="シリコーンの鎖の一部の構造式。ケイ素原子 Si と酸素原子 O が交互に一列につながり、どのケイ素にもメチル基が上下に1つずつ付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">主鎖は <b>−Si−O−Si−O−</b> で、炭素を含みません。炭素はケイ素に付いたメチル基 −CH₃ にだけあります。</figcaption></figure>
 <p class="ref-p">シリコーンゴムは、ジクロロジメチルシランを加水分解してできる化合物を<b>縮合重合</b>させてつくります。<b>主鎖に C=C が無いので硫黄では加硫できず、</b>別の方法で橋かけします。</p>
 <p class="ref-p">「<b>シリコーンゴムは主鎖に炭素が無い</b>」の一点で十分でしょう。</p>
 <section class="ref-sec" id="ref-sec-summary"><h4 class="ref-sec-h">おもなゴムの一覧</h4><p class="ref-sec-lead">ゴムを、単量体・重合の型・特徴で並べます。シリコーンゴム以外はどれも主鎖に C=C が残ります。</p></section>
@@ -1050,6 +1055,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

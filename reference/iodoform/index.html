@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -918,7 +923,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">特定の構造をもつ有機化合物を、<b>ヨウ素 I₂ と水酸化ナトリウム水溶液 NaOH とともに加熱</b>すると、<b>ヨードホルム CHI₃ の黄色沈殿</b>が生じます。これを<b>ヨードホルム反応</b>といいます。目に見える変化がはっきりしているので、構造決定では「その構造をもつかどうか」を1回で決める手として使われます。</p>
 <section class="ref-sec" id="ref-sec-structure"><h4 class="ref-sec-h">ヨードホルム反応を示す構造</h4><p class="ref-sec-lead">アセチル基 −COCH₃ をもつカルボニル化合物と、酸化するとアセチル基をもつカルボニル化合物になるアルコールの2通りです。</p></section>
 <p class="ref-p">反応を示すのは、<b>アセチル基 −COCH₃ をもつカルボニル化合物</b>と、<b>酸化されるとアセチル基をもつカルボニル化合物になるアルコール</b>です。アセチル基とは、酢酸 CH₃COOH から −OH を取り去った構造のことです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/iodoform-structure.png" alt="ヨードホルム反応を示す構造の図。左はヒドロキシ基が付いた炭素にメチル基と水素が結合したアルコール、酸化されると右のアセチル基をもつカルボニル化合物になる。下に R が水素のときと水素以外のときの表が付いている" loading="lazy"><figcaption class="ref-figure-cap">左のアルコールが酸化されると、右の<b>アセチル基</b>をもつカルボニル化合物になります。R が H ならエタノールとアセトアルデヒド、R がアルキル基なら「2-<span class="ref-blank">○○</span>オール」と「メチル<span class="ref-blank">○○</span>ケトン」です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/iodoform-structure.png?h=0a9f707c" alt="ヨードホルム反応を示す構造の図。左はヒドロキシ基が付いた炭素にメチル基と水素が結合したアルコール、酸化されると右のアセチル基をもつカルボニル化合物になる。下に R が水素のときと水素以外のときの表が付いている" loading="lazy"><figcaption class="ref-figure-cap">左のアルコールが酸化されると、右の<b>アセチル基</b>をもつカルボニル化合物になります。R が H ならエタノールとアセトアルデヒド、R がアルキル基なら「2-<span class="ref-blank">○○</span>オール」と「メチル<span class="ref-blank">○○</span>ケトン」です。</figcaption></figure>
 <p class="ref-p">同じことは、<b>カルボニル基 −CO− の一方にメチル基 −CH₃ が結合している</b>、と言い換えることもできます。アルコールの側なら、<b>ヒドロキシ基 −OH が結合した炭素にメチル基 −CH₃ が結合している第1級または第2級アルコール</b>です。</p>
 <p class="ref-p">具体例を挙げます。カルボニル化合物では<b>アセトアルデヒド CH₃CHO</b>（ヨードホルム反応を示す唯一のアルデヒド）と<b>アセトン CH₃COCH₃</b>。アルコールでは<b>エタノール CH₃CH₂OH</b>（示す唯一の第1級アルコール）と<b>2-プロパノール CH₃CH(OH)CH₃</b>です。</p>
 <p class="ref-p">酢酸 CH₃COOH もアセチル基をもっていますが、<b>カルボン酸はヨードホルム反応を示しません</b>。示すのはカルボニル化合物とアルコールだけ、と範囲をはっきりさせておいてください。</p>
@@ -1015,6 +1020,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

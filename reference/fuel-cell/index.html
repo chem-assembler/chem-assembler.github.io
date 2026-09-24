@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -928,7 +933,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-fuel"><h4 class="ref-sec-h">燃料電池の仕組み</h4><p class="ref-sec-lead">燃料（還元剤）の H₂ と、酸化剤の O₂ を別々の電極に送り込んで電気を取り出します。全体では H₂ の燃焼と同じ反応です。</p></section>
 <p class="ref-p">燃料を燃やすと、そのエネルギーは熱になって出ていきます。同じ燃料（還元剤）と酸素（酸化剤）の反応を、燃やさずに電極の上で進めれば、エネルギーを熱ではなく電気として受け取れます。このしくみの電池が<b>燃料電池</b>です。代表的なのは、燃料に水素 H₂、電解液にリン酸 H₃PO₄ 水溶液を使う<b>リン酸形燃料電池</b>です。電極には、気体が通れるように細かい穴の空いた<b>多孔質電極</b>を使います。</p>
 <p class="ref-p">リン酸形燃料電池の構成は <b>（−）H₂｜H₃PO₄aq｜O₂（＋）</b> です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fuel-cell-phosphoric.png" alt="リン酸形燃料電池の模式図。左の多孔質電極に H₂ が送り込まれ、H⁺ となって電解液に溶け込み、e⁻ は導線を通って右の電極へ流れる。右の多孔質電極には O₂ が送り込まれ、H⁺ と e⁻ と反応して H₂O ができる" loading="lazy"><figcaption class="ref-figure-cap">負極では H₂ が H⁺ になって電解液に溶け込み、e⁻ が正極へ流れます。正極では O₂・H⁺・e⁻ が反応して H₂O ができます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fuel-cell-phosphoric.png?h=bd4a47a0" alt="リン酸形燃料電池の模式図。左の多孔質電極に H₂ が送り込まれ、H⁺ となって電解液に溶け込み、e⁻ は導線を通って右の電極へ流れる。右の多孔質電極には O₂ が送り込まれ、H⁺ と e⁻ と反応して H₂O ができる" loading="lazy"><figcaption class="ref-figure-cap">負極では H₂ が H⁺ になって電解液に溶け込み、e⁻ が正極へ流れます。正極では O₂・H⁺・e⁻ が反応して H₂O ができます。</figcaption></figure>
 <p class="ref-p">負極では、H₂ が e⁻ を放出して H⁺ となり、電解液に溶け込みます。正極では、O₂ が電解液中の H⁺ と導線から来た e⁻ を受け取って、H₂O になります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H⁺ ＋ 2e⁻</span></div><p class="ref-note">負極（リン酸形）。H₂ が還元剤としてはたらきます。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">O₂ ＋ 4H⁺ ＋ 4e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O</span></div><p class="ref-note">正極（リン酸形）。O₂ が酸化剤としてはたらきます。</p></div>
@@ -1026,6 +1031,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

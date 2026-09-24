@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -920,13 +925,13 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">鎖式で飽和のアルデヒドの一般式は <b>C<sub>n</sub>H<sub>2n</sub>O</b> です。n に炭素の数を代入すれば分子式が出ます —— n=2 を代入すると C₂H₄O で、これがアセトアルデヒドの分子式です。</p>
 <p class="ref-p">ケトンの一般式もまったく同じ C<sub>n</sub>H<sub>2n</sub>O なので、<b>炭素の数が同じアルデヒドとケトンは互いに構造異性体</b>です。アルデヒドとケトンをまとめて<b>カルボニル化合物</b>とよぶこともあります。</p>
 <p class="ref-p">この式は、アルカンの一般式 C<sub>n</sub>H<sub>2n+2</sub> の<b>メチレン基 −CH₂− を1つ、カルボニル基 −CO− に取り替えた</b>形をしています。水素原子が2個減って酸素原子が1個増えるので、C<sub>n</sub>H<sub>2n+2</sub> から C<sub>n</sub>H<sub>2n</sub>O になります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/carbonyl-from-alkane.png" alt="アルカンの構造式から矢印が伸び、端のメチレン基をカルボニル基に変えるとアルデヒド、端以外のメチレン基を変えるとケトンになることを示した2段の図" loading="lazy"><figcaption class="ref-figure-cap">取り替えるのが<b>鎖の端</b>のメチレン基ならアルデヒド、<b>端以外</b>ならケトンです。アルデヒドとケトンの構造上の違いは、カルボニル基が鎖の端にあるかどうか、ただ1つです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/carbonyl-from-alkane.png?h=16928c25" alt="アルカンの構造式から矢印が伸び、端のメチレン基をカルボニル基に変えるとアルデヒド、端以外のメチレン基を変えるとケトンになることを示した2段の図" loading="lazy"><figcaption class="ref-figure-cap">取り替えるのが<b>鎖の端</b>のメチレン基ならアルデヒド、<b>端以外</b>ならケトンです。アルデヒドとケトンの構造上の違いは、カルボニル基が鎖の端にあるかどうか、ただ1つです。</figcaption></figure>
 <p class="ref-p"><b>一般式 C<sub>n</sub>H<sub>2n</sub>O は必ず暗記してください。</b>分子式 C₃H₆O を見た瞬間に「アルデヒドかケトン」と言えると、構造決定で候補がすぐ絞れます。</p>
 <p class="ref-p">アルキル基 −C<sub>m</sub>H<sub>2m+1</sub> にホルミル基が結合しているところから同じ式を計算で導くこともできますが、<b>この計算のほうは覚える必要はありません。</b>結果が同じ式になることを一度見ておけば十分です。</p>
 <section class="ref-sec" id="ref-sec-naming"><h4 class="ref-sec-h">アルデヒドの命名</h4><p class="ref-sec-lead">対応するアルカンの語尾 -ane を -anal に変えるのが規則ですが、高校化学では3つの慣用名のほうを使います。</p></section>
 <p class="ref-p">規則どおりの名称は、対応するアルカンの語尾「-ane（アン）」を「-anal（アナール）」に変えたものです。炭素1個のメタンなら「メタナール」、2個のエタンなら「エタナール」になります。</p>
 <p class="ref-p">ただし高校化学でこの名前を見かけることはまずないので、<b>覚えるのは慣用名のほう</b>です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aldehyde-naming.png" alt="メタン・エタン・プロパンの構造式と、それぞれに対応するアルデヒドの構造式・名称を並べた図。メタナール（ホルムアルデヒド）、エタナール（アセトアルデヒド）、プロパナール（プロピオンアルデヒド）" loading="lazy"><figcaption class="ref-figure-cap">左がもとのアルカン、右が対応するアルデヒドです。かっこの中が<b>慣用名</b>で、高校化学ではこちらを使います。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aldehyde-naming.png?h=ce157473" alt="メタン・エタン・プロパンの構造式と、それぞれに対応するアルデヒドの構造式・名称を並べた図。メタナール（ホルムアルデヒド）、エタナール（アセトアルデヒド）、プロパナール（プロピオンアルデヒド）" loading="lazy"><figcaption class="ref-figure-cap">左がもとのアルカン、右が対応するアルデヒドです。かっこの中が<b>慣用名</b>で、高校化学ではこちらを使います。</figcaption></figure>
 <p class="ref-p"><b>ホルムアルデヒド HCHO・アセトアルデヒド CH₃CHO・プロピオンアルデヒド CH₃CH₂CHO の3つの慣用名は暗記してください。</b>このうち前の2つは各論として出題されるので、示性式も書けるようにしておきましょう。</p>
 <p class="ref-p"><b>メタナール・エタナール・プロパナールという規則どおりの名称は、覚えていなくて困ることはほとんどありません。</b></p>
 <section class="ref-sec" id="ref-sec-reduce"><h4 class="ref-sec-h">アルデヒドの還元性と、その検出</h4><p class="ref-sec-lead">アルデヒドは酸化されてカルボン酸になりやすく、そのぶん相手を還元します。銀鏡反応とフェーリング液の還元がその検出です。</p></section>
@@ -1044,6 +1049,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -929,13 +934,13 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">MnO₂ と濃塩酸で発生させた Cl₂ には、塩酸から蒸発した HCl と H₂O が混じっています。これを「<b>水 → 濃硫酸</b>」の順に洗気瓶に通して取り除き、下方置換で捕集します。</p>
 <ol class="ref-list"><li>1本目の水に通す。HCl は水によく溶けるので、ここで除かれる。<div class="ref-li-hang">Cl₂ は水に少ししか溶けないので通り抜ける。ただし水からまた H₂O が蒸発して混じる。</div></li><li>2本目の濃硫酸に通す。H₂O は濃硫酸に吸収されて除かれる。</li><li>Cl₂ は空気より重いので下方置換で捕集する。</li></ol>
 <p class="ref-p"><b>順番は「水 → 濃硫酸」で覚えましょう。</b>逆に「濃硫酸 → 水」の順にすると、最後の水から蒸発した H₂O が取り除けません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/chlorine-gas-washing.png" alt="Cl₂・H₂O・HCl の混じった気体を、水の入った洗気瓶、濃硫酸の入った洗気瓶の順に通し、最後の容器に下方置換で集める装置の図。HCl は水に、H₂O は濃硫酸に残ることと、水からは H₂O が新たに蒸発することが書き込まれている" loading="lazy"><figcaption class="ref-figure-cap">水で HCl を、濃硫酸で H₂O を除きます。水の瓶から新たに蒸発する H₂O まで取り除けるのは、この順だけです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/chlorine-gas-washing.png?h=d2b9ffbe" alt="Cl₂・H₂O・HCl の混じった気体を、水の入った洗気瓶、濃硫酸の入った洗気瓶の順に通し、最後の容器に下方置換で集める装置の図。HCl は水に、H₂O は濃硫酸に残ることと、水からは H₂O が新たに蒸発することが書き込まれている" loading="lazy"><figcaption class="ref-figure-cap">水で HCl を、濃硫酸で H₂O を除きます。水の瓶から新たに蒸発する H₂O まで取り除けるのは、この順だけです。</figcaption></figure>
 <p class="ref-p">工業的には、塩化ナトリウム水溶液の電気分解で Cl₂ をつくります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/electrolysis-industry/">塩化ナトリウム水溶液の電気分解（イオン交換膜法）はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/gas-preparation/">気体の製法・捕集法・乾燥剤を横に並べた早見表はこちら</a></p>
 <section class="ref-sec" id="ref-sec-chlorine-reactions"><h4 class="ref-sec-h">塩素の反応 —— 酸化剤、ときに自己酸化還元</h4><p class="ref-sec-lead">Cl₂ は Cl₂ ＋ 2e⁻ → 2Cl⁻ の酸化剤としてはたらきます。水や水酸化カルシウムとは、Cl₂ が酸化剤と還元剤の両方になる自己酸化還元反応をします。</p></section>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cl₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Cl⁻</span></div><p class="ref-note">塩素が酸化剤としてはたらくときの半反応式。Cl は安定な Cl⁻ になります。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/chlorine-app-cl2-half.png" alt="Cl₂ と 2Cl⁻ だけが書かれた式に、H₂O・H⁺・e⁻ の数を入れて半反応式を完成させる画面。手順A「H₂O → H⁺ → e⁻」が選ばれている" loading="lazy"><figcaption class="ref-figure-cap">反応の前後（Cl₂ → 2Cl⁻）だけを覚えておき、H₂O・H⁺・e⁻ を順に入れて半反応式にします。この式では O も H も無いので、e⁻ を2個入れるだけです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/chlorine-app-cl2-half.png?h=4a587df7" alt="Cl₂ と 2Cl⁻ だけが書かれた式に、H₂O・H⁺・e⁻ の数を入れて半反応式を完成させる画面。手順A「H₂O → H⁺ → e⁻」が選ばれている" loading="lazy"><figcaption class="ref-figure-cap">反応の前後（Cl₂ → 2Cl⁻）だけを覚えておき、H₂O・H⁺・e⁻ を順に入れて半反応式にします。この式では O も H も無いので、e⁻ を2個入れるだけです。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/halfreaction.html?q=Cl2_red&amp;from=reference&amp;page=chlorine">塩素が酸化剤としてはたらく半反応式を組む</a></p>
 <h5 class="ref-h5">金属を酸化する</h5>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu ＋ Cl₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CuCl₂</span></div><p class="ref-note">Cl₂ は多くの金属と反応して酸化します。Cu → Cu²⁺ ＋ 2e⁻ と Cl₂ ＋ 2e⁻ → 2Cl⁻ を足したものです。</p></div>
@@ -1058,6 +1063,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

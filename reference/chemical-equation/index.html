@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -932,7 +937,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">プロパンの燃焼 C₃H₈ ＋ ○O₂ → ○CO₂ ＋ ○H₂O（1段ずつ原子の数をそろえる）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">手順</th><th style="text-align: left;">決めた係数</th><th style="text-align: left;">C（左 : 右）</th><th style="text-align: left;">H（左 : 右）</th><th style="text-align: left;">O（左 : 右）</th></tr></thead><tbody><tr><td style="text-align: left;">1. C₃H₈ を 1 とおく</td><td style="text-align: left;">C₃H₈ 1</td><td style="text-align: left;">3 : ?</td><td style="text-align: left;">8 : ?</td><td style="text-align: left;">? : ?</td></tr><tr><td style="text-align: left;">2. C を合わせる</td><td style="text-align: left;">CO₂ 3</td><td style="text-align: left;">3 : 3</td><td style="text-align: left;">8 : ?</td><td style="text-align: left;">? : 6 ＋ ?</td></tr><tr><td style="text-align: left;">2. H を合わせる</td><td style="text-align: left;">H₂O 4</td><td style="text-align: left;">3 : 3</td><td style="text-align: left;">8 : 8</td><td style="text-align: left;">? : 6 ＋ 4 ＝ 10</td></tr><tr><td style="text-align: left;">3. O₂ を最後に</td><td style="text-align: left;">O₂ 5</td><td style="text-align: left;">3 : 3</td><td style="text-align: left;">8 : 8</td><td style="text-align: left;">10 : 10</td></tr></tbody></table></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₃H₈ ＋ 5O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">3CO₂ ＋ 4H₂O</span></div><p class="ref-note">目算法で、C₃H₈ → CO₂ → H₂O → O₂ の順に決めた係数です。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=combustion-c3h8-o2&amp;from=reference&amp;page=chemical-equation">プロパンの燃焼の係数を、原子を数えながら合わせてみよう</a></p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/chemical-equation-app-propane.png" alt="ion-equation の係数合わせの画面。「C₃H₈ を O₂ で燃やして CO₂ と H₂O をつくろう」の題の下に、左辺 C₃H₈ ＋ O₂ と右辺 CO₂ ＋ H₂O の係数の欄が「?」のまま並び、一番下に「左辺と右辺の原子の数をここで見くらべられる」のボタンがある" loading="lazy"><figcaption class="ref-figure-cap">係数の欄を ＋・− で決めていきます。<b>左辺と右辺の原子の数を見くらべながら</b>、C → H → O の順に合わせてみましょう。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/chemical-equation-app-propane.png?h=21c2a1b4" alt="ion-equation の係数合わせの画面。「C₃H₈ を O₂ で燃やして CO₂ と H₂O をつくろう」の題の下に、左辺 C₃H₈ ＋ O₂ と右辺 CO₂ ＋ H₂O の係数の欄が「?」のまま並び、一番下に「左辺と右辺の原子の数をここで見くらべられる」のボタンがある" loading="lazy"><figcaption class="ref-figure-cap">係数の欄を ＋・− で決めていきます。<b>左辺と右辺の原子の数を見くらべながら</b>、C → H → O の順に合わせてみましょう。</figcaption></figure>
 <p class="ref-p">具体例3で、ブタン C₄H₁₀ の燃焼を見ます。係数に分数が出る例です。</p>
 <ol class="ref-list"><li>C₄H₁₀ を 1 とおく。C が 4 なので CO₂ は 4、H が 10 なので H₂O は 5。</li><li>右辺の O は 4 × 2 ＋ 5 ＝ 13。O₂ の係数は 13/2。</li><li>全体を2倍して分母をはらう。</li></ol>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2C₄H₁₀ ＋ 13O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">8CO₂ ＋ 10H₂O</span></div><p class="ref-note">途中で O₂ の係数が 13/2 になったので、全体を2倍しました。</p></div>
@@ -1031,6 +1036,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -941,7 +946,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2NH₄Cl ＋ Ca(OH)₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CaCl₂ ＋ 2H₂O ＋ 2NH₃↑</span></div><p class="ref-note">塩化アンモニウムと水酸化カルシウムの固体を混ぜて加熱する。アンモニアの実験室的製法です。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/nitrogen/">アンモニアの性質と捕集は、窒素のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-same-mechanism"><h4 class="ref-sec-h">遊離と加水分解は同じ仕組み</h4><p class="ref-sec-lead">弱酸の遊離も、弱酸の塩の加水分解も、弱酸の陰イオンが H⁺ とくっつく「弱酸の電離の逆反応」です。H⁺ をくれる相手が強酸か水かだけが違います。</p></section>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acid-displacement-hydrolysis.png" alt="左は CH₃COONa の水溶液に HCl を加えると、HCl がすべて電離して H⁺ を渡し CH₃COOH が遊離する様子。右は CH₃COONa の水溶液で、CH₃COO⁻ が水を分解して H⁺ を受け取り、OH⁻ が余って塩基性になる様子。下に両方の反応式" loading="lazy"><figcaption class="ref-figure-cap"><b>弱酸の遊離も加水分解も、CH₃COO⁻ が H⁺ とくっつく反応</b>。H⁺ をくれるのが HCl なら遊離（ほぼ 100 ％進む）、H₂O なら加水分解（ごく一部しか起こらない可逆反応）です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acid-displacement-hydrolysis.png?h=9aa06d01" alt="左は CH₃COONa の水溶液に HCl を加えると、HCl がすべて電離して H⁺ を渡し CH₃COOH が遊離する様子。右は CH₃COONa の水溶液で、CH₃COO⁻ が水を分解して H⁺ を受け取り、OH⁻ が余って塩基性になる様子。下に両方の反応式" loading="lazy"><figcaption class="ref-figure-cap"><b>弱酸の遊離も加水分解も、CH₃COO⁻ が H⁺ とくっつく反応</b>。H⁺ をくれるのが HCl なら遊離（ほぼ 100 ％進む）、H₂O なら加水分解（ごく一部しか起こらない可逆反応）です。</figcaption></figure>
 <p class="ref-p">どちらも、<b>弱酸の電離の逆反応 CH₃COO⁻ ＋ H⁺ → CH₃COOH</b> が芯です。違うのは H⁺ をくれる相手だけです。</p>
 <ul class="ref-list"><li>H⁺ をくれるのが <b>強酸 HCl</b> → 楽に H⁺ が手に入るので、ほぼ 100 ％進む（<b>弱酸の遊離</b>）</li><li>H⁺ をくれるのが <b>水 H₂O</b> → 水を分解して H⁺ をとるのは大変なので、ごく一部しか起こらない可逆反応（<b>加水分解</b>）</li></ul>
 <h5 class="ref-h5">式の書き方（どちらも同じ手順）</h5>
@@ -1039,6 +1044,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

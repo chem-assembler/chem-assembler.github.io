@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -931,12 +936,12 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">このことから、容器の中の蒸気（例えば水蒸気）については、次の2つの場合しかありません。</p>
 <div class="ref-table-wrap"><div class="ref-cap">容器の中の水蒸気がとりうる2つの状態</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">状態</th><th style="text-align: left;">水蒸気の分圧</th><th style="text-align: left;">液体の水</th></tr></thead><tbody><tr><td style="text-align: left;">飽和していない</td><td style="text-align: left;">飽和蒸気圧より小さい（すべて気体）</td><td style="text-align: left;">ない</td></tr><tr><td style="text-align: left;">飽和している（気液平衡）</td><td style="text-align: left;">飽和蒸気圧に等しい</td><td style="text-align: left;">ある</td></tr></tbody></table></div>
 <p class="ref-p">「液体の水が存在するとき、その上の空間には飽和蒸気圧の H₂O が存在する」は、<b>水蒸気を含む気体の問題でいちばんよく登場する1文です。必ず覚えてください。</b>問題文に「水滴が生じた」「液体の水が残った」とあれば、水蒸気の分圧は飽和蒸気圧に等しいと読みます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/vapor-pressure-compare.png" alt="0.8×10⁵Pa ＞ 0.036×10⁵Pa の不等式。左の 0.8×10⁵Pa の下に「生じた H₂O がすべて気体になったと仮定したときの H₂O の分圧」、右の 0.036×10⁵Pa の下に「H₂O の飽和蒸気圧（H₂O の分圧の最大値）」と書かれている" loading="lazy"><figcaption class="ref-figure-cap">飽和蒸気圧は、水蒸気の分圧がとれる最大値です。すべて気体と仮定した分圧がこれを超えたら、超えた分は液体の水になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/vapor-pressure-compare.png?h=c43f101a" alt="0.8×10⁵Pa ＞ 0.036×10⁵Pa の不等式。左の 0.8×10⁵Pa の下に「生じた H₂O がすべて気体になったと仮定したときの H₂O の分圧」、右の 0.036×10⁵Pa の下に「H₂O の飽和蒸気圧（H₂O の分圧の最大値）」と書かれている" loading="lazy"><figcaption class="ref-figure-cap">飽和蒸気圧は、水蒸気の分圧がとれる最大値です。すべて気体と仮定した分圧がこれを超えたら、超えた分は液体の水になります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/gas-with-vapor/">「すべて気体と仮定して飽和蒸気圧と比べる」計算の手順はこちら</a></p>
 <section class="ref-sec" id="ref-sec-curve"><h4 class="ref-sec-h">蒸気圧曲線 —— 温度が上がると蒸気圧は上がる</h4><p class="ref-sec-lead">温度が高いほど、分子の運動エネルギーが大きくなり、液体から飛び出す分子が増えるので、飽和蒸気圧は高くなります。</p></section>
 <p class="ref-p">温度を横軸、飽和蒸気圧を縦軸にとって描いた線が<b>蒸気圧曲線</b>です。液体を温めると、液面から飛び出せるほど勢いのある分子が一気に増えるため、飽和蒸気圧は温度とともに急に高くなります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">水の飽和蒸気圧</div><table class="ref-hand-table"><thead><tr><th style="text-align: right;">温度〔℃〕</th><th style="text-align: right;">飽和蒸気圧〔Pa〕</th></tr></thead><tbody><tr><td style="text-align: right;">0</td><td style="text-align: right;">6.1×10²</td></tr><tr><td style="text-align: right;">20</td><td style="text-align: right;">2.3×10³</td></tr><tr><td style="text-align: right;">27</td><td style="text-align: right;">3.6×10³</td></tr><tr><td style="text-align: right;">40</td><td style="text-align: right;">7.4×10³</td></tr><tr><td style="text-align: right;">60</td><td style="text-align: right;">2.0×10⁴</td></tr><tr><td style="text-align: right;">80</td><td style="text-align: right;">4.7×10⁴</td></tr><tr><td style="text-align: right;">100</td><td style="text-align: right;">1.013×10⁵</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/vapor-pressure-curves.png" alt="横軸が温度、縦軸が蒸気圧のグラフ。ジエチルエーテル・エタノール・水の3本の曲線が左からこの順に並び、外圧 1.013×10⁵ Pa の横線とそれぞれ 35℃・78℃・100℃ で交わる" loading="lazy"><figcaption class="ref-figure-cap">同じ温度で比べると、分子間力が弱いものほど曲線が<b>上（左）</b>にあります。その曲線が外圧の高さに早く届くので、沸点も低くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/vapor-pressure-curves.png?h=ca302f48" alt="横軸が温度、縦軸が蒸気圧のグラフ。ジエチルエーテル・エタノール・水の3本の曲線が左からこの順に並び、外圧 1.013×10⁵ Pa の横線とそれぞれ 35℃・78℃・100℃ で交わる" loading="lazy"><figcaption class="ref-figure-cap">同じ温度で比べると、分子間力が弱いものほど曲線が<b>上（左）</b>にあります。その曲線が外圧の高さに早く届くので、沸点も低くなります。</figcaption></figure>
 <p class="ref-p">27℃（300K）の水の飽和蒸気圧 3.6×10³Pa は、1.0×10⁵Pa のおよそ 4% です。常温付近の水の飽和蒸気圧は、大気圧に比べてずっと小さいことを感覚として持っておきましょう。</p>
 <p class="ref-p">同じ温度で比べると、分子間力が強い液体ほど分子が飛び出しにくいので、飽和蒸気圧は低くなります。25℃ で比べると、ジエチルエーテル（約 7.1×10⁴Pa）＞ エタノール（約 7.9×10³Pa）＞ 水（約 3.2×10³Pa）の順です。水の蒸気圧が低いのは、分子どうしが水素結合で強く引き合っているためです。</p>
 <section class="ref-sec" id="ref-sec-boiling"><h4 class="ref-sec-h">沸騰と沸点 —— 蒸気圧が外圧に届いたとき</h4><p class="ref-sec-lead">蒸気圧が外圧（ふつうは大気圧）に追いつくと、液面だけでなく液の中でも泡ができ始めます。これが沸騰で、そのときの温度が沸点です。</p></section>
@@ -1023,6 +1028,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

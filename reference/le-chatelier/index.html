@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,7 +927,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2NO₂（赤褐色）</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">N₂O₄（無色）</span></div><p class="ref-note">ΔH ＝ −57.2 kJ（右向きが発熱）。分子の数は左辺2個・右辺1個。</p></div>
 <p class="ref-p">まず、右向き・左向きに反応が進んだときに、温度・全体の圧力・濃度がどう変わるかを表にします。</p>
 <div class="ref-table-wrap"><div class="ref-cap">2NO₂ ⇄ N₂O₄（ΔH ＝ −57.2 kJ）が進むと何が変わるか</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">着目する量</th><th style="text-align: left;">→ 右向きに進むと</th><th style="text-align: left;">← 左向きに進むと</th></tr></thead><tbody><tr><td style="text-align: left;">温度（熱）</td><td style="text-align: left;">上がる（発熱）</td><td style="text-align: left;">下がる（吸熱）</td></tr><tr><td style="text-align: left;">全体の圧力</td><td style="text-align: left;">下がる（分子が 2個 → 1個）</td><td style="text-align: left;">上がる（分子が 1個 → 2個）</td></tr><tr><td style="text-align: left;">[N₂O₄]</td><td style="text-align: left;">増える</td><td style="text-align: left;">減る</td></tr><tr><td style="text-align: left;">[NO₂]</td><td style="text-align: left;">減る</td><td style="text-align: left;">増える</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/le-chatelier-particles.png" alt="四角い容器の中に、赤く塗った NO₂ の粒が3個と、白抜きの N₂O₄ の粒が4個、ばらばらに入っている図" loading="lazy"><figcaption class="ref-figure-cap">平衡状態の容器の中には、赤褐色の NO₂ と無色の N₂O₄ が混ざっています。粒の数が増えると圧力は上がり、減ると下がります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/le-chatelier-particles.png?h=7590f04d" alt="四角い容器の中に、赤く塗った NO₂ の粒が3個と、白抜きの N₂O₄ の粒が4個、ばらばらに入っている図" loading="lazy"><figcaption class="ref-figure-cap">平衡状態の容器の中には、赤褐色の NO₂ と無色の N₂O₄ が混ざっています。粒の数が増えると圧力は上がり、減ると下がります。</figcaption></figure>
 <p class="ref-p">平衡の移動は、この表を使って次の手順で決めます。</p>
 <ol class="ref-list"><li>加えた変化を言葉にする。<div class="ref-li-hang">「温度を下げた」「NO₂ を減らした」</div></li><li>それを打ち消す向きの変化を言葉にする。<div class="ref-li-hang">「温度を上げる方向」「NO₂ を増やす方向」</div></li><li>表から、その変化が起こるのが右向きか左向きかを読む。<div class="ref-li-hang">温度が上がるのは → 右向き、NO₂ が増えるのは ← 左向き</div></li></ol>
 <p class="ref-p">温度を下げると、温度を上げる方向（発熱の方向）＝ <b>右</b> に平衡が移動し、NO₂ が減って色が薄くなります。NO₂ を取り除くと、NO₂ を増やす方向 ＝ <b>左</b> に平衡が移動し、一度薄くなった色がしばらくするとまた濃くなります。</p>
@@ -946,14 +951,14 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">平衡が移動する理由（N₂ ＋ 3H₂ ⇄ 2NH₃・ΔH ＝ −92 kJ）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">変えたもの</th><th style="text-align: left;">平衡定数の式 K ＝ [NH₃]²／([N₂][H₂]³) で起こること</th><th style="text-align: left;">移動</th></tr></thead><tbody><tr><td style="text-align: left;">NH₃ を取り除く（温度は一定）</td><td style="text-align: left;">右辺の分子が小さくなり等号が成り立たない → 分子を大きく・分母を小さくする向きに進む</td><td style="text-align: left;">右</td></tr><tr><td style="text-align: left;">温度を上げる</td><td style="text-align: left;">K そのものが小さくなり等号が成り立たない → 分子を小さく・分母を大きくする向きに進む</td><td style="text-align: left;">左</td></tr></tbody></table></div>
 <p class="ref-p">温度を変えたときは K の値が、温度を変えないときは濃度が変わることで等号が崩れ、等号を取り戻すように平衡が移動します。発熱反応で温度を上げると K が小さくなることは、ルシャトリエの原理（吸熱の方向 ＝ 左へ移動）と一致します。<b>K が温度でどう変わるかの式は覚える必要はありません。</b>向きはルシャトリエの原理で決めれば十分です。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">温度一定で体積を小さくしたので、体積を大きくする方向（分子の数が増える方向）に平衡が移動する</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body"><b>ルシャトリエの原理は体積 V には当てはめません。</b>体積を小さくすると圧力 P が大きくなるので、P を小さくする方向 ＝ 分子の数が減る方向に移動します。N₂ ＋ 3H₂ ⇄ 2NH₃ なら右です。原理を当てるのは、圧力 P・温度 T・濃度（n／V）または物質量 n です。</span></p><p class="ref-mistake-why">P に当てると右、V に当てると左と、逆の結論になってしまうためです。体積は、圧力や温度と違って分子に直接はたらきかけません。温度・圧力を変えずに体積だけ2倍にしても、同じ中身の容器が2つ並ぶだけで平衡は移動しません。ルシャトリエの原理は法則ではなく、平衡の移動を感覚的にとらえるための道具です。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/le-chatelier-volume-vs-pressure.png" alt="N₂ ＋ 3H₂ ⇄ 2NH₃ で温度一定のまま体積 V を小さくしたときの2通りの考え方の流れ図。上の道は PV＝nRT で P が大きくなり、ルシャトリエの原理で n を小さくする向き（右）へ移動する。下の道は V にルシャトリエの原理を当てて V を大きくする向き（左）へ移動するとしているが、その矢印に赤い×が付いている" loading="lazy"><figcaption class="ref-figure-cap">同じ「体積を小さくする」から、P に当てると右、V に当てると左と、逆の結論が出てしまいます。正しいのは P に当てた上の道です。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/le-chatelier-volume-doubled.png" alt="左は体積 V の容器に NO₂ と N₂O₄ の粒が混ざった平衡状態の図。右はそれと同じ中身の容器を2つ並べた体積 2V の図で、「分子は気体の体積 V が変化しても気づくことはできない」という吹き出しと、「平衡は移動しない」という札がある" loading="lazy"><figcaption class="ref-figure-cap">ほかの条件を変えずに体積だけ2倍にしても、同じ中身の容器が2つ並ぶだけで、平衡は移動しません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/le-chatelier-volume-vs-pressure.png?h=97c49584" alt="N₂ ＋ 3H₂ ⇄ 2NH₃ で温度一定のまま体積 V を小さくしたときの2通りの考え方の流れ図。上の道は PV＝nRT で P が大きくなり、ルシャトリエの原理で n を小さくする向き（右）へ移動する。下の道は V にルシャトリエの原理を当てて V を大きくする向き（左）へ移動するとしているが、その矢印に赤い×が付いている" loading="lazy"><figcaption class="ref-figure-cap">同じ「体積を小さくする」から、P に当てると右、V に当てると左と、逆の結論が出てしまいます。正しいのは P に当てた上の道です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/le-chatelier-volume-doubled.png?h=0e4e81c8" alt="左は体積 V の容器に NO₂ と N₂O₄ の粒が混ざった平衡状態の図。右はそれと同じ中身の容器を2つ並べた体積 2V の図で、「分子は気体の体積 V が変化しても気づくことはできない」という吹き出しと、「平衡は移動しない」という札がある" loading="lazy"><figcaption class="ref-figure-cap">ほかの条件を変えずに体積だけ2倍にしても、同じ中身の容器が2つ並ぶだけで、平衡は移動しません。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-haber-bosch"><h4 class="ref-sec-h">ハーバー・ボッシュ法 —— 平衡論と速度論</h4><p class="ref-sec-lead">アンモニアの合成は発熱反応で分子の数が減るので、平衡論では低温・高圧ほど有利です。一方、速度論では高温ほど速く平衡に達します。実際には、触媒を使い、速度と平衡のバランスをとった条件で合成しています。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">アンモニアの合成（N₂ ＋ 3H₂ ⇄ 2NH₃・ΔH ＝ −92 kJ）の条件</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">見方</th><th style="text-align: left;">温度</th><th style="text-align: left;">圧力</th><th style="text-align: left;">理由</th></tr></thead><tbody><tr><td style="text-align: left;">平衡論（どこまで進むか）</td><td style="text-align: left;">低温が有利</td><td style="text-align: left;">高圧が有利</td><td style="text-align: left;">発熱反応・分子の数が 4個 → 2個</td></tr><tr><td style="text-align: left;">速度論（どれだけ速く進むか）</td><td style="text-align: left;">高温が有利</td><td style="text-align: left;">——</td><td style="text-align: left;">活性化エネルギー以上の分子の割合が増える</td></tr><tr><td style="text-align: left;">実際の条件</td><td style="text-align: left;">約 500℃</td><td style="text-align: left;">約 2 × 10⁷〜5 × 10⁷ Pa</td><td style="text-align: left;">Fe₃O₄ から得た鉄を主成分とする触媒で、比較的低い温度でも速く進める</td></tr></tbody></table></div>
 <p class="ref-p">平衡論では低温、速度論では高温が有利なので、<b>両方を同時に満たすことはできません</b>。工業的製法では短い時間で多くのアンモニアをつくることが大切なので、両者のバランスをとった温度を選び、触媒で速度を補っています。</p>
 <p class="ref-p">横軸に時間、縦軸に NH₃ の生成率をとったグラフは、<b>立ち上がりの傾きが速度論、最後に落ち着く高さが平衡論</b>で決まります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">条件を変えたときの NH₃ 生成率–時間グラフの変わり方</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">条件</th><th style="text-align: left;">立ち上がりの傾き（速度論）</th><th style="text-align: left;">最後の高さ（平衡論）</th></tr></thead><tbody><tr><td style="text-align: left;">高温にする</td><td style="text-align: left;">大きくなる（速く平衡に達する）</td><td style="text-align: left;">低くなる</td></tr><tr><td style="text-align: left;">低温にする</td><td style="text-align: left;">小さくなる（平衡に達するのが遅い）</td><td style="text-align: left;">高くなる</td></tr><tr><td style="text-align: left;">触媒を加える</td><td style="text-align: left;">大きくなる</td><td style="text-align: left;">変わらない</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/le-chatelier-haber-rate.png" alt="横軸に時間、縦軸に NH₃ の生成率をとったグラフ。基準の線に対して、高温の線ははじめの傾きが大きいが低い高さで横ばいになり、低温の線は傾きが小さいが高い高さまで上がる。触媒ありの破線は基準と同じ高さに速く達する。原点付近の傾きを「速度論」、右端の高さを「平衡論」と札で示している" loading="lazy"><figcaption class="ref-figure-cap">原点付近の傾きが速さ（速度論）、右端の高さが平衡の位置（平衡論）です。高温ほど傾きは大きいのに、たどり着く生成率は低くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/le-chatelier-haber-rate.png?h=dc291b13" alt="横軸に時間、縦軸に NH₃ の生成率をとったグラフ。基準の線に対して、高温の線ははじめの傾きが大きいが低い高さで横ばいになり、低温の線は傾きが小さいが高い高さまで上がる。触媒ありの破線は基準と同じ高さに速く達する。原点付近の傾きを「速度論」、右端の高さを「平衡論」と札で示している" loading="lazy"><figcaption class="ref-figure-cap">原点付近の傾きが速さ（速度論）、右端の高さが平衡の位置（平衡論）です。高温ほど傾きは大きいのに、たどり着く生成率は低くなります。</figcaption></figure>
 <p class="ref-p">アンモニアの性質と、硝酸の製法（オストワルト法）とのつながりは、窒素のページで扱っています。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/nitrogen/">アンモニアと硝酸の工業的製法（窒素の化合物）へ</a></p>
 <h5 class="ref-h5">例題</h5>
@@ -1032,6 +1037,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -925,7 +930,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">溶解度の数だけ溶質が溶けていても、条件によってはそれ以上溶けたまま析出しないことがあります。この不安定な状態を<b>過飽和</b>といい、刺激を与えたり結晶の核を入れたりすると、余分な溶質が一気に析出します。</p>
 <section class="ref-sec" id="ref-sec-curve"><h4 class="ref-sec-h">溶解度曲線</h4><p class="ref-sec-lead">溶解度と温度の関係を表したグラフを溶解度曲線といいます。多くの固体は高温ほどよく溶けますが、例外が2つあります。</p></section>
 <p class="ref-p">溶解度と温度の関係を表したグラフを<b>溶解度曲線</b>といいます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/solubility-curve.png" alt="横軸が温度 0〜100 ℃、縦軸が水 100 g あたりに溶ける g の折れ線グラフ。KNO₃ は右上がりに急に伸び、CuSO₄ はゆるやかに増え、NaCl はほぼ水平、Ca(OH)₂ は右下がりの点線" loading="lazy"><figcaption class="ref-figure-cap">KNO₃ のように<b>温度で大きく変わる</b>ものほど、冷やしたときに多く析出します。NaCl と Ca(OH)₂ の2本が例外で、この向きだけを覚えておけば足ります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/solubility-curve.png?h=b69b974e" alt="横軸が温度 0〜100 ℃、縦軸が水 100 g あたりに溶ける g の折れ線グラフ。KNO₃ は右上がりに急に伸び、CuSO₄ はゆるやかに増え、NaCl はほぼ水平、Ca(OH)₂ は右下がりの点線" loading="lazy"><figcaption class="ref-figure-cap">KNO₃ のように<b>温度で大きく変わる</b>ものほど、冷やしたときに多く析出します。NaCl と Ca(OH)₂ の2本が例外で、この向きだけを覚えておけば足ります。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">固体の溶解度の例（水 100 g に溶ける g）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">物質</th><th style="text-align: center;">低温</th><th style="text-align: center;">高温</th><th style="text-align: left;">温度による変化</th></tr></thead><tbody><tr><td style="text-align: left;">硝酸カリウム KNO₃</td><td style="text-align: center;">32（20 ℃）</td><td style="text-align: center;">110（60 ℃）</td><td style="text-align: left;">大きく増える</td></tr><tr><td style="text-align: left;">硫酸銅(Ⅱ) CuSO₄</td><td style="text-align: center;">20（20 ℃）</td><td style="text-align: center;">40（60 ℃）</td><td style="text-align: left;">増える</td></tr><tr><td style="text-align: left;">ホウ酸 H₃BO₃</td><td style="text-align: center;">5.0（10 ℃）</td><td style="text-align: center;">20（70 ℃）</td><td style="text-align: left;">増える</td></tr><tr><td style="text-align: left;">塩化ナトリウム NaCl</td><td style="text-align: center;">38（30 ℃）</td><td style="text-align: center;">38（80 ℃）</td><td style="text-align: left;">ほとんど変わらない</td></tr><tr><td style="text-align: left;">水酸化カルシウム Ca(OH)₂</td><td style="text-align: center;">0.17（0 ℃）</td><td style="text-align: center;">0.09（80 ℃）</td><td style="text-align: left;">高温ほど減る</td></tr></tbody></table></div>
 <p class="ref-p"><b>溶解度の数値は覚える必要はありません。</b>問題では必ず与えられます。ただし、<b>「NaCl は温度でほとんど変わらない」「Ca(OH)₂ は高温ほど溶けにくい」</b>の2つの向きは覚えておきましょう。再結晶の問題で、どちらが析出するかの判断に使います。</p>
 <section class="ref-sec" id="ref-sec-recrystallization"><h4 class="ref-sec-h">再結晶 —— 冷やして出る量</h4><p class="ref-sec-lead">高温の飽和溶液を冷やすと、溶解度の差の分だけ結晶が析出します。「水 100 g あたり何 g 出るか」を先に出し、あとは倍率です。</p></section>
@@ -1022,6 +1027,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

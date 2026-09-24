@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -960,7 +965,7 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">② 熱濃硫酸は酸化力のある酸 —— Cu・Ag を溶かす</h5>
 <p class="ref-p">濃硫酸を熱すると、H⁺ ではなく硫酸の分子そのものが酸化剤としてはたらくようになります。これが<b>熱濃硫酸</b>で、H⁺ では歯が立たない Cu や Ag まで酸化して溶かします。硫酸の S は +6 → +4 に変わるので、SO₂ が出てきます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂SO₄ ＋ 2H⁺ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">SO₂↑ ＋ 2H₂O</span></div><p class="ref-note">熱濃硫酸が酸化剤としてはたらくときの半反応式。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfuric-acid-app-hot-h2so4-half.png" alt="H₂SO₄ と SO₂ だけが書かれた式に、H₂O・H⁺・e⁻ の数を入れて半反応式を完成させる画面。「H₂SO₄ で書く」と「SO₄²⁻ で書く」を選べ、手順A「H₂O → H⁺ → e⁻」が選ばれている" loading="lazy"><figcaption class="ref-figure-cap">「熱濃硫酸は SO₂ になる」とだけ覚えておき、O を H₂O で、H を H⁺ で、電荷を e⁻ で合わせます。SO₄²⁻ で書いても同じ半反応式になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfuric-acid-app-hot-h2so4-half.png?h=9e7576cd" alt="H₂SO₄ と SO₂ だけが書かれた式に、H₂O・H⁺・e⁻ の数を入れて半反応式を完成させる画面。「H₂SO₄ で書く」と「SO₄²⁻ で書く」を選べ、手順A「H₂O → H⁺ → e⁻」が選ばれている" loading="lazy"><figcaption class="ref-figure-cap">「熱濃硫酸は SO₂ になる」とだけ覚えておき、O を H₂O で、H を H⁺ で、電荷を e⁻ で合わせます。SO₄²⁻ で書いても同じ半反応式になります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/halfreaction.html?q=H2SO4_hot_red&amp;from=reference&amp;page=sulfuric-acid">熱濃硫酸が酸化剤としてはたらく半反応式を組む</a></p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu ＋ 2H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CuSO₄ ＋ 2H₂O ＋ SO₂↑</span></div><p class="ref-note">Cu → Cu²⁺ ＋ 2e⁻ と足して Cu ＋ H₂SO₄ ＋ 2H⁺ → Cu²⁺ ＋ 2H₂O ＋ SO₂ とし、両辺に SO₄²⁻ を戻すと化学反応式になります。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2Ag ＋ 2H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Ag₂SO₄ ＋ 2H₂O ＋ SO₂↑</span></div><p class="ref-note">2Ag → 2Ag⁺ ＋ 2e⁻ と足し、両辺に SO₄²⁻ を戻したものです。</p></div>
@@ -996,10 +1001,10 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2SO₂ ＋ O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">V₂O₅</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2SO₃</span></div><p class="ref-note">② 触媒で酸化する（S: +4 → +6）。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">SO₃ ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂SO₄</span></div><p class="ref-note">③ 酸性酸化物とオキソ酸（S: +6 のまま）。</p></div>
 <p class="ref-p">全体の式は、<b>中間の物質（SO₂ と SO₃）が消えるように係数をそろえて足します</b>。①×2 で SO₂ が、③×2 で SO₃ がそろうので、①×2 ＋ ② ＋ ③×2 です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfuric-acid-contact-sum.png" alt="接触法の3本の反応式を横に並べた図。① S ＋ O₂ → SO₂、② 2SO₂ ＋ O₂ → 2SO₃、③ SO₃ ＋ H₂O → H₂SO₄。SO₂ と SO₃ を枠で囲み、「①×2 で SO₂ の係数が揃う」「③×2 で SO₃ の係数が揃う」「①×2 ＋ ② ＋ ③×2 で全体の反応式がつくれる」と吹き出しで示している" loading="lazy"><figcaption class="ref-figure-cap">中間の物質（SO₂・SO₃）の係数をそろえてから足します。①×2 ＋ ② ＋ ③×2 です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfuric-acid-contact-sum.png?h=2269d754" alt="接触法の3本の反応式を横に並べた図。① S ＋ O₂ → SO₂、② 2SO₂ ＋ O₂ → 2SO₃、③ SO₃ ＋ H₂O → H₂SO₄。SO₂ と SO₃ を枠で囲み、「①×2 で SO₂ の係数が揃う」「③×2 で SO₃ の係数が揃う」「①×2 ＋ ② ＋ ③×2 で全体の反応式がつくれる」と吹き出しで示している" loading="lazy"><figcaption class="ref-figure-cap">中間の物質（SO₂・SO₃）の係数をそろえてから足します。①×2 ＋ ② ＋ ③×2 です。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2S ＋ 3O₂ ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂SO₄</span></div><p class="ref-note">接触法全体の反応式。S 原子1個から H₂SO₄ 1分子ができる、と読みます。</p></div>
 <p class="ref-p">発煙硫酸は、濃硫酸に SO₃ を過剰に吸収させたもので、SO₃ が蒸発して煙を出しています。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfuric-acid-contact-flow.png" alt="反応物 S（酸化数 0）から、①＋O₂ で中間生成物1 の SO₂（+4）、② V₂O₅ 触媒と＋O₂ で中間生成物2 の SO₃（+6）、③＋H₂O で生成物 H₂SO₄（+6）へ進む流れ図" loading="lazy"><figcaption class="ref-figure-cap">S を2段階で酸化して +6 にし、最後の水との反応では酸化数は変わりません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfuric-acid-contact-flow.png?h=b7f7c8a4" alt="反応物 S（酸化数 0）から、①＋O₂ で中間生成物1 の SO₂（+4）、② V₂O₅ 触媒と＋O₂ で中間生成物2 の SO₃（+6）、③＋H₂O で生成物 H₂SO₄（+6）へ進む流れ図" loading="lazy"><figcaption class="ref-figure-cap">S を2段階で酸化して +6 にし、最後の水との反応では酸化数は変わりません。</figcaption></figure>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">Ag⁺・Al³⁺・Ba²⁺・Ca²⁺・Cu²⁺・Fe²⁺・Mg²⁺・Na⁺・Pb²⁺ のうち、<b>(1) 硫酸イオンと沈殿をつくるもの　(2) 塩化物イオンと沈殿をつくるもの</b> をすべて選び、沈殿の化学式と色を書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) BaSO₄ 白・CaSO₄ 白・PbSO₄ 白　(2) AgCl 白・PbCl₂ 白　Pb²⁺ は SO₄²⁻ とも Cl⁻ とも沈殿をつくります。代表的な強酸3つ（HCl・HNO₃・H₂SO₄）のうち、NO₃⁻ は沈殿をつくりません。</p></div></details></div>
@@ -1077,6 +1082,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

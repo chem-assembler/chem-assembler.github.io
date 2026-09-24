@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -928,8 +933,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">水蒸気を含む問題は、次の順に解きます。</p>
 <ol class="ref-list"><li>水がすべて気体だと仮定して、水蒸気の分圧（仮の分圧）を求める。</li><li>仮の分圧を、その温度の飽和蒸気圧と比べる。</li><li>仮の分圧 ＞ 飽和蒸気圧 なら、超えた分は液体になり、水蒸気の分圧は飽和蒸気圧に等しい。</li><li>仮の分圧 ≦ 飽和蒸気圧 なら、水はすべて気体で、水蒸気の分圧は仮の分圧のまま。</li><li>ほかの気体の分圧と足して、全圧を求める。</li></ol>
 <p class="ref-p">上の具体例では、300K の水の飽和蒸気圧が 3.6×10³Pa ＝ 0.036×10⁵Pa です。仮の分圧 0.8×10⁵Pa ＞ 0.036×10⁵Pa なので、水の大部分は液体になり、水蒸気の分圧は 0.036×10⁵Pa です。全圧は O₂ の分圧と足して 0.60×10⁵ ＋ 0.036×10⁵ ＝ 0.636×10⁵ ≒ <b>6.4×10⁴Pa</b> です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-with-vapor-table.png" alt="「単位は 10⁵Pa」と断った3行の表。反応式 2H₂ ＋ 1O₂ → 2H₂O について、反応前は H₂ 0.8・O₂ 1.0、変化量は H₂ −0.8・O₂ −0.4・H₂O ＋0.8、反応後は H₂ 0・O₂ 0.6・H₂O 0.8。左に「同一容器内では T と V が共通であるため P と n が比例するので mol の代わりに圧力 Pa で計算できる」、右に「係数の比は mol の比」「飽和蒸気圧を超えているので燃焼後の H₂O の分圧は飽和蒸気圧に等しい」の注記" loading="lazy"><figcaption class="ref-figure-cap">表の反応後の H₂O 0.8 は、すべて気体と仮定したときの仮の分圧です。これをそのまま全圧に足してはいけません。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-with-vapor-compare.png" alt="0.8×10⁵Pa ＞ 0.036×10⁵Pa の不等式。左の 0.8×10⁵Pa の下に「生じた H₂O がすべて気体になったと仮定したときの H₂O の分圧」、右の 0.036×10⁵Pa の下に「H₂O の飽和蒸気圧（H₂O の分圧の最大値）」と書かれている" loading="lazy"><figcaption class="ref-figure-cap">仮の分圧が飽和蒸気圧を超えているので、水蒸気の分圧は飽和蒸気圧の 0.036×10⁵Pa で頭打ちになります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-with-vapor-table.png?h=fc5d7df8" alt="「単位は 10⁵Pa」と断った3行の表。反応式 2H₂ ＋ 1O₂ → 2H₂O について、反応前は H₂ 0.8・O₂ 1.0、変化量は H₂ −0.8・O₂ −0.4・H₂O ＋0.8、反応後は H₂ 0・O₂ 0.6・H₂O 0.8。左に「同一容器内では T と V が共通であるため P と n が比例するので mol の代わりに圧力 Pa で計算できる」、右に「係数の比は mol の比」「飽和蒸気圧を超えているので燃焼後の H₂O の分圧は飽和蒸気圧に等しい」の注記" loading="lazy"><figcaption class="ref-figure-cap">表の反応後の H₂O 0.8 は、すべて気体と仮定したときの仮の分圧です。これをそのまま全圧に足してはいけません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-with-vapor-compare.png?h=c43f101a" alt="0.8×10⁵Pa ＞ 0.036×10⁵Pa の不等式。左の 0.8×10⁵Pa の下に「生じた H₂O がすべて気体になったと仮定したときの H₂O の分圧」、右の 0.036×10⁵Pa の下に「H₂O の飽和蒸気圧（H₂O の分圧の最大値）」と書かれている" loading="lazy"><figcaption class="ref-figure-cap">仮の分圧が飽和蒸気圧を超えているので、水蒸気の分圧は飽和蒸気圧の 0.036×10⁵Pa で頭打ちになります。</figcaption></figure>
 <p class="ref-p">★ 比べるときは、<b>桁をそろえてから</b>比べます。3.6×10³Pa と 0.8×10⁵Pa は、どちらも ×10⁵Pa にそろえて 0.036 と 0.8 にすると、大小がひと目で分かります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">仮の分圧と飽和蒸気圧の比べ方</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">比べた結果</th><th style="text-align: left;">水のようす</th><th style="text-align: left;">水蒸気の分圧</th></tr></thead><tbody><tr><td style="text-align: left;">仮の分圧 ＞ 飽和蒸気圧</td><td style="text-align: left;">一部が液体（水滴ができる）</td><td style="text-align: left;">飽和蒸気圧に等しい</td></tr><tr><td style="text-align: left;">仮の分圧 ≦ 飽和蒸気圧</td><td style="text-align: left;">すべて気体</td><td style="text-align: left;">仮の分圧のまま</td></tr></tbody></table></div>
 <p class="ref-p">液体として存在する水の割合も、同じ考え方で求められます。水の物質量は（同じ容器・同じ温度なら）分圧に比例するので、<b>（仮の分圧 − 飽和蒸気圧）÷ 仮の分圧</b> が液体の割合です。上の具体例なら (0.800 − 0.036)/0.800 ≒ 96% です。</p>
@@ -940,7 +945,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">（集めた気体の分圧）＝（大気圧）−（水の飽和蒸気圧）です。</p>
 <p class="ref-p">具体例で、27℃（300K）・9.96×10⁴Pa のもとで、過酸化水素水に酸化マンガン(Ⅳ) を加えて発生した O₂ を水上置換で 166mL 集めた場合を考えます（水の飽和蒸気圧 3.6×10³Pa）。</p>
 <ol class="ref-list"><li>桁をそろえて O₂ の分圧を出す。9.96×10⁴ − 0.36×10⁴ ＝ 9.6×10⁴Pa。</li><li>準標準状態（300K・1.0×10⁵Pa・24.9L）を基準に、P と V の倍率を書く。<div class="ref-li-hang">P は 1.00×10⁵Pa → 0.96×10⁵Pa（比）、V は 24900mL → 166mL（比）。</div></li><li>n ＝ 1mol × 96/100 × 166/24900 ≒ 6.4×10⁻³mol。</li></ol>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-with-vapor-water-displacement.png" alt="水上置換の装置。水を張った水槽に、気体を送る管の先が沈められ、その上に逆さに立てた捕集容器の中へ泡が上がっていく。下に「正確に測定するため捕集容器の液面を水槽の液面に一致させて容器内の圧力を大気圧に等しくする」の注記" loading="lazy"><figcaption class="ref-figure-cap">捕集容器の中の液面を水槽の液面にそろえると、容器内の全圧（O₂ と水蒸気の分圧の和）が大気圧に等しくなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-with-vapor-water-displacement.png?h=5eb34a8c" alt="水上置換の装置。水を張った水槽に、気体を送る管の先が沈められ、その上に逆さに立てた捕集容器の中へ泡が上がっていく。下に「正確に測定するため捕集容器の液面を水槽の液面に一致させて容器内の圧力を大気圧に等しくする」の注記" loading="lazy"><figcaption class="ref-figure-cap">捕集容器の中の液面を水槽の液面にそろえると、容器内の全圧（O₂ と水蒸気の分圧の和）が大気圧に等しくなります。</figcaption></figure>
 <p class="ref-p"><b>「液面を水槽の液面にそろえて、容器内の圧力を大気圧に等しくする」は、実験の手順としても問われます。</b>理由まで説明できるようにしておきましょう。</p>
 <section class="ref-sec" id="ref-sec-reverse"><h4 class="ref-sec-h">逆向きの問題 —— 全圧から飽和蒸気圧を求める</h4><p class="ref-sec-lead">実際の全圧が、すべて気体と仮定した全圧より小さければ、水の一部が液体になっています。全圧からほかの気体の分圧を引けば、飽和蒸気圧が求められます。</p></section>
 <p class="ref-p">問題文に「水滴が生じた」とあれば、それだけで水蒸気が飽和蒸気圧に達していると読めます。書かれていなくても、<b>すべて気体と仮定した全圧と、実際の全圧を比べる</b>と分かります。実際の全圧の方が小さければ、その差の分の水が液体になっています。</p>
@@ -1023,6 +1028,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

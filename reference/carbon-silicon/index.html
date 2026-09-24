@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -925,7 +930,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">黒鉛は、各 C が3本の結合で平面の層をつくり、層どうしは弱い分子間力で重なっています。4つめの価電子が層の中を動けるので、<b>黒鉛は非金属の単体なのに電気をよく通します。</b>層どうしがずれやすいので、軟らかくはがれやすい性質をもちます。</p>
 <p class="ref-p"><b>「電気を通すのは黒鉛だけ」と、その理由（動ける価電子がある）を言えるようにしてください。</b>フラーレンのほか、黒鉛の1層だけを取り出したグラフェン、それを筒状に丸めたカーボンナノチューブもありますが、名前を知っていれば十分です。</p>
 <p class="ref-p">木炭やすすは、ごく小さな黒鉛の結晶がばらばらの向きで寄り集まったもので、無定形炭素と呼ばれます。その1つの活性炭は細かい穴だらけで、においのもとになる分子をよく吸いつけるので、脱臭剤になります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/diamond-graphite.png" alt="左はダイヤモンドの構造で、中心の C から4本の結合が正四面体の向きに出て、その先も同じつながりが続いている。右は黒鉛の構造で、六角形が並んだ平面の層が3枚重なり、層と層は点線でゆるくつながれている。いちばん上の層には電子が動く向きの矢印が書かれている" loading="lazy"><figcaption class="ref-figure-cap">ダイヤモンドは価電子4個をすべて共有結合に使い切るので、動ける電子がありません。黒鉛は3個しか使わないため、残った1個が層の中を動いて電気を通し、層どうしがずれるので軟らかくなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/diamond-graphite.png?h=0d450ce2" alt="左はダイヤモンドの構造で、中心の C から4本の結合が正四面体の向きに出て、その先も同じつながりが続いている。右は黒鉛の構造で、六角形が並んだ平面の層が3枚重なり、層と層は点線でゆるくつながれている。いちばん上の層には電子が動く向きの矢印が書かれている" loading="lazy"><figcaption class="ref-figure-cap">ダイヤモンドは価電子4個をすべて共有結合に使い切るので、動ける電子がありません。黒鉛は3個しか使わないため、残った1個が層の中を動いて電気を通し、層どうしがずれるので軟らかくなります。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-co"><h4 class="ref-sec-h">一酸化炭素 CO —— 毒性と還元性</h4><p class="ref-sec-lead">無色・無臭で水に溶けにくい、極めて有毒な気体です。高温では酸素を奪う還元剤としてはたらきます。</p></section>
 <p class="ref-p">一酸化炭素は、炭素や炭素化合物の<b>不完全燃焼</b>で生じます。実験室でほしいときは、ギ酸 HCOOH に濃硫酸を加えて熱し、発生させます。濃硫酸が HCOOH から H と O を 2：1 で奪う<b>脱水作用</b>の例です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCOOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO ＋ H₂O</span></div><p class="ref-note">濃硫酸は脱水剤です（触媒ではありません）。矢印の上に書き、式には入れません。CO の実験室的製法として必ず覚えます。</p></div>
@@ -1058,6 +1063,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

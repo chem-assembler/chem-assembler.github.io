@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -921,7 +926,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-mechanism"><h4 class="ref-sec-h">電気分解の仕組み</h4><p class="ref-sec-lead">電源の正極につないだ電極が陽極、負極につないだ電極が陰極です。陽極では酸化、陰極では還元が起こります。</p></section>
 <p class="ref-p">外部の電池（電源）を利用して電流を流し、無理やり酸化還元反応を起こすことを<b>電気分解</b>といいます。イオンを含む水溶液（電解液）を入れた容器を電解槽といいます。</p>
 <p class="ref-p">電源の<b>正極</b>につないだ電極を<b>陽極</b>、電源の<b>負極</b>につないだ電極を<b>陰極</b>といいます。e⁻ は電源の負極から出て、導線を通って陰極へ流れ込み、陽極から出て電源の正極へもどります（電流は e⁻ の逆向き）。電解液の中では、e⁻ の代わりにイオンが移動して回路をつなぎます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-cell.png" alt="電解槽の模式図。電源の負極から出た e⁻ が陰極に流れ込み、陽極から出た e⁻ が電源の正極にもどる。陰極は e⁻ を押し付けられて酸化剤が還元され、陽極は e⁻ を奪われて還元剤が酸化される。電解液の中では陰イオンが陽極へ、陽イオンが陰極へ移動する" loading="lazy"><figcaption class="ref-figure-cap">陰極は e⁻ を<b>押し付けられ</b>、酸化剤が還元されます。陽極は e⁻ を<b>奪われ</b>、還元剤が酸化されます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-cell.png?h=f80f9a21" alt="電解槽の模式図。電源の負極から出た e⁻ が陰極に流れ込み、陽極から出た e⁻ が電源の正極にもどる。陰極は e⁻ を押し付けられて酸化剤が還元され、陽極は e⁻ を奪われて還元剤が酸化される。電解液の中では陰イオンが陽極へ、陽イオンが陰極へ移動する" loading="lazy"><figcaption class="ref-figure-cap">陰極は e⁻ を<b>押し付けられ</b>、酸化剤が還元されます。陽極は e⁻ を<b>奪われ</b>、還元剤が酸化されます。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">陽極と陰極</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: center;">陽極</th><th style="text-align: center;">陰極</th></tr></thead><tbody><tr><td style="text-align: left;">つなぐ先</td><td style="text-align: center;">電源の正極</td><td style="text-align: center;">電源の負極</td></tr><tr><td style="text-align: left;">e⁻</td><td style="text-align: center;">奪われる</td><td style="text-align: center;">押し付けられる</td></tr><tr><td style="text-align: left;">反応する物質</td><td style="text-align: center;">還元剤（e⁻ を出すもの）</td><td style="text-align: center;">酸化剤（e⁻ を受け取るもの）</td></tr><tr><td style="text-align: left;">起こる反応</td><td style="text-align: center;">酸化</td><td style="text-align: center;">還元</td></tr></tbody></table></div>
 <p class="ref-p"><b>「陽極は e⁻ を奪われて還元剤が酸化される、陰極は e⁻ を押し付けられて酸化剤が還元される」を必ず覚えてください。</b>電池の正極・負極と名前が似ていますが、電池の負極（酸化が起こる）に対応するのは電気分解の陽極です。</p>
 <section class="ref-sec" id="ref-sec-anode"><h4 class="ref-sec-h">陽極で反応するもの —— 4段の優先順位</h4><p class="ref-sec-lead">①電極の金属 → ②ハロゲン化物イオン → ③OH⁻ → ④H₂O の順に、e⁻ を奪われやすいものから反応します。</p></section>
@@ -938,10 +943,10 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">Zn²⁺・Ni²⁺・Fe²⁺ のようにイオン化傾向が中くらいの金属の陽イオンでは、濃度や電圧によって、金属の析出と H₂ の発生が同時に起こることがあります（金属イオンが濃いときは金属の析出が、薄いときは H₂ の発生が優勢になります）。<b>高校の問題では、優先順位のとおり金属が析出するとして解いて構いません。</b></p>
 <section class="ref-sec" id="ref-sec-flowchart"><h4 class="ref-sec-h">フローチャートで判断する</h4><p class="ref-sec-lead">陽極は「電極 → ハロゲン化物イオン → 塩基性か」の3つの問い、陰極は「Al より小さい陽イオンがあるか」の1つの問いで決まります。</p></section>
 <p class="ref-p">優先順位を、上から順に「ある？」と問うていくと、次のフローチャートになります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-flowchart.png" alt="電気分解のフローチャート。陽極：電極が C・Pt・Au 以外なら電極の金属が反応、そうでなく電解液にハロゲン化物イオンがあればそれが反応、そうでなく塩基性なら OH⁻ が反応、どれでもなければ水が反応。陰極：Al よりイオン化傾向が小さい元素の陽イオンがあればそれが反応、無ければ水が反応" loading="lazy"><figcaption class="ref-figure-cap">陽極は3つの問いを、陰極は1つの問いを上から順にたどります。<b>OH⁻ は塩基性のときにしか存在しない</b>ことに注意します。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-flowchart.png?h=618175e2" alt="電気分解のフローチャート。陽極：電極が C・Pt・Au 以外なら電極の金属が反応、そうでなく電解液にハロゲン化物イオンがあればそれが反応、そうでなく塩基性なら OH⁻ が反応、どれでもなければ水が反応。陰極：Al よりイオン化傾向が小さい元素の陽イオンがあればそれが反応、無ければ水が反応" loading="lazy"><figcaption class="ref-figure-cap">陽極は3つの問いを、陰極は1つの問いを上から順にたどります。<b>OH⁻ は塩基性のときにしか存在しない</b>ことに注意します。</figcaption></figure>
 <p class="ref-p">具体例で、塩化ナトリウム水溶液を白金電極で電気分解する場合をたどります。</p>
 <ol class="ref-list"><li>陽極：電極は Pt なので反応しない（n）。電解液に Cl⁻ がある（y）ので、<b>Cl⁻ が反応</b>して Cl₂ が発生する。</li><li>陰極：陽イオンは Na⁺ だけで、Na は Al よりイオン化傾向が大きい（n）ので、<b>H₂O が反応</b>して H₂ が発生する。</li></ol>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-app-nacl.png" alt="アプリ「イオンでみる化学反応式」の電気分解の画面。塩化ナトリウム水溶液の中に Na⁺・Cl⁻ と H₂O があり、陰極で反応するのは Na⁺ か H₂O か、陽極で反応するのは Cl⁻ か H₂O かを選ぶボタンが並んでいる" loading="lazy"><figcaption class="ref-figure-cap">水溶液の中にいるイオンと水から、陰極・陽極で反応するものを選んでみましょう。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-app-nacl.png?h=3d8504a4" alt="アプリ「イオンでみる化学反応式」の電気分解の画面。塩化ナトリウム水溶液の中に Na⁺・Cl⁻ と H₂O があり、陰極で反応するのは Na⁺ か H₂O か、陽極で反応するのは Cl⁻ か H₂O かを選ぶボタンが並んでいる" loading="lazy"><figcaption class="ref-figure-cap">水溶液の中にいるイオンと水から、陰極・陽極で反応するものを選んでみましょう。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/electrolysis.html?s=e3&amp;from=reference&amp;page=electrolysis-basics">塩化ナトリウム水溶液の電気分解で、両極で何が反応するかを選ぶ</a></p>
 <section class="ref-sec" id="ref-sec-why"><h4 class="ref-sec-h">優先順位がこうなる理由</h4><p class="ref-sec-lead">陽極では e⁻ を失いやすいもの、陰極では e⁻ を受け取りやすいものから反応します。</p></section>
 <p class="ref-p">電極の金属は、e⁻ を放出して陽イオンになる<b>還元剤</b>なので、e⁻ を奪われる陽極でしか反応しません。<b>陰極では電極の金属は反応しません。</b></p>
@@ -1027,6 +1032,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

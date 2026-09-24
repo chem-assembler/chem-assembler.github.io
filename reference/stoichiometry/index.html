@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -941,7 +946,7 @@ a.ref-link::before { content: '→ '; }
 <ol class="ref-list"><li>H₂ は 0.30 ÷ 2 ＝ 0.15、O₂ は 0.10 ÷ 1 ＝ 0.10。</li><li>小さいのは O₂ の 0.10。倍率は x ＝ 0.10 で、O₂ が先になくなる。</li><li>3行の表を埋める。</li></ol>
 <div class="ref-table-wrap"><div class="ref-cap">2H₂ ＋ O₂ → 2H₂O（H₂ 0.30mol・O₂ 0.10mol・倍率 x ＝ 0.10）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: right;">2H₂</th><th style="text-align: right;">O₂</th><th style="text-align: right;">2H₂O</th></tr></thead><tbody><tr><td style="text-align: left;">反応前</td><td style="text-align: right;">0.30</td><td style="text-align: right;">0.10</td><td style="text-align: right;">0</td></tr><tr><td style="text-align: left;">変化量</td><td style="text-align: right;">−0.20</td><td style="text-align: right;">−0.10</td><td style="text-align: right;">＋0.20</td></tr><tr><td style="text-align: left;">反応後</td><td style="text-align: right;">0.10（余り）</td><td style="text-align: right;">0</td><td style="text-align: right;">0.20</td></tr></tbody></table></div>
 <p class="ref-p">H₂O は 0.20mol でき、H₂ が 0.10mol 余ります（単位はすべて mol）。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stoichiometry-app-r5.png" alt="ratio の「反応の量的関係」の3行の表。H₂・O₂・H₂O の列に、係数の行 2・1・2、反応前の行 0.30・0.10・0 があり、変化量と反応後の行は「?」のまま。変化量の行の左に「係数×」の倍率を入れる欄がある" loading="lazy"><figcaption class="ref-figure-cap">係数の行が基準で、<b>変化量の行は「係数 × 倍率」</b>です。倍率に何を入れるかは、「mol ÷ 係数」の小さい方（ここでは O₂ の 0.10）で決まります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stoichiometry-app-r5.png?h=c64f4013" alt="ratio の「反応の量的関係」の3行の表。H₂・O₂・H₂O の列に、係数の行 2・1・2、反応前の行 0.30・0.10・0 があり、変化量と反応後の行は「?」のまま。変化量の行の左に「係数×」の倍率を入れる欄がある" loading="lazy"><figcaption class="ref-figure-cap">係数の行が基準で、<b>変化量の行は「係数 × 倍率」</b>です。倍率に何を入れるかは、「mol ÷ 係数」の小さい方（ここでは O₂ の 0.10）で決まります。</figcaption></figure>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">窒素 0.20mol と水素 0.30mol を反応させると、量の多い水素が余る</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">N₂ ＋ 3H₂ → 2NH₃ では、N₂ は 0.20 ÷ 1 ＝ 0.20、H₂ は 0.30 ÷ 3 ＝ 0.10 で、<b>先になくなるのは水素</b>です。倍率 x ＝ 0.10 で、NH₃ は 0.20mol でき、N₂ が 0.10mol 余ります。</span></p><p class="ref-mistake-why">mol の大きさだけを比べて、係数で割るのを忘れるためです。★ 比べるのは mol そのものではなく「mol ÷ 係数」です。係数が 1 : 1 のときだけ、多い方が余ります。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/ratio/stoich.html?r=r6&amp;from=reference&amp;page=stoichiometry">窒素と水素で、多い方が余るとは限らないことを確かめよう</a></p>
 <section class="ref-sec" id="ref-sec-gas"><h4 class="ref-sec-h">気体どうしは体積のまま計算できる</h4><p class="ref-sec-lead">同じ温度・圧力の気体どうしなら、係数の比は体積の比です。22.4 で割って掛け直さず、L のまま3行の表を書けます。同じ容器の中なら、圧力〔Pa〕のままでも書けます。</p></section>
@@ -950,7 +955,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/ratio/stoich.html?r=r15&amp;from=reference&amp;page=stoichiometry">窒素と水素の反応を、体積のまま解いてみよう</a></p>
 <p class="ref-p">⚠ ただし、<b>水のように反応後に液体になる物質の量を問われたら、L は使えません</b>。そのときは mol を経由します。</p>
 <p class="ref-p">同じ容器の中（温度と体積が共通）で反応させるときは、<b>圧力が mol に比例する</b>ので、3行の表を圧力〔Pa〕のまま書けます。容器に O₂ 1.0×10⁵Pa と H₂ 0.8×10⁵Pa ぶんを入れて燃やすなら、H₂ 0.8 ÷ 2 ＝ 0.4 と O₂ 1.0 ÷ 1 ＝ 1.0 を比べて x ＝ 0.4、反応後は O₂ 0.6×10⁵Pa、H₂O 0.8×10⁵Pa（すべて気体と仮定したとき）です。水蒸気がどこまで気体でいられるかは、水蒸気を含む気体のページで扱います。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stoichiometry-pressure-table.png" alt="「単位は 10⁵Pa」と断った3行の表。反応式 2H₂ ＋ 1O₂ → 2H₂O の係数を四角で囲み、反応前は H₂ 0.8・O₂ 1.0、変化量は H₂ −0.8・O₂ −0.4・H₂O ＋0.8、反応後は H₂ 0・O₂ 0.6・H₂O 0.8" loading="lazy"><figcaption class="ref-figure-cap">同じ容器の中なら、mol の代わりに圧力のまま3行の表が書けます。変化量は係数の比 2 : 1 : 2 になっています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stoichiometry-pressure-table.png?h=4b05802d" alt="「単位は 10⁵Pa」と断った3行の表。反応式 2H₂ ＋ 1O₂ → 2H₂O の係数を四角で囲み、反応前は H₂ 0.8・O₂ 1.0、変化量は H₂ −0.8・O₂ −0.4・H₂O ＋0.8、反応後は H₂ 0・O₂ 0.6・H₂O 0.8" loading="lazy"><figcaption class="ref-figure-cap">同じ容器の中なら、mol の代わりに圧力のまま3行の表が書けます。変化量は係数の比 2 : 1 : 2 になっています。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/gas-with-vapor/">反応でできた水が液体になるかどうかの判定は、水蒸気を含む気体のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">「係数の比は mol の比」「変化量は係数 × 倍率」「過不足は mol ÷ 係数の小さい方」の3つを覚えれば、量的関係の問題はすべてこの3行の表で解けます。</p></section>
 <p class="ref-p"><b>「係数の比 ＝ mol の比（質量の比ではない）」と「過不足は mol ÷ 係数の小さい方で止まる」の2つは必ず覚えてください。</b></p>
@@ -1034,6 +1039,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

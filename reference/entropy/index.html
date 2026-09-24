@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -929,7 +934,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">物質をつくる粒子は、熱運動をしています。粒子がどれだけばらばらに散らばっているか、つまり<b>乱雑さの大きさを表す量</b>を、<b>エントロピー</b>（記号 S）といいます。変化の前後のエントロピーの差を<b>エントロピー変化</b>（記号 ΔS）といい、<b>乱雑さが大きくなる変化では ΔS が正、小さくなる変化では ΔS が負</b>です。</p>
 <p class="ref-p">自然界には、<b>乱雑さが大きくなる向きに変化しようとする傾向</b>があります。インクを水にたらすと、かき混ぜなくても全体に広がっていきます。広がったインクが、ひとりでに1か所に集まることはありません。</p>
 <p class="ref-p">三態で比べると、エントロピーは<b>固体 ＜ 液体 ＜ 気体</b>の順に大きくなります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/entropy-three-states.png" alt="左から固体・液体・気体の3つの箱。固体は粒子が縦横にそろって並び、液体は粒子が寄り集まったまま並びがくずれ、気体は粒子がまばらに散らばって飛び回っている。箱の間に「融解」「蒸発」の矢印、下に「エントロピー（乱雑さ）が大きくなる」の赤い矢印が左の「小」から右の「大」へ向かう" loading="lazy"><figcaption class="ref-figure-cap">固体は粒子が決まった位置に並び、乱雑さがいちばん小さい状態です。<b>融解・蒸発で並びがくずれ、散らばる範囲が広がるほどエントロピーは大きくなります。</b></figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/entropy-three-states.png?h=937a45d4" alt="左から固体・液体・気体の3つの箱。固体は粒子が縦横にそろって並び、液体は粒子が寄り集まったまま並びがくずれ、気体は粒子がまばらに散らばって飛び回っている。箱の間に「融解」「蒸発」の矢印、下に「エントロピー（乱雑さ）が大きくなる」の赤い矢印が左の「小」から右の「大」へ向かう" loading="lazy"><figcaption class="ref-figure-cap">固体は粒子が決まった位置に並び、乱雑さがいちばん小さい状態です。<b>融解・蒸発で並びがくずれ、散らばる範囲が広がるほどエントロピーは大きくなります。</b></figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/states-of-matter/">三態と熱運動・拡散はこちら</a></p>
 <p class="ref-p">変化の前とくらべて、粒子がより散らばるならエントロピーは増え、より集まって並ぶなら減ります。よく出る変化を、増える側と減る側に分けて並べます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">エントロピーが増える変化・減る変化</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">変化の種類</th><th style="text-align: left;">エントロピーが増える（ΔS ＞ 0）</th><th style="text-align: left;">エントロピーが減る（ΔS ＜ 0）</th></tr></thead><tbody><tr><td style="text-align: left;">状態変化</td><td style="text-align: left;">融解（固体 → 液体）・蒸発（液体 → 気体）・昇華（固体 → 気体）</td><td style="text-align: left;">凝固（液体 → 固体）・凝縮（気体 → 液体）</td></tr><tr><td style="text-align: left;">混合と溶解</td><td style="text-align: left;">気体どうしの拡散・液体どうしの混合・固体が水に溶ける</td><td style="text-align: left;">気体が水に溶ける・水溶液から沈殿ができる</td></tr><tr><td style="text-align: left;">反応</td><td style="text-align: left;">気体の分子の数が増える反応（2H₂O₂(液) → 2H₂O(液) ＋ O₂(気)）</td><td style="text-align: left;">気体の分子の数が減る反応（N₂ ＋ 3H₂ → 2NH₃）</td></tr></tbody></table></div>
@@ -1036,6 +1041,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

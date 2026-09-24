@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -919,7 +924,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/acid-base-strength/">酸と塩基の価数と、代表的な酸・塩基の一覧へ</a></p>
 <section class="ref-sec" id="ref-sec-mechanism"><h4 class="ref-sec-h">中和反応の仕組み —— イオンの組み換え</h4><p class="ref-sec-lead">酸と塩基が中和すると、塩（塩基の陽イオン＋酸の陰イオン）と水（酸の H⁺＋塩基の OH⁻）ができます。</p></section>
 <p class="ref-p">「<b>酸が出した H⁺ と塩基が出した OH⁻ がくっついて H₂O が生じる反応</b>」を<b>中和反応</b>といいます。このとき、残った<b>塩基の陽イオンと酸の陰イオン</b>が組んでできる物質を<b>塩（えん）</b>といいます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/neutralization-recombination.png" alt="反応前の酸（H⁺ と陰イオン）と塩基（陽イオンと OH⁻）から、反応後は陽イオンと陰イオンが組んだ塩と、H⁺ と OH⁻ が組んだ水ができることを矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap">中和は<b>イオンの組み換え</b>。H⁺ と OH⁻ は水に、塩基の陽イオンと酸の陰イオンは塩になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/neutralization-recombination.png?h=9764939a" alt="反応前の酸（H⁺ と陰イオン）と塩基（陽イオンと OH⁻）から、反応後は陽イオンと陰イオンが組んだ塩と、H⁺ と OH⁻ が組んだ水ができることを矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap">中和は<b>イオンの組み換え</b>。H⁺ と OH⁻ は水に、塩基の陽イオンと酸の陰イオンは塩になります。</figcaption></figure>
 <p class="ref-p">具体例として、塩酸と水酸化ナトリウム水溶液の中和では、H⁺ と OH⁻ から H₂O が、Na⁺ と Cl⁻ から塩の NaCl ができます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCl ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O</span></div><p class="ref-note">反応しているのは H⁺ ＋ OH⁻ → H₂O の部分だけで、Na⁺ と Cl⁻ は水溶液中ではイオンのまま残ります。水を蒸発させると塩 NaCl が取り出せます。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s1&amp;from=reference&amp;page=neutralization">塩酸と水酸化ナトリウムを反応させ、傍観イオンが残るのを見る</a></p>
@@ -935,7 +940,7 @@ a.ref-link::before { content: '→ '; }
 <ol class="ref-list"><li>酸と塩基の価数を確かめる。<div class="ref-li-hang">「1価の酸と2価の塩基」なら係数は 2 : 1、「3価の酸と2価の塩基」なら 2 : 3</div></li><li>左辺に、価数の逆の比の係数をつけて酸と塩基を書く。</li><li>左辺のイオンを組み替えて、右辺に塩を書く（塩基の陽イオン＋酸の陰イオン）。</li><li>右辺に H₂O を書く。係数は左辺の H⁺（＝ OH⁻）の数。</li></ol>
 <p class="ref-p">具体例として、塩酸と水酸化カルシウムで順になぞります。</p>
 <ol class="ref-list"><li>HCl は1価、Ca(OH)₂ は2価。価数の逆の比は <b>2 : 1</b></li><li>左辺は <b>2HCl ＋ Ca(OH)₂</b></li><li>Ca²⁺ 1個と Cl⁻ 2個を組んで <b>CaCl₂</b></li><li>H⁺ と OH⁻ は2個ずつなので <b>2H₂O</b></li></ol>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/neutralization-writing.png" alt="2HCl ＋ Ca(OH)₂ → CaCl₂ ＋ 2H₂O の式の下に、左辺の H⁺・Cl⁻・Ca²⁺・OH⁻ のイオンが右辺の CaCl₂ と 2H₂O に組み替わる様子を線でつないだ図" loading="lazy"><figcaption class="ref-figure-cap"><b>価数の逆の比（2 : 1）で係数を先に決め</b>、左辺のイオンを組み替えて右辺を書きます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/neutralization-writing.png?h=49bb8e0d" alt="2HCl ＋ Ca(OH)₂ → CaCl₂ ＋ 2H₂O の式の下に、左辺の H⁺・Cl⁻・Ca²⁺・OH⁻ のイオンが右辺の CaCl₂ と 2H₂O に組み替わる様子を線でつないだ図" loading="lazy"><figcaption class="ref-figure-cap"><b>価数の逆の比（2 : 1）で係数を先に決め</b>、左辺のイオンを組み替えて右辺を書きます。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2HCl ＋ Ca(OH)₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CaCl₂ ＋ 2H₂O</span></div><p class="ref-note">1価の酸と2価の塩基なので 2 : 1。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂SO₄ ＋ 2NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Na₂SO₄ ＋ 2H₂O</span></div><p class="ref-note">2価の酸と1価の塩基なので 1 : 2。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2H₃PO₄ ＋ 3Ca(OH)₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Ca₃(PO₄)₂ ＋ 6H₂O</span></div><p class="ref-note">3価の酸と2価の塩基なので 2 : 3。H⁺ と OH⁻ は6個ずつなので H₂O も6です。</p></div>
@@ -946,7 +951,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">水溶液どうしの中和では、酸の H⁺ の mol と塩基の OH⁻ の mol を、それぞれ次の形で書いて等しいとおきます。</p>
 <ul class="ref-list"><li>（酸の価数）×（酸の mol/L）×（体積 L）＝（塩基の価数）×（塩基の mol/L）×（体積 L）</li></ul>
 <p class="ref-p">両辺とも体積を mL で書けば、1000 で割る操作は両辺で消えるので、そのまま mL で計算できます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/neutralization-app-h2so4.png" alt="硫酸 0.10 mol/L 10.0 mL を中和する NaOH 水溶液の体積を問う問題の画面。酸 H₂SO₄ の帯は価数2なので2つ分の長さで H⁺ 0.00200 mol、その下の塩基 NaOH の帯は長さが「？」になっていて、2本の帯が同じ長さになる体積を求める形" loading="lazy"><figcaption class="ref-figure-cap">「H⁺ の mol ＝ OH⁻ の mol」を帯の長さで見た図。<b>2価の硫酸は、同じ mol でも帯が2倍の長さ</b>になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/neutralization-app-h2so4.png?h=78c11f26" alt="硫酸 0.10 mol/L 10.0 mL を中和する NaOH 水溶液の体積を問う問題の画面。酸 H₂SO₄ の帯は価数2なので2つ分の長さで H⁺ 0.00200 mol、その下の塩基 NaOH の帯は長さが「？」になっていて、2本の帯が同じ長さになる体積を求める形" loading="lazy"><figcaption class="ref-figure-cap">「H⁺ の mol ＝ OH⁻ の mol」を帯の長さで見た図。<b>2価の硫酸は、同じ mol でも帯が2倍の長さ</b>になります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ratio/titration.html?from=reference&amp;page=neutralization">中和の計算（価数 × 物質量のつり合い）</a></p>
 <p class="ref-p">具体例として、0.020 mol/L の水酸化カルシウム水溶液 12 mL とちょうど中和する 0.0080 mol/L の硫酸の体積を x mL とすると、</p>
 <ul class="ref-list"><li>2 × 0.0080 × x ＝ 2 × 0.020 × 12</li><li>x ＝ <b>30 mL</b></li></ul>
@@ -1037,6 +1042,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

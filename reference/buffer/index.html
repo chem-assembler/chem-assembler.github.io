@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,7 +927,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">酢酸の電離平衡 CH₃COOH ⇄ CH₃COO⁻ ＋ H⁺ に OH⁻ を加えると、H⁺ ＋ OH⁻ → H₂O で [H⁺] が小さくなります。ルシャトリエの原理で平衡が右（[H⁺] を大きくする向き）に移動し、CH₃COOH が電離します。H⁺ はふだん CH₃COO⁻ とくっついていますが、OH⁻ が来ると離れて中和するのです。</p>
 <p class="ref-p">2つを足すと、弱酸と強塩基の中和の式になります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₃COOH ＋ OH⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₃COO⁻ ＋ H₂O</span></div><p class="ref-note">電離の式 CH₃COOH → CH₃COO⁻ ＋ H⁺ の両辺に OH⁻ を足し、右辺の H⁺ ＋ OH⁻ を H₂O にした形です。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/buffer-neutralization.png" alt="左は弱酸の模式図。陰イオンと H⁺ の組が5つ並び、そのうち1つだけ H⁺ が離れている（一部が電離）。離れた H⁺ が OH⁻ と結びついて H₂O になる（中和）。矢印の右では、H⁺ を失った陰イオンが陽イオンと組んで塩になり、残った弱酸の組からまた1つ H⁺ が離れている" loading="lazy"><figcaption class="ref-figure-cap">電離していた H⁺ が OH⁻ と結びついて水になると、残った弱酸がまた少し電離します。これを繰り返すので、弱酸でも最後にはすべて中和されます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/buffer-neutralization.png?h=116d079e" alt="左は弱酸の模式図。陰イオンと H⁺ の組が5つ並び、そのうち1つだけ H⁺ が離れている（一部が電離）。離れた H⁺ が OH⁻ と結びついて H₂O になる（中和）。矢印の右では、H⁺ を失った陰イオンが陽イオンと組んで塩になり、残った弱酸の組からまた1つ H⁺ が離れている" loading="lazy"><figcaption class="ref-figure-cap">電離していた H⁺ が OH⁻ と結びついて水になると、残った弱酸がまた少し電離します。これを繰り返すので、弱酸でも最後にはすべて中和されます。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/le-chatelier/">平衡の移動（ルシャトリエの原理）は、ルシャトリエの原理のページへ</a></p>
 <section class="ref-sec" id="ref-sec-mechanism"><h4 class="ref-sec-h">緩衝液の仕組み —— 両方そろうと緩衝液</h4><p class="ref-sec-lead">CH₃COOH は加えた OH⁻ を、CH₃COO⁻ は加えた H⁺ を、それぞれ消します。電離の式の左辺の物質と右辺の物質が両方そろっていると、酸にも塩基にも強い緩衝液になります。</p></section>
 <p class="ref-p">酸や塩基を加えても pH が変化しにくい性質を<b>緩衝作用</b>といい、緩衝作用をもつ溶液を<b>緩衝液</b>といいます。酢酸と酢酸イオンの混合液では、次の2本の反応が起こります。</p>
@@ -952,7 +957,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">中和滴定のページで描いた滴定曲線の各点の pH は、この単元の3ページの式で求められます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">酢酸を水酸化ナトリウム水溶液で滴定したときの各点</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">点</th><th style="text-align: left;">水溶液の中身</th><th style="text-align: left;">pH の求め方</th></tr></thead><tbody><tr><td style="text-align: left;">滴定開始時</td><td style="text-align: left;">CH₃COOH</td><td style="text-align: left;">Ka ＝ cα² から [H⁺] ＝ √(cKa)</td></tr><tr><td style="text-align: left;">開始時と中和点のあいだ</td><td style="text-align: left;">CH₃COOH ＋ CH₃COONa（緩衝液）</td><td style="text-align: left;">[H⁺] ＝ Ka × [CH₃COOH]／[CH₃COO⁻]</td></tr><tr><td style="text-align: left;">ちょうど半分中和した点</td><td style="text-align: left;">CH₃COOH：CH₃COO⁻ ＝ 1：1</td><td style="text-align: left;">[H⁺] ＝ Ka（緩衝作用が最も強い）</td></tr><tr><td style="text-align: left;">中和点</td><td style="text-align: left;">CH₃COONa</td><td style="text-align: left;">Kh ＝ ch² から [OH⁻] ＝ √(cKh)</td></tr></tbody></table></div>
 <p class="ref-p">開始時と中和点のあいだで曲線がなだらかになっているのは、この区間が緩衝液になっていて、NaOH を加えても pH が変化しにくいためです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/buffer-titration-curve.png" alt="酢酸水溶液へ NaOH 水溶液を少しずつ加えていったときの滴定曲線。縦軸の左に強酸 pH 1・弱酸 pH 3・弱塩基 pH 11・強塩基 pH 13 の目印。曲線は弱酸 pH 3 から始まり（CH₃COOH aq）、しばらくなだらかに上がる区間に「緩衝作用」の枠（CH₃COOH aq と CH₃COONa aq の混合液）と、その中ほどに「最強」の矢印。そのあと急に立ち上がり、中和点（CH₃COONa aq）を過ぎて強塩基の側で横ばいになる" loading="lazy"><figcaption class="ref-figure-cap">開始時と中和点のあいだのなだらかな区間が緩衝液です。ちょうど半分を中和したところで緩衝作用がいちばん強くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/buffer-titration-curve.png?h=63a41ed7" alt="酢酸水溶液へ NaOH 水溶液を少しずつ加えていったときの滴定曲線。縦軸の左に強酸 pH 1・弱酸 pH 3・弱塩基 pH 11・強塩基 pH 13 の目印。曲線は弱酸 pH 3 から始まり（CH₃COOH aq）、しばらくなだらかに上がる区間に「緩衝作用」の枠（CH₃COOH aq と CH₃COONa aq の混合液）と、その中ほどに「最強」の矢印。そのあと急に立ち上がり、中和点（CH₃COONa aq）を過ぎて強塩基の側で横ばいになる" loading="lazy"><figcaption class="ref-figure-cap">開始時と中和点のあいだのなだらかな区間が緩衝液です。ちょうど半分を中和したところで緩衝作用がいちばん強くなります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/titration/">滴定曲線の形と指示薬の選び方は、中和滴定のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ratio/titration.html?from=reference&amp;page=buffer">中和する H⁺ と OH⁻ の量をブロックでそろえてみる</a></p>
 <h5 class="ref-h5">身のまわりの緩衝液</h5>
@@ -1033,6 +1038,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

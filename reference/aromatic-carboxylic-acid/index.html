@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -918,14 +923,14 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">ベンゼン環にカルボキシ基 −COOH が直接結合した化合物を、<b>芳香族カルボン酸</b>といいます。カルボン酸としての性質は鎖式のカルボン酸と同じですが、サリチル酸だけは −OH も合わせもつので、特別な扱いが要ります。</p>
 <section class="ref-sec" id="ref-sec-benzoic"><h4 class="ref-sec-h">安息香酸</h4><p class="ref-sec-lead">環に −COOH が直接付いたいちばん簡単な芳香族カルボン酸。炭酸より強い酸で、NaHCO₃ と反応して CO₂ を出します。</p></section>
 <p class="ref-p"><b>安息香酸 C₆H₅COOH</b> は、ベンゼン環にカルボキシ基が直接付いた化合物です。<b>白色の結晶</b>で、水に少し溶け、水溶液は弱い酸性を示します。食品の防腐剤に使われます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-benzoic.png" alt="安息香酸の構造式。ベンゼン環の炭素1個にカルボキシ基が直接結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>安息香酸 C₆H₅COOH</b>。トルエンの側鎖を酸化すると、この形になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-benzoic.png?h=7bc3fa44" alt="安息香酸の構造式。ベンゼン環の炭素1個にカルボキシ基が直接結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>安息香酸 C₆H₅COOH</b>。トルエンの側鎖を酸化すると、この形になります。</figcaption></figure>
 <p class="ref-p">安息香酸はカルボン酸なので、<b>炭酸より強い酸</b>です。炭酸水素ナトリウム水溶液に加えると、<b>二酸化炭素を出して溶けます</b>。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅COOH ＋ NaHCO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅COONa ＋ H₂O ＋ CO₂↑</span></div><p class="ref-note">安息香酸ナトリウムができます。フェノールはこの反応を起こさないので、ここがフェノールとの見分けどころです。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">カルボン酸に共通の性質（炭酸より強い・弱酸の遊離）はカルボン酸のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-homologs/">トルエンを酸化して安息香酸をつくる（側鎖の酸化）</a></p>
 <section class="ref-sec" id="ref-sec-salicylic"><h4 class="ref-sec-h">サリチル酸 —— 2つの性質をもつ</h4><p class="ref-sec-lead">−OH と −COOH が o の位置に並んだ化合物。1つの分子が、カルボン酸としてもフェノール類としてもふるまいます。</p></section>
 <p class="ref-p"><b>サリチル酸 C₆H₄(OH)COOH</b> は、ベンゼン環に<b>ヒドロキシ基 −OH とカルボキシ基 −COOH が隣り合って（o の位置に）</b>付いた化合物です。そのため、<b>カルボン酸の性質とフェノール類の性質を両方</b>示します。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-salicylic.png" alt="サリチル酸の構造式。ベンゼン環の隣り合う2個の炭素に、ヒドロキシ基とカルボキシ基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>サリチル酸</b>。−OH（フェノール類の部分）と −COOH（カルボン酸の部分）が隣り合っています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-salicylic.png?h=51423378" alt="サリチル酸の構造式。ベンゼン環の隣り合う2個の炭素に、ヒドロキシ基とカルボキシ基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>サリチル酸</b>。−OH（フェノール類の部分）と −COOH（カルボン酸の部分）が隣り合っています。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">安息香酸・フェノール・サリチル酸は2つの試薬でこう応じる</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">試薬</th><th style="text-align: left;">安息香酸</th><th style="text-align: left;">フェノール</th><th style="text-align: left;">サリチル酸</th></tr></thead><tbody><tr><td style="text-align: left;"><b>NaHCO₃ 水溶液</b></td><td style="text-align: left;">CO₂ を出して溶ける</td><td style="text-align: left;">反応しない</td><td style="text-align: left;"><b>CO₂ を出して溶ける</b></td></tr><tr><td style="text-align: left;"><b>FeCl₃ 水溶液</b></td><td style="text-align: left;">呈色しない</td><td style="text-align: left;">紫色に呈色する</td><td style="text-align: left;"><b>赤紫色に呈色する</b></td></tr></tbody></table></div>
 <p class="ref-p"><b>「両方の試薬に応じるのはサリチル酸だけ」と覚えましょう。</b>NaHCO₃ に応じるのは −COOH のはたらき、FeCl₃ に応じるのは環に付いた −OH のはたらきです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/phenol-reactions/">塩化鉄(III) による呈色（フェノール類の検出）</a></p>
@@ -933,10 +938,10 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">サリチル酸は反応できる基を2つもつので、<b>相手の試薬によって、反応する基が変わります</b>。どちらの場合もエステルができますが、エステルになった基が違います。</p>
 <p class="ref-p">サリチル酸に<b>無水酢酸</b>を作用させると、<b>−OH のほう</b>がアセチル化されて、<b>アセチルサリチル酸</b>になります。<b>アスピリン</b>の名で<b>解熱鎮痛剤</b>に使われます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₄(OH)COOH ＋ (CH₃CO)₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₄(OCOCH₃)COOH ＋ CH₃COOH</span></div><p class="ref-note">アセチルサリチル酸ができます。−OH が −OCOCH₃ に変わり、−COOH は残っています。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-aspirin.png" alt="アセチルサリチル酸の構造式。ベンゼン環の隣り合う炭素に、アセチル化された酸素の基とカルボキシ基が付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>アセチルサリチル酸</b>。−OH がアセチル化され、−COOH はそのまま残っています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-aspirin.png?h=6c48c923" alt="アセチルサリチル酸の構造式。ベンゼン環の隣り合う炭素に、アセチル化された酸素の基とカルボキシ基が付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>アセチルサリチル酸</b>。−OH がアセチル化され、−COOH はそのまま残っています。</figcaption></figure>
 <p class="ref-p">サリチル酸に<b>メタノール</b>と少量の濃硫酸を加えて温めると、<b>−COOH のほう</b>がエステル化されて、<b>サリチル酸メチル</b>になります。<b>消炎鎮痛剤（湿布薬）</b>に使われます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₄(OH)COOH ＋ CH₃OH</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₄(OH)COOCH₃ ＋ H₂O</span></div><p class="ref-note">サリチル酸メチルができます。−COOH が −COOCH₃ に変わり、−OH は残っています。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-methyl-salicylate.png" alt="サリチル酸メチルの構造式。ベンゼン環の隣り合う炭素に、ヒドロキシ基とメチルエステルの基が付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>サリチル酸メチル</b>。−COOH がエステル化され、−OH はそのまま残っています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-methyl-salicylate.png?h=77b79835" alt="サリチル酸メチルの構造式。ベンゼン環の隣り合う炭素に、ヒドロキシ基とメチルエステルの基が付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>サリチル酸メチル</b>。−COOH がエステル化され、−OH はそのまま残っています。</figcaption></figure>
 <p class="ref-p"><b>2つの医薬品の名前・用途と、「どちらの基が反応したか」は必ず覚えてください。</b>構造式を書かせる問題もよく登場します。反応の細かい条件は覚えなくて構いません。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">アセチルサリチル酸もサリチル酸メチルも、サリチル酸の −COOH がエステルになったものである。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">アセチルサリチル酸は −OH がアセチル化されたもの（−COOH が残る）、サリチル酸メチルは −COOH がエステル化されたもの（−OH が残る）。</span></p><p class="ref-mistake-why">どちらも「エステル」なので混ざりやすいところです。残っている基を見れば、NaHCO₃ と FeCl₃ への応じ方がそのまま決まります。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">カルボン酸とアルコールのエステル化そのものは、エステル化のページへ</a></p>
@@ -1021,6 +1026,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -936,7 +941,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/reaction-mechanisms/">置換反応で電子対がどう動くかを、巻矢印のアニメで見る</a></p>
 <section class="ref-sec" id="ref-sec-nitrobenzene"><h4 class="ref-sec-h">ニトロベンゼン</h4><p class="ref-sec-lead">淡黄色で水より重い油状の液体。中性の物質で、還元するとアニリンになります。</p></section>
 <p class="ref-p">ニトロベンゼン C₆H₅NO₂ は、<b>淡黄色で特有のにおいをもつ、水より重い油状の液体</b>です。水に溶けにくいので、水と混ぜると<b>下の層</b>に沈みます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/benzene-substitution-nitrobenzene.png" alt="ニトロベンゼンの構造式。ベンゼン環の炭素1個にニトロ基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>ニトロベンゼン C₆H₅NO₂</b>。環の H が1個、ニトロ基 −NO₂ に置き換わっています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/benzene-substitution-nitrobenzene.png?h=1887580a" alt="ニトロベンゼンの構造式。ベンゼン環の炭素1個にニトロ基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>ニトロベンゼン C₆H₅NO₂</b>。環の H が1個、ニトロ基 −NO₂ に置き換わっています。</figcaption></figure>
 <p class="ref-p">ニトロベンゼンは酸でも塩基でもない<b>中性の物質</b>なので、酸や塩基の水溶液を加えても塩をつくりません。<b>「水より重い」「中性」の2つは、分離の問題で使うので覚えておきましょう。</b></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aniline/">ニトロベンゼンを還元してアニリンをつくる</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-separation/">中性物質の代表として、分離でどこに残るか</a></p>
@@ -945,7 +950,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅SO₃H</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅SO₃⁻ ＋ H⁺</span></div><p class="ref-note">ほぼ完全に電離します。弱酸のカルボン酸や、さらに弱いフェノールとはここが違います。</p></div>
 <p class="ref-p"><b>芳香族の酸の強さは「スルホン酸 ＞ カルボン酸 ＞ 炭酸 ＞ フェノール」の順です。</b>スルホン酸だけは強酸として扱う、と押さえてください。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/phenol-reactions/">ベンゼンスルホン酸ナトリウムやクロロベンゼンからフェノールをつくる</a></p>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-orientation"><summary class="ref-adv-sum"><h4 class="ref-sec-h">置換基が次の置換の位置を決める<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">トルエンをニトロ化すると、メチル基から見て o と p の位置に入りやすくなります。これを配向性といいます。</p></summary><div class="ref-adv-body"><p class="ref-p">ベンゼン環にすでに置換基が付いていると、次の置換基がどの位置に入りやすいかが、その置換基によって決まります。これを<b>配向性</b>といいます。</p><p class="ref-p">たとえば、トルエン C₆H₅CH₃ をニトロ化すると、<b>o-ニトロトルエンと p-ニトロトルエンが主に</b>でき、m 体は少ししかできません。メチル基は o と p の位置に次の置換基を呼び込むはたらき（<b>o,p 配向性</b>）をもつためです。</p><div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅CH₃ ＋ 3HNO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">C₆H₂(CH₃)(NO₂)₃ ＋ 3H₂O</span></div><p class="ref-note">2,4,6-トリニトロトルエン（TNT）ができます。メチル基から見て o・p・o の3か所に入るので、位置番号が 2,4,6 になります。</p></div><p class="ref-p"><b>配向性をもつ基の一覧は覚えなくて構いません。</b>「トルエンなら o と p に入る」ことと、TNT という名前が分かれば十分です。フェノールの臭素化で 2,4,6 の位置に入るのも、同じ理由です。</p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/benzene-substitution-toluene-omp.png" alt="トルエンの構造式で、メチル基の付いた炭素の両隣に o、その次の2か所に m、向かい側の1か所に p と書き添えた図" loading="lazy"><figcaption class="ref-figure-cap">メチル基の付いた炭素から見て、両隣が <b>o（オルト）</b>、1つ飛ばしが <b>m（メタ）</b>、向かい側が <b>p（パラ）</b> です。トルエンのニトロ化では o と p に入ります。</figcaption></figure></div></details>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-orientation"><summary class="ref-adv-sum"><h4 class="ref-sec-h">置換基が次の置換の位置を決める<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">トルエンをニトロ化すると、メチル基から見て o と p の位置に入りやすくなります。これを配向性といいます。</p></summary><div class="ref-adv-body"><p class="ref-p">ベンゼン環にすでに置換基が付いていると、次の置換基がどの位置に入りやすいかが、その置換基によって決まります。これを<b>配向性</b>といいます。</p><p class="ref-p">たとえば、トルエン C₆H₅CH₃ をニトロ化すると、<b>o-ニトロトルエンと p-ニトロトルエンが主に</b>でき、m 体は少ししかできません。メチル基は o と p の位置に次の置換基を呼び込むはたらき（<b>o,p 配向性</b>）をもつためです。</p><div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅CH₃ ＋ 3HNO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">C₆H₂(CH₃)(NO₂)₃ ＋ 3H₂O</span></div><p class="ref-note">2,4,6-トリニトロトルエン（TNT）ができます。メチル基から見て o・p・o の3か所に入るので、位置番号が 2,4,6 になります。</p></div><p class="ref-p"><b>配向性をもつ基の一覧は覚えなくて構いません。</b>「トルエンなら o と p に入る」ことと、TNT という名前が分かれば十分です。フェノールの臭素化で 2,4,6 の位置に入るのも、同じ理由です。</p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/benzene-substitution-toluene-omp.png?h=dbdba9e3" alt="トルエンの構造式で、メチル基の付いた炭素の両隣に o、その次の2か所に m、向かい側の1か所に p と書き添えた図" loading="lazy"><figcaption class="ref-figure-cap">メチル基の付いた炭素から見て、両隣が <b>o（オルト）</b>、1つ飛ばしが <b>m（メタ）</b>、向かい側が <b>p（パラ）</b> です。トルエンのニトロ化では o と p に入ります。</figcaption></figure></div></details>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ベンゼンに混酸を加えて約 60℃ に温めたときの反応式を書け。また、生成物を水と混ぜると、上の層と下の層のどちらに来るか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>C₆H₆ ＋ HNO₃ → C₆H₅NO₂ ＋ H₂O です。ニトロベンゼンは<b>水より重い</b>ので、<b>下の層</b>に来ます。</p></div></details></div>
@@ -1024,6 +1029,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

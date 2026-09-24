@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -919,7 +924,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/fuel-cell/">一次電池・二次電池と燃料電池はこちら</a></p>
 <section class="ref-sec" id="ref-sec-outline"><h4 class="ref-sec-h">鉛蓄電池のつくり</h4><p class="ref-sec-lead">負極に鉛 Pb、正極に酸化鉛(Ⅳ) PbO₂、電解液に希硫酸を使います。放電すると両極に硫酸鉛(Ⅱ) PbSO₄ が付き、硫酸の濃度が下がります。</p></section>
 <p class="ref-p">鉛蓄電池の構成は <b>（−）Pb｜H₂SO₄aq｜PbO₂（＋）</b> です。負極活物質は鉛 Pb、正極活物質は酸化鉛(Ⅳ) PbO₂ で、電解液には希硫酸を使います。起電力は約 2.0V です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/lead-storage-battery-overview.png" alt="鉛蓄電池の模式図。左の負極 Pb から Pb²⁺ が出て SO₄²⁻ と結びつき、極板の表面に付く。右の正極 PbO₂ からも Pb²⁺ が出て SO₄²⁻ と結びつき、PbO₂ の O は H⁺ と H₂O になる。電解液は希硫酸" loading="lazy"><figcaption class="ref-figure-cap">両極とも Pb²⁺ になって溶けだそうとしますが、SO₄²⁻ とすぐに沈殿して、極板の表面に PbSO₄ が付きます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/lead-storage-battery-overview.png?h=21a9183d" alt="鉛蓄電池の模式図。左の負極 Pb から Pb²⁺ が出て SO₄²⁻ と結びつき、極板の表面に付く。右の正極 PbO₂ からも Pb²⁺ が出て SO₄²⁻ と結びつき、PbO₂ の O は H⁺ と H₂O になる。電解液は希硫酸" loading="lazy"><figcaption class="ref-figure-cap">両極とも Pb²⁺ になって溶けだそうとしますが、SO₄²⁻ とすぐに沈殿して、極板の表面に PbSO₄ が付きます。</figcaption></figure>
 <p class="ref-p">放電のときに起こることは、次の4つにまとめられます。</p>
 <ol class="ref-list"><li>負極の Pb が e⁻ を失って、鉛(Ⅱ)イオン Pb²⁺ として溶けだそうとする。</li><li>正極の PbO₂ が e⁻ を受け取って、Pb²⁺ として溶けだそうとする。</li><li>PbO₂ の O 原子は、電解液中の H⁺ と結びついて H₂O になる。</li><li>Pb²⁺ は SO₄²⁻ と沈殿をつくるので、両極の表面に PbSO₄ が付く。<div class="ref-li-hang">溶けださずに極板に付くので、電解液の硫酸は濃度が下がっていきます。</div></li></ol>
 <section class="ref-sec" id="ref-sec-negative"><h4 class="ref-sec-h">負極の反応式の組み立て</h4><p class="ref-sec-lead">Pb → Pb²⁺ ＋ 2e⁻ の両辺に SO₄²⁻ を足して、Pb²⁺ を PbSO₄ にします。</p></section>
@@ -944,7 +949,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-charge"><h4 class="ref-sec-h">充電と、鉛蓄電池を動かす力</h4><p class="ref-sec-lead">外部電源の正極を鉛蓄電池の正極に、負極を負極につなぐと、放電と逆向きの反応が進んで充電できます。</p></section>
 <p class="ref-p">鉛蓄電池は二次電池です。外部の電源の正極を鉛蓄電池の正極へ、負極を負極へつなぐと、放電のときと逆向きに電流が流れ、両極で逆向きの反応が起こります。放電のときは e⁻ 2mol につき PbSO₄ が 2mol できますが、充電のときは e⁻ 2mol につき PbSO₄ が 2mol 分解されます。</p>
 <p class="ref-p">ダニエル電池は、2種類の金属のイオン化傾向の差で e⁻ を流していました。鉛蓄電池は、正極も負極も同じ鉛でできています。それでも電流が流れるのは、<b>酸化数が ＋4 の Pb と 0 の Pb が、どちらも ＋2 になろうとする</b>ためです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/lead-storage-battery-oxnum.png" alt="左に PbO₂ ＋ 2e⁻ → Pb²⁺ ＋ 2O²⁻（酸化数 ＋4 → ＋2）と Pb → Pb²⁺ ＋ 2e⁻（0 → ＋2）の式。右に酸化数の軸があり、＋4 の Pb⁴⁺ と 0 の Pb が矢印で ＋2 の Pb²⁺ に向かっている" loading="lazy"><figcaption class="ref-figure-cap">e⁻ の数（酸化数）が違う Pb 原子どうしが、e⁻ の数の等しい ＋2 にそろおうとする力が、鉛蓄電池を動かしています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/lead-storage-battery-oxnum.png?h=eee51f72" alt="左に PbO₂ ＋ 2e⁻ → Pb²⁺ ＋ 2O²⁻（酸化数 ＋4 → ＋2）と Pb → Pb²⁺ ＋ 2e⁻（0 → ＋2）の式。右に酸化数の軸があり、＋4 の Pb⁴⁺ と 0 の Pb が矢印で ＋2 の Pb²⁺ に向かっている" loading="lazy"><figcaption class="ref-figure-cap">e⁻ の数（酸化数）が違う Pb 原子どうしが、e⁻ の数の等しい ＋2 にそろおうとする力が、鉛蓄電池を動かしています。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">構成と、負極・正極・全体の3本の式を覚えます。質量の増え方は式から出します。</p></section>
 <p class="ref-p"><b>鉛蓄電池の構成と、負極・正極・全体の反応式3本は必ず暗記してください。</b>3本とも、上の組み立ての順（溶けだそうとする → SO₄²⁻ と沈殿 → O は H⁺ と H₂O）で思い出せるようにしておくと、忘れても書き直せます。</p>
 <p class="ref-p">「負極 96g 増・正極 64g 増（e⁻ 2mol あたり）」は、覚えてもよいですが、式の両辺の式量の差からその場で出せるようにしましょう。起電力の約 2.0V は覚えなくても構いません。</p>
@@ -1023,6 +1028,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

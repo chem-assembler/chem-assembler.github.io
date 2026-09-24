@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,18 +927,18 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">濃度の効果は次数で決まります。v ＝ k[A]²[B]³ なら、[A] を2倍にすると v は4倍、[B] を2倍にすると v は8倍です。温度と触媒は濃度を変えずに速度を変えるので、<b>k の値が変わる</b>と考えます。</p>
 <section class="ref-sec" id="ref-sec-temperature"><h4 class="ref-sec-h">温度 —— 活性化エネルギーを越える分子の割合</h4><p class="ref-sec-lead">反応物が生成物に変わるには、途中にあるエネルギーの山を越えなければなりません。その山の高さが活性化エネルギーです。温度を上げると、山を越えられるだけの勢いをもつ分子の割合がふくらむので、反応が速く進みます。</p></section>
 <p class="ref-p">同じ温度でも、分子がもつエネルギーはばらばらです。横軸に分子のエネルギー、縦軸にその分子の割合をとると、低温では山が左に高く、高温では山が右に低く広がります。<b>活性化エネルギーより右側（反応できる分子）の面積</b>が、高温のほうがずっと大きくなります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-distribution.png" alt="横軸に分子のエネルギー、縦軸に分子の割合をとったグラフ。低温の曲線は左に高い山、高温の曲線は右に低く広がる山。活性化エネルギーの位置に縦の破線があり、その右側が反応するのに必要なエネルギーを持った分子" loading="lazy"><figcaption class="ref-figure-cap">破線より右が反応できる分子です。高温の曲線のほうが、破線より右の部分がずっと大きくなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-distribution.png?h=e389983e" alt="横軸に分子のエネルギー、縦軸に分子の割合をとったグラフ。低温の曲線は左に高い山、高温の曲線は右に低く広がる山。活性化エネルギーの位置に縦の破線があり、その右側が反応するのに必要なエネルギーを持った分子" loading="lazy"><figcaption class="ref-figure-cap">破線より右が反応できる分子です。高温の曲線のほうが、破線より右の部分がずっと大きくなります。</figcaption></figure>
 <p class="ref-p">常温付近では、一般に<b>温度を10℃上げると反応速度は2〜4倍</b>になります。温度が上がると反応速度は急に大きくなる、ということは知っておきましょう。数値の「2〜4倍」は覚えておくと、温度の問題で見当がつけられます。</p>
 <div class="ref-callout ref-callout-skip"><b class="ref-callout-tag">覚えなくてよい</b><p class="ref-callout-text">分子のエネルギー分布の曲線の名前や、温度と速度定数の関係を表す式（アレニウスの式）は、教科書では発展の扱いです。<b>覚えなくても構いません。</b>グラフの形（高温で右に広がる）と「割合が増える」が言えれば十分です。</p></div>
 <section class="ref-sec" id="ref-sec-transition-state"><h4 class="ref-sec-h">遷移状態とエネルギー図</h4><p class="ref-sec-lead">衝突した分子は、エネルギーの高い遷移状態を経て生成物になります。反応物が遷移状態になるのに必要なエネルギーが活性化エネルギーです。</p></section>
 <p class="ref-p">H₂ ＋ I₂ ⇄ 2HI を例に、横軸に反応の進行、縦軸にエネルギーをとります。正反応は図を左から右へ進み、H₂ と I₂ が衝突して H と I が4つ組になった<b>遷移状態</b>（山の頂上）を経て、2分子の HI に分かれます。逆反応は図を右から左へ進み、同じ遷移状態を通ります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-diagram.png" alt="横軸に反応の進行、縦軸にエネルギーをとった図。左の反応物 H₂ と I₂ から山を越えて右の生成物 2HI へ下がる。山の頂上は H と I が4つ組になった遷移状態。反応物から頂上までが正反応の活性化エネルギー、生成物から頂上までが逆反応の活性化エネルギー、反応物と生成物の差が反応エンタルピー" loading="lazy"><figcaption class="ref-figure-cap">正反応も逆反応も同じ遷移状態を通ります。2つの活性化エネルギーの差が反応エンタルピーです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-diagram.png?h=50530d83" alt="横軸に反応の進行、縦軸にエネルギーをとった図。左の反応物 H₂ と I₂ から山を越えて右の生成物 2HI へ下がる。山の頂上は H と I が4つ組になった遷移状態。反応物から頂上までが正反応の活性化エネルギー、生成物から頂上までが逆反応の活性化エネルギー、反応物と生成物の差が反応エンタルピー" loading="lazy"><figcaption class="ref-figure-cap">正反応も逆反応も同じ遷移状態を通ります。2つの活性化エネルギーの差が反応エンタルピーです。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">エネルギー図から読む3つの量（H₂ ＋ I₂ ⇄ 2HI・発熱反応）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">量</th><th style="text-align: left;">図のどこか</th><th style="text-align: left;">E₁（正反応の活性化エネルギー）・E₂（反応エンタルピーの大きさ）で書くと</th></tr></thead><tbody><tr><td style="text-align: left;">正反応の活性化エネルギー</td><td style="text-align: left;">反応物 → 山の頂上</td><td style="text-align: left;">E₁</td></tr><tr><td style="text-align: left;">反応エンタルピーの大きさ</td><td style="text-align: left;">反応物と生成物の高さの差</td><td style="text-align: left;">E₂（発熱なので ΔH ＝ −E₂）</td></tr><tr><td style="text-align: left;">逆反応の活性化エネルギー</td><td style="text-align: left;">生成物 → 山の頂上</td><td style="text-align: left;">E₁ ＋ E₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>逆反応の活性化エネルギーは「正反応の活性化エネルギー ＋ 反応エンタルピーの大きさ」</b>です（発熱反応のとき）。山の高さを生成物の側から測り直すだけなので、式を覚えるより図を描いて読むようにしましょう。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/reaction-enthalpy/">反応エンタルピー ΔH の符号（発熱は負）とエネルギー図へ</a></p>
 <section class="ref-sec" id="ref-sec-catalyst"><h4 class="ref-sec-h">触媒 —— 活性化エネルギーの小さい別の経路</h4><p class="ref-sec-lead">触媒は、反応を速めながら、反応が終わったあとには元の姿のまま残る物質です。山の低い回り道を用意して反応を速めますが、反応エンタルピーは変えません。</p></section>
 <p class="ref-p">触媒を加えると、触媒が関わる別の反応経路ができ、その経路の山（活性化エネルギー）が低いので反応が速くなります。反応物と生成物のエネルギーは変わらないので、<b>反応エンタルピー ΔH は変わりません</b>。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-catalyst.png" alt="H₂ ＋ I₂ ⇄ 2HI のエネルギー図を2枚並べ、矢印で左の触媒なしから右の触媒ありへつないだ図。触媒ありでは遷移状態が触媒に囲まれ、山が低くなって正反応・逆反応の活性化エネルギーがどちらも小さい。反応物と生成物の高さは同じで、反応エンタルピーは変わらない" loading="lazy"><figcaption class="ref-figure-cap">触媒を加えると山だけが低くなります。反応物と生成物の高さは動かないので、反応エンタルピーは変わりません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-catalyst.png?h=7dd0d561" alt="H₂ ＋ I₂ ⇄ 2HI のエネルギー図を2枚並べ、矢印で左の触媒なしから右の触媒ありへつないだ図。触媒ありでは遷移状態が触媒に囲まれ、山が低くなって正反応・逆反応の活性化エネルギーがどちらも小さい。反応物と生成物の高さは同じで、反応エンタルピーは変わらない" loading="lazy"><figcaption class="ref-figure-cap">触媒を加えると山だけが低くなります。反応物と生成物の高さは動かないので、反応エンタルピーは変わりません。</figcaption></figure>
 <p class="ref-p">山が低くなるのは正反応だけではありません。逆反応の活性化エネルギーも同じだけ小さくなるので、<b>触媒は正反応と逆反応の速度を同時に大きくします</b>。このことが、触媒が平衡を動かさない理由になります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/le-chatelier/">触媒は平衡に達するまでの時間を短くするだけ（平衡の移動）へ</a></p>
 <div class="ref-table-wrap"><div class="ref-cap">均一触媒と不均一触媒</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">種類</th><th style="text-align: left;">はたらき方</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">均一触媒</td><td style="text-align: left;">反応物と均一に混ざってはたらく</td><td style="text-align: left;">水溶液中のイオン（H₂O₂ の分解の Fe³⁺ など）</td></tr><tr><td style="text-align: left;">不均一触媒</td><td style="text-align: left;">反応物と混ざらず、表面ではたらく</td><td style="text-align: left;">固体（H₂O₂ の分解の MnO₂ など）</td></tr></tbody></table></div>
@@ -1017,6 +1022,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

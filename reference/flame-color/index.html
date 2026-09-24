@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -923,7 +928,7 @@ a.ref-link::before { content: '→ '; }
 <ol class="ref-list"><li>白金線を濃塩酸で洗い、バーナーの炎に入れて色が出なくなるまで焼く（前の試料を落とす）。</li><li>白金線の先に試料の水溶液をつける。</li><li>バーナーの<b>外炎</b>に入れて、炎の色を見る。</li></ol>
 <div class="ref-table-wrap"><div class="ref-cap">炎色反応の色</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">元素</th><th style="text-align: left;">炎の色</th></tr></thead><tbody><tr><td style="text-align: left;">リチウム Li</td><td style="text-align: left;">赤</td></tr><tr><td style="text-align: left;">ナトリウム Na</td><td style="text-align: left;">黄</td></tr><tr><td style="text-align: left;">カリウム K</td><td style="text-align: left;">赤紫</td></tr><tr><td style="text-align: left;">カルシウム Ca</td><td style="text-align: left;">橙赤</td></tr><tr><td style="text-align: left;">ストロンチウム Sr</td><td style="text-align: left;">紅（深赤）</td></tr><tr><td style="text-align: left;">バリウム Ba</td><td style="text-align: left;">黄緑</td></tr><tr><td style="text-align: left;">銅 Cu</td><td style="text-align: left;">青緑</td></tr></tbody></table></div>
 <p class="ref-p"><b>この7元素と色の組は必ず覚えてください。</b>よく使われる語呂は「<b>リアカー無き K 村、動力借ると、するもくれない馬力</b>」で、Li 赤・Na 黄・K 紫・Cu 緑・Ca 橙・Sr 紅・Ba 緑、と読みます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/flame-color-app-flame.png" alt="暗い地の画面に、炎の色の見本と「炎が○○色になった」という文が5段並んでいる。上から黄色、赤紫色、橙赤色、青緑色、そして最後は色の見本が空で「炎に色はつかなかった」" loading="lazy"><figcaption class="ref-figure-cap">系統分離の画面で炎色反応の札を押したときの結果。上から Na⁺・K⁺・Ca²⁺・Cu²⁺・Ag⁺ を入れた容器です。<b>Ag⁺ のように、7元素以外は炎に色がつきません。</b></figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/flame-color-app-flame.png?h=57f6666a" alt="暗い地の画面に、炎の色の見本と「炎が○○色になった」という文が5段並んでいる。上から黄色、赤紫色、橙赤色、青緑色、そして最後は色の見本が空で「炎に色はつかなかった」" loading="lazy"><figcaption class="ref-figure-cap">系統分離の画面で炎色反応の札を押したときの結果。上から Na⁺・K⁺・Ca²⁺・Cu²⁺・Ag⁺ を入れた容器です。<b>Ag⁺ のように、7元素以外は炎に色がつきません。</b></figcaption></figure>
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">K の炎の色は「赤紫」とも「紫」とも書かれます。Na の黄色が強く出るので、K の色は Na が混ざると見えにくく、コバルトガラスを通して見ることがあります。答えるときは「赤紫」と書けば十分です。</p></div>
 <p class="ref-p"><b>Mg と Be は2族ですが、炎色反応を示しません。</b>同じ2族の Ca・Sr・Ba とは分けて覚えましょう。</p>
 <h5 class="ref-h5">なぜ色が出るのか</h5>
@@ -1017,6 +1022,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

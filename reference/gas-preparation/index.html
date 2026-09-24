@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -926,7 +931,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">主な気体の実験室的製法</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">気体</th><th style="text-align: left;">試薬</th><th style="text-align: left;">反応式</th><th style="text-align: center;">型</th><th style="text-align: center;">加熱</th><th style="text-align: center;">重要度</th></tr></thead><tbody><tr><td style="text-align: center;">H₂S</td><td style="text-align: left;">FeS ＋ 希硫酸</td><td style="text-align: left;">FeS ＋ H₂SO₄ → FeSO₄ ＋ H₂S↑</td><td style="text-align: center;">弱酸の遊離</td><td style="text-align: center;">不要</td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">SO₂</td><td style="text-align: left;">Na₂SO₃ ＋ 希硫酸</td><td style="text-align: left;">Na₂SO₃ ＋ H₂SO₄ → Na₂SO₄ ＋ H₂O ＋ SO₂↑</td><td style="text-align: center;">弱酸の遊離</td><td style="text-align: center;">不要</td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">CO₂</td><td style="text-align: left;">CaCO₃（石灰石）＋ 希塩酸</td><td style="text-align: left;">CaCO₃ ＋ 2HCl → CaCl₂ ＋ H₂O ＋ CO₂↑</td><td style="text-align: center;">弱酸の遊離</td><td style="text-align: center;">不要</td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">NH₃</td><td style="text-align: left;">NH₄Cl ＋ Ca(OH)₂</td><td style="text-align: left;">2NH₄Cl ＋ Ca(OH)₂ → CaCl₂ ＋ 2H₂O ＋ 2NH₃↑</td><td style="text-align: center;">弱塩基の遊離</td><td style="text-align: center;"><b>要</b></td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">HCl</td><td style="text-align: left;">NaCl ＋ 濃硫酸</td><td style="text-align: left;">NaCl ＋ H₂SO₄ → NaHSO₄ ＋ HCl↑</td><td style="text-align: center;">揮発性の酸の遊離</td><td style="text-align: center;"><b>要</b></td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">HF</td><td style="text-align: left;">CaF₂（ホタル石）＋ 濃硫酸</td><td style="text-align: left;">CaF₂ ＋ H₂SO₄ → CaSO₄ ＋ 2HF↑</td><td style="text-align: center;">揮発性の酸の遊離</td><td style="text-align: center;"><b>要</b></td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">H₂</td><td style="text-align: left;">Zn ＋ 希硫酸</td><td style="text-align: left;">Zn ＋ H₂SO₄ → ZnSO₄ ＋ H₂↑</td><td style="text-align: center;">酸化還元</td><td style="text-align: center;">不要</td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">O₂</td><td style="text-align: left;">H₂O₂ ＋ MnO₂（触媒）</td><td style="text-align: left;">2H₂O₂ → 2H₂O ＋ O₂↑</td><td style="text-align: center;">酸化還元</td><td style="text-align: center;">不要</td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">O₂</td><td style="text-align: left;">KClO₃ ＋ MnO₂（触媒）</td><td style="text-align: left;">2KClO₃ → 2KCl ＋ 3O₂↑</td><td style="text-align: center;">酸化還元</td><td style="text-align: center;"><b>要</b></td><td style="text-align: center;">★★☆</td></tr><tr><td style="text-align: center;">Cl₂</td><td style="text-align: left;">MnO₂ ＋ 濃塩酸</td><td style="text-align: left;">MnO₂ ＋ 4HCl → MnCl₂ ＋ 2H₂O ＋ Cl₂↑</td><td style="text-align: center;">酸化還元</td><td style="text-align: center;"><b>要</b></td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">Cl₂</td><td style="text-align: left;">高度さらし粉 ＋ 希塩酸</td><td style="text-align: left;">Ca(ClO)₂・2H₂O ＋ 4HCl → CaCl₂ ＋ 2Cl₂↑ ＋ 4H₂O</td><td style="text-align: center;">酸化還元</td><td style="text-align: center;">不要</td><td style="text-align: center;">★★☆</td></tr><tr><td style="text-align: center;">SO₂</td><td style="text-align: left;">Cu ＋ 熱濃硫酸</td><td style="text-align: left;">Cu ＋ 2H₂SO₄ → CuSO₄ ＋ 2H₂O ＋ SO₂↑</td><td style="text-align: center;">酸化還元</td><td style="text-align: center;"><b>要</b></td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">NO</td><td style="text-align: left;">Cu ＋ 希硝酸</td><td style="text-align: left;">3Cu ＋ 8HNO₃ → 3Cu(NO₃)₂ ＋ 4H₂O ＋ 2NO↑</td><td style="text-align: center;">酸化還元</td><td style="text-align: center;">不要</td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">NO₂</td><td style="text-align: left;">Cu ＋ 濃硝酸</td><td style="text-align: left;">Cu ＋ 4HNO₃ → Cu(NO₃)₂ ＋ 2H₂O ＋ 2NO₂↑</td><td style="text-align: center;">酸化還元</td><td style="text-align: center;">不要</td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">CO</td><td style="text-align: left;">HCOOH（ギ酸）＋ 濃硫酸</td><td style="text-align: left;">HCOOH → CO↑ ＋ H₂O</td><td style="text-align: center;">脱水</td><td style="text-align: center;"><b>要</b></td><td style="text-align: center;">★★★</td></tr><tr><td style="text-align: center;">N₂</td><td style="text-align: left;">NH₄NO₂（亜硝酸アンモニウム）</td><td style="text-align: left;">NH₄NO₂ → N₂↑ ＋ 2H₂O</td><td style="text-align: center;">熱分解</td><td style="text-align: center;"><b>要</b></td><td style="text-align: center;">★☆☆</td></tr><tr><td style="text-align: center;">O₃</td><td style="text-align: left;">O₂ 中で無声放電</td><td style="text-align: left;">3O₂ → 2O₃</td><td style="text-align: center;">——</td><td style="text-align: center;">——</td><td style="text-align: center;">★★☆</td></tr></tbody></table></div>
 <p class="ref-p"><b>反応式は「反応前後の物質」を暗記し、係数は型の手順で出します。</b>遊離の型は、試薬の陰イオンと H⁺ を組み換えるだけで1行で書けます。酸化還元の型は、半反応式を2本書いてから足します。</p>
 <h5 class="ref-h5">具体例：弱酸の遊離で SO₂ が出るしくみ</h5>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-preparation-app-so2.png" alt="Na₂SO₃ の Na⁺ 2個を、HCl の H⁺ 2個と置き換えると、H₂SO₃ を経て H₂O と SO₂ ができることを示したアプリの画面" loading="lazy"><figcaption class="ref-figure-cap">亜硫酸ナトリウムに強酸を加えると、SO₃²⁻ が H⁺ を2個受け取って H₂SO₃ になり、すぐに H₂O と SO₂ に分かれます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-preparation-app-so2.png?h=6fe05d1f" alt="Na₂SO₃ の Na⁺ 2個を、HCl の H⁺ 2個と置き換えると、H₂SO₃ を経て H₂O と SO₂ ができることを示したアプリの画面" loading="lazy"><figcaption class="ref-figure-cap">亜硫酸ナトリウムに強酸を加えると、SO₃²⁻ が H⁺ を2個受け取って H₂SO₃ になり、すぐに H₂O と SO₂ に分かれます。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s10&amp;from=reference&amp;page=gas-preparation">亜硫酸ナトリウム × 塩酸（気体発生）</a></p>
 <p class="ref-p">この画面は塩酸を使った例ですが、希硫酸でも同じしくみです。H₂SO₃ は分解しやすいので、反応式では H₂SO₃ ではなく H₂O ＋ SO₂ と書きます。炭酸塩から CO₂ が出るときも同じで、H₂CO₃ ではなく H₂O ＋ CO₂ と書きます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/acid-displacement/">弱酸の遊離・揮発性の酸の遊離のページへ</a></p>
@@ -1028,6 +1033,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

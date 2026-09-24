@@ -145,6 +145,8 @@ const FIT_W = 400;
 const BODY_W = 680;
 /* 図の中の字の床（最終的な見た目・パソコン幅）。下回ったら黄で申し送る（2026-09-24） */
 const MIN_TEXT = Number((process.argv.find(a => a.startsWith('--min-text=')) || '').split('=')[1] || 14);
+/* 下付き（添え字）の床（2026-09-24 ユーザー決定） */
+const MIN_SUB = Number((process.argv.find(a => a.startsWith('--min-sub=')) || '').split('=')[1] || 11);
 /* ⚠ `gen-reference.mjs` の `MAX_ASPECT`（10:1）に**余裕を持って**収まること。
    ★ ここで止めれば、焼いてから生成で止まるより1手早い */
 const ASPECT_WARN = 9;
@@ -250,7 +252,12 @@ function parseGen(text, where) {
     const spec = { numbered: false, plain: false, haworth: false };
     String(text).trim().split(/\s+/).filter(Boolean).forEach(tok => {
         if (tok === 'numbered') { spec.numbered = true; return; }
+        /* ★ `tight`（2026-09-24 ユーザー決定「1」）: 結合の長さのそろえ（FIT_W の余白）を外し、分子の大きさに合わせて切る。
+           小さい分子の図で字が床（14px）に届かないときだけ使う（主鎖番号つきの丸の図4枚） */
+        if (tok === 'tight') { spec.tight = true; return; }
         if (tok === 'plain') { spec.plain = true; return; }
+        /* ★ `newrow`（2026-09-24 ユーザー「2x2」）: 分子を複数並べる図で、この分子から次の段にする（縦に積む） */
+        if (tok === 'newrow') { spec.newrow = true; return; }
         if (tok === 'haworth') { spec.haworth = true; return; }
         if (tok === 'paper') { spec.paper = true; return; }
         if (tok === 'circle') { spec.circle = true; return; }
@@ -655,8 +662,35 @@ async function bake(jobs) {
                 svg = document.createElementNS(NS, 'svg');
                 svg.id = 'figbake-svg';
                 box.appendChild(svg);
+                /* ★ 段に分ける（`newrow` の分子から次の段）。段ごとに composeFigureRow で横に並べ、段を縦に積む。
+                   ⚠ between（分子の間の線）は段をまたげないので、段に分けた図には書けない */
+                const rowsIdx = [[]];
+                parts.forEach((pt, i) => { if (pt.newrow && rowsIdx[rowsIdx.length - 1].length) rowsIdx.push([]); rowsIdx[rowsIdx.length - 1].push(i); });
                 try {
-                    composeFigureRow(svg, subs, between);
+                    if (rowsIdx.length === 1) {
+                        composeFigureRow(svg, subs, between);
+                    } else {
+                        if ((between || []).length) return { error: 'newrow で段に分けた図には between: を書けません（線は段をまたげない）' };
+                        const rowSvgs = rowsIdx.map((idxs, r) => {
+                            if (idxs.length === 1) return subs[idxs[0]];
+                            const rs = makeSvg('figbake-row-' + (r + 1));
+                            composeFigureRow(rs, idxs.map(i => subs[i]), []);
+                            return rs;
+                        });
+                        const vbs = rowSvgs.map(rs => (rs.getAttribute('viewBox') || '').split(/\s+/).map(Number));
+                        const W = Math.max(...vbs.map(v => v[2]));
+                        let yc = 0;
+                        rowSvgs.forEach((rs, r) => {
+                            const v = vbs[r];
+                            const g = document.createElementNS(NS, 'g');
+                            g.setAttribute('transform', `translate(${(W - v[2]) / 2 - v[0]},${yc - v[1]})`);
+                            while (rs.firstChild) g.appendChild(rs.firstChild);
+                            svg.appendChild(g);
+                            yc += v[3];
+                        });
+                        svg.setAttribute('viewBox', `0 0 ${W} ${yc}`);
+                        rowSvgs.forEach(rs => rs.remove());
+                    }
                 } catch (e) {
                     return { error: (e && e.message) || String(e) };
                 }
@@ -668,7 +702,7 @@ async function bake(jobs) {
             const vb = (svg.getAttribute('viewBox') || '').split(/\s+/).map(Number);
             if (vb.length !== 4 || !vb[2] || !vb[3]) return { error: 'viewBox が取れませんでした' };
             /* ★ 狭い分子は左右に余白を足して、どの図も同じ横幅から始める（結合の長さをそろえる） */
-            if (vb[2] < FIT_W) { vb[0] -= (FIT_W - vb[2]) / 2; vb[2] = FIT_W; svg.setAttribute('viewBox', vb.join(' ')); }
+            if (vb[2] < FIT_W && !spec.tight) { vb[0] -= (FIT_W - vb[2]) / 2; vb[2] = FIT_W; svg.setAttribute('viewBox', vb.join(' ')); }
             let w = OUT_W, h = Math.round(OUT_W * vb[3] / vb[2]);
             if (h > MAX_H) { h = MAX_H; w = Math.round(MAX_H * vb[2] / vb[3]); }
             svg.style.width = (w / 2) + 'px';
@@ -678,14 +712,19 @@ async function bake(jobs) {
             /* ★ 最終的な見た目の字の大きさ（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
                図は公開ページで本文の幅 BODY_W（680px）いっぱいに出るので、SVG の字 f は f × BODY_W ÷ viewBox の幅 に見える。
                ⚠ 位置番号など消す字（plain）は数えない。いちばん小さい字（下付き・印の文字を含む）を返す */
-            let minFont = Infinity;
+            /* ★ 下付き（添え字）は別の床（MIN_SUB・11px）。下付き ＝ 親の <text> より字が小さい <tspan> */
+            let minFont = Infinity, minSubFont = Infinity;
             svg.querySelectorAll('text, tspan').forEach(t => {
-                if (!t.textContent.trim()) return;
+                if (![...t.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
                 const f = parseFloat(getComputedStyle(t).fontSize);
-                if (f > 0 && f < minFont) minFont = f;
+                if (!(f > 0)) return;
+                const host = t.tagName.toLowerCase() === 'tspan' ? t.closest('text') : null;
+                if (host && f < parseFloat(getComputedStyle(host).fontSize) - 0.01) { if (f < minSubFont) minSubFont = f; }
+                else if (f < minFont) minFont = f;
             });
             const minText = isFinite(minFont) ? minFont * BODY_W / vb[2] : null;
-            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: nMarks, markWarn, minText };
+            const minSub = isFinite(minSubFont) ? minSubFont * BODY_W / vb[2] : null;
+            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: nMarks, markWarn, minText, minSub };
         }, { spec, parts: parts || null, between: between || [], OUT_W, MAX_H, FIT_W, BODY_W });
         let r = await bakeOne(job.spec, job.parts, job.between);
         /* ★ 紙の図の型は字の長さぶん価標を伸ばすので、長い鎖（ステアリン酸 C₁₈）は横に伸びて床 9:1 を超える（v1562 実測 10.1:1）。
@@ -721,6 +760,7 @@ async function bake(jobs) {
             + `  ← ${job.parts ? job.parts.map(p => p.name).join(' ＋ ') : job.spec.name}${job.spec.numbered ? '（番号つき）' : ''}  [${r.via}]`
             + (r.marks ? `  ＋印 ${r.marks} 本` : '')
             + (r.minText ? `  字 ${r.minText.toFixed(1)}px${r.minText < MIN_TEXT ? ' ⚠床' + MIN_TEXT + '未満' : ''}` : '')
+            + (r.minSub ? `  下付き ${r.minSub.toFixed(1)}px${r.minSub < MIN_SUB ? ' ⚠床' + MIN_SUB + '未満' : ''}` : '')
             + (r.fellBack ? `  ⚠ ${r.fellBack}` : (job.spec.stereo ? '  （立体ビューのくさび図）' : job.spec.paper ? '  （紙の図）' : '  （丸の図）')));
         // ⚠ 黄（設計 §6）: 焼いた絵を人が見る前に、重なりだけは言っておく
         (r.markWarn || []).forEach(w => console.log(`      ⚠ ${w}`));

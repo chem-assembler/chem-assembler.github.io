@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -927,7 +932,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/hydrocarbon-classes/">アルカン・アルケン・アルキン・シクロアルカンの一般式を並べて見る</a></p>
 <section class="ref-sec" id="ref-sec-shape"><h4 class="ref-sec-h">二重結合のまわりの形</h4><p class="ref-sec-lead">C=C のまわりの6個の原子は同一平面上に固定され、結合角は約120°。二重結合は単結合より短く、三重結合より長いです。</p></section>
 <p class="ref-p"><b>炭素間二重結合のまわりの6個の原子は、すべて同一平面上に固定されて</b>います。二重結合をつくっている2個の炭素と、そこに直接くっついている4個の原子までが、1枚の板の上に乗っているということです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-planar.png" alt="エテンの構造式。C=C と、そこに結合した4個の H が同じ平面（ピンク色の平行四辺形）の上に乗っていることを示し、結合角121度を書き込んだ図" loading="lazy"><figcaption class="ref-figure-cap"><b>C=C に隣接する原子まで</b>が同一平面上に固定されています。それより外側の原子は、単結合が回転するので位置が変わります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-planar.png?h=95371f23" alt="エテンの構造式。C=C と、そこに結合した4個の H が同じ平面（ピンク色の平行四辺形）の上に乗っていることを示し、結合角121度を書き込んだ図" loading="lazy"><figcaption class="ref-figure-cap"><b>C=C に隣接する原子まで</b>が同一平面上に固定されています。それより外側の原子は、単結合が回転するので位置が変わります。</figcaption></figure>
 <p class="ref-p">二重結合した炭素のまわりの結合角は、化合物によって多少変わりますが、だいたい <b>120°ずつに3等分</b>されています。<b>炭素のまわりに電子のまとまりが3組あり、たがいに反発していちばん遠い位置に配置されるため</b>です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/molecular-shape/">電子対の反発で分子の形が決まるしくみ（VSEPR）をもう少し詳しく</a></p>
 <p class="ref-p">炭素間の結合の長さは、<b>三重結合 C≡C（0.120 nm）＜ 二重結合 C=C（0.134 nm）＜ 単結合 C−C（0.154 nm）</b> の順です。<b>「結合が多重になるほど短い」</b>と覚えておけば十分で、<b>数値そのものを覚えていなくて困ることは、ほとんどありません。</b></p>
@@ -935,11 +940,11 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>単結合は自由に回転できますが、二重結合は回転できません。</b>1本のペンの両端を両手でもてば回せますが、2本のペンを平行にそろえて両端をもつと、ねじれてしまって回せません。二重結合が回転できないのは、これと同じ理屈だと考えるとよいでしょう。</p>
 <p class="ref-p">二重結合は回転できないので、原子・原子団の<b>並び方は固定されます。</b>置換基が二重結合の<b>同じ側にあるのがシス型、逆側にあるのがトランス型</b>で、この2つを<b>シス－トランス異性体</b>といいます。</p>
 <p class="ref-p">シス（cis）はラテン語で「こちら側」、トランス（trans）は「向こう側へ越えて」という意味です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-cis-trans.png" alt="シス-2-ブテンとトランス-2-ブテンの構造式。2個のメチル基が二重結合の同じ側にあるのがシス型、逆側にあるのがトランス型であることを示した図" loading="lazy"><figcaption class="ref-figure-cap">同じ 2-ブテンでも、<b>2個のメチル基が同じ側か逆側か</b>で別の分子になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-cis-trans.png?h=cf9eb2da" alt="シス-2-ブテンとトランス-2-ブテンの構造式。2個のメチル基が二重結合の同じ側にあるのがシス型、逆側にあるのがトランス型であることを示した図" loading="lazy"><figcaption class="ref-figure-cap">同じ 2-ブテンでも、<b>2個のメチル基が同じ側か逆側か</b>で別の分子になります。</figcaption></figure>
 <p class="ref-p">シス－トランス異性体は<b>立体異性体</b>の一種です。分子式も、原子のつながり方も同じで、<b>空間での配置だけが違う</b>ものが立体異性体です。</p>
 <p class="ref-p">シス－トランス異性体があるのは、<b>二重結合の2個の炭素それぞれに、違うものが1個ずつついているとき</b>です。2-ブテン CH₃CH=CHCH₃ は、どちらの炭素にも「CH₃ と H」が1個ずつついているので、シス型－トランス型の2通りができます。1-ブテン CH₂=CHCH₂CH₃ の左の炭素は H が2個なので、立体異性体は存在しません。</p>
 <p class="ref-p">1-ブテンでも、エチル基を二重結合の上側に描いた図と下側に描いた図の2通りが描けますが、一方を C=C の軸のまわりに裏返すと、もう一方にぴったり重なります。左の炭素の2個の H は区別できないので、2つの図は同じ分子を表しています。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-1-butene-flip.png" alt="1-ブテンの構造式を2つ並べた図。左はエチル基が二重結合の下側に、右は上側に描かれており、間に「裏返す」の両矢印がある。左端の炭素には H が2個付いている" loading="lazy"><figcaption class="ref-figure-cap">エチル基を下に描いても上に描いても、C=C の軸のまわりに<b>裏返せば重なる</b>ので同じ分子です。左端の炭素に <b>H が2個</b>付いているため、2通りの区別が生まれません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-1-butene-flip.png?h=982f8f61" alt="1-ブテンの構造式を2つ並べた図。左はエチル基が二重結合の下側に、右は上側に描かれており、間に「裏返す」の両矢印がある。左端の炭素には H が2個付いている" loading="lazy"><figcaption class="ref-figure-cap">エチル基を下に描いても上に描いても、C=C の軸のまわりに<b>裏返せば重なる</b>ので同じ分子です。左端の炭素に <b>H が2個</b>付いているため、2通りの区別が生まれません。</figcaption></figure>
 <p class="ref-p">「C₄H₈ のアルケンをすべて書け」のように<b>同じ分子式のアルケンを数え上げる</b>ときは、同じ炭素数のアルカンを先に全部書き出してから、二重結合をつくれる場所を探します。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane-isomers/">構造異性体と立体異性体の分け方と、アルケンの書き出しの手順はこちら</a></p>
 <section class="ref-sec" id="ref-sec-addition"><h4 class="ref-sec-h">付加反応</h4><p class="ref-sec-lead">二重結合は不安定で反応しやすく、二重結合が切れてそこに原子・原子団が入ります。アルカンの置換反応とは別のものです。</p></section>
@@ -959,7 +964,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-markovnikov"><h4 class="ref-sec-h">マルコフニコフ則 —— どちらが主に生じるか</h4><p class="ref-sec-lead">H−X が付加するとき、H は「水素がすでに多くついている炭素」のほうに結合しやすい、という決まりです。</p></section>
 <p class="ref-p">二重結合の左右が同じ形をしていない場合、H−X の付き方は2通りあり、<b>2種類の生成物が考えられます。</b>どちらが主に生じるかを言い当てるのが<b>マルコフニコフ則</b>です。</p>
 <p class="ref-p"><b>「付加する分子の H 原子は、H 原子が多く結合している C 原子に結合しやすい」</b>——これがマルコフニコフ則です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-markovnikov.png" alt="プロペンに H−X が付加する2通りの反応を上下に並べた図。二重結合の左の炭素には H が2個、右の炭素には H が1個ついており、H が多い左の炭素に H−X の H が結合したものが主生成物、逆が副生成物と書かれている" loading="lazy"><figcaption class="ref-figure-cap">緑の炭素には H が<b>2個</b>、紫の炭素には H が<b>1個</b>。H−X の H は<b>多いほうの緑</b>に付くので、上が<b>主生成物</b>、下が<b>副生成物</b>です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-markovnikov.png?h=4962d3f1" alt="プロペンに H−X が付加する2通りの反応を上下に並べた図。二重結合の左の炭素には H が2個、右の炭素には H が1個ついており、H が多い左の炭素に H−X の H が結合したものが主生成物、逆が副生成物と書かれている" loading="lazy"><figcaption class="ref-figure-cap">緑の炭素には H が<b>2個</b>、紫の炭素には H が<b>1個</b>。H−X の H は<b>多いほうの緑</b>に付くので、上が<b>主生成物</b>、下が<b>副生成物</b>です。</figcaption></figure>
 <p class="ref-p">マルコフニコフ則で分かるのは<b>どちらが主に生じるか</b>だけで、<b>どの程度の割合で偏るかまでは分かりません。</b></p>
 <p class="ref-link-row"><span class="ref-link ref-link-soon">アルコールの脱水でアルケンが2通りできるとき、どちらが主に生じるか（ザイツェフ則）<b class="ref-link-badge">準備中</b></span></p>
 <section class="ref-sec" id="ref-sec-polymer"><h4 class="ref-sec-h">付加重合とビニル化合物</h4><p class="ref-sec-lead">二重結合が次々に開いて手をつなぐと、鎖状の高分子ができます。エテンから H を1個とった形をビニル基といいます。</p></section>
@@ -1069,6 +1074,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -918,7 +923,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">シクロアルカンは、<b>環状構造を1個もち、結合はすべて単結合</b>という炭化水素です。名前は、同じ炭素数のアルカンの頭に <b>cyclo-（シクロ－）</b> をつけてつくります。</p>
 <section class="ref-sec" id="ref-sec-what"><h4 class="ref-sec-h">一般式はアルケンとまったく同じ</h4><p class="ref-sec-lead">環を1個つくると水素が2個減るので、アルカンより H が2個少なくなります。アルケンと分子式が同じになるのが肝心なところです。</p></section>
 <p class="ref-p">鎖の両端の水素を1個ずつとりさって、あいた手どうしをつなぐと環になります。<b>水素が2個減る</b>ので、アルカンの C<sub>n</sub>H<sub>2n+2</sub> を基準にして、シクロアルカンの一般式は <b>C<sub>n</sub>H<sub>2n</sub></b> です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hydrocarbon-ring.png" alt="プロパンの構造式の両端の H に緑の丸をつけ、矢印でシクロプロパンの三角形の構造式に変わるようすを描いた図" loading="lazy"><figcaption class="ref-figure-cap">プロパン C₃H₈ の<b>両端の H を1個ずつとりさって手をつなぐ</b>と、シクロプロパン C₃H₆ になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hydrocarbon-ring.png?h=676892fe" alt="プロパンの構造式の両端の H に緑の丸をつけ、矢印でシクロプロパンの三角形の構造式に変わるようすを描いた図" loading="lazy"><figcaption class="ref-figure-cap">プロパン C₃H₈ の<b>両端の H を1個ずつとりさって手をつなぐ</b>と、シクロプロパン C₃H₆ になります。</figcaption></figure>
 <p class="ref-p">n=3 を代入すればシクロプロパン C₃H₆、n=6 を代入すればシクロヘキサン C₆H₁₂ です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">主なシクロアルカン</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">分子式</th></tr></thead><tbody><tr><td style="text-align: left;">シクロプロパン</td><td style="text-align: left;">C₃H₆</td></tr><tr><td style="text-align: left;">シクロブタン</td><td style="text-align: left;">C₄H₈</td></tr><tr><td style="text-align: left;">シクロペンタン</td><td style="text-align: left;">C₅H₁₀</td></tr><tr><td style="text-align: left;">シクロヘキサン</td><td style="text-align: left;">C₆H₁₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>この C<sub>n</sub>H<sub>2n</sub> は、アルケンの一般式とまったく同じです。</b>つまり <b>C₅H₁₀ と言われただけでは、ペンテン（アルケン）なのかシクロペンタンなのか決められません。</b>異性体を書き出す問題で「鎖式に限る」と書いていなければ、<b>環式も書かなければならない</b>、ということです。</p>
@@ -933,7 +938,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-strain"><h4 class="ref-sec-h">三員環と四員環だけは不安定</h4><p class="ref-sec-lead">炭素本来の結合角は109.5°。三員環は60°、四員環は90°でつながるので、大きくゆがんでいて反応しやすくなります。</p></section>
 <p class="ref-p">シクロアルカンも、アルカンと同じく<b>正四面体構造の炭素</b>でできています。正四面体の結合角は <b>109.5°</b> で、これが炭素本来の角度です。</p>
 <p class="ref-p">ところが、<b>三員環（原子3個の輪）をつくるには正三角形の内角の 60°</b>、<b>四員環（原子4個の輪）をつくるには正方形の内角の 90°</b> で結合しなければなりません。<b>本来の 109.5° から大きくゆがむので、不安定で反応しやすくなります。</b>これを<b>結合角のひずみ</b>といいます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/cycloalkane-strain.png" alt="左にシクロプロパンの構造式で結合角60度、右にシクロブタンの構造式で結合角90度を書き込んだ図" loading="lazy"><figcaption class="ref-figure-cap">炭素本来の <b>109.5°</b> に対して、三員環は <b>60°</b>、四員環は <b>90°</b>。この差がひずみです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/cycloalkane-strain.png?h=3a1630fb" alt="左にシクロプロパンの構造式で結合角60度、右にシクロブタンの構造式で結合角90度を書き込んだ図" loading="lazy"><figcaption class="ref-figure-cap">炭素本来の <b>109.5°</b> に対して、三員環は <b>60°</b>、四員環は <b>90°</b>。この差がひずみです。</figcaption></figure>
 <p class="ref-p">具体的には、<b>シクロプロパンやシクロブタンは水素 H₂ や臭素 Br₂ などと反応して開環し、鎖式化合物になります。</b></p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₃H₆（シクロプロパン） ＋ Br₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">BrCH₂CH₂CH₂Br</span></div><p class="ref-note">環が開いて、両端に Br が1個ずつ付いた鎖式化合物になります。<b>環が大きければこの反応は起こりません。</b></p></div>
 <p class="ref-p"><b>「三員環・四員環はひずみが大きく、不安定で開環しやすい」</b>——シクロアルカンについて覚えておくのは、ここだけと言ってよいくらいです。</p>
@@ -1013,6 +1018,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

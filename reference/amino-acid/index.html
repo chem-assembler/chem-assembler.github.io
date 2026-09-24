@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -921,8 +926,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">一般式は <b>R−CH(NH₂)−COOH</b> で、R の部分を<b>側鎖</b>といいます。R に何を入れるかで、アミノ酸の種類が決まります。</p>
 <ul class="ref-list"><li>R に H を入れれば「H−CH(NH₂)−COOH」＝ <b>グリシン</b></li><li>R に CH₃ を入れれば「CH₃−CH(NH₂)−COOH」＝ <b>アラニン</b></li><li>R に <span class="ref-blank">○○</span> を入れれば「<span class="ref-blank">○○</span>−CH(NH₂)−COOH」＝ 別のアミノ酸</li></ul>
 <p class="ref-p"><b>一般式 R−CH(NH₂)−COOH は書けるようにしてください。</b>グリシンとアラニンの2つは、構造式まで書けるようにしておきましょう。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-glycine.png" alt="グリシンの構造式。アミノ基 NH2 が付いた炭素に、カルボキシ基 COOH が付いている" loading="lazy"><figcaption class="ref-figure-cap">いちばん簡単なアミノ酸の<b>グリシン</b>。側鎖 R が H です。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-alanine.png" alt="アラニンの構造式。アミノ基とカルボキシ基が付いた炭素に、メチル基 CH3 も付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>アラニン</b>。側鎖 R が CH₃ です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-glycine.png?h=e12f0014" alt="グリシンの構造式。アミノ基 NH2 が付いた炭素に、カルボキシ基 COOH が付いている" loading="lazy"><figcaption class="ref-figure-cap">いちばん簡単なアミノ酸の<b>グリシン</b>。側鎖 R が H です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-alanine.png?h=0929ccfa" alt="アラニンの構造式。アミノ基とカルボキシ基が付いた炭素に、メチル基 CH3 も付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>アラニン</b>。側鎖 R が CH₃ です。</figcaption></figure>
 <div class="ref-example"><h4>例題：アラニン をつくる</h4><p class="ref-p" style="margin: 0px;">アラニンを組んで、1つの炭素に −NH₂ と −COOH と −CH₃ が付く形を手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.bio.amino-acid-def&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=amino-acid">▶ アラニンを組んでみる</a><p class="ref-note">まん中の炭素には、H・NH₂・COOH・CH₃ の4つの違うものが付いています。</p></div>
 <section class="ref-sec" id="ref-sec-sidechain"><h4 class="ref-sec-h">側鎖による分類</h4><p class="ref-sec-lead">側鎖に −COOH をもつものを酸性アミノ酸、−NH₂ をもつものを塩基性アミノ酸、どちらももたないものを中性アミノ酸といいます。</p></section>
 <p class="ref-p">α-アミノ酸は、どれも −NH₂ と −COOH を1個ずつもっています。そこに<b>側鎖にもう1個 −COOH があれば酸性アミノ酸</b>、<b>もう1個 −NH₂ があれば塩基性アミノ酸</b>、どちらも無ければ<b>中性アミノ酸</b>です。</p>
@@ -932,7 +937,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">α-アミノ酸の α位の炭素には、<b>H・−NH₂・−COOH・R</b> の4つが結合しています。R が H 以外なら4つがすべて違うので、この炭素は<b>不斉炭素原子</b>になり、<b>鏡像異性体</b>が存在します。</p>
 <p class="ref-p">グリシンは R が H なので、H が2個付くことになり、不斉炭素原子をもちません。<b>「α-アミノ酸のうち、不斉炭素原子をもたないのはグリシンだけ」</b>と覚えましょう。</p>
 <p class="ref-p">天然のタンパク質をつくるアミノ酸は、鏡像異性体のうち L形とよばれる片方だけです。L形と D形の見分け方は覚えなくて構いません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-alanine-asymmetric.png" alt="左にアラニン、右にグリシンの構造式。アラニンの α位の炭素（不斉炭素原子）が破線の丸で囲まれている。グリシンの α位の炭素には H が2個付いている" loading="lazy"><figcaption class="ref-figure-cap">左の<b>アラニン</b>は α位の炭素に H・−NH₂・−COOH・−CH₃ の4つの違うものが付くので不斉炭素原子（囲み）。右の<b>グリシン</b>は H が2個なので、不斉炭素原子がありません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-alanine-asymmetric.png?h=f8df47b4" alt="左にアラニン、右にグリシンの構造式。アラニンの α位の炭素（不斉炭素原子）が破線の丸で囲まれている。グリシンの α位の炭素には H が2個付いている" loading="lazy"><figcaption class="ref-figure-cap">左の<b>アラニン</b>は α位の炭素に H・−NH₂・−COOH・−CH₃ の4つの違うものが付くので不斉炭素原子（囲み）。右の<b>グリシン</b>は H が2個なので、不斉炭素原子がありません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/stereoisomers/">不斉炭素原子と鏡像異性体そのものは立体異性体のページへ</a></p>
 <section class="ref-sec" id="ref-sec-zwitterion"><h4 class="ref-sec-h">両性の化合物と双性イオン</h4><p class="ref-sec-lead">アミノ酸は酸とも塩基とも反応して塩をつくります。結晶中や水溶液中では、−COO⁻ と −NH₃⁺ を1分子にあわせもつ双性イオンになっています。</p></section>
 <p class="ref-p">アミノ酸の −NH₂ は塩基、−COOH は酸としてはたらきます。だからアミノ酸は、<b>塩酸とも水酸化ナトリウムとも反応して塩をつくります</b>。</p>
@@ -942,7 +947,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>「アミノ酸は酸とも塩基とも反応する」は暗記してください。</b></p>
 <p class="ref-p">さらに、1つの分子の中でも −COOH の H⁺ が −NH₂ に移ります。こうしてできた、<b>−COO⁻ と −NH₃⁺ をあわせもつイオン</b>を<b>双性イオン</b>といいます。アミノ酸は、結晶中でも中性付近の水溶液中でも、おもにこの形でいます。</p>
 <p class="ref-p">グリシンの双性イオンは H₃N⁺−CH₂−COO⁻ です。全体では正と負が1つずつなので、電荷の合計は0になります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-zwitterion.png" alt="左にグリシンの中性の形 H2N-CH2-COOH を書き、その上に右端から左端へ向かう曲がった赤い矢印で H+ が移ることを示し、右向きの矢印の先に双性イオン H3N+-CH2-COO- を書いた図" loading="lazy"><figcaption class="ref-figure-cap">外から酸や塩基を加えなくても、<b>同じ分子の中で</b> H⁺ が移ります。移ったあとも原子の数は変わりません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-zwitterion.png?h=341597b9" alt="左にグリシンの中性の形 H2N-CH2-COOH を書き、その上に右端から左端へ向かう曲がった赤い矢印で H+ が移ることを示し、右向きの矢印の先に双性イオン H3N+-CH2-COO- を書いた図" loading="lazy"><figcaption class="ref-figure-cap">外から酸や塩基を加えなくても、<b>同じ分子の中で</b> H⁺ が移ります。移ったあとも原子の数は変わりません。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-crystal"><h4 class="ref-sec-h">アミノ酸の結晶の性質</h4><p class="ref-sec-lead">双性イオンどうしが静電気の力で引き合うので、分子量が同じくらいの有機化合物にくらべて融点が高く、水に溶けやすく、有機溶媒に溶けにくくなります。</p></section>
 <p class="ref-p">アミノ酸の結晶は、双性イオンの −COO⁻ と −NH₃⁺ が<b>静電気の力で引き合った、イオン結晶に近い</b>つくりになっています。</p>
 <p class="ref-p">そのため、分子量が同じくらいの有機化合物にくらべて<b>融点が高く</b>（融点に達する前に分解するものが多い）、<b>水に溶けやすく、有機溶媒には溶けにくい</b>性質を示します。</p>
@@ -953,7 +958,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−CH(NH₃⁺)−COO⁻（双性イオン）</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−CH(NH₂)−COO⁻（陰イオン） ＋ H⁺</span></div><p class="ref-note">2段目の電離。塩基性にすると右へ寄ります。この2本で、3つの形が1本につながります。</p></div>
 <p class="ref-p"><b>「H⁺ が多いところでは H⁺ を受け取り、少ないところでは手放す」</b>の1本で、どちらの形が増えるかはすべて決まります。</p>
 <p class="ref-p">具体例としてアラニンで書くと、塩酸を十分に加えたときは CH₃−CH(NH₃⁺)−COOH（陽イオン）、水酸化ナトリウム水溶液を十分に加えたときは CH₃−CH(NH₂)−COO⁻（陰イオン）になります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-three-forms.png" alt="左から陽イオン、双性イオン、陰イオンの3つの示性式を横一列に並べ、となりどうしを両向きの矢印で結んだ図。右へ行くほど H+ を放し、左へ行くほど H+ を受け取る。下には左が酸性側、右が塩基性側の pH の矢印と、等電点の目盛りがあり、いちばん下に電気泳動でどちらの電極へ動くかを書いてある" loading="lazy"><figcaption class="ref-figure-cap">3つの形は1本につながっていて、<b>pH で左右にずれるだけ</b>です。図の左右と、電気泳動で動く向きがそのまま対応します。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-three-forms.png?h=c40a0432" alt="左から陽イオン、双性イオン、陰イオンの3つの示性式を横一列に並べ、となりどうしを両向きの矢印で結んだ図。右へ行くほど H+ を放し、左へ行くほど H+ を受け取る。下には左が酸性側、右が塩基性側の pH の矢印と、等電点の目盛りがあり、いちばん下に電気泳動でどちらの電極へ動くかを書いてある" loading="lazy"><figcaption class="ref-figure-cap">3つの形は1本につながっていて、<b>pH で左右にずれるだけ</b>です。図の左右と、電気泳動で動く向きがそのまま対応します。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-isoelectric"><h4 class="ref-sec-h">等電点と電気泳動</h4><p class="ref-sec-lead">陽イオン・双性イオン・陰イオンの電荷の合計が全体として0になる pH を等電点といいます。等電点では、電圧をかけてもアミノ酸はどちらの電極にも移動しません。</p></section>
 <p class="ref-p">水溶液の pH を変えていくと、ある pH で、陽イオン・双性イオン・陰イオンの<b>電荷の合計が全体として0</b>になります。この pH をそのアミノ酸の<b>等電点</b>といいます。等電点では、ほとんどが双性イオンになっています。</p>
 <p class="ref-p">アミノ酸の水溶液に電圧をかけると、陽イオンは陰極へ、陰イオンは陽極へ移動します。これを<b>電気泳動</b>といいます。等電点では電荷の合計が0なので、<b>どちらの電極にも移動しません</b>。</p>
@@ -962,7 +967,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">等電点の値は、中性アミノ酸ではおよそ6、<b>酸性アミノ酸では小さく</b>（グルタミン酸は約3）、<b>塩基性アミノ酸では大きく</b>（リシンは約10）なります。側鎖の −COOH や −NH₂ のぶんだけ、酸性側か塩基性側へずれるためです。</p>
 <p class="ref-p"><b>「酸性アミノ酸の等電点は小さい、塩基性アミノ酸の等電点は大きい」というずれ方だけは覚えてください。</b>個々のアミノ酸の等電点の数値は、覚える必要はありません。問題文に与えられます。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">等電点では、アミノ酸がすべて双性イオンになっている</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">等電点は、陽イオン・双性イオン・陰イオンの<b>電荷の合計が全体として0になる pH</b> です。ほとんどが双性イオンですが、陽イオンと陰イオンもわずかに同じ量ずつあります。</span></p><p class="ref-mistake-why">「双性イオンは電荷の合計が0」と「等電点では電荷の合計が0」を同じものとして覚えてしまうためです。★ 入試の記述では「電荷の合計（平均）が0になる pH」と書けば安全です。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-electrophoresis.png" alt="電気泳動の装置の模式図。横長の容器の左端に陰極、右端に陽極を差し込み、上で電源につないである。容器の中央に置いたアミノ酸の水溶液から、左へ向かう矢印に陽イオン、右へ向かう矢印に陰イオンと書かれ、双性イオンは動かないと添えてある" loading="lazy"><figcaption class="ref-figure-cap">中央に置いたアミノ酸は、<b>陽イオンなら左（陰極）へ、陰イオンなら右（陽極）へ</b>動きます。動いた向きから、その pH でどの形だったかが分かります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-electrophoresis.png?h=a9029a6b" alt="電気泳動の装置の模式図。横長の容器の左端に陰極、右端に陽極を差し込み、上で電源につないである。容器の中央に置いたアミノ酸の水溶液から、左へ向かう矢印に陽イオン、右へ向かう矢印に陰イオンと書かれ、双性イオンは動かないと添えてある" loading="lazy"><figcaption class="ref-figure-cap">中央に置いたアミノ酸は、<b>陽イオンなら左（陰極）へ、陰イオンなら右（陽極）へ</b>動きます。動いた向きから、その pH でどの形だったかが分かります。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-ninhydrin"><h4 class="ref-sec-h">アミノ酸の検出</h4><p class="ref-sec-lead">ニンヒドリン水溶液を加えて温め、青紫〜赤紫色に変われば、アミノ酸がある目印です。</p></section>
 <p class="ref-p">アミノ酸の水溶液に<b>ニンヒドリン</b>の水溶液を加えて温めると、<b>青紫色〜赤紫色</b>になります。これを<b>ニンヒドリン反応</b>といい、アミノ基 −NH₂ を検出する反応です。</p>
 <p class="ref-p"><b>「ニンヒドリン反応はアミノ酸の検出、色は青紫〜赤紫」は暗記してください。</b>ほかの呈色反応といっしょに、タンパク質のページで表にまとめています。</p>
@@ -1048,6 +1053,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

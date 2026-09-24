@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -919,16 +924,16 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-fecl3"><h4 class="ref-sec-h">塩化鉄(III) で呈色する</h4><p class="ref-sec-lead">塩化鉄(III) 水溶液を少し加えて青紫〜赤紫に色づけば、フェノール類だと判定できます。</p></section>
 <p class="ref-p">フェノール類を見分ける試薬が<b>塩化鉄(III) FeCl₃ 水溶液</b>です。少し加えるだけで、液が<b>青紫〜赤紫色</b>に色づきます。フェノールなら紫、サリチル酸なら赤紫です。</p>
 <p class="ref-p"><b>「フェノール類は塩化鉄(III) で呈色する」は必ず覚えてください。</b>−OH が環に直接付いているかどうかの試験なので、アルコール（ベンジルアルコールも含む）は呈色しません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-fecl3-test.png" alt="3本の試験管に塩化鉄(III) 水溶液を1滴ずつ加えた模式図。フェノールの試験管は紫、サリチル酸は赤紫になり、ベンジルアルコールの試験管は塩化鉄(III) の黄色のまま変わらない" loading="lazy"><figcaption class="ref-figure-cap">ベンジルアルコールもベンゼン環と −OH をもちますが、−OH は CH₂ を挟んで付いているので、性質はアルコールの仲間です。<b>呈色するかどうかは、環があるかではなく、−OH が環に直接付いているかで決まります。</b></figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-fecl3-test.png?h=35a92f4e" alt="3本の試験管に塩化鉄(III) 水溶液を1滴ずつ加えた模式図。フェノールの試験管は紫、サリチル酸は赤紫になり、ベンジルアルコールの試験管は塩化鉄(III) の黄色のまま変わらない" loading="lazy"><figcaption class="ref-figure-cap">ベンジルアルコールもベンゼン環と −OH をもちますが、−OH は CH₂ を挟んで付いているので、性質はアルコールの仲間です。<b>呈色するかどうかは、環があるかではなく、−OH が環に直接付いているかで決まります。</b></figcaption></figure>
 <section class="ref-sec" id="ref-sec-substitution"><h4 class="ref-sec-h">ベンゼンより置換されやすい</h4><p class="ref-sec-lead">フェノールは触媒なしで臭素水と反応し、3か所に Br が入った白色沈殿ができます。</p></section>
 <p class="ref-p">ベンゼンを臭素で置換するには鉄の触媒が要りました。ところがフェノールは、<b>臭素水を加えるだけで、触媒なしに</b>置換反応が起こり、しかも <b>3か所いっぺんに</b> Br が入ります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅OH ＋ 3Br₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₂Br₃OH↓ ＋ 3HBr</span></div><p class="ref-note">2,4,6-トリブロモフェノールの白色沈殿ができます。−OH から見て o・p・o の3か所に入ります。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-reactions-tribromophenol.png" alt="2,4,6-トリブロモフェノールの構造式。ベンゼン環にヒドロキシ基が1個付き、その両隣と向かいの炭素に臭素原子が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>2,4,6-トリブロモフェノール</b>。−OH の両隣（o）と向かい（p）の3か所に Br が入っています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-reactions-tribromophenol.png?h=8c65e4d3" alt="2,4,6-トリブロモフェノールの構造式。ベンゼン環にヒドロキシ基が1個付き、その両隣と向かいの炭素に臭素原子が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>2,4,6-トリブロモフェノール</b>。−OH の両隣（o）と向かい（p）の3か所に Br が入っています。</figcaption></figure>
 <p class="ref-p"><b>「ベンゼンは触媒が要る、フェノールは要らない」と対にして覚えましょう。</b></p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">フェノールに臭素水を加えると、アルケンと同じように付加反応が起こって臭素水の色が消える。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">フェノールでは置換反応が起こり、2,4,6-トリブロモフェノールの白色沈殿ができる。</span></p><p class="ref-mistake-why">どちらも臭素水を使うので混ざりやすいところです。アルケンは脱色（付加）、フェノールは白色沈殿（置換）と、見た目で区別します。</p></div>
 <p class="ref-p">フェノールを混酸でニトロ化すると、同じように3か所にニトロ基が入って<b>ピクリン酸（2,4,6-トリニトロフェノール）</b>の<b>黄色の結晶</b>ができます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅OH ＋ 3HNO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₂(NO₂)₃OH ＋ 3H₂O</span></div><p class="ref-note">ピクリン酸ができます。3か所が 2,4,6 になるのは、臭素化と同じ理由です。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-reactions-picric-acid.png" alt="ピクリン酸の構造式。ベンゼン環にヒドロキシ基が1個付き、その両隣と向かいの炭素にニトロ基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>ピクリン酸（2,4,6-トリニトロフェノール）</b>。臭素化と同じ3か所にニトロ基が入っています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-reactions-picric-acid.png?h=2b3726d5" alt="ピクリン酸の構造式。ベンゼン環にヒドロキシ基が1個付き、その両隣と向かいの炭素にニトロ基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>ピクリン酸（2,4,6-トリニトロフェノール）</b>。臭素化と同じ3か所にニトロ基が入っています。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/benzene-substitution/">ベンゼンの置換反応（触媒が要る）と、2,4,6 に入る理由（配向性）</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">アルケンが臭素水を脱色する付加反応はこちら</a></p>
 <section class="ref-sec" id="ref-sec-methyl"><h4 class="ref-sec-h">メチル化するとエーテルになる</h4><p class="ref-sec-lead">−OH の H を CH₃ に置き換えるとアニソールになり、塩化鉄(III) で呈色しなくなります。</p></section>
@@ -1038,6 +1043,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

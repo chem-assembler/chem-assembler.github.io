@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -924,7 +929,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">逆に、水素原子 2mol が結合して H₂ 1mol ができるときは、436kJ が放出されます（ΔH ＝ −436kJ）。<b>結合を切るときは ＋、結合ができるときは −</b> です。結合ができると原子どうしが安定になり、その分のエネルギーが外に出るためです。</p>
 <p class="ref-p">多原子分子では、分子の中の結合の数で割って、結合 1 本あたりの値にします。</p>
 <p class="ref-p">具体例2で、メタン CH₄ 1mol の結合をすべて切って C 原子 1mol と H 原子 4mol にするには 1664kJ が要ります。CH₄ 1 分子には C−H 結合が4本あるので、C−H の結合エンタルピーは 1664 ÷ 4 ＝ 416kJ/mol です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/bond-enthalpy-methane.png" alt="メタンの構造式。中心の炭素 C から上下左右に線が1本ずつ出て、その先に水素 H が1個ずつ、合計4個つながっている" loading="lazy"><figcaption class="ref-figure-cap">メタン CH₄。C に H が4個つながっているので、<b>C−H 結合は4本</b>あります。結合の数は、構造を描いて数えるのが確実です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/bond-enthalpy-methane.png?h=35925f05" alt="メタンの構造式。中心の炭素 C から上下左右に線が1本ずつ出て、その先に水素 H が1個ずつ、合計4個つながっている" loading="lazy"><figcaption class="ref-figure-cap">メタン CH₄。C に H が4個つながっているので、<b>C−H 結合は4本</b>あります。結合の数は、構造を描いて数えるのが確実です。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">おもな結合エンタルピー（kJ/mol）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">結合</th><th style="text-align: right;">結合エンタルピー</th><th style="text-align: left;">（どの分子の値か）</th></tr></thead><tbody><tr><td style="text-align: left;">H−H</td><td style="text-align: right;">436</td><td style="text-align: left;">H₂</td></tr><tr><td style="text-align: left;">Cl−Cl</td><td style="text-align: right;">243</td><td style="text-align: left;">Cl₂</td></tr><tr><td style="text-align: left;">H−Cl</td><td style="text-align: right;">432</td><td style="text-align: left;">HCl</td></tr><tr><td style="text-align: left;">O＝O</td><td style="text-align: right;">498</td><td style="text-align: left;">O₂</td></tr><tr><td style="text-align: left;">O−H</td><td style="text-align: right;">463</td><td style="text-align: left;">H₂O</td></tr><tr><td style="text-align: left;">C−H</td><td style="text-align: right;">416</td><td style="text-align: left;">CH₄</td></tr><tr><td style="text-align: left;">C＝O</td><td style="text-align: right;">804</td><td style="text-align: left;">CO₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>結合エンタルピーの値は問題文で与えられるので、覚える必要はありません。</b>ただし、二重結合は同じ原子どうしの単結合より大きい（切りにくい）ことは知っておきましょう。</p>
 <section class="ref-sec" id="ref-sec-diagram"><h4 class="ref-sec-h">原子をいちばん上に置く図</h4><p class="ref-sec-lead">反応物を基準 0 に置き、結合をすべて切った原子の状態をその上に、生成物を下に置きます。反応エンタルピーは、原子の状態を経由した高さの差で求められます。</p></section>
@@ -934,7 +939,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">具体例3で、H₂ ＋ Cl₂ → 2HCl の反応エンタルピーを求めます。</p>
 <ol class="ref-list"><li>切れるのは H−H 1本と Cl−Cl 1本、できるのは H−Cl 2本。</li><li>反応物 H₂(気) ＋ Cl₂(気) を 0 とする。</li><li>原子 2H(気) ＋ 2Cl(気) の高さは 436 ＋ 243 ＝ ＋679。</li><li>生成物 2HCl(気) は、原子の状態から 2×432 ＝ 864 下なので、679 − 864 ＝ −185。</li><li>ΔH ＝ −185 − 0 ＝ <b>−185kJ</b>。</li></ol>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂(気) ＋ Cl₂(気)</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2HCl(気)　ΔH ＝ −185 kJ</span></div><p class="ref-note">切るのに 679kJ 要り、できるときに 864kJ 出るので、差し引き 185kJ の発熱です。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/bond-enthalpy-app-hcl.png" alt="エネルギー図。H₂ ＋ Cl₂ が 0、いちばん上にばらばらの原子 2H ＋ 2Cl が ＋679、いちばん下に 2HCl が −185" loading="lazy"><figcaption class="ref-figure-cap"><b>原子をいちばん上に置く</b>のがこの型の図です。上りが結合を切るぶん、下りが結合ができるぶんになります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/bond-enthalpy-app-hcl.png?h=480b62a5" alt="エネルギー図。H₂ ＋ Cl₂ が 0、いちばん上にばらばらの原子 2H ＋ 2Cl が ＋679、いちばん下に 2HCl が −185" loading="lazy"><figcaption class="ref-figure-cap"><b>原子をいちばん上に置く</b>のがこの型の図です。上りが結合を切るぶん、下りが結合ができるぶんになります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ratio/thermo.html?h=h4&amp;from=reference&amp;page=bond-enthalpy">原子を上に置いて結合エンタルピーから解く（問4・HCl の生成）</a></p>
 <p class="ref-p">この図から、次の関係が出てきます。</p>
 <p class="ref-p"><b>反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）</b></p>
@@ -1019,6 +1024,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

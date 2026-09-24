@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -936,7 +941,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">速度の比を係数の比で換算してよいのは、<b>単位がそろっているとき</b>だけです。mol/min と mol/(L·min) を比べるときは、体積で割るか掛けるかして、先に単位をそろえます。</p></div>
 <section class="ref-sec" id="ref-sec-general"><h4 class="ref-sec-h">反応速度を式で表す</h4><p class="ref-sec-lead">反応 A → B で、時刻 t₁ から t₂ までの濃度の変化を Δ（変化量）で表すと、B の生成速度は vB ＝ Δ[B]／Δt、A の減少速度は vA ＝ −Δ[A]／Δt です。反応速度は正の値で表すので、減少速度には負号を付けます。</p></section>
 <p class="ref-p">1分子の A が1分子の B に変わる反応 A → B を考えます。縦軸に濃度、横軸に時間をとると、反応物 A は時間とともに減り、生成物 B は増えます。時刻 t₁ のときの濃度を [A]₁・[B]₁、t₂ のときを [A]₂・[B]₂ と書きます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/reaction-rate-concentration-time.png" alt="縦軸に濃度 mol/L、横軸に時間 min をとったグラフ。A の濃度の曲線は右下がり、B の濃度の曲線は右上がり。時刻 t₁ と t₂ に縦の破線を引き、その間の Δt、B の増えた量 Δ[B]、A の減った量 Δ[A] を弧で示している" loading="lazy"><figcaption class="ref-figure-cap">t₁ から t₂ までの間に、B は Δ[B] だけ増え、A は Δ[A] だけ減ります。この変化量を Δt で割ったものが平均の反応速度です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/reaction-rate-concentration-time.png?h=c467c5b7" alt="縦軸に濃度 mol/L、横軸に時間 min をとったグラフ。A の濃度の曲線は右下がり、B の濃度の曲線は右上がり。時刻 t₁ と t₂ に縦の破線を引き、その間の Δt、B の増えた量 Δ[B]、A の減った量 Δ[A] を弧で示している" loading="lazy"><figcaption class="ref-figure-cap">t₁ から t₂ までの間に、B は Δ[B] だけ増え、A は Δ[A] だけ減ります。この変化量を Δt で割ったものが平均の反応速度です。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">生成速度と減少速度の式（A → B）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">速度</th><th style="text-align: left;">式</th><th style="text-align: left;">符号</th></tr></thead><tbody><tr><td style="text-align: left;">B の生成速度 vB</td><td style="text-align: left;">Δ[B]／Δt ＝ ([B]₂ − [B]₁)／(t₂ − t₁)</td><td style="text-align: left;">Δ[B] は正なのでそのまま</td></tr><tr><td style="text-align: left;">A の減少速度 vA</td><td style="text-align: left;">−Δ[A]／Δt ＝ −([A]₂ − [A]₁)／(t₂ − t₁)</td><td style="text-align: left;">Δ[A] は負なので − を付けて正にする</td></tr></tbody></table></div>
 <p class="ref-p">Δ は「変化量」を表す記号で、「後 − 前」で計算します。A は減るので Δ[A] は負になり、そのままでは速度が負の値になってしまいます。そこで <b>減少速度には − を付けて正の値にします</b>。</p>
 <p class="ref-p">この式で求まるのは、t₁ から t₂ までの<b>平均の反応速度</b>です。反応物の濃度は時間とともに小さくなるので、同じ反応でも、区間のとり方によって平均の速度は変わります（反応のはじめほど速い）。Δt を十分に短くとればその瞬間の速度になりますが、<b>高校化学の計算では区間の平均の速度を使えば十分です</b>。瞬間の速度（グラフの接線の傾き）を計算させる問題はほとんど登場しません。</p>
@@ -1016,6 +1021,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,7 +927,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2Cl⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cl₂ ＋ 2e⁻</span></div><p class="ref-note">陽極。Cl₂ は気体として外へ出ていきます。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2H₂O ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂ ＋ 2OH⁻</span></div><p class="ref-note">陰極。H₂ は外へ出ていき、OH⁻ は水溶液に残ります。</p></div>
 <p class="ref-p">陽極側では Cl⁻ が消費されて正の電荷が余り、陰極側では OH⁻ ができて負の電荷が余ります。そこで両極の間を<b>陽イオン交換膜</b>で仕切ると、Na⁺ だけが膜を通って陽極側から陰極側へ移動します。Cl⁻ は膜を通れないので、陰極側には<b>不純物の Cl⁻ を含まない NaOH 水溶液</b>がたまります。これを<b>イオン交換膜法</b>といいます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-industry-membrane.png" alt="イオン交換膜法の装置図。中央の陽イオン交換膜で仕切られ、左の陽極側では Cl⁻ が Cl₂ になり、飽和食塩水を補い、うすい食塩水が出ていく。右の陰極側では H₂O が H₂ と OH⁻ になり、水を補い、NaOH 水溶液が取り出される。Na⁺ が膜を通って左から右へ移動する" loading="lazy"><figcaption class="ref-figure-cap">陽イオン交換膜は <b>Na⁺ を通し、Cl⁻ を通さない</b>ので、陰極側から Cl⁻ を含まない NaOH 水溶液が得られます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-industry-membrane.png?h=473071d4" alt="イオン交換膜法の装置図。中央の陽イオン交換膜で仕切られ、左の陽極側では Cl⁻ が Cl₂ になり、飽和食塩水を補い、うすい食塩水が出ていく。右の陰極側では H₂O が H₂ と OH⁻ になり、水を補い、NaOH 水溶液が取り出される。Na⁺ が膜を通って左から右へ移動する" loading="lazy"><figcaption class="ref-figure-cap">陽イオン交換膜は <b>Na⁺ を通し、Cl⁻ を通さない</b>ので、陰極側から Cl⁻ を含まない NaOH 水溶液が得られます。</figcaption></figure>
 <p class="ref-p">両極の式を足し、両辺に 2Na⁺ を加えてまとめると、全体の反応式になります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2NaCl ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2NaOH ＋ H₂ ＋ Cl₂</span></div><p class="ref-note">全体の反応。陽極の式と陰極の式を足して、2Na⁺ を両辺に加えたものです。</p></div>
 <p class="ref-p">生じた H₂ と Cl₂ を反応させると、塩化水素もつくれます（H₂ ＋ Cl₂ → 2HCl）。</p>
@@ -934,7 +939,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">陽極が C・Au・Pt 以外の金属（銅）なので電極の Cu が溶け、陰極では Al よりイオン化傾向が小さい Cu²⁺ が析出する、という優先順位のとおりの反応です。</p>
 <p class="ref-p">粗銅に含まれる不純物は、イオン化傾向によって行き先が2つに分かれます。</p>
 <ul class="ref-list"><li>イオン化傾向が Cu より<b>小さい</b> Au・Ag・Pt は、陽イオンにならず固体のままで、まわりの Cu が溶けると陽極の下に落ちてたまる。これを<b>陽極泥</b>という。</li><li>イオン化傾向が Cu より<b>大きい</b> Fe・Zn・Ni などは、Cu より先に陽イオンになって溶けだす。ただし Cu²⁺ より e⁻ を受け取る力が弱いので、陰極には析出せず、水溶液中にとどまる。</li></ul>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-industry-copper.png" alt="銅の電解精錬の装置図。左の粗銅（陽極）から Cu²⁺ と Zn²⁺ が溶けだし、Cu²⁺ だけが右の純銅（陰極）に析出する。Zn²⁺ は水溶液中にとどまり、Au・Pt・Ag は陽極の下に陽極泥として落ちる" loading="lazy"><figcaption class="ref-figure-cap">Cu より<b>イオン化傾向が小さい</b>金属は陽極泥に、<b>大きい</b>金属は水溶液中に残ります。陰極に析出するのは Cu だけです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-industry-copper.png?h=ab28c1ee" alt="銅の電解精錬の装置図。左の粗銅（陽極）から Cu²⁺ と Zn²⁺ が溶けだし、Cu²⁺ だけが右の純銅（陰極）に析出する。Zn²⁺ は水溶液中にとどまり、Au・Pt・Ag は陽極の下に陽極泥として落ちる" loading="lazy"><figcaption class="ref-figure-cap">Cu より<b>イオン化傾向が小さい</b>金属は陽極泥に、<b>大きい</b>金属は水溶液中に残ります。陰極に析出するのは Cu だけです。</figcaption></figure>
 <p class="ref-p"><b>「陽極泥になるのは Au・Ag（Pt）、水溶液に残るのは Fe・Zn・Ni」を必ず覚えてください。</b>どちらもイオン化傾向と優先順位で説明できるようにしましょう。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">粗銅に含まれる亜鉛は、イオン化傾向が大きいので溶けださずに陽極泥になる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">イオン化傾向が大きい金属ほど陽イオンになりやすいので、Zn は <b>Cu より先に溶けだし</b>、水溶液中にとどまります。陽極泥になるのは、イオン化傾向が<b>小さい</b> Au・Ag・Pt です。</span></p><p class="ref-mistake-why">「陽極泥 ＝ 不純物がたまるところ」とだけ覚えて、どの不純物もそこへ行くと思ってしまうためです。★ 溶けるか溶けないかはイオン化傾向で決まり、析出するかどうかは陰極の優先順位で決まる、と2段に分けて考えます。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/copper-silver/">銅の単体と化合物の性質は銅と銀のページへ</a></p>
@@ -1027,6 +1032,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

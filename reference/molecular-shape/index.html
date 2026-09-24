@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -925,8 +930,8 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">水分子は構造式が H−O−H なので、3つの原子が一直線に並んだ直線形である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body"><b>水分子は折れ線形</b>（結合角 104.5°）です。構造式は原子のつながり方を平面に書いたもので、実際の形を表してはいません。</span></p><p class="ref-mistake-why">構造式では非共有電子対を省略するので、O の上下にある2組の非共有電子対が見えなくなります。電子式に戻して数えると、O のまわりには4組の電子対があります。</p></div>
 <section class="ref-sec" id="ref-sec-repulsion"><h4 class="ref-sec-h">形が決まるしくみ —— 電子のまとまりの反発</h4><p class="ref-sec-lead">電子対はどれも負の電荷をもつので、たがいに反発して、中心の原子のまわりでいちばん遠い位置に散ります。まとまりが2組なら直線、3組なら正三角形、4組なら正四面体の向きです。</p></section>
 <p class="ref-p">では、なぜ H₂O は折れ線で CH₄ は正四面体になるのかを見ていきましょう。鍵は、<b>電子対はどれも負の電荷をもっている</b>ことです。負どうしは反発するので、中心の原子のまわりにある電子対は、<b>たがいにいちばん遠くなる位置へ散ります</b>。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-electron-pair.png" alt="メタンの電子式。炭素のまわりの4組の共有電子対が、負の電荷でたがいに反発するので正四面体になることを示した図" loading="lazy"><figcaption class="ref-figure-cap">4組の電子対がたがいに反発して、いちばん遠い位置に散った結果が正四面体です。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-tetrahedron.png" alt="メタンの正四面体構造。中心の炭素から4本の結合が伸び、手前に出る結合を塗ったくさび、奥へ向かう結合を破線のくさびで描き、結合角109.5度を書き込んだ図" loading="lazy"><figcaption class="ref-figure-cap">4組が散ると、正四面体の中心から4つの頂点へ向かう形になり、結合角は 109.5° です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-electron-pair.png?h=bf6437e5" alt="メタンの電子式。炭素のまわりの4組の共有電子対が、負の電荷でたがいに反発するので正四面体になることを示した図" loading="lazy"><figcaption class="ref-figure-cap">4組の電子対がたがいに反発して、いちばん遠い位置に散った結果が正四面体です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-tetrahedron.png?h=bbb56be2" alt="メタンの正四面体構造。中心の炭素から4本の結合が伸び、手前に出る結合を塗ったくさび、奥へ向かう結合を破線のくさびで描き、結合角109.5度を書き込んだ図" loading="lazy"><figcaption class="ref-figure-cap">4組が散ると、正四面体の中心から4つの頂点へ向かう形になり、結合角は 109.5° です。</figcaption></figure>
 <p class="ref-p">形は、次の手順で決めます。<b>数えるのは「電子のまとまり」</b>で、共有電子対も非共有電子対も1組と数え、<b>二重結合・三重結合もまとめて1組</b>と数えます。</p>
 <ol class="ref-list"><li>中心の原子のまわりを電子式で書く。<div class="ref-li-hang">H₂O なら O のまわりに、H と共有する電子対 2組と、非共有電子対 2組</div></li><li>電子のまとまりを数える。二重結合・三重結合は1組と数える。<div class="ref-li-hang">CO₂ の C は O=C=O で、二重結合 2本 ＝ 2組</div></li><li>まとまりの数で、散る向きを決める。<div class="ref-li-hang">2組なら直線（180°）、3組なら正三角形（120°）、4組なら正四面体（109.5°）</div></li><li>原子が付いている方向だけを見て、形の名前を付ける。非共有電子対は形の名前に数えない。<div class="ref-li-hang">4組のうち非共有電子対が1組なら三角錐形、2組なら折れ線形</div></li></ol>
 <div class="ref-table-wrap"><div class="ref-cap">電子のまとまりの数と散る向き</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">まとまりの数</th><th style="text-align: left;">散る向き</th><th style="text-align: left;">角度</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">2組</td><td style="text-align: left;">直線</td><td style="text-align: left;">180°</td><td style="text-align: left;">CO₂、エチン（アセチレン）の C</td></tr><tr><td style="text-align: left;">3組</td><td style="text-align: left;">正三角形（平面）</td><td style="text-align: left;">120°</td><td style="text-align: left;">エテン（エチレン）の C、ベンゼンの C、ホルムアルデヒドの C</td></tr><tr><td style="text-align: left;">4組</td><td style="text-align: left;">正四面体</td><td style="text-align: left;">109.5°</td><td style="text-align: left;">CH₄、NH₃ の N、H₂O の O、ダイヤモンドの C</td></tr></tbody></table></div>
@@ -944,7 +949,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/periodic-table/">電気陰性度が周期表の上でどう変わるかは、周期表のページへ</a></p>
 <p class="ref-p">電気陰性度の違う2つの原子が共有結合すると、共有電子対は電気陰性度の大きい原子の方へ引き寄せられ、そちらがわずかに負（δ−）、相手がわずかに正（δ＋）の電荷を帯びます。このような電荷の偏りを「<b>結合に極性がある</b>」といいます。同じ原子どうしの結合（H−H・Cl−Cl）には極性がありません。</p>
 <p class="ref-p">分子全体として電荷の偏りをもつ分子を<b>極性分子</b>、もたない分子を<b>無極性分子</b>といいます。原子が2個の分子なら、結合の極性がそのまま分子の極性です（HCl は極性分子、H₂ は無極性分子）。原子が3個以上になると、<b>形</b>が効いてきます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-electron-dot.png" alt="メタンの電子式と、結合の極性δ+δ−を書き込んだ構造式。結合の極性が分子全体で打ち消されて無極性になることを示している" loading="lazy"><figcaption class="ref-figure-cap">C−H 結合1本ずつには極性がありますが、正四面体の4方向に同じ大きさで向いているので、分子全体では打ち消されます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-electron-dot.png?h=7d1cd82b" alt="メタンの電子式と、結合の極性δ+δ−を書き込んだ構造式。結合の極性が分子全体で打ち消されて無極性になることを示している" loading="lazy"><figcaption class="ref-figure-cap">C−H 結合1本ずつには極性がありますが、正四面体の4方向に同じ大きさで向いているので、分子全体では打ち消されます。</figcaption></figure>
 <p class="ref-p">CO₂ の C=O 結合には極性がありますが、直線形で2本が正反対を向いているので、<b>打ち消し合って無極性分子</b>になります。一方、H₂O の O−H 結合は折れ線形で向きがそろわないため<b>打ち消されずに極性分子</b>になります。NH₃（三角錐形）も同じ理由で極性分子です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">形と分子の極性</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分子</th><th style="text-align: left;">形</th><th style="text-align: left;">結合の極性</th><th style="text-align: left;">分子の極性</th></tr></thead><tbody><tr><td style="text-align: left;">H₂・N₂・Cl₂</td><td style="text-align: left;">直線形</td><td style="text-align: left;">なし</td><td style="text-align: left;">無極性分子</td></tr><tr><td style="text-align: left;">HCl・HF</td><td style="text-align: left;">直線形</td><td style="text-align: left;">あり</td><td style="text-align: left;"><b>極性分子</b></td></tr><tr><td style="text-align: left;">CO₂</td><td style="text-align: left;">直線形</td><td style="text-align: left;">あり（正反対で打ち消し合う）</td><td style="text-align: left;">無極性分子</td></tr><tr><td style="text-align: left;">H₂O</td><td style="text-align: left;">折れ線形</td><td style="text-align: left;">あり（打ち消されない）</td><td style="text-align: left;"><b>極性分子</b></td></tr><tr><td style="text-align: left;">NH₃</td><td style="text-align: left;">三角錐形</td><td style="text-align: left;">あり（打ち消されない）</td><td style="text-align: left;"><b>極性分子</b></td></tr><tr><td style="text-align: left;">CH₄・CCl₄</td><td style="text-align: left;">正四面体形</td><td style="text-align: left;">あり（4方向で打ち消し合う）</td><td style="text-align: left;">無極性分子</td></tr><tr><td style="text-align: left;">CH₃Cl</td><td style="text-align: left;">四面体形（1つだけ別の原子）</td><td style="text-align: left;">あり（打ち消されない）</td><td style="text-align: left;"><b>極性分子</b></td></tr></tbody></table></div>
 <p class="ref-p"><b>「中心の原子のまわりに同じ原子が対称に付いていれば無極性、非共有電子対があるか付いている原子が混ざれば極性」</b>と覚えておきましょう。この表の分子は、極性分子か無極性分子かを即答できるようにしてください。</p>
@@ -1028,6 +1033,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

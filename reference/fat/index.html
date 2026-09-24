@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -918,7 +923,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">高級脂肪酸 R−COOH と、3価アルコールである1,2,3-プロパントリオール（<b>グリセリン</b>）CH₂OHCHOHCH₂OH がつくる3価のエステルを<b>油脂</b>といいます。</p>
 <section class="ref-sec" id="ref-sec-structure"><h4 class="ref-sec-h">油脂の構造</h4><p class="ref-sec-lead">グリセリン1分子に、高級脂肪酸3分子がエステル結合でつながっています。</p></section>
 <p class="ref-p">グリセリンは −OH を3個もつので、<b>3分子の脂肪酸と3か所でエステル結合をつくります</b>。つまり油脂は、エステル結合を3つもつ1個の分子です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-structure.png" alt="油脂の構造式を左向きと右向きの2通りで並べた図。どちらも中央に炭素3個のグリセリン骨格があり、そこから3本の −O−CO−R がのびている" loading="lazy"><figcaption class="ref-figure-cap">油脂の構造式は<b>どちらの向きに書いても構いません</b>。ただし示性式にするときは、左向きなら −OCO−、右向きなら −COO− と書き分けます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-structure.png?h=e97b6d9c" alt="油脂の構造式を左向きと右向きの2通りで並べた図。どちらも中央に炭素3個のグリセリン骨格があり、そこから3本の −O−CO−R がのびている" loading="lazy"><figcaption class="ref-figure-cap">油脂の構造式は<b>どちらの向きに書いても構いません</b>。ただし示性式にするときは、左向きなら −OCO−、右向きなら −COO− と書き分けます。</figcaption></figure>
 <p class="ref-p"><b>エステル結合の示性式の向きは、書くときに毎回確かめてください。</b>−OCO− と −COO− は同じ結合ですが、左右どちらから読むかで並びが変わります。</p>
 <p class="ref-p">天然の油脂を構成する脂肪酸は、<b>炭素数16か18のものがほとんど</b>です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">油脂をつくる主な高級脂肪酸</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: center;">C=C の数</th></tr></thead><tbody><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>パルミチン酸</b></td><td style="text-align: left;">C₁₅H₃₁COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>ステアリン酸</b></td><td style="text-align: left;">C₁₇H₃₅COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>オレイン酸</b></td><td style="text-align: left;">C₁₇H₃₃COOH</td><td style="text-align: center;">1</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノール酸</b></td><td style="text-align: left;">C₁₇H₃₁COOH</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノレン酸</b></td><td style="text-align: left;">C₁₇H₂₉COOH</td><td style="text-align: center;">3</td></tr></tbody></table></div>
@@ -929,10 +934,10 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">分子間力が大きいほど融点は高くなります。同じ種類の分子どうしなら、分子量が大きいほど分子間力（分散力）が大きくなるためです。</p>
 <p class="ref-p">だから油脂では、まず「<b>炭素数が多い（分子量が大きい）ほど融点が高い</b>」が成り立ちます。</p>
 <p class="ref-p">もう1つ効くのが C=C の数です。油脂では「<b>C=C が多いほど融点が低い</b>」となります。C=C のところで脂肪酸が折れ線になり、分子どうしの接触面積が減って近づきにくくなるので、分子間力が小さくなるためです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-chain-shape.png" alt="脂肪酸2本の模式図。左はまっすぐな折れ線が続く飽和脂肪酸、右は途中で大きく向きが変わる不飽和脂肪酸で、曲がっているところに「C=C（天然の油脂はすべてシス型）」と注が付いている" loading="lazy"><figcaption class="ref-figure-cap">左の<b>飽和脂肪酸</b>はまっすぐ伸びるので重なりやすく、右の<b>不飽和脂肪酸</b>は C=C のところで折れるので重なりにくくなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-chain-shape.png?h=8f4e23f5" alt="脂肪酸2本の模式図。左はまっすぐな折れ線が続く飽和脂肪酸、右は途中で大きく向きが変わる不飽和脂肪酸で、曲がっているところに「C=C（天然の油脂はすべてシス型）」と注が付いている" loading="lazy"><figcaption class="ref-figure-cap">左の<b>飽和脂肪酸</b>はまっすぐ伸びるので重なりやすく、右の<b>不飽和脂肪酸</b>は C=C のところで折れるので重なりにくくなります。</figcaption></figure>
 <p class="ref-p">この理由の立て方は、アルコールの沸点が 1級・2級・3級 の順に低くなるのと同じです。<b>「かたちが複雑になると近づきにくくなる」という1本の理由</b>で両方を説明できます。</p>
 <p class="ref-p">常温で固体の油脂を<b>脂肪</b>、液体の油脂を<b>脂肪油</b>といいます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-melting-state.png" alt="2本の縦棒グラフ。左は融点が高い油脂で、常温の線が融点より下にあり固体の領域に入る。右は融点が低い油脂で、常温の線が融点より上にあり液体の領域に入る" loading="lazy"><figcaption class="ref-figure-cap"><b>融点が常温のどちら側にあるか</b>で、脂肪（固体）と脂肪油（液体）が分かれます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-melting-state.png?h=0790ad91" alt="2本の縦棒グラフ。左は融点が高い油脂で、常温の線が融点より下にあり固体の領域に入る。右は融点が低い油脂で、常温の線が融点より上にあり液体の領域に入る" loading="lazy"><figcaption class="ref-figure-cap"><b>融点が常温のどちら側にあるか</b>で、脂肪（固体）と脂肪油（液体）が分かれます。</figcaption></figure>
 <p class="ref-p">一般的に、動物性の油脂は飽和脂肪酸が多いので<b>脂肪</b>、植物性の油脂は不飽和脂肪酸が多いので<b>脂肪油</b>になります。</p>
 <p class="ref-p">脂肪油の中でも C=C の多いものは、空気中に置いておくと酸素と反応して固まっていきます。この性質をもつ油が<b>乾性油</b>で、インクや塗料に使われます。C=C が少なく空気中で固まらないものが<b>不乾性油</b>で、食用油がこれにあたります。その中間が半乾性油です。</p>
 <p class="ref-p">脂肪油に<b>ニッケル Ni を触媒として水素 H₂ を付加</b>し、C=C を減らして固めた油脂を<b>硬化油</b>といいます。マーガリンの原料です。</p>
@@ -942,7 +947,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">油脂 ＋ 3H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">H⁺</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">グリセリン ＋ 3R−COOH</span></div><p class="ref-note">エステルの加水分解そのものです。グリセリン1分子に対して脂肪酸が3分子出てきます。</p></div>
 <p class="ref-p">油脂に水酸化ナトリウム水溶液 NaOH を加えて加熱すると、<b>けん化</b>（塩基を用いた加水分解）が起こり、グリセリンと<b>脂肪酸のナトリウム塩 R−COONa</b> が生じます。KOH を使っても同じです。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">油脂 ＋ 3NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">グリセリン ＋ 3R−COONa</span></div><p class="ref-note">実際の反応の仕組みとは違いますが、「加水分解したあと、出てきた脂肪酸が NaOH と中和した」と考えると反応式が書けます。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-saponification.png" alt="油脂に3NaOH を加えると、脂肪酸のナトリウム塩3分子とグリセリン1分子になる反応の構造式" loading="lazy"><figcaption class="ref-figure-cap">3か所のエステル結合が同時に切れるので、<b>NaOH は3分子</b>必要です。出てくるのは塩3分子とグリセリン1分子。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-saponification.png?h=3caa519a" alt="油脂に3NaOH を加えると、脂肪酸のナトリウム塩3分子とグリセリン1分子になる反応の構造式" loading="lazy"><figcaption class="ref-figure-cap">3か所のエステル結合が同時に切れるので、<b>NaOH は3分子</b>必要です。出てくるのは塩3分子とグリセリン1分子。</figcaption></figure>
 <p class="ref-p"><b>「油脂1molに NaOH は3mol」は必ず覚えてください。</b>この 1対3 が、次の節のけん化価の計算をそのまま決めます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">けん化の一般形（エステル1つぶんの反応式と、加水分解との違い）はこちら</a></p>
 <p class="ref-p">けん化で得られた脂肪酸のナトリウム塩が<b>セッケン</b>です。</p>
@@ -950,7 +955,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-numbers"><h4 class="ref-sec-h">油脂の分子量・けん化価・ヨウ素価</h4><p class="ref-sec-lead">「分子量＝構成脂肪酸3分子＋38」と「ステアリン酸だけの油脂は890」の2つで、ほとんどの計算が片づきます。</p></section>
 <p class="ref-p">油脂はグリセリンと脂肪酸3分子から水3分子がとれたものなので、分子量は次のようになります。</p>
 <p class="ref-p"><b>（油脂の分子量）＝（構成脂肪酸3分子の分子量）＋ 38</b> となります。38 は、グリセリンから3つの −OH を除いた C₃H₂ の分の式量です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-molar-mass-38.png" alt="油脂の構造式を2色で塗り分けた図。中央の縦に並んだ C 3個と H 2個の部分が橙色の枠で囲まれ「式量38」、左右の脂肪酸にあたる部分が緑色で塗られ「脂肪酸3分子と同じ」と注が付いている" loading="lazy"><figcaption class="ref-figure-cap">油脂を<b>縦に切り分ける</b>と、橙の部分が式量38、緑の部分が<b>脂肪酸3分子とちょうど同じ</b>になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-molar-mass-38.png?h=bff74003" alt="油脂の構造式を2色で塗り分けた図。中央の縦に並んだ C 3個と H 2個の部分が橙色の枠で囲まれ「式量38」、左右の脂肪酸にあたる部分が緑色で塗られ「脂肪酸3分子と同じ」と注が付いている" loading="lazy"><figcaption class="ref-figure-cap">油脂を<b>縦に切り分ける</b>と、橙の部分が式量38、緑の部分が<b>脂肪酸3分子とちょうど同じ</b>になります。</figcaption></figure>
 <p class="ref-p">実際に代入してみます。分子量884の油脂が1種類の脂肪酸 A だけでできているとすると、A の分子量は (884 − 38) ÷ 3 = 282 です。飽和脂肪酸の一般式 C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub> に n = 18 を入れるとステアリン酸 C₁₈H₃₆O₂ で分子量284なので、A はそれより2小さい ＝ <b>C=C を1個もつオレイン酸</b>と決まります。</p>
 <p class="ref-p"><b>「油脂の問題では、構成脂肪酸の炭素数はほとんどの場合18」と覚えてください。</b>方程式を立てるより、18で決め打ちして分子量を合わせにいくほうが速いです。合わなければ別の n を試します。</p>
 <p class="ref-p"><b>ステアリン酸だけからなる油脂の分子量890も、覚えておくと強い数値です。</b>890から何だけ小さいかを見れば、C=C の数がそのまま出ます（C=C が1個で2小さい）。少なくとも「油脂の分子量は900弱」という概数は覚えておいてください。</p>
@@ -1047,6 +1052,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

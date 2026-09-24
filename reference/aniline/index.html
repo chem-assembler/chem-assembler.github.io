@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -918,7 +923,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>アミノ基 −NH₂</b> がベンゼン環に直接結合した化合物を<b>芳香族アミン</b>といいます。代表が<b>アニリン C₆H₅NH₂</b> で、ニトロベンゼンからつくり、染料の原料になります。</p>
 <section class="ref-sec" id="ref-sec-aniline"><h4 class="ref-sec-h">アニリンの性質</h4><p class="ref-sec-lead">無色の油状の液体で、空気中で酸化されて褐色になります。水溶液は弱い塩基性です。</p></section>
 <p class="ref-p">アニリンは、<b>特有のにおいをもつ無色の油状の液体</b>です。水に溶けにくく、有毒です。<b>空気中に置いておくと酸化されて、しだいに褐色になります</b>。古い試薬びんのアニリンが茶色く見えるのは、このためです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aniline-aniline.png" alt="アニリンの構造式。ベンゼン環の炭素1個にアミノ基が直接結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>アニリン C₆H₅NH₂</b>。アミノ基 −NH₂ が環に直接付いています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aniline-aniline.png?h=8ac01b6f" alt="アニリンの構造式。ベンゼン環の炭素1個にアミノ基が直接結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>アニリン C₆H₅NH₂</b>。アミノ基 −NH₂ が環に直接付いています。</figcaption></figure>
 <div class="ref-example"><h4>例題：アニリン をつくる</h4><p class="ref-p" style="margin: 0px;">アニリンを組んで、−NH₂ が環に直接付いていることを手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.aroN.amino&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=aniline">▶ アニリンを組んでみる</a><p class="ref-note">窒素は手が3本なので、環との結合1本と H 2個でちょうど埋まります。</p></div>
 <section class="ref-sec" id="ref-sec-base"><h4 class="ref-sec-h">弱い塩基性</h4><p class="ref-sec-lead">アニリンは塩酸と中和して塩になり、水に溶けるようになります。アンモニアより弱い塩基です。</p></section>
 <p class="ref-p">アニリンは<b>弱い塩基</b>で、塩酸と中和して<b>アニリン塩酸塩</b>になります。塩になると<b>水によく溶けます</b>。</p>
@@ -937,7 +942,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-detect"><h4 class="ref-sec-h">アニリンを見分ける</h4><p class="ref-sec-lead">さらし粉水溶液で赤紫色に呈色します。二クロム酸カリウムで酸化すると黒色のアニリンブラックになります。</p></section>
 <p class="ref-p">アニリンの水溶液に<b>さらし粉水溶液</b>を加えると、<b>赤紫色</b>に呈色します。<b>「アニリンはさらし粉で赤紫」と覚えましょう。</b>アニリンの検出によく使われます。</p>
 <p class="ref-p">また、アニリンを硫酸酸性の<b>二クロム酸カリウム</b>で酸化すると、<b>黒色の物質（アニリンブラック）</b>ができます。アニリンブラックは黒色の染料に使われます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aniline-detect.png" alt="アニリンの水溶液を入れた試験管2本の模式図。左はさらし粉水溶液を加えて赤紫色になり、右は硫酸酸性の二クロム酸カリウム水溶液を加えて黒色になっている" loading="lazy"><figcaption class="ref-figure-cap">左はアニリンの検出に使う反応、右は黒色の染料をつくる反応です。<b>「さらし粉で赤紫」「二クロム酸カリウムで黒」を対にして</b>覚えましょう。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aniline-detect.png?h=4af243bb" alt="アニリンの水溶液を入れた試験管2本の模式図。左はさらし粉水溶液を加えて赤紫色になり、右は硫酸酸性の二クロム酸カリウム水溶液を加えて黒色になっている" loading="lazy"><figcaption class="ref-figure-cap">左はアニリンの検出に使う反応、右は黒色の染料をつくる反応です。<b>「さらし粉で赤紫」「二クロム酸カリウムで黒」を対にして</b>覚えましょう。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-acetyl"><h4 class="ref-sec-h">アセチル化してアセトアニリドにする</h4><p class="ref-sec-lead">無水酢酸と反応させると、アミノ基がアセチル化されてアミド結合をもつアセトアニリドになります。</p></section>
 <p class="ref-p">アミノ基 −NH₂ の H の1つは、<b>無水酢酸</b>と反応させるとアセチル基 −COCH₃ と入れ替わります。アニリンでこれを行うと、白い結晶の<b>アセトアニリド</b>が得られます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅NH₂ ＋ (CH₃CO)₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅NHCOCH₃ ＋ CH₃COOH</span></div><p class="ref-note">アセトアニリドができます。−NH−CO− の結合を<b>アミド結合</b>といいます。</p></div>
@@ -953,7 +958,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-coupling"><h4 class="ref-sec-h">カップリングとアゾ染料</h4><p class="ref-sec-lead">塩化ベンゼンジアゾニウムにナトリウムフェノキシドを加えると、橙赤色の p-ヒドロキシアゾベンゼンができます。</p></section>
 <p class="ref-p">塩化ベンゼンジアゾニウムの相手に<b>ナトリウムフェノキシド</b>を選び、2つの水溶液を混ぜると、<b>橙赤色の p-ヒドロキシアゾベンゼン</b>が生じます。ジアゾニウム塩が相手のベンゼン環と結びつき、<b>アゾ基 −N=N−</b> をもつ化合物ができるこの反応を<b>カップリング</b>と呼びます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅N₂Cl ＋ C₆H₅ONa</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅−N=N−C₆H₄−OH ＋ NaCl</span></div><p class="ref-note">p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）ができます。フェノールの −OH から見て p の位置で結びつきます。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aniline-hydroxyazobenzene.png" alt="p-ヒドロキシアゾベンゼンの構造式。2個のベンゼン環が −N=N− でつながり、片方の環の向かい側の炭素にヒドロキシ基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>p-ヒドロキシアゾベンゼン</b>。2個の環を<b>アゾ基 −N=N−</b> がつないでいます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aniline-hydroxyazobenzene.png?h=bcb8aa3e" alt="p-ヒドロキシアゾベンゼンの構造式。2個のベンゼン環が −N=N− でつながり、片方の環の向かい側の炭素にヒドロキシ基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>p-ヒドロキシアゾベンゼン</b>。2個の環を<b>アゾ基 −N=N−</b> がつないでいます。</figcaption></figure>
 <p class="ref-p">アゾ基をもつ化合物を<b>アゾ化合物</b>といいます。アゾ化合物の多くは黄色〜赤色の色をもち、<b>アゾ染料</b>として使われます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">ニトロベンゼンからアゾ染料までの4段</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">段</th><th style="text-align: left;">加えるもの・条件</th><th style="text-align: left;">できるもの</th></tr></thead><tbody><tr><td style="text-align: center;">1</td><td style="text-align: left;">スズ（または鉄）と塩酸</td><td style="text-align: left;">アニリン塩酸塩</td></tr><tr><td style="text-align: center;">2</td><td style="text-align: left;">NaOH 水溶液</td><td style="text-align: left;">アニリン</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: left;">塩酸と NaNO₂・<b>5℃以下</b></td><td style="text-align: left;">塩化ベンゼンジアゾニウム</td></tr><tr><td style="text-align: center;">4</td><td style="text-align: left;">ナトリウムフェノキシド</td><td style="text-align: left;"><b>p-ヒドロキシアゾベンゼン</b>（橙赤色）</td></tr></tbody></table></div>
 <p class="ref-p"><b>ニトロベンゼンからアゾ染料までの4段（還元 → 遊離 → ジアゾ化 → カップリング）の流れは、よく登場するので、反応式ごと書けるようにしておきましょう。</b></p>
@@ -1037,6 +1042,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

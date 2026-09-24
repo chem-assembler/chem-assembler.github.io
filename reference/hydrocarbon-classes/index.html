@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -935,9 +940,9 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane/">アルカンの一般式が C<sub>n</sub>H<sub>2n+2</sub> になる理由（メチレン基で組み立てる）はこちら</a></p>
 <section class="ref-sec" id="ref-sec-why"><h4 class="ref-sec-h">なぜ水素の数が減るのか</h4><p class="ref-sec-lead">一般式を6つとも丸暗記しなくても、アルカンを基準に「二重結合で−2、三重結合で−4、環で−2」と足し引きすれば出せます。</p></section>
 <p class="ref-p">アルカンの単結合 C−C を<b>二重結合 C=C にすると、水素原子が2個減ります。</b>それぞれの炭素から手が1本ずつ、たがいのほうへ回されるためです。<b>三重結合 C≡C にすると、水素原子は4個減ります。</b></p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hydrocarbon-double-triple.png" alt="エタンの構造式から、矢印で C−C を C=C にした構造式と、C≡C にした構造式へ分岐する図。二重結合にすると H が2個、三重結合にすると H が4個減ることを示している" loading="lazy"><figcaption class="ref-figure-cap">エタン C₂H₆ を基準にすると、<b>二重結合にしてエテン C₂H₄</b>（H が2個減）、<b>三重結合にしてエチン C₂H₂</b>（H が4個減）です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hydrocarbon-double-triple.png?h=9a494a94" alt="エタンの構造式から、矢印で C−C を C=C にした構造式と、C≡C にした構造式へ分岐する図。二重結合にすると H が2個、三重結合にすると H が4個減ることを示している" loading="lazy"><figcaption class="ref-figure-cap">エタン C₂H₆ を基準にすると、<b>二重結合にしてエテン C₂H₄</b>（H が2個減）、<b>三重結合にしてエチン C₂H₂</b>（H が4個減）です。</figcaption></figure>
 <p class="ref-p"><b>環をつくるときも、水素原子が2個減ります。</b>鎖の両端の水素を1個ずつとりさって、あいた手どうしをつなぐためです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hydrocarbon-ring.png" alt="プロパンの構造式の両端の H に緑の丸をつけ、矢印でシクロプロパンの三角形の構造式に変わるようすを描いた図" loading="lazy"><figcaption class="ref-figure-cap"><b>両端の H を1個ずつとりさって手をつなぐ</b>と環になります。だから H が2個減ります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hydrocarbon-ring.png?h=676892fe" alt="プロパンの構造式の両端の H に緑の丸をつけ、矢印でシクロプロパンの三角形の構造式に変わるようすを描いた図" loading="lazy"><figcaption class="ref-figure-cap"><b>両端の H を1個ずつとりさって手をつなぐ</b>と環になります。だから H が2個減ります。</figcaption></figure>
 <p class="ref-p">つまり、<b>アルカン C<sub>n</sub>H<sub>2n+2</sub> を基準に、次のように足し引きすれば6つの一般式が全部出ます。</b></p>
 <ul class="ref-list"><li><b>C=C を1個つくる</b> … H が <b>−2</b></li><li><b>C≡C を1個つくる</b> … H が <b>−4</b></li><li><b>環を1個つくる</b> … H が <b>−2</b></li></ul>
 <p class="ref-p">例えばシクロアルケンなら、環で −2、二重結合で −2 なので、合わせて <b>−4</b> で C<sub>n</sub>H<sub>2n-2</sub> です。シクロアルキンなら環で −2、三重結合で −4 で、合わせて <b>−6</b> で C<sub>n</sub>H<sub>2n-4</sub> になります。</p>
@@ -1025,6 +1030,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

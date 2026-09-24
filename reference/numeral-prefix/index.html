@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -923,7 +928,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>ジ（2）・トリ（3）・テトラ（4）までは必ず覚えてください</b>。ペンタ以降は、アルカンの名称（ペンタン・ヘキサン…）を覚えていれば同じ語がそのまま使えるので、別に覚え直す必要はありません。</p>
 <section class="ref-sec" id="ref-sec-where"><h4 class="ref-sec-h">どこで出てくるか</h4><p class="ref-sec-lead">命名で終わる話ではありません。ジカルボン酸・二糖・トリグリセリド・テトラペプチドまで、同じ接頭辞が続きます。</p></section>
 <p class="ref-p">はじめに出会うのは、枝分かれしたアルカンの命名です。<b>同じアルキル基が2個あれば「ジ」、3個あれば「トリ」</b>を付けて、位置の数字をカンマでつなぎます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/numeral-prefix-dimethylbutane.png" alt="2,3-ジメチルブタンの構造式。炭素4個の主鎖が横一直線に並び、オレンジの帯が主鎖の上を通って左端から C₁ C₂ C₃ C₄ と番号が振ってある。C₂ と C₃ にメチル基 CH₃ が1個ずつ付いている" loading="lazy"><figcaption class="ref-figure-cap">メチル基が2個あるので「<b>ジ</b>メチル」。位置は C₂ と C₃ なので「2,3-ジメチルブタン」です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/numeral-prefix-dimethylbutane.png?h=d2588c8b" alt="2,3-ジメチルブタンの構造式。炭素4個の主鎖が横一直線に並び、オレンジの帯が主鎖の上を通って左端から C₁ C₂ C₃ C₄ と番号が振ってある。C₂ と C₃ にメチル基 CH₃ が1個ずつ付いている" loading="lazy"><figcaption class="ref-figure-cap">メチル基が2個あるので「<b>ジ</b>メチル」。位置は C₂ と C₃ なので「2,3-ジメチルブタン」です。</figcaption></figure>
 <p class="ref-p">そのあとも、同じ接頭辞が単元をまたいで出てきます。<b>接頭辞の意味が分かっていれば、名前を見ただけで「いくつあるか」が読めます</b>。</p>
 <ul class="ref-list"><li><b>ジ</b>カルボン酸 …… カルボキシ基 −COOH を<b>2個</b>もつカルボン酸。シュウ酸・マレイン酸・フマル酸・フタル酸。</li><li><b>二</b>糖 …… 単糖が<b>2個</b>つながったもの。マルトース・スクロース・ラクトース。<div class="ref-li-hang">⚠ ここだけ日本語の「二」ですが、英語では disaccharide で同じ「ジ」です。</div></li><li><b>トリ</b>グリセリド …… グリセリンに脂肪酸が<b>3個</b>結びついたもの ＝ 油脂そのもの。</li><li><b>テトラ</b>ペプチド …… アミノ酸が<b>4個</b>つながったもの。2個ならジペプチド、3個ならトリペプチド。</li></ul>
 <p class="ref-p"><b>名前の中の数の部分を拾う</b>、という読み方はどの単元でも同じです。知らない物質名が出てきても、頭に付いた接頭辞だけは読めます。</p>
@@ -997,6 +1002,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

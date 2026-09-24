@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,7 +927,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">具体例として、H₂ と I₂ を同じ物質量ずつ密閉容器に入れると、HI が生じ、やがて平衡状態に達します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂ ＋ I₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2HI</span></div><p class="ref-note">平衡の説明で最もよく使われる反応です。両辺の分子の数が 2個 ＝ 2個 で等しいことを覚えておくと、あとで計算が楽になります。</p></div>
 <p class="ref-p">はじめは HI が無いので、正反応の速度 v₁ は大きく、逆反応の速度 v₂ は0です。H₂・I₂ が減るにつれて v₁ は小さくなり、HI が増えるにつれて v₂ は大きくなります。やがて <b>v₁ ＝ v₂</b> になると、各物質の濃度はそれ以上変わらなくなります。これが平衡状態です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/equilibrium-constant-graphs.png" alt="H₂ ＋ I₂ ⇄ 2HI の2つのグラフ。左は縦軸が濃度で、[HI] は増え、[H₂] ＝ [I₂] は減り、どちらも途中から横ばいになる。右は縦軸が速度で、v₁ は減り、v₂ は増え、途中で重なって横ばいになる。横ばいの区間に「平衡状態」の網かけがあり、左に「濃度が一定」、右に「v₁ ＝ v₂ が成立」の札" loading="lazy"><figcaption class="ref-figure-cap">濃度が一定になるところと、v₁ と v₂ が重なるところは同じ時刻です。平衡状態では反応が止まったのではなく、正反応と逆反応が同じ速さで進んでいます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/equilibrium-constant-graphs.png?h=eac8db03" alt="H₂ ＋ I₂ ⇄ 2HI の2つのグラフ。左は縦軸が濃度で、[HI] は増え、[H₂] ＝ [I₂] は減り、どちらも途中から横ばいになる。右は縦軸が速度で、v₁ は減り、v₂ は増え、途中で重なって横ばいになる。横ばいの区間に「平衡状態」の網かけがあり、左に「濃度が一定」、右に「v₁ ＝ v₂ が成立」の札" loading="lazy"><figcaption class="ref-figure-cap">濃度が一定になるところと、v₁ と v₂ が重なるところは同じ時刻です。平衡状態では反応が止まったのではなく、正反応と逆反応が同じ速さで進んでいます。</figcaption></figure>
 <p class="ref-p">平衡状態では反応が止まっているのではなく、<b>正反応と逆反応が同じ速さで起こり続けている</b>ので、見かけ上止まって見えます。蛇口から入る水と栓から抜ける水の速さが等しいとき、浴槽の水位が一定に保たれるのと同じです。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">平衡状態では反応が止まっている</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body"><b>正反応と逆反応が同じ速度で進み続けていて、濃度が変わらないだけです</b>（見かけ上の停止）。</span></p><p class="ref-mistake-why">濃度のグラフが平らになるのを見て、何も起きていないと思いやすいためです。速度のグラフを見ると、v₁ と v₂ はどちらも0ではありません。</p></div>
 <section class="ref-sec" id="ref-sec-constant"><h4 class="ref-sec-h">平衡定数 —— 生成物が分子</h4><p class="ref-sec-lead">平衡状態では v₁ ＝ v₂ なので、速度式を代入すると k₁[H₂][I₂] ＝ k₂[HI]² です。生成物 HI が分子に来るように定数をまとめた K ＝ [HI]²／([H₂][I₂]) を平衡定数といいます。</p></section>
@@ -1025,6 +1030,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

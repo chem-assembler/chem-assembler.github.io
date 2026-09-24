@@ -63,7 +63,7 @@ terms:
 
 :::figure
 src: numeral-prefix-dimethylbutane.png
-gen: name=2,3-ジメチルブタン numbered
+gen: name=2,3-ジメチルブタン numbered tight
 alt: 2,3-ジメチルブタンの構造式。炭素4個の主鎖が横一直線に並び、オレンジの帯が主鎖の上を通って左端から C₁ C₂ C₃ C₄ と番号が振ってある。C₂ と C₃ にメチル基 CH₃ が1個ずつ付いている
 caption: メチル基が2個あるので「**ジ**メチル」。位置は C₂ と C₃ なので「2,3-ジメチルブタン」です。
 :::

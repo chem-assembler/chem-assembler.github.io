@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -927,8 +932,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">デンプンは2種類の成分からなります。枝分かれの無いものを<b>アミロース</b>、枝分かれの多いものを<b>アミロペクチン</b>といいます。アミロースは温水に溶けやすく、アミロペクチンは溶けにくい成分です。</p>
 <p class="ref-p"><b>アミロースとアミロペクチンの名前と、枝分かれの有無は暗記してください。</b>枝分かれの結合の位置（1位と6位）は覚えなくて構いません。</p>
 <p class="ref-p">α-グルコース2分子がつながった形は、二糖のマルトースそのものです。デンプンはこの形がずっと続いたものと見られます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-maltose-unit.png" alt="マルトースの構造式を直交で描いた図。α-グルコースの六員環2つが、酸素原子1個をはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap">デンプンの部分構造にあたる<b>マルトース</b>。α-グルコースどうしがつながっています。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-amylose-amylopectin.png" alt="グルコース1個を丸で表した鎖の模式図を2つ並べた図。左は丸がひとつながりに並んでばねのように巻いていて、枝分かれが無い。右は横に伸びた鎖の途中から、別の鎖が何本も枝のように分かれている" loading="lazy"><figcaption class="ref-figure-cap">どちらもグルコースだけでできていて、違うのは<b>枝分かれがあるかどうか</b>です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-maltose-unit.png?h=a9d488de" alt="マルトースの構造式を直交で描いた図。α-グルコースの六員環2つが、酸素原子1個をはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap">デンプンの部分構造にあたる<b>マルトース</b>。α-グルコースどうしがつながっています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-amylose-amylopectin.png?h=52b86d64" alt="グルコース1個を丸で表した鎖の模式図を2つ並べた図。左は丸がひとつながりに並んでばねのように巻いていて、枝分かれが無い。右は横に伸びた鎖の途中から、別の鎖が何本も枝のように分かれている" loading="lazy"><figcaption class="ref-figure-cap">どちらもグルコースだけでできていて、違うのは<b>枝分かれがあるかどうか</b>です。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-iodine"><h4 class="ref-sec-h">ヨウ素デンプン反応</h4><p class="ref-sec-lead">デンプンがあるかどうかは、ヨウ素液を垂らすだけで確かめられます。青紫色に染まり、温めると消え、冷ますと戻ります。</p></section>
 <p class="ref-p">デンプンを見分けるには、<b>ヨウ素ヨウ化カリウム水溶液（ヨウ素液）</b>を少し垂らします。デンプンがあれば、液が<b>青紫色</b>に染まります。この色の変化が<b>ヨウ素デンプン反応</b>です。</p>
 <p class="ref-p">色が出るのは、デンプンのらせんの中にヨウ素が入り込むためです。<b>加熱するとらせんがゆるんで色が消え、冷やすとまた青紫色に戻ります。</b></p>
@@ -938,7 +943,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">デンプンは、酵素<b>アミラーゼ</b>のはたらきで、少し短くなった<b>デキストリン</b>を経て、二糖の<b>マルトース</b>まで分解されます。マルトースは酵素<b>マルターゼ</b>でグルコースになります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2(C₆H₁₀O₅)ₙ ＋ nH₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">アミラーゼ</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">nC₁₂H₂₂O₁₁（マルトース）</span></div><p class="ref-note">デンプンを途中まで分解した形。二糖は単位2個ぶんなので、左辺に係数2が付きます。</p></div>
 <p class="ref-p"><b>「デンプン →（アミラーゼ）→ デキストリン → マルトース →（マルターゼ）→ グルコース」の順は暗記してください。</b></p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-starch-digestion.png" alt="左から右へ矢印で並べた流れ図。長くつながった丸の鎖がデンプン、短くなった鎖がデキストリン、丸2個がマルトース、丸1個がグルコース。矢印にはアミラーゼ、マルターゼと書いてある" loading="lazy"><figcaption class="ref-figure-cap">鎖が<b>端から短く切られていく</b>だけで、丸（グルコース）そのものは変わりません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-starch-digestion.png?h=0ca5ce14" alt="左から右へ矢印で並べた流れ図。長くつながった丸の鎖がデンプン、短くなった鎖がデキストリン、丸2個がマルトース、丸1個がグルコース。矢印にはアミラーゼ、マルターゼと書いてある" loading="lazy"><figcaption class="ref-figure-cap">鎖が<b>端から短く切られていく</b>だけで、丸（グルコース）そのものは変わりません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/enzyme/">アミラーゼ・マルターゼ・セルラーゼなどの酵素の一覧は酵素のページへ</a></p>
 <section class="ref-sec" id="ref-sec-glycogen"><h4 class="ref-sec-h">グリコーゲン</h4><p class="ref-sec-lead">動物がたくわえる多糖で、アミロペクチンよりさらに枝分かれが多く、ヨウ素で赤褐色になります。</p></section>
 <p class="ref-p"><b>グリコーゲン</b>は、動物の肝臓や筋肉にたくわえられる多糖です。デンプンと同じく α-グルコースからなり、<b>アミロペクチンよりさらに枝分かれが多い</b>ものです。ヨウ素液では<b>赤褐色</b>になります。</p>
@@ -947,7 +952,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>セルロース</b>は、<b>β-グルコース</b>が多数縮合した多糖で、植物の細胞壁の主成分です。β形でつながると、鎖は<b>まっすぐ</b>伸びます。まっすぐな鎖どうしが水素結合で束になるので、<b>丈夫な繊維</b>になり、水にも溶けません。</p>
 <p class="ref-p">セルロースは酵素<b>セルラーゼ</b>で二糖の<b>セロビオース</b>に、さらに<b>セロビアーゼ</b>でグルコースに分解されます。ヒトの体はセルラーゼをつくれないので、食べたセルロースはグルコースまで分解されないまま通り過ぎます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2(C₆H₁₀O₅)ₙ ＋ nH₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">セルラーゼ</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">nC₁₂H₂₂O₁₁（セロビオース）</span></div><p class="ref-note">デンプンをアミラーゼで分解する式と、形はまったく同じです。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-cellobiose.png" alt="セロビオースの構造式を直交で描いた図。β-グルコースの六員環2つが、酸素原子1個をはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap">セルロースの部分構造にあたる<b>セロビオース</b>。β-グルコースどうしがつながっています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-cellobiose.png?h=807c7004" alt="セロビオースの構造式を直交で描いた図。β-グルコースの六員環2つが、酸素原子1個をはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap">セルロースの部分構造にあたる<b>セロビオース</b>。β-グルコースどうしがつながっています。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">デンプンとセルロースの対比</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">デンプン</th><th style="text-align: left;">セルロース</th></tr></thead><tbody><tr><td style="text-align: left;">もとの単糖</td><td style="text-align: left;"><b>α-グルコース</b></td><td style="text-align: left;"><b>β-グルコース</b></td></tr><tr><td style="text-align: left;">鎖の形</td><td style="text-align: left;">らせん（アミロペクチンは枝分かれ）</td><td style="text-align: left;">まっすぐ伸びて束になる</td></tr><tr><td style="text-align: left;">ヨウ素デンプン反応</td><td style="text-align: left;">青紫色</td><td style="text-align: left;">呈色しない</td></tr><tr><td style="text-align: left;">所在</td><td style="text-align: left;">植物の種子・根などにたくわえる</td><td style="text-align: left;">植物の細胞壁</td></tr><tr><td style="text-align: left;">ヒトが消化できるか</td><td style="text-align: left;">できる</td><td style="text-align: left;">できない</td></tr></tbody></table></div>
 <p class="ref-p"><b>「α形ならデンプン、β形ならセルロース」</b>と覚えましょう。この表の残りの行は、ほとんどこの1行から理由をつけて出せます。</p>
 <section class="ref-sec" id="ref-sec-cellulose-oh"><h4 class="ref-sec-h">セルロースの −OH は1単位に3個</h4><p class="ref-sec-lead">繰り返し単位 C₆H₁₀O₅ には −OH が3個あるので、[C₆H₇O₂(OH)₃]<sub>n</sub> と書けます。誘導体の計算はすべてここから始まります。</p></section>
@@ -1047,6 +1052,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

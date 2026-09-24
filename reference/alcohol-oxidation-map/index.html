@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -916,7 +921,7 @@ a.ref-link::before { content: '→ '; }
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-primary" data-ref-anchor="primary">第1級アルコールの酸化</a></li><li><a href="#ref-sec-secondary" data-ref-anchor="secondary">第2級アルコールの酸化</a></li><li><a href="#ref-sec-tertiary" data-ref-anchor="tertiary">第3級アルコールの酸化</a></li><li><a href="#ref-sec-summary" data-ref-anchor="summary">アルコール酸化のまとめ</a></li><li><a href="#ref-sec-halfreaction" data-ref-anchor="halfreaction">アルコール酸化の反応式</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
 <div class="ref-scope">
 <p class="ref-p">アルコールを硫酸酸性条件の過マンガン酸カリウム KMnO₄ や二クロム酸カリウムで酸化すると、アルコールの級によって異なる反応を起こします。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-class.png" alt="アルコールの級の図。ヒドロキシ基が付いた炭素を丸で囲み、その炭素に結合している炭素が1個なら1級、2個なら2級、3個なら3級と示している" loading="lazy"><figcaption class="ref-figure-cap">数えるのは、丸で囲んだ炭素に<b>ほかの炭素がいくつ結合しているか</b>だけです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-class.png?h=78ba7b8b" alt="アルコールの級の図。ヒドロキシ基が付いた炭素を丸で囲み、その炭素に結合している炭素が1個なら1級、2個なら2級、3個なら3級と示している" loading="lazy"><figcaption class="ref-figure-cap">数えるのは、丸で囲んだ炭素に<b>ほかの炭素がいくつ結合しているか</b>だけです。</figcaption></figure>
 <p class="ref-p">「ヒドロキシ基 −OH の結合している炭素原子」に結合している炭素原子の数が、0か1個は第1級、2個は第2級、3個は第3級です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-class/">級の数え方と、もう1つの分け方（価数）は「アルコールの分類」で</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">酸化を含めたアルコールの6つの反応の俯瞰と、沸点・命名は「アルコールの性質・反応」で</a></p>
@@ -938,7 +943,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/ketone/">ケトンの性質と、アルデヒドとの見分け方は「ケトンの性質」で</a></p>
 <section class="ref-sec" id="ref-sec-tertiary"><h4 class="ref-sec-h">第3級アルコールの酸化</h4><p class="ref-sec-lead">酸化されません。−OH が付いた炭素に、取れる水素がないためです。</p></section>
 <p class="ref-p">第3級アルコールは酸化されにくく、硫酸酸性条件の過マンガン酸カリウムや二クロム酸カリウムとは反応しません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-oxidation-tertiary.png" alt="2-メチル-2-プロパノールの構造式。中心の炭素にメチル基 CH₃ が3個とヒドロキシ基 OH が1個、合わせて4本の結合が出ていて、中心の炭素には水素が1個もついていない" loading="lazy"><figcaption class="ref-figure-cap">第3級アルコールの例（2-メチル-2-プロパノール）。<b>−OH が付いた炭素に水素が1個もありません</b>。C=O を作るには この炭素から水素が取れなければならないので、反応が起こりません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-oxidation-tertiary.png?h=fb619a96" alt="2-メチル-2-プロパノールの構造式。中心の炭素にメチル基 CH₃ が3個とヒドロキシ基 OH が1個、合わせて4本の結合が出ていて、中心の炭素には水素が1個もついていない" loading="lazy"><figcaption class="ref-figure-cap">第3級アルコールの例（2-メチル-2-プロパノール）。<b>−OH が付いた炭素に水素が1個もありません</b>。C=O を作るには この炭素から水素が取れなければならないので、反応が起こりません。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-summary"><h4 class="ref-sec-h">アルコール酸化のまとめ</h4><p class="ref-sec-lead">級と行き先の3行。有機の構造決定は、この3行を逆にたどる作業です。</p></section>
 <p class="ref-p">アルコールの級による酸化反応の違いをまとめると次のようになります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">級と、酸化の行き先</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">アルコールの級</th><th style="text-align: left;">酸化するとどうなるか</th></tr></thead><tbody><tr><td style="text-align: center;">第1級</td><td style="text-align: left;">アルデヒド −CHO を経て、カルボン酸 −COOH まで進む</td></tr><tr><td style="text-align: center;">第2級</td><td style="text-align: left;">ケトン（両側を炭素にはさまれた C=O）になり、そこで止まる</td></tr><tr><td style="text-align: center;">第3級</td><td style="text-align: left;">酸化されない</td></tr></tbody></table></div>
@@ -1027,6 +1032,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

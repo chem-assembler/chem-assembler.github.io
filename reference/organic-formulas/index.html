@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -920,9 +925,9 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">酢酸とギ酸メチルで比べてみましょう。この2つの化合物は、<b>分子式ではどちらも C₂H₄O₂</b> です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">酢酸とギ酸メチルの表し方</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">表し方</th><th style="text-align: left;">何を表すか</th><th style="text-align: center;">酢酸</th><th style="text-align: center;">ギ酸メチル</th></tr></thead><tbody><tr><td style="text-align: left;"><b>分子式</b></td><td style="text-align: left;">分子をつくる原子の<b>種類と数</b></td><td style="text-align: center;">C₂H₄O₂</td><td style="text-align: center;">C₂H₄O₂</td></tr><tr><td style="text-align: left;"><b>構造式</b></td><td style="text-align: left;">原子どうしの結合を<b>価標（線）ですべて</b>表す</td><td style="text-align: center;">下の図</td><td style="text-align: center;">下の図</td></tr><tr><td style="text-align: left;"><b>簡略化した構造式</b></td><td style="text-align: left;">構造式から、誤解の無い範囲で価標の一部（主に H につながる価標）を省く</td><td style="text-align: center;">下の図</td><td style="text-align: center;">下の図</td></tr><tr><td style="text-align: left;"><b>示性式</b></td><td style="text-align: left;"><b>官能基がわかるように</b>、構造式を1行にまとめる</td><td style="text-align: center;">CH₃COOH</td><td style="text-align: center;">HCOOCH₃</td></tr></tbody></table></div>
 <p class="ref-p"><b>構造式</b>は、原子どうしの結合を<b>価標</b>と呼ばれる線ですべて表したものです。構造式で表すと、分子式では区別できなかった2つの化合物が区別できるようになります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/organic-formulas-full.png" alt="酢酸とギ酸メチルの構造式を横に並べた図。すべての水素原子が価標でつながれている。左の酢酸は CH₃ の炭素にカルボキシ基が付いた形、右のギ酸メチルは H−C(=O)−O−CH₃ の形" loading="lazy"><figcaption class="ref-figure-cap"><b>構造式</b>。左が酢酸、右がギ酸メチルです。原子はどちらも C 2個・H 4個・O 2個ですが、<b>つながり方が違います。</b></figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/organic-formulas-full.png?h=ce3a0438" alt="酢酸とギ酸メチルの構造式を横に並べた図。すべての水素原子が価標でつながれている。左の酢酸は CH₃ の炭素にカルボキシ基が付いた形、右のギ酸メチルは H−C(=O)−O−CH₃ の形" loading="lazy"><figcaption class="ref-figure-cap"><b>構造式</b>。左が酢酸、右がギ酸メチルです。原子はどちらも C 2個・H 4個・O 2個ですが、<b>つながり方が違います。</b></figcaption></figure>
 <p class="ref-p">ただし、毎回すべての価標を書くのは大変なので、<b>価標の一部を省略して書く</b>ことが多くなります。とくに H につながる価標を省き、CH₃− や −CH₂−、−OH のようにまとめて書きます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/organic-formulas-condensed.png" alt="酢酸とギ酸メチルの、価標の一部を省略した構造式を横に並べた図。H につながる価標が省かれて CH₃・OH とまとめて書かれ、C−C・C=O・C−O の価標が残っている" loading="lazy"><figcaption class="ref-figure-cap"><b>簡略化した構造式</b>。H につながる価標を省いて CH₃・OH とまとめています。<b>C=O や C−O のつながりは残す</b>ので、2つの化合物の違いはそのまま見えます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/organic-formulas-condensed.png?h=e5e473ff" alt="酢酸とギ酸メチルの、価標の一部を省略した構造式を横に並べた図。H につながる価標が省かれて CH₃・OH とまとめて書かれ、C−C・C=O・C−O の価標が残っている" loading="lazy"><figcaption class="ref-figure-cap"><b>簡略化した構造式</b>。H につながる価標を省いて CH₃・OH とまとめています。<b>C=O や C−O のつながりは残す</b>ので、2つの化合物の違いはそのまま見えます。</figcaption></figure>
 <p class="ref-p"><b>省略の仕方は1通りではありません。</b>問題では見本が示されるので、その書き方にそろえて書きましょう。</p>
 <p class="ref-p"><b>示性式</b>は、構造式の特徴を残しながら、<b>文章の中でも使えるように1行で表した</b>化学式です。酢酸は CH₃COOH、ギ酸メチルは HCOOCH₃ で、どちらも<b>官能基（−COOH・−COO−）がそのまま読める</b>ように書きます。示性式は分子式と違って、<b>2つの化合物を区別できます。</b></p>
 <p class="ref-p">なお、元素分析で求める<b>組成式</b>は、原子の数を<b>最も簡単な整数比</b>で表した式です。酢酸もギ酸メチルも組成式は CH₂O になります。組成式から分子式を出す手順は、元素分析のページで扱います。</p>
@@ -1027,6 +1032,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

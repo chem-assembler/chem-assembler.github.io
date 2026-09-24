@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -940,9 +945,9 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">電解槽が2つ以上あるとき、まず<b>どの電極が陽極で、どれが陰極か</b>を決めます。見分け方は2つあります。</p>
 <ol class="ref-list"><li>回路全体の e⁻ の流れを追う。電極に e⁻ が流れ込む（還元される）のが陰極、電極から e⁻ が出ていく（酸化される）のが陽極。</li><li>着目していない電解槽を手で隠す。すると電解槽が1つの電気分解に見えるので、電源の正極側が陽極、負極側が陰極と分かる。</li></ol>
 <p class="ref-p">電流が枝分かれせずに1周している回路を<b>直列回路</b>といいます。同じ1つの回路なので、<b>直列回路ではどこでも、流れた e⁻ の物質量と電気量が等しくなります</b>。電解槽が1つだけの回路も、直列回路の仲間です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/faraday-series.png" alt="直列回路の図。電源から出た e⁻ が電解槽Ⅰの陰極に入り、電解槽Ⅰの陽極から電解槽Ⅱの陰極へ、電解槽Ⅱの陽極から電源へもどる。2つの電解槽を e⁻ が1本の道で流れる" loading="lazy"><figcaption class="ref-figure-cap">直列回路では、電解槽Ⅰと電解槽Ⅱを同じ e⁻ が1本の道で通ります。<b>どこでも e⁻ の mol が等しい</b>のが直列回路です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/faraday-series.png?h=486def31" alt="直列回路の図。電源から出た e⁻ が電解槽Ⅰの陰極に入り、電解槽Ⅰの陽極から電解槽Ⅱの陰極へ、電解槽Ⅱの陽極から電源へもどる。2つの電解槽を e⁻ が1本の道で流れる" loading="lazy"><figcaption class="ref-figure-cap">直列回路では、電解槽Ⅰと電解槽Ⅱを同じ e⁻ が1本の道で通ります。<b>どこでも e⁻ の mol が等しい</b>のが直列回路です。</figcaption></figure>
 <p class="ref-p">電流が途中で枝分かれしている回路を<b>並列回路</b>といいます。並列回路では、<b>分かれた電流 I₁ と I₂ の e⁻ の物質量の合計が、分かれる前（合流したあと）の電流 I の e⁻ の物質量に等しくなります</b>。電気量でも同じです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/faraday-parallel.png" alt="並列回路の図。電源から出た電流 I が分岐して、I₁ が電解槽Ⅰへ、I₂ が電解槽Ⅱへ流れ、合流して I にもどる。右に I ＝ I₁ ＋ I₂ の式と、e⁻ の mol・電気量のどちらでも成り立つという注記" loading="lazy"><figcaption class="ref-figure-cap">並列回路では I ＝ I₁ ＋ I₂。<b>e⁻ の mol でも電気量〔C〕でも、この足し算が成り立ちます</b>。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/faraday-parallel.png?h=ec64ab67" alt="並列回路の図。電源から出た電流 I が分岐して、I₁ が電解槽Ⅰへ、I₂ が電解槽Ⅱへ流れ、合流して I にもどる。右に I ＝ I₁ ＋ I₂ の式と、e⁻ の mol・電気量のどちらでも成り立つという注記" loading="lazy"><figcaption class="ref-figure-cap">並列回路では I ＝ I₁ ＋ I₂。<b>e⁻ の mol でも電気量〔C〕でも、この足し算が成り立ちます</b>。</figcaption></figure>
 <p class="ref-p"><b>「直列はどこでも等しい」「並列は分かれた2本の合計が全体」の2つは必ず覚えてください。</b>直列・並列の問題は、この2つのどちらかを使えば、あとは1つの電解槽の計算と同じです。</p>
 <div class="ref-table-wrap"><div class="ref-cap">直列回路と並列回路</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">回路</th><th style="text-align: left;">電流の道</th><th style="text-align: left;">e⁻ の物質量（電気量）</th></tr></thead><tbody><tr><td style="text-align: left;">直列回路</td><td style="text-align: left;">枝分かれせずに1周する</td><td style="text-align: left;">どの電解槽でも等しい</td></tr><tr><td style="text-align: left;">並列回路</td><td style="text-align: left;">途中で I₁ と I₂ に分かれる</td><td style="text-align: left;">I₁ の分と I₂ の分の合計が、分かれる前の I の分に等しい</td></tr></tbody></table></div>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">並列回路でも、2つの電解槽には同じ量の e⁻ が流れる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">並列回路では、電流 I が I₁ と I₂ に分かれます。<b>2つの電解槽を流れる e⁻ の mol の合計</b>が、電源から流れ出た e⁻ の mol です。</span></p><p class="ref-mistake-why">電解槽が2つある図をどちらも「つながっている」とだけ見て、直列と同じ扱いにしてしまうためです。★ 枝分かれしている点（分岐）を指で探せば、直列か並列かはすぐに分かります。</p></div>
@@ -1024,6 +1029,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

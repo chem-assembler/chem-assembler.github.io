@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,26 +927,26 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>「ヌクレオチド ＝ 五炭糖 ＋ リン酸 ＋ 塩基」は必ず暗記してください。</b></p>
 <p class="ref-p">3つの部品が結合するときは、それぞれのつなぎ目で水が1分子ずつとれます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">五炭糖 ＋ リン酸 ＋ 塩基</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">ヌクレオチド ＋ 2H₂O</span></div><p class="ref-note">糖とリン酸の間、糖と塩基の間の2か所で、水が1分子ずつとれます。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-deoxyribose.png" alt="デオキシリボースの鎖状構造式。炭素5個の鎖の一端がホルミル基 CHO、反対の端が CH2OH で、間の炭素のうち2個に OH が付き、ホルミル基の隣の炭素には OH が付いていない" loading="lazy"><figcaption class="ref-figure-cap">DNA の五炭糖の<b>デオキシリボース</b> C₅H₁₀O₄（鎖状の形）。ホルミル基の隣の炭素に −OH が無く、リボース C₅H₁₀O₅ より酸素原子が1個少なくなっています。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-nucleotide.png" alt="ヌクレオチドの模式図。左から、円で表したリン酸、五角形で表した五炭糖、角の丸い四角で表した塩基が横一列に結合でつながっている。五角形の下にデオキシリボースとリボース、四角の下に A・T・G・C と添えてあり、全体を下の括弧が囲んでいる" loading="lazy"><figcaption class="ref-figure-cap">部品の並びは<b>リン酸 — 五炭糖 — 塩基</b>で、塩基は必ず糖に付きます。この図の五角形（糖）と円（リン酸）が、次の鎖の図の背骨になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-deoxyribose.png?h=4de7265e" alt="デオキシリボースの鎖状構造式。炭素5個の鎖の一端がホルミル基 CHO、反対の端が CH2OH で、間の炭素のうち2個に OH が付き、ホルミル基の隣の炭素には OH が付いていない" loading="lazy"><figcaption class="ref-figure-cap">DNA の五炭糖の<b>デオキシリボース</b> C₅H₁₀O₄（鎖状の形）。ホルミル基の隣の炭素に −OH が無く、リボース C₅H₁₀O₅ より酸素原子が1個少なくなっています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-nucleotide.png?h=83dac14b" alt="ヌクレオチドの模式図。左から、円で表したリン酸、五角形で表した五炭糖、角の丸い四角で表した塩基が横一列に結合でつながっている。五角形の下にデオキシリボースとリボース、四角の下に A・T・G・C と添えてあり、全体を下の括弧が囲んでいる" loading="lazy"><figcaption class="ref-figure-cap">部品の並びは<b>リン酸 — 五炭糖 — 塩基</b>で、塩基は必ず糖に付きます。この図の五角形（糖）と円（リン酸）が、次の鎖の図の背骨になります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/saccharide/">糖の環状構造そのものは単糖類のページへ</a></p>
 <section class="ref-sec" id="ref-sec-chain"><h4 class="ref-sec-h">核酸の鎖のつくり</h4><p class="ref-sec-lead">ヌクレオチドの糖とリン酸が交互にエステル結合でつながって長い鎖になり、その鎖から塩基が枝のように出ています。</p></section>
 <p class="ref-p">ヌクレオチドどうしは、<b>一方の糖の −OH と、もう一方のリン酸</b>の間で水がとれてつながります。これは、リン酸と糖の −OH からできる<b>エステル結合</b>です。</p>
 <p class="ref-p">こうして<b>糖とリン酸が交互につながった長い鎖</b>ができ、それぞれの糖から<b>塩基が枝のように</b>出ています。ヌクレオチドが多数つながったこの鎖を<b>ポリヌクレオチド</b>といい、核酸はポリヌクレオチドでできています。</p>
 <p class="ref-p"><b>「背骨は糖とリン酸、枝が塩基」</b>と覚えましょう。どの糖のどの位置の炭素でつながっているか（3′位・5′位）は覚えなくて構いません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-backbone.png" alt="ポリヌクレオチドの鎖の模式図。横一列に、リン酸を表す円と糖を表す五角形が交互につながって左右に続いている。それぞれの五角形からは下に線が伸び、A・T・G・C と書いた四角がぶら下がっている" loading="lazy"><figcaption class="ref-figure-cap">左右に続く横の一列が鎖の本体で、塩基は<b>そこからぶら下がっているだけ</b>です。塩基の並ぶ順序が、DNA ごとに違う情報になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-backbone.png?h=d59300f9" alt="ポリヌクレオチドの鎖の模式図。横一列に、リン酸を表す円と糖を表す五角形が交互につながって左右に続いている。それぞれの五角形からは下に線が伸び、A・T・G・C と書いた四角がぶら下がっている" loading="lazy"><figcaption class="ref-figure-cap">左右に続く横の一列が鎖の本体で、塩基は<b>そこからぶら下がっているだけ</b>です。塩基の並ぶ順序が、DNA ごとに違う情報になります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/ester/">カルボン酸以外の酸（リン酸・硝酸）もエステルをつくる話はエステルのページへ</a></p>
 <section class="ref-sec" id="ref-sec-dna-rna"><h4 class="ref-sec-h">DNA と RNA の違い</h4><p class="ref-sec-lead">DNA と RNA は、五炭糖の種類・塩基の1つ・鎖の本数が違います。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">DNA と RNA の違い</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">DNA</th><th style="text-align: left;">RNA</th></tr></thead><tbody><tr><td style="text-align: left;">五炭糖</td><td style="text-align: left;">デオキシリボース C₅H₁₀O₄</td><td style="text-align: left;">リボース C₅H₁₀O₅</td></tr><tr><td style="text-align: left;">塩基</td><td style="text-align: left;">A・G・C・<b>T（チミン）</b></td><td style="text-align: left;">A・G・C・<b>U（ウラシル）</b></td></tr><tr><td style="text-align: left;">鎖の本数</td><td style="text-align: left;">2本（<b>二重らせん</b>）</td><td style="text-align: left;">ふつう1本</td></tr><tr><td style="text-align: left;">おもなはたらき</td><td style="text-align: left;">遺伝情報を保存する</td><td style="text-align: left;">タンパク質の合成にはたらく</td></tr></tbody></table></div>
 <p class="ref-p"><b>この表の4行は暗記してください。</b>特に、糖の「デオキシ（酸素が1個少ない）」と、塩基の「DNA は T、RNA は U」の2か所が問われます。塩基の構造式を覚える必要はありません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-thymine.png" alt="チミンの構造式を直交で描いた図。窒素原子2個をふくむ六員環に、C=O が2個とメチル基が1個付いている" loading="lazy"><figcaption class="ref-figure-cap">DNA だけにふくまれる塩基の<b>チミン</b>。RNA では、このメチル基が無いウラシルに置きかわります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-thymine.png?h=264a947d" alt="チミンの構造式を直交で描いた図。窒素原子2個をふくむ六員環に、C=O が2個とメチル基が1個付いている" loading="lazy"><figcaption class="ref-figure-cap">DNA だけにふくまれる塩基の<b>チミン</b>。RNA では、このメチル基が無いウラシルに置きかわります。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-base-pair"><h4 class="ref-sec-h">塩基の対と二重らせん</h4><p class="ref-sec-lead">DNA の2本の鎖は、塩基どうしが水素結合で対をつくってつながり、二重らせんになっています。対になるのは A と T、G と C です。</p></section>
 <p class="ref-p">DNA の2本のポリヌクレオチドは、向かい合った塩基どうしが<b>水素結合</b>で対をつくってつながっています。対になる相手は決まっていて、<b>アデニン（A）とチミン（T）</b>、<b>グアニン（G）とシトシン（C）</b>です。このような決まった組み合わせの対を<b>相補的塩基対</b>といいます。</p>
 <p class="ref-p">2本の鎖は、この対をはさんでねじれ、<b>二重らせん</b>になっています。</p>
 <p class="ref-p"><b>「A と T、G と C」</b>と覚えましょう。RNA では T の代わりに U なので、<b>A と U</b> が対になります。</p>
 <p class="ref-p">対の相手が決まっているので、DNA では <b>A の数 ＝ T の数、G の数 ＝ C の数</b>になります。具体例として、ある DNA の塩基のうち A が 20% なら、T も 20%、残りの 60% を G と C が半分ずつ分けて、G と C は 30% ずつです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-base-pair.png" alt="左右に2本の鎖を立て、そのあいだに塩基の対を2組描いた模式図。上は環2つの A と環1つの T が2本の点線で結ばれ、下は環2つの G と環1つの C が3本の点線で結ばれている" loading="lazy"><figcaption class="ref-figure-cap">点線が<b>水素結合</b>です。相手は A−T、G−C と決まっているので、片方の鎖の並びが決まれば、もう一方も決まります。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-double-helix.png" alt="二重らせんの模式図。2本の曲線がたがいに交差しながら上から下へねじれて伸び、そのあいだを短い横線が何本も橋のように結んでいる。交差するところでは横線が短く、ふくらんだところでは長い" loading="lazy"><figcaption class="ref-figure-cap">対になった塩基が橋のように2本の鎖を結び、全体がねじれて<b>二重らせん</b>になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-base-pair.png?h=2666086b" alt="左右に2本の鎖を立て、そのあいだに塩基の対を2組描いた模式図。上は環2つの A と環1つの T が2本の点線で結ばれ、下は環2つの G と環1つの C が3本の点線で結ばれている" loading="lazy"><figcaption class="ref-figure-cap">点線が<b>水素結合</b>です。相手は A−T、G−C と決まっているので、片方の鎖の並びが決まれば、もう一方も決まります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-double-helix.png?h=2e658193" alt="二重らせんの模式図。2本の曲線がたがいに交差しながら上から下へねじれて伸び、そのあいだを短い横線が何本も橋のように結んでいる。交差するところでは横線が短く、ふくらんだところでは長い" loading="lazy"><figcaption class="ref-figure-cap">対になった塩基が橋のように2本の鎖を結び、全体がねじれて<b>二重らせん</b>になります。</figcaption></figure>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">DNA の塩基はどれも同じ割合でふくまれるので、4種類とも25%ずつになる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">DNA で等しくなるのは、<b>A と T どうし、G と C どうし</b>だけです。A と G の割合は DNA ごとに違います。</span></p><p class="ref-mistake-why">「対になるものが同じ数」を「4種類がすべて同じ数」と広げてしまうためです。</p></div>
 <details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-flow"><summary class="ref-adv-sum"><h4 class="ref-sec-h">遺伝情報の流れ<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">DNA の塩基の並び順が RNA に写しとられ、RNA の塩基の並び順にしたがってアミノ酸がつながり、タンパク質ができます。</p></summary><div class="ref-adv-body"><p class="ref-p">DNA の<b>塩基の並び順</b>が遺伝情報です。この並び順が、塩基の対の決まりにしたがって RNA に写しとられ、RNA の塩基3個の並びごとに1つのアミノ酸が決まって、タンパク質の<b>一次構造</b>（アミノ酸の並び順）ができます。</p><p class="ref-p"><b>DNA → RNA → タンパク質</b>という情報の向きだけ知っておけば十分です。写しとる仕組みの名前や、どの塩基の並びがどのアミノ酸になるかは、化学では覚える必要はありません。</p><p class="ref-link-row"><a class="ref-link" href="/reference/protein/">タンパク質の一次構造（アミノ酸の並び順）はタンパク質のページへ</a></p></div></details>
 <h5 class="ref-h5">例題</h5>
@@ -1023,6 +1028,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

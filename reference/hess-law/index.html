@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -931,7 +936,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CO(気) ＋ ½O₂(気)</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂(気)　ΔH ＝ −283 kJ</span></div><p class="ref-note">一酸化炭素の燃焼エンタルピー。</p></div>
 <ol class="ref-list"><li>準位は「C(黒鉛) ＋ O₂(気)」「CO(気) ＋ ½O₂(気)」「CO₂(気)」の3つ。</li><li>いちばん上の「C(黒鉛) ＋ O₂(気)」を 0 とする。</li><li>1本目の式から、CO₂(気) は −394。2本目の式から、CO(気) ＋ ½O₂(気) は CO₂ より 283 高いので、−394 ＋ 283 ＝ −111。</li><li>求める C(黒鉛) ＋ ½O₂(気) → CO(気) は、0 から −111 へ下りるので、ΔH ＝ −111 − 0 ＝ <b>−111kJ</b>。</li></ol>
 <div class="ref-table-wrap"><div class="ref-cap">具体例2の準位の高さ</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">準位</th><th style="text-align: right;">高さ（kJ）</th><th style="text-align: left;">決めた根拠</th></tr></thead><tbody><tr><td style="text-align: left;">C(黒鉛) ＋ O₂(気)</td><td style="text-align: right;">0</td><td style="text-align: left;">基準</td></tr><tr><td style="text-align: left;">CO(気) ＋ ½O₂(気)</td><td style="text-align: right;">−111</td><td style="text-align: left;">CO₂ より 283 高い</td></tr><tr><td style="text-align: left;">CO₂(気)</td><td style="text-align: right;">−394</td><td style="text-align: left;">基準から 394 下りる</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hess-law-app-co.png" alt="エネルギー図の縦軸に3本の準位。いちばん上が C(黒鉛) ＋ O₂ で 0、その下が CO ＋ ½O₂、いちばん下が CO₂ で −394。求める CO の高さには ? の矢印が付いている" loading="lazy"><figcaption class="ref-figure-cap">アプリでも同じ図を組み立てられます。<b>準位の高さを置いてから、矢印の向きで符号を決める</b>のが解き方の芯です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hess-law-app-co.png?h=77c403ad" alt="エネルギー図の縦軸に3本の準位。いちばん上が C(黒鉛) ＋ O₂ で 0、その下が CO ＋ ½O₂、いちばん下が CO₂ で −394。求める CO の高さには ? の矢印が付いている" loading="lazy"><figcaption class="ref-figure-cap">アプリでも同じ図を組み立てられます。<b>準位の高さを置いてから、矢印の向きで符号を決める</b>のが解き方の芯です。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ratio/thermo.html?h=h2&amp;from=reference&amp;page=hess-law">準位を置いてヘスの法則を解く（問2・CO の生成エンタルピー）</a></p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">「ヘスの法則は ΔH を足す法則」と覚えて、CO の生成エンタルピーを (−394) ＋ (−283) ＝ −677kJ とする</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">求める反応がどの準位からどの準位へ行くのかを図で決め、<b>（到達点の高さ）−（出発点の高さ）</b>をとります。この例では −111kJ です。</span></p><p class="ref-mistake-why">足すか引くかを式の見た目で決めると、逆向きにたどる所で符号を落とします。★ 図に矢印を描けば、逆向きにたどる所は矢印が逆を向くので、符号の反転が目で見えます。</p></div>
 <section class="ref-sec" id="ref-sec-formation"><h4 class="ref-sec-h">生成エンタルピーで反応エンタルピーを出す</h4><p class="ref-sec-lead">単体の組をいちばん上の基準 0 に置くと、各化合物の生成エンタルピーがそのまま準位の高さになります。反応エンタルピー ＝（生成物の生成エンタルピーの和）−（反応物の生成エンタルピーの和）です。</p></section>
@@ -942,7 +947,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">具体例3で、メタンの燃焼エンタルピーを生成エンタルピーから求めます。CH₄ −75kJ/mol、CO₂ −394kJ/mol、H₂O（液）−286kJ/mol です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄(気) ＋ 2O₂(気)</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂(気) ＋ 2H₂O(液)　ΔH ＝ x kJ</span></div><p class="ref-note">反応物の高さは −75 ＋ 0、生成物の高さは −394 ＋ 2×(−286) ＝ −966 です。</p></div>
 <ol class="ref-list"><li>基準 0 の準位は、C(黒鉛) ＋ 2H₂(気) ＋ 2O₂(気)。</li><li>反応物 CH₄(気) ＋ 2O₂(気) の高さは −75。</li><li>生成物 CO₂(気) ＋ 2H₂O(液) の高さは −394 ＋ 2×(−286) ＝ −966。</li><li>x ＝ −966 −（−75）＝ <b>−891kJ</b>。</li></ol>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hess-law-app-methane.png" alt="単体の組 C(黒鉛) ＋ 2H₂ ＋ 2O₂ がいちばん上で 0、その下に CH₄ ＋ 2O₂、いちばん下に CO₂ ＋ 2H₂O。求める燃焼エンタルピーに ? の矢印が付いている" loading="lazy"><figcaption class="ref-figure-cap">生成エンタルピーから燃焼エンタルピーを出す問題も、<b>単体の組を 0 に置く</b>と同じ図になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hess-law-app-methane.png?h=7a0009cd" alt="単体の組 C(黒鉛) ＋ 2H₂ ＋ 2O₂ がいちばん上で 0、その下に CH₄ ＋ 2O₂、いちばん下に CO₂ ＋ 2H₂O。求める燃焼エンタルピーに ? の矢印が付いている" loading="lazy"><figcaption class="ref-figure-cap">生成エンタルピーから燃焼エンタルピーを出す問題も、<b>単体の組を 0 に置く</b>と同じ図になります。</figcaption></figure>
 <p class="ref-p">⚠ <b>係数の分だけ生成エンタルピーを掛けます。</b> H₂O は 2mol できるので、−286 を2倍します。</p>
 <section class="ref-sec" id="ref-sec-algebra"><h4 class="ref-sec-h">別解 —— 式を足し引きする</h4><p class="ref-sec-lead">与えられた式を数式のように足し引きして、求める式を組み立てる方法もあります。式を逆向きにしたら ΔH の符号も逆にします。</p></section>
 <p class="ref-p">与えられた式を、<b>求める式の左辺と右辺に合うように並べ替えて足し引きする</b>方法もあります。具体例2なら、1本目の式から2本目の式を引くと、CO₂ が消えて C(黒鉛) ＋ ½O₂ → CO が残り、ΔH は (−394) − (−283) ＝ −111kJ です。</p>
@@ -1025,6 +1030,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

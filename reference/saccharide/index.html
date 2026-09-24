@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -919,12 +924,12 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-definition"><h4 class="ref-sec-h">糖類とは何か</h4><p class="ref-sec-lead">多くの糖類は C<sub>m</sub>(H₂O)<sub>n</sub> の形の分子式に書けるので「炭水化物」とも呼ばれます。実際は多価アルコールにホルミル基かカルボニル基が付いた化合物です。</p></section>
 <p class="ref-p">グルコースの分子式は C₆H₁₂O₆ で、これは C₆(H₂O)₆ と書き直せます。このように多くの糖類の分子式が C<sub>m</sub>(H₂O)<sub>n</sub> の形になるので、糖類は<b>炭水化物</b>とも呼ばれます。</p>
 <p class="ref-p">実際の構造は、炭素の鎖に −OH がたくさん付き、1か所がホルミル基かカルボニル基になっている化合物です。<b>「−OH がたくさん ＋ C=O が1個」</b>と覚えておくと、構造式を見て糖だと気づけます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-carbohydrate-name.png" alt="グルコースの分子式 C6H12O6 から矢印を引いて C6(H2O)6 と書き直した図。書き直した式の (H2O)6 の部分に括弧の線を引き、水が6個ぶんと添えてある。下に、分子の中に水が入っているわけではないという注意書きがある" loading="lazy"><figcaption class="ref-figure-cap">分子式を書き直すと「炭素と水」の形に見えます。<b>見かけの式の形</b>から付いた呼び名です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-carbohydrate-name.png?h=14a6e0b9" alt="グルコースの分子式 C6H12O6 から矢印を引いて C6(H2O)6 と書き直した図。書き直した式の (H2O)6 の部分に括弧の線を引き、水が6個ぶんと添えてある。下に、分子の中に水が入っているわけではないという注意書きがある" loading="lazy"><figcaption class="ref-figure-cap">分子式を書き直すと「炭素と水」の形に見えます。<b>見かけの式の形</b>から付いた呼び名です。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-class"><h4 class="ref-sec-h">単糖・二糖・多糖</h4><p class="ref-sec-lead">加水分解して、それ以上小さな糖にならないものが単糖です。単糖が2個つながったものが二糖、多数つながったものが多糖です。</p></section>
 <p class="ref-p">糖類は、<b>加水分解すると単糖が何個できるか</b>で3つに分けます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">糖類の分類</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">加水分解で生じる単糖</th><th style="text-align: left;">代表例</th></tr></thead><tbody><tr><td style="text-align: left;">単糖</td><td style="text-align: left;">それ以上加水分解されない</td><td style="text-align: left;">グルコース・フルクトース・ガラクトース</td></tr><tr><td style="text-align: left;">二糖</td><td style="text-align: left;">2分子</td><td style="text-align: left;">マルトース・スクロース・ラクトース・セロビオース</td></tr><tr><td style="text-align: left;">多糖</td><td style="text-align: left;">多数</td><td style="text-align: left;">デンプン・セルロース・グリコーゲン</td></tr></tbody></table></div>
 <p class="ref-p"><b>この3つの分類と、それぞれの代表例の名前は暗記してください。</b>二糖と多糖の中身は、それぞれのページで扱います。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-mono-di-poly.png" alt="丸1個を単糖、丸2個を二糖、丸がいくつもつながった鎖を多糖として左から右に並べた図。あいだは右向きの縮合の矢印と、左向きの加水分解の矢印で結ばれている" loading="lazy"><figcaption class="ref-figure-cap">右へ行くほどつながった数が増えます。<b>加水分解は左へ戻る操作</b>で、いちばん左まで戻したものが単糖です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-mono-di-poly.png?h=80b96917" alt="丸1個を単糖、丸2個を二糖、丸がいくつもつながった鎖を多糖として左から右に並べた図。あいだは右向きの縮合の矢印と、左向きの加水分解の矢印で結ばれている" loading="lazy"><figcaption class="ref-figure-cap">右へ行くほどつながった数が増えます。<b>加水分解は左へ戻る操作</b>で、いちばん左まで戻したものが単糖です。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/disaccharide/">単糖が2個つながった二糖類のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/polysaccharide/">単糖が多数つながった多糖類（デンプンとセルロース）のページへ</a></p>
 <section class="ref-sec" id="ref-sec-monosaccharide"><h4 class="ref-sec-h">代表的な単糖</h4><p class="ref-sec-lead">グルコース・フルクトース・ガラクトースは、どれも分子式 C₆H₁₂O₆ の異性体です。</p></section>
@@ -932,22 +937,22 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">鎖状構造でホルミル基 −CHO をもつ単糖を<b>アルドース</b>、カルボニル基 C=O を鎖の途中にもつ単糖を<b>ケトース</b>といいます。グルコースとガラクトースはアルドース、フルクトースはケトースです。</p>
 <div class="ref-table-wrap"><div class="ref-cap">代表的な単糖（六炭糖）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">分類</th><th style="text-align: left;">特徴</th><th style="text-align: center;">還元性</th></tr></thead><tbody><tr><td style="text-align: left;">グルコース（ブドウ糖）</td><td style="text-align: left;">アルドース</td><td style="text-align: left;">血液中に約0.1%ふくまれる。水溶液中で六員環をつくる</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">フルクトース（果糖）</td><td style="text-align: left;">ケトース</td><td style="text-align: left;">糖の中でいちばん甘い。水溶液中で六員環と五員環の両方をとる</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">ガラクトース</td><td style="text-align: left;">アルドース</td><td style="text-align: left;">ラクトースの成分。グルコースと −OH の向きが1か所だけ違う</td><td style="text-align: center;">あり</td></tr></tbody></table></div>
 <p class="ref-p"><b>この3つの名前と分子式 C₆H₁₂O₆ は暗記してください。</b>−OH がどちらを向いているかまで覚える必要はありません。炭素を5個もつ五炭糖（リボース・デオキシリボース）は、核酸のページで出てくるまで覚えなくても構いません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-fructose-chain.png" alt="D-フルクトースの鎖状構造式。炭素6個の鎖の2番目の炭素が C=O になっていて、残りの炭素に −OH が付いている" loading="lazy"><figcaption class="ref-figure-cap">フルクトースは<b>鎖の2番目の炭素が C=O</b> のケトースです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-fructose-chain.png?h=f36739d7" alt="D-フルクトースの鎖状構造式。炭素6個の鎖の2番目の炭素が C=O になっていて、残りの炭素に −OH が付いている" loading="lazy"><figcaption class="ref-figure-cap">フルクトースは<b>鎖の2番目の炭素が C=O</b> のケトースです。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-glucose-chain"><h4 class="ref-sec-h">グルコースの鎖状構造</h4><p class="ref-sec-lead">鎖の一端がホルミル基、残りの5個の炭素に −OH が1個ずつ付いています。不斉炭素原子は4個です。</p></section>
 <p class="ref-p">グルコースの鎖状構造は、示性式で CH₂OH−CHOH−CHOH−CHOH−CHOH−CHO と書けます。<b>一端がホルミル基 −CHO</b> なので、グルコースはアルドースです。</p>
 <p class="ref-p">まん中の4つの CHOH の炭素には、H・OH と、左右の違う原子団が付いています。4つとも違うものが付いているので、<b>不斉炭素原子は4個</b>です。両端の CH₂OH と CHO の炭素は、同じ H を2個もつか二重結合をもつので不斉炭素原子ではありません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-glucose-chain.png" alt="D-グルコースの鎖状構造式。炭素6個の鎖の一端がホルミル基 CHO、反対の端が CH2OH で、間の4個の炭素に OH が1個ずつ付いている" loading="lazy"><figcaption class="ref-figure-cap">鎖の一端が<b>ホルミル基</b>。間の4個の炭素が不斉炭素原子です。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-glucose-chain-asymmetric.png" alt="D-グルコースの鎖状構造式で、両端の CHO と CH2OH の炭素を除いた、まん中の炭素4個がそれぞれ破線の丸で囲まれている図" loading="lazy"><figcaption class="ref-figure-cap">囲んだ4個が<b>不斉炭素原子</b>です。両端の炭素は囲まれていません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-glucose-chain.png?h=34bdadde" alt="D-グルコースの鎖状構造式。炭素6個の鎖の一端がホルミル基 CHO、反対の端が CH2OH で、間の4個の炭素に OH が1個ずつ付いている" loading="lazy"><figcaption class="ref-figure-cap">鎖の一端が<b>ホルミル基</b>。間の4個の炭素が不斉炭素原子です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-glucose-chain-asymmetric.png?h=6ddc754f" alt="D-グルコースの鎖状構造式で、両端の CHO と CH2OH の炭素を除いた、まん中の炭素4個がそれぞれ破線の丸で囲まれている図" loading="lazy"><figcaption class="ref-figure-cap">囲んだ4個が<b>不斉炭素原子</b>です。両端の炭素は囲まれていません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/stereoisomers/">不斉炭素原子と立体異性体の数え方は異性体のページへ</a></p>
 <section class="ref-sec" id="ref-sec-ring"><h4 class="ref-sec-h">環状構造と α形・β形</h4><p class="ref-sec-lead">1位の炭素と5位の炭素の −OH の酸素がつながると六員環になります。そのとき1位にできる −OH の向きで α形と β形に分かれます。</p></section>
 <p class="ref-p">グルコースの結晶や水溶液の大部分は、鎖状ではなく<b>六員環の環状構造</b>をとっています。鎖状構造の<b>5位の炭素に付いた −OH の酸素</b>が、<b>1位のホルミル基の炭素</b>と結合して環が閉じます。</p>
 <p class="ref-p">環が閉じると、1位の炭素に新しく −OH ができます。この −OH が環の下側を向いたものを<b>α-グルコース</b>、上側を向いたものを<b>β-グルコース</b>といいます（環を、酸素を右奥に置く向きで描いたとき）。</p>
 <p class="ref-p"><b>「α形とβ形の違いは、1位の −OH の向きだけ」</b>と覚えましょう。この1か所の違いが、多糖類ではデンプンとセルロースの違いになります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-alpha-glucose.png" alt="α-D-グルコースの環状構造式を直交で描いた図。酸素1個と炭素5個の六員環に、OH が4個と CH2OH が1個付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>α-グルコース</b>。酸素1個と炭素5個の六員環に、−OH が4個と −CH₂OH が1個付いています。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-beta-glucose.png" alt="β-D-グルコースの環状構造式を直交で描いた図。原子のつながりは α-グルコースの図と同じ" loading="lazy"><figcaption class="ref-figure-cap"><b>β-グルコース</b>。原子のつながりは α形と同じで、違うのは1位の −OH の向きだけです。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-alpha-glucose-haworth.png" alt="α-グルコースをハース式で描いた図。環の右端の1位の炭素から下へ伸びた OH が破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap"><b>α-グルコース</b>をハース式で描くと、囲んだ1位の −OH は環の<b>下側</b>を向いています。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-beta-glucose-haworth.png" alt="β-グルコースをハース式で描いた図。環の右端の1位の炭素から上へ伸びた OH が破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap"><b>β-グルコース</b>では、同じ1位の −OH が環の<b>上側</b>を向いています。ほかの部分は α形と同じです。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-glucose-ring-closure.png" alt="左に鎖状のグルコース、右に環状のα-グルコースを置き、「環になる」と書いた矢印でつないだ図。環の中の O が点線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap">5位の −OH の O が1位の C に結合すると、鎖が巻き込んで<b>六員環</b>になります。環の中の O は、もとは5位の −OH の O です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-alpha-glucose.png?h=80fc9ddc" alt="α-D-グルコースの環状構造式を直交で描いた図。酸素1個と炭素5個の六員環に、OH が4個と CH2OH が1個付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>α-グルコース</b>。酸素1個と炭素5個の六員環に、−OH が4個と −CH₂OH が1個付いています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-beta-glucose.png?h=3ff35233" alt="β-D-グルコースの環状構造式を直交で描いた図。原子のつながりは α-グルコースの図と同じ" loading="lazy"><figcaption class="ref-figure-cap"><b>β-グルコース</b>。原子のつながりは α形と同じで、違うのは1位の −OH の向きだけです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-alpha-glucose-haworth.png?h=34973c3e" alt="α-グルコースをハース式で描いた図。環の右端の1位の炭素から下へ伸びた OH が破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap"><b>α-グルコース</b>をハース式で描くと、囲んだ1位の −OH は環の<b>下側</b>を向いています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-beta-glucose-haworth.png?h=aae4fa0b" alt="β-グルコースをハース式で描いた図。環の右端の1位の炭素から上へ伸びた OH が破線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap"><b>β-グルコース</b>では、同じ1位の −OH が環の<b>上側</b>を向いています。ほかの部分は α形と同じです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-glucose-ring-closure.png?h=9ca57af2" alt="左に鎖状のグルコース、右に環状のα-グルコースを置き、「環になる」と書いた矢印でつないだ図。環の中の O が点線の丸で囲まれている" loading="lazy"><figcaption class="ref-figure-cap">5位の −OH の O が1位の C に結合すると、鎖が巻き込んで<b>六員環</b>になります。環の中の O は、もとは5位の −OH の O です。</figcaption></figure>
 <div class="ref-example"><h4>例題：β-D-グルコース をつくる</h4><p class="ref-p" style="margin: 0px;">β-グルコースを組んで、六員環のどこに酸素が入るかを手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.bio.saccharide-def&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=saccharide">▶ β-D-グルコースを組んでみる</a><p class="ref-note">環の中の酸素は、もとは5位の炭素の −OH の酸素です。1位の炭素には −OH が付いています。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/polysaccharide/">α形がつながるとデンプン、β形がつながるとセルロースになる話は多糖類のページへ</a></p>
 <section class="ref-sec" id="ref-sec-equilibrium"><h4 class="ref-sec-h">水溶液中の平衡と還元性</h4><p class="ref-sec-lead">水溶液中では α形・鎖状構造・β形の3つが平衡になって共存しています。開いた鎖状構造のホルミル基が還元性を示します。</p></section>
@@ -1050,6 +1055,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

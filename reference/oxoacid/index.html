@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -920,7 +925,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/neutralization/">中和反応（価数の逆の比）のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/oxidation-number/">酸化数の決め方のページへ</a></p>
 <section class="ref-sec" id="ref-sec-classification"><h4 class="ref-sec-h">酸化物の3つの分類</h4><p class="ref-sec-lead">非金属元素の酸化物は酸性酸化物、金属元素の酸化物は塩基性酸化物、両性元素（Al・Zn・Sn・Pb）の酸化物は両性酸化物です。</p></section>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxoacid-classification.png" alt="周期表の左下を陽性、右上を陰性とし、金属と非金属の境目付近にある Al・Zn・Sn・Pb を両性として丸で囲んだ図" loading="lazy"><figcaption class="ref-figure-cap">両性元素 Al・Zn・Sn・Pb は、周期表の金属元素と非金属元素の境目の近くにあります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxoacid-classification.png?h=93ed6ba6" alt="周期表の左下を陽性、右上を陰性とし、金属と非金属の境目付近にある Al・Zn・Sn・Pb を両性として丸で囲んだ図" loading="lazy"><figcaption class="ref-figure-cap">両性元素 Al・Zn・Sn・Pb は、周期表の金属元素と非金属元素の境目の近くにあります。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">酸化物の3つの分類</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">分類</th><th style="text-align: left;">どの元素の酸化物か</th><th style="text-align: left;">水と反応すると</th><th style="text-align: left;">反応する相手</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: center;"><b>酸性酸化物</b></td><td style="text-align: left;">非金属元素</td><td style="text-align: left;">オキソ酸になる</td><td style="text-align: left;">塩基</td><td style="text-align: left;">CO₂・SO₂・SO₃・NO₂・P₄O₁₀・SiO₂・Cl₂O₇</td></tr><tr><td style="text-align: center;"><b>塩基性酸化物</b></td><td style="text-align: left;">金属元素</td><td style="text-align: left;">水酸化物（塩基）になる</td><td style="text-align: left;">酸</td><td style="text-align: left;">Na₂O・K₂O・CaO・BaO・MgO・CuO・Ag₂O</td></tr><tr><td style="text-align: center;"><b>両性酸化物</b></td><td style="text-align: left;">両性元素（Al・Zn・Sn・Pb）</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">酸と強塩基の両方</td><td style="text-align: left;">Al₂O₃・ZnO・SnO₂・PbO₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>両性元素の4つ（Al・Zn・Sn・Pb）は「ああすんなり（あ・あ・すん・なり）」で覚えましょう。</b></p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">非金属元素の酸化物なので、CO や NO も酸性酸化物である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">CO と NO は水に溶けにくく、塩基とも反応しないので、酸性酸化物には入れません。H₂O も酸性酸化物には入れません。</span></p><p class="ref-mistake-why">「非金属元素の酸化物 ＝ 酸性酸化物」は、水と反応して酸になり、塩基と反応して塩になるものを指す、という性質で決めた呼び名です。性質をもたないものは、非金属元素の酸化物でも入りません。</p></div>
@@ -971,16 +976,16 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/amphoteric-metal/">両性金属（Al・Zn・Sn・Pb）のページへ</a></p>
 <section class="ref-sec" id="ref-sec-naming"><h4 class="ref-sec-h">オキソ酸の名前 —— 過・亜・次亜</h4><p class="ref-sec-lead">最も安定なオキソ酸を基準に、中心原子の酸化数が大きいものを「過〜」、小さいものを順に「亜〜」「次亜〜」と呼びます。</p></section>
 <p class="ref-p">分子の中に酸素原子を含む酸を<b>オキソ酸</b>といいます。オキソ酸は、中心の原子の酸化数（結合している O 原子の数）で名前が変わります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxoacid-naming.png" alt="硝酸と亜硝酸、硫酸と亜硫酸、過塩素酸・塩素酸・亜塩素酸・次亜塩素酸の化学式と、中心原子の酸化数を並べた図。上ほど酸性が強い" loading="lazy"><figcaption class="ref-figure-cap">中心原子の酸化数が大きいオキソ酸ほど、酸性が強くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxoacid-naming.png?h=4b655074" alt="硝酸と亜硝酸、硫酸と亜硫酸、過塩素酸・塩素酸・亜塩素酸・次亜塩素酸の化学式と、中心原子の酸化数を並べた図。上ほど酸性が強い" loading="lazy"><figcaption class="ref-figure-cap">中心原子の酸化数が大きいオキソ酸ほど、酸性が強くなります。</figcaption></figure>
 <p class="ref-p">具体例として塩素のオキソ酸を並べると、塩素酸 HClO₃（+5）を基準に、O が1つ多い HClO₄（+7）が<b>過塩素酸</b>、1つ少ない HClO₂（+3）が<b>亜塩素酸</b>、さらに1つ少ない HClO（+1）が<b>次亜塩素酸</b>です。同じように、硫酸 H₂SO₄（+6）に対して H₂SO₃（+4）が亜硫酸、硝酸 HNO₃（+5）に対して HNO₂（+3）が亜硝酸です。</p>
 <p class="ref-p">塩の名前も同じ規則です。次亜塩素酸ナトリウム NaClO、塩素酸カリウム KClO₃、亜硫酸ナトリウム Na₂SO₃ のように、酸の名前の「酸」の後に金属の名前を付けます。</p>
 <p class="ref-p"><b>「過・亜・次亜」の付け方と、塩素のオキソ酸4つの化学式は覚えてください。</b>同じ元素のオキソ酸では、酸化数が大きいほど酸性が強い、という向きもあわせて覚えます。</p>
 <section class="ref-sec" id="ref-sec-structure"><h4 class="ref-sec-h">オキソ酸の構造と配位結合</h4><p class="ref-sec-lead">硝酸や硫酸の構造には、中心の原子から O 原子への配位結合が含まれます。</p></section>
 <p class="ref-p">一方の原子の非共有電子対を、ほかの原子と共有してできる結合を<b>配位結合</b>といいます。できた結合は、ふつうの共有結合と区別がつきません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxoacid-coordinate-bond.png" alt="水分子の電子式と、水分子の O 原子の非共有電子対に H⁺ が結合してオキソニウムイオンになる電子式" loading="lazy"><figcaption class="ref-figure-cap">水の O 原子の非共有電子対を H⁺ と共有すると、オキソニウムイオン H₃O⁺ になります。配位結合すると、O 原子の結合の手が2本から3本に変わります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxoacid-coordinate-bond.png?h=a7953dc6" alt="水分子の電子式と、水分子の O 原子の非共有電子対に H⁺ が結合してオキソニウムイオンになる電子式" loading="lazy"><figcaption class="ref-figure-cap">水の O 原子の非共有電子対を H⁺ と共有すると、オキソニウムイオン H₃O⁺ になります。配位結合すると、O 原子の結合の手が2本から3本に変わります。</figcaption></figure>
 <p class="ref-p">硫酸 H₂SO₄ では、中心の S 原子に2つの −OH が共有結合し、残りの2つの O 原子は S 原子の非共有電子対を受け取って配位結合しています。構造式では、配位結合を S から O への矢印で書くことがあります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfo-from-sulfuric.png" alt="硫酸 H₂SO₄ の構造式と電子式。中心の S から O へ矢印で書いた配位結合が2本、H−O− が2本伸びている" loading="lazy"><figcaption class="ref-figure-cap"><b>硫酸 H₂SO₄</b>。S から O へ伸びる2本の矢印が配位結合です。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nitro-from-nitric.png" alt="硝酸 HNO₃ の構造式と電子式。H−O−N と並び、N から O へ二重結合と、矢印で書いた配位結合が1本ずつ伸びている" loading="lazy"><figcaption class="ref-figure-cap"><b>硝酸 HNO₃</b>。N から O へ二重結合と配位結合が1本ずつ伸びています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfo-from-sulfuric.png?h=4e319796" alt="硫酸 H₂SO₄ の構造式と電子式。中心の S から O へ矢印で書いた配位結合が2本、H−O− が2本伸びている" loading="lazy"><figcaption class="ref-figure-cap"><b>硫酸 H₂SO₄</b>。S から O へ伸びる2本の矢印が配位結合です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nitro-from-nitric.png?h=77cbc124" alt="硝酸 HNO₃ の構造式と電子式。H−O−N と並び、N から O へ二重結合と、矢印で書いた配位結合が1本ずつ伸びている" loading="lazy"><figcaption class="ref-figure-cap"><b>硝酸 HNO₃</b>。N から O へ二重結合と配位結合が1本ずつ伸びています。</figcaption></figure>
 <p class="ref-p"><b>オキソ酸の構造式を書かせる問題はあまり多くありません。</b>硫酸と硝酸の形を見て、配位結合が含まれることが分かれば十分です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">硝酸・硫酸から −OH を取った形（ニトロ基・スルホ基）は官能基のページへ</a></p>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">酸化物の3分類と両性元素4つ、★★★ の反応式、過・亜・次亜の付け方を覚えます。</p></section>
@@ -1062,6 +1067,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

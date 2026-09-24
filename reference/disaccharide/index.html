@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -921,8 +926,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">分子式をその場で引き算してみます。C₆H₁₂O₆ が2分子で C₁₂H₂₄O₁₂、ここから H₂O を1つ引くと <b>C₁₂H₂₂O₁₁</b> です。分子量も 180 × 2 − 18 ＝ <b>342</b> になります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2C₆H₁₂O₆</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₁₂H₂₂O₁₁ ＋ H₂O</span></div><p class="ref-note">二糖ができる縮合。逆向きに水を加えて切るのが加水分解です。</p></div>
 <p class="ref-p"><b>「二糖の分子式は C₁₂H₂₂O₁₁、分子量は342」は覚えておきましょう。</b>忘れても、上の引き算で毎回出せます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-maltose.png" alt="マルトースの構造式を直交で描いた図。六員環2つが、1個の酸素原子を間にはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap"><b>マルトース</b>。グルコースの六員環2つが、酸素原子1個をはさんでつながっています（グリコシド結合）。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-glycosidic-bond.png" alt="マルトースのハース式で、2つの六員環をつないでいる酸素1個だけが破線の楕円で囲まれ、その下にグリコシド結合と書かれている図" loading="lazy"><figcaption class="ref-figure-cap">環をつないでいるのは、囲んだ<b>酸素原子1個</b>だけです。ここが切れると単糖2つに戻ります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-maltose.png?h=a9d488de" alt="マルトースの構造式を直交で描いた図。六員環2つが、1個の酸素原子を間にはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap"><b>マルトース</b>。グルコースの六員環2つが、酸素原子1個をはさんでつながっています（グリコシド結合）。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-glycosidic-bond.png?h=32b54128" alt="マルトースのハース式で、2つの六員環をつないでいる酸素1個だけが破線の楕円で囲まれ、その下にグリコシド結合と書かれている図" loading="lazy"><figcaption class="ref-figure-cap">環をつないでいるのは、囲んだ<b>酸素原子1個</b>だけです。ここが切れると単糖2つに戻ります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/saccharide/">単糖の環状構造（α形・β形）と還元性の出どころは単糖類のページへ</a></p>
 <section class="ref-sec" id="ref-sec-four"><h4 class="ref-sec-h">4つの二糖</h4><p class="ref-sec-lead">マルトース・スクロース・ラクトース・セロビオースを、構成する単糖・分解する酵素・還元性で並べます。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">代表的な二糖</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">構成する単糖</th><th style="text-align: left;">加水分解する酵素</th><th style="text-align: center;">還元性</th></tr></thead><tbody><tr><td style="text-align: left;">マルトース（麦芽糖）</td><td style="text-align: left;">グルコース ＋ グルコース</td><td style="text-align: left;">マルターゼ</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">スクロース（ショ糖）</td><td style="text-align: left;">グルコース ＋ フルクトース</td><td style="text-align: left;">スクラーゼ（インベルターゼ）</td><td style="text-align: center;"><b>なし</b></td></tr><tr><td style="text-align: left;">ラクトース（乳糖）</td><td style="text-align: left;">グルコース ＋ ガラクトース</td><td style="text-align: left;">ラクターゼ</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">セロビオース</td><td style="text-align: left;">グルコース ＋ グルコース</td><td style="text-align: left;">セロビアーゼ</td><td style="text-align: center;">あり</td></tr></tbody></table></div>
@@ -939,9 +944,9 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">単糖の還元性は、環が開いて鎖状になり、<b>ホルミル基が現れる</b>ことから出ます。環が開けるのは、グルコースなら1位の炭素の −OH の部分です。</p>
 <p class="ref-p">マルトースでは、片方のグルコースの1位が相手とつながっていますが、<b>もう片方のグルコースの1位は −OH のまま残っています</b>。だからそちらの環が開けて、還元性を示します。</p>
 <p class="ref-p">スクロースでは、グルコースの1位とフルクトースの2位（どちらも環が開ける部分）<b>どうしでつながっています</b>。両方ともふさがっているので、どちらの環も開けず、<b>還元性を示しません</b>。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-sucrose.png" alt="スクロースの構造式を直交で描いた図。六員環のグルコースと五員環のフルクトースが、1個の酸素原子を間にはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap"><b>スクロース</b>。六員環のグルコースと五員環のフルクトースが、環が開ける部分どうしでつながっています。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-maltose-reducing-end.png" alt="マルトースのハース式で、右側のグルコースの1位に残った OH が破線の楕円で囲まれ、環が開けると書き添えられている図" loading="lazy"><figcaption class="ref-figure-cap">マルトースは、右側のグルコースの1位が <b>−OH のまま</b>残っています。ここから環が開けるので、還元性を示します。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-sucrose-blocked.png" alt="スクロースのハース式で、グルコースの環とフルクトースの環をつなぐ酸素1個が破線の楕円で囲まれ、両方ふさがると書き添えられている図" loading="lazy"><figcaption class="ref-figure-cap">スクロースは、グルコースの1位とフルクトースの2位が<b>この酸素でつながって</b>います。どちらの環も開けないので、還元性を示しません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-sucrose.png?h=2dee6643" alt="スクロースの構造式を直交で描いた図。六員環のグルコースと五員環のフルクトースが、1個の酸素原子を間にはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap"><b>スクロース</b>。六員環のグルコースと五員環のフルクトースが、環が開ける部分どうしでつながっています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-maltose-reducing-end.png?h=4fdaf3be" alt="マルトースのハース式で、右側のグルコースの1位に残った OH が破線の楕円で囲まれ、環が開けると書き添えられている図" loading="lazy"><figcaption class="ref-figure-cap">マルトースは、右側のグルコースの1位が <b>−OH のまま</b>残っています。ここから環が開けるので、還元性を示します。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-sucrose-blocked.png?h=3863884e" alt="スクロースのハース式で、グルコースの環とフルクトースの環をつなぐ酸素1個が破線の楕円で囲まれ、両方ふさがると書き添えられている図" loading="lazy"><figcaption class="ref-figure-cap">スクロースは、グルコースの1位とフルクトースの2位が<b>この酸素でつながって</b>います。どちらの環も開けないので、還元性を示しません。</figcaption></figure>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">二糖はどれも単糖が2つつながったものなので、単糖と同じように還元性を示す</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body"><b>スクロースは還元性を示しません。</b>マルトース・ラクトース・セロビオースは示します。</span></p><p class="ref-mistake-why">「単糖はすべて還元性を示す」をそのまま二糖に広げてしまうためです。★ 還元性はつなぎ方で決まり、スクロースは環が開ける部分どうしでつながっています。</p></div>
 <section class="ref-sec" id="ref-sec-invert-sugar"><h4 class="ref-sec-h">転化糖</h4><p class="ref-sec-lead">スクロースを加水分解すると、グルコースとフルクトースの等量混合物になります。これを転化糖といい、還元性を示します。</p></section>
 <p class="ref-p">スクロースに<b>希硫酸を加えて加熱する</b>か、酵素<b>スクラーゼ（インベルターゼ）</b>を作用させると、グルコースとフルクトースに分かれます。この等量混合物を<b>転化糖</b>といいます。</p>
@@ -1029,6 +1034,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -932,7 +937,7 @@ a.ref-link::before { content: '→ '; }
 <ol class="ref-list"><li>エステル結合 −COO− の<b>左側（C=O のある側）</b>がカルボン酸から来た部分。その名前を前に置く。<div class="ref-li-hang">カルボン酸が酢酸なら「<b>酢酸</b><span class="ref-blank">○○</span>」、ギ酸なら「<b>ギ酸</b><span class="ref-blank">○○</span>」</div></li><li>エステル結合の<b>右側（O から炭素へ伸びる側）</b>がアルコールから来た部分。そのアルキル基の名前を後ろに置く。<div class="ref-li-hang">メタノール由来なら「<span class="ref-blank">○○</span><b>メチル</b>」、エタノール由来なら「<span class="ref-blank">○○</span><b>エチル</b>」</div></li></ol>
 <p class="ref-p">酢酸とエタノールからできるエステルなら、前が「酢酸」、後ろが「エチル」で、<b>酢酸エチル</b>になります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">カルボン酸とアルコールの組み合わせと、エステルの名前</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">カルボン酸</th><th style="text-align: left;">アルコール</th><th style="text-align: left;">エステルの名前</th><th style="text-align: left;">示性式</th></tr></thead><tbody><tr><td style="text-align: left;">ギ酸 HCOOH</td><td style="text-align: left;">メタノール CH₃OH</td><td style="text-align: left;">ギ酸メチル</td><td style="text-align: left;">HCOOCH₃</td></tr><tr><td style="text-align: left;">ギ酸 HCOOH</td><td style="text-align: left;">エタノール C₂H₅OH</td><td style="text-align: left;">ギ酸エチル</td><td style="text-align: left;">HCOOC₂H₅</td></tr><tr><td style="text-align: left;">酢酸 CH₃COOH</td><td style="text-align: left;">メタノール CH₃OH</td><td style="text-align: left;">酢酸メチル</td><td style="text-align: left;">CH₃COOCH₃</td></tr><tr><td style="text-align: left;">酢酸 CH₃COOH</td><td style="text-align: left;">エタノール C₂H₅OH</td><td style="text-align: left;">酢酸エチル</td><td style="text-align: left;">CH₃COOC₂H₅</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ester-naming.png" alt="ギ酸メチルと酢酸エチルの構造式。カルボン酸から来た部分が青、アルコールから来たアルキル基が緑で塗り分けられ、下にメタン酸メチル（ギ酸メチル）・エタン酸エチル（酢酸エチル）と書かれている" loading="lazy"><figcaption class="ref-figure-cap"><b>青がカルボン酸から来た部分、緑がアルコールから来た部分</b>です。名前も青・緑の順に読みます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ester-naming.png?h=c594b95b" alt="ギ酸メチルと酢酸エチルの構造式。カルボン酸から来た部分が青、アルコールから来たアルキル基が緑で塗り分けられ、下にメタン酸メチル（ギ酸メチル）・エタン酸エチル（酢酸エチル）と書かれている" loading="lazy"><figcaption class="ref-figure-cap"><b>青がカルボン酸から来た部分、緑がアルコールから来た部分</b>です。名前も青・緑の順に読みます。</figcaption></figure>
 <p class="ref-p"><b>エステルの名前は、構造式を見て言えるようにしてください。</b>構造決定の答案では、名前ではなく構造式で答えることが多いので、逆向き（名前から構造式）も書けるようにしておくと安全です。</p>
 <section class="ref-sec" id="ref-sec-reaction"><h4 class="ref-sec-h">エステル結合をつくる／切る</h4><p class="ref-sec-lead">つくるのがエステル化、切るのが加水分解とけん化。同じ結合を右へ進めるか左へ進めるかの違いです。</p></section>
 <p class="ref-p">カルボン酸とアルコールに濃硫酸を加えて加熱すると、脱水縮合してエステルと水が生じます（<b>エステル化</b>）。逆に、希硫酸などの酸を触媒として水を加えるとカルボン酸とアルコールにもどり（<b>加水分解</b>）、水酸化ナトリウム水溶液を加えて加熱するとカルボン酸の塩とアルコールに分かれます（<b>けん化</b>）。</p>
@@ -1030,6 +1035,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

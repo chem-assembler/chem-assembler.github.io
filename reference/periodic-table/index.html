@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,7 +927,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">原子番号の順に並べた元素を、価電子の数が同じ元素が縦に並ぶように配列した表を<b>周期表</b>といいます。縦の列を<b>族</b>、横の行を<b>周期</b>といいます。</p>
 <p class="ref-p">最外殻電子のうち、反応にかかわる電子を<b>価電子</b>といいます。貴ガスは反応しないので価電子は0個、それ以外の元素は最外殻電子がそのまま価電子です。原子の性質の大部分は、この価電子の数で決まります。</p>
 <section class="ref-sec" id="ref-sec-typical-transition"><h4 class="ref-sec-h">典型元素と遷移元素</h4><p class="ref-sec-lead">1・2・13〜18族が典型元素、3〜12族が遷移元素です。遷移元素はすべて金属です。</p></section>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/periodic-table-typical-transition.png" alt="周期表の1・2族と13〜18族を典型元素、3〜12族を遷移元素として囲み、金属と非金属を色分けした図" loading="lazy"><figcaption class="ref-figure-cap">典型元素は両端、遷移元素は真ん中の3〜12族です。非金属（水色）はすべて典型元素の側にあります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/periodic-table-typical-transition.png?h=e734e324" alt="周期表の1・2族と13〜18族を典型元素、3〜12族を遷移元素として囲み、金属と非金属を色分けした図" loading="lazy"><figcaption class="ref-figure-cap">典型元素は両端、遷移元素は真ん中の3〜12族です。非金属（水色）はすべて典型元素の側にあります。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">典型元素と遷移元素の比べ方</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">観点</th><th style="text-align: left;">典型元素</th><th style="text-align: left;">遷移元素</th></tr></thead><tbody><tr><td style="text-align: center;"><b>族</b></td><td style="text-align: left;">1・2・13〜18族</td><td style="text-align: left;">3〜12族</td></tr><tr><td style="text-align: center;"><b>金属か</b></td><td style="text-align: left;">金属と非金属の両方がある</td><td style="text-align: left;">すべて金属</td></tr><tr><td style="text-align: center;"><b>価電子</b></td><td style="text-align: left;">族番号の一の位と一致する（貴ガスは0）</td><td style="text-align: left;">2個か1個で、ほとんど変わらない</td></tr><tr><td style="text-align: center;"><b>性質が似る向き</b></td><td style="text-align: left;">縦（同じ族）</td><td style="text-align: left;">横（となりどうし）も似ることが多い</td></tr><tr><td style="text-align: center;"><b>色</b></td><td style="text-align: left;">単体や化合物は白か黒が多い</td><td style="text-align: left;">有色のイオンや化合物が多い</td></tr><tr><td style="text-align: center;"><b>そのほか</b></td><td style="text-align: left;">——</td><td style="text-align: left;">触媒としてはたらくものが多い。単体は融点が高く、硬く、密度が大きいものが多い</td></tr></tbody></table></div>
 <p class="ref-p">典型元素は価電子の数が族ごとに決まっているので、<b>同じ族の元素は性質が似ています</b>。遷移元素は原子番号が増えても価電子の数がほとんど変わらないので、<b>横にとなり合う元素の性質が似ることが多い</b>ためです。</p>
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text"><b>12族（Zn・Cd・Hg）を遷移元素に含めるかどうかは、資料によって扱いが分かれます。</b>このページでは遷移元素を「3〜12族」としていますが、12族を典型元素に入れて「3〜11族」とする資料もあります。問題文に指定があればそれに従ってください。</p></div>
@@ -941,14 +946,14 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">同じ周期では、右ほど原子核の電荷が大きい</h5>
 <p class="ref-p">Li と F はどちらも最外殻が L殻です。原子核の電荷は Li が +3、F が +9 なので、F のほうが最外殻電子を強く引きつけます。そのため F は、自分の電子を取られにくく、ほかの原子の電子を奪う力が強くなります。<b>同じ周期では右の元素ほど陰性が強い</b>のはこのためです。</p>
 <h5 class="ref-h5">同じ族では、下ほど最外殻が遠い</h5>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/periodic-table-li-na.png" alt="周期表の左下が陽性、右上が陰性であることを示す矢印と、Li と Na の電子殻の図。Na のほうが最外殻電子が原子核から遠く、引きつける力が弱い" loading="lazy"><figcaption class="ref-figure-cap">Li（最外殻は L殻）と Na（最外殻は M殻）。原子核から最外殻電子までの距離が遠い Na のほうが、電子を引きつける力が弱くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/periodic-table-li-na.png?h=9a080e78" alt="周期表の左下が陽性、右上が陰性であることを示す矢印と、Li と Na の電子殻の図。Na のほうが最外殻電子が原子核から遠く、引きつける力が弱い" loading="lazy"><figcaption class="ref-figure-cap">Li（最外殻は L殻）と Na（最外殻は M殻）。原子核から最外殻電子までの距離が遠い Na のほうが、電子を引きつける力が弱くなります。</figcaption></figure>
 <p class="ref-p">Li の最外殻は L殻、Na の最外殻は M殻で、原子核から最外殻電子までの距離は Na のほうが遠いです。クーロン力は距離の2乗に反比例するので、Na は最外殻電子を引きつける力が弱く、電子を失いやすくなります。<b>同じ族では下の元素ほど陽性が強い</b>のはこのためです。</p>
 <p class="ref-p">ここで「Na の原子核の電荷は +11 で Li の +3 より大きいのに」と思うかもしれません。原子核の電荷は、内側の電子に打ち消されます。Li は +3 が内側の2個の電子で、Na は +11 が内側の10個の電子で打ち消され、どちらも実質 +1 です。この実質的な電荷を<b>有効核電荷</b>といいます。同じ族なら有効核電荷が等しいので、距離だけを比べればよいのです。</p>
 <section class="ref-sec" id="ref-sec-three-values"><h4 class="ref-sec-h">イオン化エネルギー・電子親和力・電気陰性度</h4><p class="ref-sec-lead">3つとも「原子が電子を引きつける力」を、場面を変えて測ったものです。</p></section>
 <h5 class="ref-h5">イオン化エネルギー</h5>
 <p class="ref-p">中性の原子から、いちばん外側の電子を1個はがして1価の陽イオンに変えるには、外からエネルギーを与えなければなりません。その量が<b>イオン化エネルギー</b>で、原子が最外殻電子を手放すまいと粘る強さを表しています。<b>この値が小さい原子ほど、電子をあっさり手放して陽イオンになりやすい</b>わけです。</p>
 <p class="ref-p">貴ガスは安定な電子配置をもつので、同じ周期の中でイオン化エネルギーが最大です。すべての元素の中では <b>He</b> が最大です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/periodic-table-ionization-energy.png" alt="横軸に原子番号1〜20、縦軸にイオン化エネルギーをとった折れ線グラフ。原子番号2・10・18で山になり、そのすぐ後の3・11・19で谷になる" loading="lazy"><figcaption class="ref-figure-cap">原子番号とイオン化エネルギー。山が貴ガス（He・Ne・Ar）、そのすぐ後の谷がアルカリ金属（Li・Na・K）です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/periodic-table-ionization-energy.png?h=5c51ff5b" alt="横軸に原子番号1〜20、縦軸にイオン化エネルギーをとった折れ線グラフ。原子番号2・10・18で山になり、そのすぐ後の3・11・19で谷になる" loading="lazy"><figcaption class="ref-figure-cap">原子番号とイオン化エネルギー。山が貴ガス（He・Ne・Ar）、そのすぐ後の谷がアルカリ金属（Li・Na・K）です。</figcaption></figure>
 <h5 class="ref-h5">電子親和力</h5>
 <p class="ref-p">今度は逆向きです。原子が外から電子を1個受け取って1価の陰イオンに変わるとき、エネルギーが外へ出ていきます。その量が<b>電子親和力</b>です。たくさん出す原子ほど、電子を受け取ったあとの姿が安定です。<b>陰イオンへのなりやすさは電子親和力で比べられ、値が大きいほどなりやすい</b>と読みます。</p>
 <p class="ref-p">同じ周期の中で電子親和力が最も大きいのはハロゲンです。貴ガスは電子を取り込んでも安定にならないので、電子親和力はほぼ0です。</p>
@@ -970,7 +975,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">理由（クーロン力と有効核電荷）は丸暗記しなくても構いませんが、説明できるようにしておくと、向きを忘れたときに自分で戻せます。電気陰性度の数値とマリケンの電気陰性度は覚えなくて構いません。</p>
 <h5 class="ref-h5">例題</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の文章の空欄 a〜d に当てはまる語句を選び、e〜j に当てはまる元素記号を書け。<b>イオン化エネルギーが（a 大きい・小さい）原子ほど陽イオンになりやすく、電子親和力が（b 大きい・小さい）原子ほど陰イオンになりやすい。金属元素は非金属元素と比較すると、イオン化傾向が（c 大きく・小さく）、電子親和力が（d 大きい・小さい）傾向がある。周期表の第3周期で最もイオン化エネルギーが大きい元素は（e）、電子親和力が最も大きい元素は（f）、電気陰性度が最も大きい元素は（g）である。すべての元素の中で最もイオン化エネルギーが大きい元素は（h）であり、最も電気陰性度が大きい元素は（i）、2番目に電気陰性度が大きい元素は（j）である。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>a 小さい　b 大きい　c 大きく　d 小さい　e Ar　f Cl　g Cl　h He　i F　j O</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">図のグラフの横軸は原子番号（1〜20）である。<b>(1) 縦軸は何を表しているか。　(2) a〜f のうち、最も陽イオンになりやすいのはどの元素か。</b></p><img class="ref-figure-img" src="/reference-img/periodic-table-ionization-energy.png" alt="原子番号1〜20についての折れ線グラフ。山に a・c・e、谷に b・d・f の記号が付いている" loading="lazy"><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) イオン化エネルギー。原子番号2・10・18 の貴ガスが各周期で山になっていることから分かります。　(2) f（K）。陽イオンになりやすいのはイオン化エネルギーが小さい元素で、グラフの中で最も小さいのが f です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">図のグラフの横軸は原子番号（1〜20）である。<b>(1) 縦軸は何を表しているか。　(2) a〜f のうち、最も陽イオンになりやすいのはどの元素か。</b></p><img class="ref-figure-img" src="/reference-img/periodic-table-ionization-energy.png?h=5c51ff5b" alt="原子番号1〜20についての折れ線グラフ。山に a・c・e、谷に b・d・f の記号が付いている" loading="lazy"><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) イオン化エネルギー。原子番号2・10・18 の貴ガスが各周期で山になっていることから分かります。　(2) f（K）。陽イオンになりやすいのはイオン化エネルギーが小さい元素で、グラフの中で最も小さいのが f です。</p></div></details></div>
 </div>
 </div>
 
@@ -1042,6 +1047,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

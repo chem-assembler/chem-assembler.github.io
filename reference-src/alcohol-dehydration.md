@@ -40,7 +40,7 @@ text: アルコールが起こす6つの反応の俯瞰（ナトリウム・酸�
 
 :::figure
 src: alcohol-dehydration-2-propanol.png
-gen: name=2-プロパノール numbered
+gen: name=2-プロパノール numbered tight
 alt: 2-プロパノールの構造式。炭素3個が横一直線に並び、オレンジの帯が主鎖の上を通って左から C₁ C₂ C₃ と番号が振ってある。真ん中の C₂ の上にヒドロキシ基 OH が付き、両端の C₁ と C₃ には水素が3個ずつ付いている
 caption: 2-プロパノール。−OH が付いているのは真ん中の C₂ で、その隣は左の C₁ と右の C₃ の2つです。
 :::
@@ -53,7 +53,7 @@ caption: 2-プロパノール。−OH が付いているのは真ん中の C₂ 
 
 :::figure
 src: alcohol-dehydration-2-butanol.png
-gen: name=2-ブタノール numbered
+gen: name=2-ブタノール numbered tight
 alt: 2-ブタノールの構造式。炭素4個が横一直線に並び、オレンジの帯が主鎖の上を通って左から C₁ C₂ C₃ C₄ と番号が振ってある。左から2番目の C₂ の上にヒドロキシ基 OH が付き、左端の C₁ には水素が3個、C₃ には水素が2個、右端の C₄ には水素が3個付いている
 caption: 2-ブタノール。−OH が付いた C₂ の隣は、左が C₁、右が C₃ で、**左右で形が違います**。
 :::

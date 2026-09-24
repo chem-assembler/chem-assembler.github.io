@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -918,9 +923,9 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>ヒドロキシ基 −OH がベンゼン環に直接結合した化合物</b>を<b>フェノール類</b>といいます。アルコールと同じ −OH をもちますが、付いている相手がベンゼン環なので、性質がはっきり変わります。</p>
 <section class="ref-sec" id="ref-sec-def"><h4 class="ref-sec-h">フェノール類とは</h4><p class="ref-sec-lead">−OH が環に直接付いていればフェノール類、環から離れた炭素に付いていればアルコールです。</p></section>
 <p class="ref-p">いちばん簡単なフェノール類が<b>フェノール C₆H₅OH</b> です。ベンゼン環の炭素に −OH が直接付いています。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-phenol.png" alt="フェノールの構造式。ベンゼン環の炭素1個にヒドロキシ基が直接結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>フェノール C₆H₅OH</b>。−OH が環の炭素に<b>直接</b>付いています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-phenol.png?h=f5b958be" alt="フェノールの構造式。ベンゼン環の炭素1個にヒドロキシ基が直接結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>フェノール C₆H₅OH</b>。−OH が環の炭素に<b>直接</b>付いています。</figcaption></figure>
 <p class="ref-p">一方、<b>ベンジルアルコール C₆H₅CH₂OH</b> は、−OH が環ではなく、環に付いた CH₂ の炭素に付いています。ベンゼン環をもっていても、これは<b>アルコール</b>です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-benzyl-alcohol.png" alt="ベンジルアルコールの構造式。ベンゼン環に CH₂ が付き、その炭素にヒドロキシ基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>ベンジルアルコール C₆H₅CH₂OH</b>。−OH と環のあいだに CH₂ が1個はさまっているので、アルコールです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-benzyl-alcohol.png?h=4c97c46b" alt="ベンジルアルコールの構造式。ベンゼン環に CH₂ が付き、その炭素にヒドロキシ基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>ベンジルアルコール C₆H₅CH₂OH</b>。−OH と環のあいだに CH₂ が1個はさまっているので、アルコールです。</figcaption></figure>
 <p class="ref-p"><b>「−OH が環に直接付いているかどうか」でフェノール類かアルコールかが決まる、と覚えてください。</b>分子式が同じ C₇H₈O でも、クレゾール（フェノール類）とベンジルアルコール（アルコール）は別の仲間です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">同じ −OH でも付く相手で名前が変わる —— 官能基の一覧へ</a></p>
 <section class="ref-sec" id="ref-sec-examples"><h4 class="ref-sec-h">主なフェノール類</h4><p class="ref-sec-lead">フェノール・クレゾール・ナフトール。サリチル酸もフェノール類の性質をもちます。</p></section>
@@ -929,7 +934,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-carboxylic-acid/">カルボン酸とフェノール類の両方の性質をもつサリチル酸のページへ</a></p>
 <section class="ref-sec" id="ref-sec-props"><h4 class="ref-sec-h">フェノールの性質</h4><p class="ref-sec-lead">特有のにおいをもつ無色の結晶。水に少し溶け、皮膚をおかします。</p></section>
 <p class="ref-p">フェノールは、<b>特有のにおいをもつ無色の結晶</b>です。水には<b>少しだけ</b>溶け、有機溶媒にはよく溶けます。<b>有毒で、皮膚をおかします</b>。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-crystal.jpg" alt="試験管の底にたまった、無色で透明なフェノールの結晶の写真。細かい粒状の結晶がたくさん集まっている" loading="lazy"><figcaption class="ref-figure-cap">フェノールの結晶。無色ですが、空気中に置くと酸化されて、しだいに赤みを帯びてきます。</figcaption><p class="ref-figure-credit">写真: <a href="https://commons.wikimedia.org/wiki/File:Phenol_2_grams.jpg" target="_blank" rel="noopener noreferrer">W. Oelen（Wikimedia Commons）</a> ／ <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank" rel="noopener noreferrer">CC BY-SA 3.0</a></p></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-crystal.jpg?h=7fb7f1aa" alt="試験管の底にたまった、無色で透明なフェノールの結晶の写真。細かい粒状の結晶がたくさん集まっている" loading="lazy"><figcaption class="ref-figure-cap">フェノールの結晶。無色ですが、空気中に置くと酸化されて、しだいに赤みを帯びてきます。</figcaption><p class="ref-figure-credit">写真: <a href="https://commons.wikimedia.org/wiki/File:Phenol_2_grams.jpg" target="_blank" rel="noopener noreferrer">W. Oelen（Wikimedia Commons）</a> ／ <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank" rel="noopener noreferrer">CC BY-SA 3.0</a></p></figure>
 <section class="ref-sec" id="ref-sec-acidity"><h4 class="ref-sec-h">弱い酸性 —— アルコールとの決定的な違い</h4><p class="ref-sec-lead">フェノール類の水溶液はごく弱い酸性を示します。アルコールの −OH は中性です。</p></section>
 <p class="ref-p">フェノール類は、水溶液中で −OH の H がわずかに電離するので、<b>ごく弱い酸性</b>を示します。同じ −OH をもつ<b>アルコールは中性</b>で、ここがフェノール類とアルコールの決定的な違いです。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅OH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅O⁻ ＋ H⁺</span></div><p class="ref-note">ごくわずかに電離します。電離する度合いは、酢酸などのカルボン酸よりもずっと小さいです。</p></div>
@@ -1029,6 +1034,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

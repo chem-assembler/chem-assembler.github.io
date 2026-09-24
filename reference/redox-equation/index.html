@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -925,7 +930,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">酸化剤と還元剤が過不足なく反応するのは、<b>酸化剤の受け取る e⁻ の数と、還元剤の放出する e⁻ の数が等しい</b>ときです。</p>
 <p class="ref-p">（酸化剤の価数）×（酸化剤の数）＝（還元剤の価数）×（還元剤の数）</p>
 <p class="ref-p">したがって、<b>酸化剤と還元剤は価数の逆の比で反応します</b>。5価の KMnO₄ と2価の H₂O₂ なら、KMnO₄：H₂O₂ ＝ 2：5 です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/redox-equation-valence.png" alt="3価の酸化剤2個と2価の還元剤3個の図。還元剤3個がそれぞれ 2e⁻ を出して合計 6e⁻ になり、それを酸化剤2個が 3e⁻ ずつ受け取る。下に「酸化剤と還元剤は価数の逆の比で反応する」" loading="lazy"><figcaption class="ref-figure-cap">3価の酸化剤2個と2価の還元剤3個で、ちょうど 6e⁻ がやりとりされます。<b>価数の逆の比</b>（3：2 の逆 → 2：3）で反応します。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/redox-equation-valence.png?h=776f969e" alt="3価の酸化剤2個と2価の還元剤3個の図。還元剤3個がそれぞれ 2e⁻ を出して合計 6e⁻ になり、それを酸化剤2個が 3e⁻ ずつ受け取る。下に「酸化剤と還元剤は価数の逆の比で反応する」" loading="lazy"><figcaption class="ref-figure-cap">3価の酸化剤2個と2価の還元剤3個で、ちょうど 6e⁻ がやりとりされます。<b>価数の逆の比</b>（3：2 の逆 → 2：3）で反応します。</figcaption></figure>
 <p class="ref-p">価数は、半反応式の e⁻ の係数を、酸化剤・還元剤1個あたりに直した数です。主なものは次のとおりです。</p>
 <div class="ref-table-wrap"><div class="ref-cap">主な酸化剤・還元剤の価数</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">酸化剤</th><th style="text-align: center;">価数</th><th style="text-align: left;">還元剤</th><th style="text-align: center;">価数</th></tr></thead><tbody><tr><td style="text-align: left;">KMnO₄（硫酸酸性）</td><td style="text-align: center;">5</td><td style="text-align: left;">シュウ酸 H₂C₂O₄</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">K₂Cr₂O₇（硫酸酸性）</td><td style="text-align: center;">6</td><td style="text-align: left;">FeSO₄（Fe²⁺）</td><td style="text-align: center;">1</td></tr><tr><td style="text-align: left;">希硝酸 HNO₃</td><td style="text-align: center;">3</td><td style="text-align: left;">SnCl₂（Sn²⁺）</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">濃硝酸 HNO₃</td><td style="text-align: center;">1</td><td style="text-align: left;">H₂S</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">熱濃硫酸 H₂SO₄</td><td style="text-align: center;">2</td><td style="text-align: left;">KI（I⁻）</td><td style="text-align: center;">1</td></tr><tr><td style="text-align: left;">H₂O₂</td><td style="text-align: center;">2</td><td style="text-align: left;">H₂O₂</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">SO₂</td><td style="text-align: center;">4</td><td style="text-align: left;">SO₂</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">Cl₂・I₂</td><td style="text-align: center;">2</td><td style="text-align: left;">Cu・Fe（→ 2価の陽イオン）</td><td style="text-align: center;">2</td></tr></tbody></table></div>
 <p class="ref-p">価数は丸暗記するものではありません。<b>半反応式が書ければ、e⁻ の係数から読めます</b>。</p>
@@ -934,7 +939,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-assemble"><h4 class="ref-sec-h">反応式の組み立て方</h4><p class="ref-sec-lead">半反応式を整数倍して e⁻ をそろえて足し、省略されているイオンを両辺に加えます。</p></section>
 <p class="ref-p">硫酸酸性の過マンガン酸カリウム KMnO₄ 水溶液と過酸化水素 H₂O₂ 水の反応を、次の3段で組み立てます。</p>
 <ol class="ref-list"><li>酸化剤・還元剤の半反応式を書き、それぞれを整数倍して e⁻ の係数をそろえてから足し合わせる。<div class="ref-li-hang">KMnO₄ の式を2倍、H₂O₂ の式を5倍すると e⁻ がどちらも10個になり、足すと e⁻ が消える</div></li><li>反応式の左辺のイオンと、反応させた物質を比べて、省略されているイオンを両辺に加える。<div class="ref-li-hang">MnO₄⁻ はもともと K⁺ と、H⁺ はもともと SO₄²⁻ とくっついていたので、両辺に 2K⁺ と 3SO₄²⁻ を加える</div></li><li>左辺はイオンを組み合わせて反応させた物質を復元し、右辺は陽イオンと陰イオンを組み合わせて塩をつくる。</li></ol>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/redox-equation-assemble.png" alt="過マンガン酸イオンの半反応式を2倍、過酸化水素の半反応式を5倍して足し、2MnO₄⁻ ＋ 6H⁺ ＋ 5H₂O₂ → 2Mn²⁺ ＋ 5O₂ ＋ 8H₂O を得る図と、その両辺に 2K⁺ と 3SO₄²⁻ を加える段" loading="lazy"><figcaption class="ref-figure-cap">1段目で 8H⁺ の2倍の 16H⁺ と、右辺の 10H⁺ が打ち消し合って 6H⁺ が残ります。2段目で、<b>省略されていた K⁺ と SO₄²⁻</b> を両辺に戻します。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/redox-equation-assemble.png?h=af48be18" alt="過マンガン酸イオンの半反応式を2倍、過酸化水素の半反応式を5倍して足し、2MnO₄⁻ ＋ 6H⁺ ＋ 5H₂O₂ → 2Mn²⁺ ＋ 5O₂ ＋ 8H₂O を得る図と、その両辺に 2K⁺ と 3SO₄²⁻ を加える段" loading="lazy"><figcaption class="ref-figure-cap">1段目で 8H⁺ の2倍の 16H⁺ と、右辺の 10H⁺ が打ち消し合って 6H⁺ が残ります。2段目で、<b>省略されていた K⁺ と SO₄²⁻</b> を両辺に戻します。</figcaption></figure>
 <p class="ref-p">1段目で得られるイオン反応式と、3段目で得られる化学反応式は次のとおりです。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2MnO₄⁻ ＋ 6H⁺ ＋ 5H₂O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Mn²⁺ ＋ 5O₂↑ ＋ 8H₂O</span></div><p class="ref-note">イオン反応式。MnO₄⁻：H₂O₂ ＝ 2：5 で、価数の逆の比になっています。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2KMnO₄ ＋ 3H₂SO₄ ＋ 5H₂O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2MnSO₄ ＋ K₂SO₄ ＋ 5O₂↑ ＋ 8H₂O</span></div><p class="ref-note">化学反応式。右辺は Mn²⁺ と SO₄²⁻ で MnSO₄、K⁺ と SO₄²⁻ で K₂SO₄ をつくります。</p></div>
@@ -943,7 +948,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">左辺にある 2K⁺ と SO₄²⁻ で K₂SO₄ をつくって、左辺に K₂SO₄ を書く</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">左辺には、<b>用意した KMnO₄ と H₂SO₄ と H₂O₂</b> を書きます。K₂SO₄ は右辺にだけ出てきます。</span></p><p class="ref-mistake-why">用意していない物質は反応させることができないためです。K⁺ は KMnO₄ から、SO₄²⁻ は H₂SO₄ から来ているので、左辺ではそれぞれ元の物質に戻します。</p></div>
 <section class="ref-sec" id="ref-sec-sulfuric"><h4 class="ref-sec-h">具体例 —— H⁺ を硫酸から持ってくる反応</h4><p class="ref-sec-lead">KMnO₄ や K₂Cr₂O₇ の反応では、H⁺ を供給するために硫酸を加えます（硫酸酸性）。</p></section>
 <p class="ref-p">過マンガン酸カリウムと鉄(Ⅱ)イオンなら、5価の酸化剤と1価の還元剤なので、Fe²⁺ の式を5倍すると e⁻ がそろいます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/redox-equation-app-kmno4-fe.png" alt="Fe²⁺ → Fe³⁺ ＋ e⁻ に ×5、MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O に ×1 を掛けて、e⁻ がどちらも5個にそろった状態。各式の Fe・Mn の下に酸化数（＋2 → ＋3、＋7 → ＋2）が添えてある" loading="lazy"><figcaption class="ref-figure-cap">過マンガン酸イオン（5価）と鉄(Ⅱ)イオン（1価）。<b>価数の逆の比 1：5</b> で e⁻ がそろいます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/redox-equation-app-kmno4-fe.png?h=1d452ee1" alt="Fe²⁺ → Fe³⁺ ＋ e⁻ に ×5、MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O に ×1 を掛けて、e⁻ がどちらも5個にそろった状態。各式の Fe・Mn の下に酸化数（＋2 → ＋3、＋7 → ＋2）が添えてある" loading="lazy"><figcaption class="ref-figure-cap">過マンガン酸イオン（5価）と鉄(Ⅱ)イオン（1価）。<b>価数の逆の比 1：5</b> で e⁻ がそろいます。</figcaption></figure>
 <p class="ref-p">二クロム酸カリウム K₂Cr₂O₇ 水溶液と硫酸鉄(Ⅱ) FeSO₄ 水溶液を、硫酸酸性で反応させます。</p>
 <ol class="ref-list"><li>Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O と、Fe²⁺ → Fe³⁺ ＋ e⁻ を書き、FeSO₄ の式を6倍して足す。</li><li>Cr₂O₇²⁻ はもともと K⁺ と、H⁺ と Fe²⁺ は SO₄²⁻ とくっついて H₂SO₄・FeSO₄ だったので、両辺に 2K⁺ と 7SO₄²⁻ ＋ 6SO₄²⁻ を加える。</li><li>右辺で K₂SO₄・Cr₂(SO₄)₃・Fe₂(SO₄)₃ に組む。</li></ol>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6Fe²⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Cr³⁺ ＋ 6Fe³⁺ ＋ 7H₂O</span></div><p class="ref-note">イオン反応式。6価の酸化剤と1価の還元剤なので 1：6 で反応します。</p></div>
@@ -1040,6 +1045,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

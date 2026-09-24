@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -947,7 +952,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">硫酸イオン SO₄²⁻ は、Ba²⁺・Ca²⁺・Pb²⁺ と白色の沈殿をつくります。電荷が合うようにイオンを組み合わせれば、式はそのまま書けます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Ba²⁺ ＋ SO₄²⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">BaSO₄↓</span></div><p class="ref-note">白色沈殿。水にも酸にも溶けません。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Ca²⁺ ＋ SO₄²⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CaSO₄↓</span></div><p class="ref-note">白色沈殿。ただし BaSO₄ よりはよく溶けるので、うすい溶液では沈殿しないことがあります。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkaline-earth-app-baso4.png" alt="ビーカーの模式図。Ba²⁺ と SO₄²⁻ が組になって底に沈み、Na⁺ 2個と Cl⁻ 2個は水中に残っている" loading="lazy"><figcaption class="ref-figure-cap">BaCl₂ ＋ Na₂SO₄ の反応のあと。<b>Ba²⁺ と SO₄²⁻ だけが組になって底に沈み</b>、Na⁺ と Cl⁻ はイオンのまま残ります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkaline-earth-app-baso4.png?h=dbdf759b" alt="ビーカーの模式図。Ba²⁺ と SO₄²⁻ が組になって底に沈み、Na⁺ 2個と Cl⁻ 2個は水中に残っている" loading="lazy"><figcaption class="ref-figure-cap">BaCl₂ ＋ Na₂SO₄ の反応のあと。<b>Ba²⁺ と SO₄²⁻ だけが組になって底に沈み</b>、Na⁺ と Cl⁻ はイオンのまま残ります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s5&amp;from=reference&amp;page=alkaline-earth">塩化バリウムと硫酸ナトリウム（沈殿）</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s8&amp;from=reference&amp;page=alkaline-earth">硫酸と水酸化バリウム（中和＋沈殿）</a></p>
 <p class="ref-p">硫酸バリウムは、胃や腸の<b>X線造影剤</b>に使われます。バリウムのイオンは体に有害ですが、BaSO₄ は水にも胃酸（塩酸）にも溶けないので、Ba²⁺ として体に吸収されないためです。</p>
@@ -1035,6 +1040,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

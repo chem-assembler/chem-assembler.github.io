@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -919,8 +924,8 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-what"><h4 class="ref-sec-h">つなぎ方が違えば、別の分子</h4><p class="ref-sec-lead">原子の種類と数が同じでも、つながり方が違えば別の物質です。これが構造異性体です。</p></section>
 <p class="ref-p">炭素が4個以上になると、1列につなぐほかに<b>枝分かれ</b>のつなぎ方ができます。原子の種類と数（＝分子式）は同じなのに、つながり方が違う別の分子になる —— これが<b>構造異性体</b>です。</p>
 <p class="ref-p">いちばん小さい例が C₄H₁₀ です。炭素4個を全部1列に使えば直鎖の<b>ブタン</b>、3個を1列にして残りの1個を枝（メチル基）にすれば <b>2-メチルプロパン</b>。この2つで打ち止めで、3つ目はありません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-isomers-c4-straight.png" alt="ブタンの構造式。炭素4個が横一直線に並び、それぞれの炭素から結合の手が上下左右に出ている（水素原子は省略してある）" loading="lazy"><figcaption class="ref-figure-cap">炭素4個を全部主鎖に使った形 ＝ <b>ブタン</b>。水素を省いて結合の手だけを書いてあります。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-isomers-c4-branch.png" alt="2-メチルプロパンの構造式。炭素3個が横一直線に並んで左から1・2・3の番号が振ってあり、2番の炭素から下へ炭素1個が伸びている（水素原子は省略してある）" loading="lazy"><figcaption class="ref-figure-cap">主鎖を3個にして、残りの1個を枝にした形 ＝ <b>2-メチルプロパン</b>。枝を主鎖の<b>端</b>（1番か3番）に付けると主鎖が伸びてブタンに戻ってしまうので、付けられるのは両端以外の炭素だけです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-isomers-c4-straight.png?h=115bf79a" alt="ブタンの構造式。炭素4個が横一直線に並び、それぞれの炭素から結合の手が上下左右に出ている（水素原子は省略してある）" loading="lazy"><figcaption class="ref-figure-cap">炭素4個を全部主鎖に使った形 ＝ <b>ブタン</b>。水素を省いて結合の手だけを書いてあります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-isomers-c4-branch.png?h=3f635e69" alt="2-メチルプロパンの構造式。炭素3個が横一直線に並んで左から1・2・3の番号が振ってあり、2番の炭素から下へ炭素1個が伸びている（水素原子は省略してある）" loading="lazy"><figcaption class="ref-figure-cap">主鎖を3個にして、残りの1個を枝にした形 ＝ <b>2-メチルプロパン</b>。枝を主鎖の<b>端</b>（1番か3番）に付けると主鎖が伸びてブタンに戻ってしまうので、付けられるのは両端以外の炭素だけです。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane-naming/">「2-メチルプロパン」という名前の作り方（主鎖の選び方・番号の振り方）は「アルカンの命名」で</a></p>
 <section class="ref-sec" id="ref-sec-count"><h4 class="ref-sec-h">異性体はいくつあるか</h4><p class="ref-sec-lead">C₄ から C₇ まで 2・3・5・9。この4つは覚えてしまいましょう。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">枝分かれしたアルカン C4〜C7（15行）</div><table class="ref-table" data-ref-series="異性体をつくる（枝分かれアルカン）"><thead><tr><th>分子式</th><th>名称</th><th>主鎖の C の数</th></tr></thead><tbody><tr><td class="ref-group ref-formula" rowspan="1">C₄H₁₀<span>1 件</span></td><td>2-メチルプロパン</td><td class="ref-c">3</td></tr><tr><td class="ref-group ref-formula" rowspan="2">C₅H₁₂<span>2 件</span></td><td>2-メチルブタン</td><td class="ref-c">4</td></tr><tr><td>2,2-ジメチルプロパン</td><td class="ref-c">3</td></tr><tr><td class="ref-group ref-formula" rowspan="4">C₆H₁₄<span>4 件</span></td><td>2-メチルペンタン</td><td class="ref-c">5</td></tr><tr><td>3-メチルペンタン</td><td class="ref-c">5</td></tr><tr><td>2,2-ジメチルブタン</td><td class="ref-c">4</td></tr><tr><td>2,3-ジメチルブタン</td><td class="ref-c">4</td></tr><tr><td class="ref-group ref-formula" rowspan="8">C₇H₁₆<span>8 件</span></td><td>2-メチルヘキサン</td><td class="ref-c">6</td></tr><tr><td>3-メチルヘキサン</td><td class="ref-c">6</td></tr><tr><td>2,2-ジメチルペンタン</td><td class="ref-c">5</td></tr><tr><td>2,3-ジメチルペンタン</td><td class="ref-c">5</td></tr><tr><td>3,3-ジメチルペンタン</td><td class="ref-c">5</td></tr><tr><td>2,4-ジメチルペンタン</td><td class="ref-c">5</td></tr><tr><td>3-エチルペンタン</td><td class="ref-c">5</td></tr><tr><td>2,2,3-トリメチルブタン</td><td class="ref-c">4</td></tr></tbody></table></div>
@@ -944,7 +949,7 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">二重結合を入れる（アルケン）</h5>
 <ol class="ref-list"><li><b>同じ炭素数のアルカンの構造異性体を、先に全部書き出す。</b><div class="ref-li-hang">炭素数が4なら「ブタンとその異性体」、5なら「ペンタンとその異性体」を書きます。</div></li><li><b>書き出したそれぞれについて、炭素間の単結合を二重結合にできる場所を探す。</b><div class="ref-li-hang">左右対称なところは同じものになるので、1つに数えます。</div></li><li><b>できたアルケンに、シス－トランス異性体があるかどうかを確かめる。</b><div class="ref-li-hang">二重結合の炭素の片方に同じものが2個ついていたら、シス－トランス異性体はありません。</div></li></ol>
 <p class="ref-p">具体例として、C₄H₈ のアルケン（ブテン）を書き出してみます。炭素数4のアルカンはブタンと 2-メチルプロパンの2種類です。直鎖のブタンは左右対称なので、二重結合をつくれる場所は2種類で、<b>1-ブテン</b>と <b>2-ブテン</b>が出ます。2-メチルプロパンは3つのメチル基が対称なので、二重結合をつくれる場所は1種類しかなく、<b>2-メチル-1-プロペン</b>だけです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-butene-writeout.png" alt="左にブタンと2-メチルプロパンの構造式、右に1-ブテン・2-ブテン・2-メチル-1-プロペンの構造式を並べた書き出しの図。ブタンの炭素間結合に1・2・1の番号、2-メチルプロパンの結合に3の番号が振ってある" loading="lazy"><figcaption class="ref-figure-cap">左のアルカンの<b>炭素間結合に番号を振り</b>、同じ番号の場所を二重結合にしたものが右のアルケンです。2-ブテンだけがシス－トランス異性体をもちます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkene-butene-writeout.png?h=27d83ac7" alt="左にブタンと2-メチルプロパンの構造式、右に1-ブテン・2-ブテン・2-メチル-1-プロペンの構造式を並べた書き出しの図。ブタンの炭素間結合に1・2・1の番号、2-メチルプロパンの結合に3の番号が振ってある" loading="lazy"><figcaption class="ref-figure-cap">左のアルカンの<b>炭素間結合に番号を振り</b>、同じ番号の場所を二重結合にしたものが右のアルケンです。2-ブテンだけがシス－トランス異性体をもちます。</figcaption></figure>
 <p class="ref-p">したがって、<b>ブテンの構造異性体は3種類、立体異性体まで含めると4種類</b>です。</p>
 <p class="ref-p">二重結合をつくれる場所は、<b>炭素に水素が残っているかどうか</b>で決まります。<b>丁字交差点・道の途中・行き止まりの炭素は二重結合をつくれますが、十字交差点の炭素はつくれません。</b>十字交差点の炭素には、もう水素が1個もついていないためです。</p>
 <h5 class="ref-h5">環をつくる（シクロアルカン）</h5>
@@ -966,7 +971,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkyne/">三重結合そのものの話（直線形・2段階で進む付加反応・エチンの製法）はアルキンのページに</a></p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q"><b>ペンタン C₅H₁₂ の構造異性体をすべて書き出し、名称を書け。</b>主鎖の炭素数が多いものから順に、主鎖を横一直線にして書くと、重複ともれを防げます。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>3種類</b>です。主鎖5個（<b>ペンタン</b>）、主鎖4個に枝1個（<b>2-メチルブタン</b>）、主鎖3個に枝2個（<b>2,2-ジメチルプロパン</b>）。枝を主鎖の端に付けると主鎖が伸びてしまうので、付けられるのは両端以外の炭素だけ —— そう考えると数え落としが減ります。</p><img class="ref-figure-img" src="/reference-img/alkane-isomers-ex1-answer.png" alt="ペンタンの構造異性体3つの構造式。左が炭素5個の直鎖でペンタン、中央が炭素4個の鎖の2番目の炭素から下へ炭素1個が伸びた2-メチルブタン、右が炭素3個の鎖の真ん中の炭素から上下へ炭素1個ずつが伸びた2,2-ジメチルプロパン。" loading="lazy"></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q"><b>ペンタン C₅H₁₂ の構造異性体をすべて書き出し、名称を書け。</b>主鎖の炭素数が多いものから順に、主鎖を横一直線にして書くと、重複ともれを防げます。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>3種類</b>です。主鎖5個（<b>ペンタン</b>）、主鎖4個に枝1個（<b>2-メチルブタン</b>）、主鎖3個に枝2個（<b>2,2-ジメチルプロパン</b>）。枝を主鎖の端に付けると主鎖が伸びてしまうので、付けられるのは両端以外の炭素だけ —— そう考えると数え落としが減ります。</p><img class="ref-figure-img" src="/reference-img/alkane-isomers-ex1-answer.png?h=d29ba8d3" alt="ペンタンの構造異性体3つの構造式。左が炭素5個の直鎖でペンタン、中央が炭素4個の鎖の2番目の炭素から下へ炭素1個が伸びた2-メチルブタン、右が炭素3個の鎖の真ん中の炭素から上下へ炭素1個ずつが伸びた2,2-ジメチルプロパン。" loading="lazy"></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">アルカンの書き出しを用いて、<b>ブテンの鎖式の構造異性体</b>の構造式をすべて書き出せ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>3種類です。<b>1-ブテン</b> CH₂=CHCH₂CH₃、<b>2-ブテン</b> CH₃CH=CHCH₃、<b>2-メチル-1-プロペン</b> CH₂=C(CH₃)₂。2-ブテンにはシス－トランス異性体があるので、立体異性体まで含めると4種類になります。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q"><b>C₄H₈</b> の構造異性体の構造式をすべて書き出せ。環式のものも含めること。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>構造異性体は5種類、立体異性体まで含めると6種類です。<b>環式</b>は、4員環の<b>シクロブタン</b>と、3員環の<b>メチルシクロプロパン</b>の2種類。<b>鎖式</b>は <b>1-ブテン</b>・<b>2-ブテン</b>・<b>2-メチル-1-プロペン</b>の3種類で、このうち 2-ブテンにシス－トランス異性体があるので1つ増えます。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q"><b>C₅H₁₀</b> の構造異性体の構造式をすべて書き出せ。環式のものも含めること。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>構造異性体は10種類、立体異性体まで含めると13種類です。<b>環式が5種類</b>（シクロペンタン・メチルシクロブタン・1,1-ジメチルシクロプロパン・1,2-ジメチルシクロプロパン・エチルシクロプロパン）、<b>鎖式が5種類</b>（1-ペンテン・2-ペンテン・2-メチル-1-ブテン・2-メチル-2-ブテン・3-メチル-1-ブテン）です。</p></div></details></div>
@@ -1045,6 +1050,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

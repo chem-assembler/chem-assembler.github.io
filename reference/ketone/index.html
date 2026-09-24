@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -926,7 +931,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-naming"><h4 class="ref-sec-h">ケトンの命名</h4><p class="ref-sec-lead">両側の2つのアルキル基の名称を続けて、語尾に「ケトン」を付けた慣用名を使います。</p></section>
 <p class="ref-p">規則どおりの名称は、対応するアルカンの語尾「-ane（アン）」を「-anon（アノン）」に変えたものです。炭素3個なら「2-プロパノン」、4個なら「2-ブタノン」になります。</p>
 <p class="ref-p">ただし高校化学ではこの名前をまず見かけないので、<b>覚えるのは慣用名のほう</b>です。慣用名は、カルボニル基の両側にあるアルキル基の名称を2つ続けて、語尾に「ケトン」を付けてつくります。2つが同じなら「ジ<span class="ref-blank">○○</span>ケトン」です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ketone-naming.png" alt="2-プロパノン（アセトン、ジメチルケトン）と2-ブタノン（メチルエチルケトン）の構造式に、両側のアルキル基の名前を書き添えた図" loading="lazy"><figcaption class="ref-figure-cap">上は両側ともメチル基なので「ジメチルケトン」ですが、<b>アセトン</b>という呼び方のほうが圧倒的によく使われます。下はメチル基とエチル基で「メチルエチルケトン」です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ketone-naming.png?h=08b09392" alt="2-プロパノン（アセトン、ジメチルケトン）と2-ブタノン（メチルエチルケトン）の構造式に、両側のアルキル基の名前を書き添えた図" loading="lazy"><figcaption class="ref-figure-cap">上は両側ともメチル基なので「ジメチルケトン」ですが、<b>アセトン</b>という呼び方のほうが圧倒的によく使われます。下はメチル基とエチル基で「メチルエチルケトン」です。</figcaption></figure>
 <p class="ref-p"><b>アセトン CH₃COCH₃ は示性式ごと必ず暗記してください。</b>2-ブタノンのほうは「メチルエチルケトン」という呼び名で出てくることが多いので、そう呼ばれたときに構造が書ければ十分です。</p>
 <section class="ref-sec" id="ref-sec-distinguish"><h4 class="ref-sec-h">アルデヒドとの区別 —— 還元性がない</h4><p class="ref-sec-lead">ケトンは酸化されにくく、銀鏡反応もフェーリング液の還元も示しません。分子式が同じアルデヒドとの決め手がこれです。</p></section>
 <p class="ref-p">アルデヒドは酸化されてカルボン酸になりやすく、そのぶん<b>還元性</b>を示しました。<b>ケトンは酸化されにくいので、還元性を示しません。</b></p>
@@ -1028,6 +1033,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -920,7 +925,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-classification"><h4 class="ref-sec-h">物質の分類 —— 2回の問いで分ける</h4><p class="ref-sec-lead">1種類の物質だけなら純物質、2種類以上が混ざっていれば混合物です。純物質はさらに、元素が1種類だけでできている単体と、何種類かの元素が結びついてできている化合物に分かれます。</p></section>
 <p class="ref-p">物質の分類は、次の<b>2回の問い</b>で決まります。</p>
 <ol class="ref-list"><li>「ほかの物質が混ざっているか」を問う。<div class="ref-li-hang">1種類の物質だけなら「純物質」、2種類以上が混ざっていれば「混合物」</div></li><li>純物質について「何種類の元素からできているか」を問う。<div class="ref-li-hang">1種類なら「単体」、2種類以上なら「化合物」</div></li></ol>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/substance-classification-tree.png" alt="物質の分類を枝分かれで表した図。物質は①ほかの物質が混ざっているかで混合物と純物質に分かれ、純物質は②何種類の元素からできているかで単体と化合物に分かれる。それぞれの箱に例が添えてある" loading="lazy"><figcaption class="ref-figure-cap">2回目の問いは、<b>純物質になってから</b>しか使えません。混合物を「単体か化合物か」と聞かれることはない、と覚えておきましょう。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/substance-classification-tree.png?h=caedc5b1" alt="物質の分類を枝分かれで表した図。物質は①ほかの物質が混ざっているかで混合物と純物質に分かれ、純物質は②何種類の元素からできているかで単体と化合物に分かれる。それぞれの箱に例が添えてある" loading="lazy"><figcaption class="ref-figure-cap">2回目の問いは、<b>純物質になってから</b>しか使えません。混合物を「単体か化合物か」と聞かれることはない、と覚えておきましょう。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">物質の分類と具体例</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">どういう物質か</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;"><b>混合物</b></td><td style="text-align: left;">2種類以上の純物質が混ざったもの</td><td style="text-align: left;">空気・海水・石油・牛乳</td></tr><tr><td style="text-align: left;"><b>純物質（化合物）</b></td><td style="text-align: left;">2種類以上の元素からできた1種類の物質</td><td style="text-align: left;">水 H₂O・二酸化炭素 CO₂・塩化ナトリウム NaCl</td></tr><tr><td style="text-align: left;"><b>純物質（単体）</b></td><td style="text-align: left;">1種類の元素からできた1種類の物質</td><td style="text-align: left;">水素 H₂・酸素 O₂・鉄 Fe・ヘリウム He</td></tr></tbody></table></div>
 <p class="ref-p">純物質は、融点・沸点・密度が物質ごとに<b>決まった値</b>になります。混合物では、混ざっている割合（組成）によってこれらの値が変わります。例えば水の沸点は 1.013×10⁵ Pa のもとで 100℃ ですが、水とエタノールの混合物を加熱すると、エタノールが先に多く蒸発して組成が変わるので、沸点は一定になりません。</p>
 <p class="ref-p">化合物は化学変化で単体に分けられますが、単体はそれ以上別の物質に分けられません。例えば水は、電気分解すると水素と酸素に分かれます。</p>
@@ -951,7 +956,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">具体例として、海水から純水を得る<b>蒸留</b>を見てみましょう。海水を加熱すると、水だけが水蒸気になって出ていき、塩化ナトリウムなどの塩類はフラスコに残ります。水蒸気をリービッヒ冷却器で冷やして液体に戻すと、純水（蒸留水）が得られます。塩類の沸点は水よりはるかに高いので、「沸点の違い」で分けていることになります。</p>
 <p class="ref-p">蒸留の装置は、細かい約束がよく問われます。</p>
 <ul class="ref-list"><li>温度計の球部は、枝付きフラスコの<b>枝の付け根</b>に置く（出ていく蒸気の温度を測るため）。</li><li>液体の量はフラスコの<b>半分以下</b>にし、<b>沸騰石</b>を入れる（突沸を防ぐため）。</li><li>冷却水は冷却器の<b>下から入れて上から出す</b>（冷却器の中を水で満たすため）。</li><li>受け器（三角フラスコ）は<b>密栓しない</b>（装置内の圧力が上がらないように）。</li></ul>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/distillation-apparatus.png" alt="蒸留の装置の図。枝付きフラスコに温度計をさし、球部を枝の付け根に置く。フラスコの液は半分以下で沸騰石が入っている。枝はリービッヒ冷却器につながり、冷却水は受け器側の下から入って上から出る。冷却器の先の三角フラスコには栓をしていない" loading="lazy"><figcaption class="ref-figure-cap">4つの約束は、どれも<b>そこでないと困る理由</b>があります。図の中で位置を確かめながら、理由を1つずつ言えるようにしましょう。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/distillation-apparatus.png?h=51dca4ed" alt="蒸留の装置の図。枝付きフラスコに温度計をさし、球部を枝の付け根に置く。フラスコの液は半分以下で沸騰石が入っている。枝はリービッヒ冷却器につながり、冷却水は受け器側の下から入って上から出る。冷却器の先の三角フラスコには栓をしていない" loading="lazy"><figcaption class="ref-figure-cap">4つの約束は、どれも<b>そこでないと困る理由</b>があります。図の中で位置を確かめながら、理由を1つずつ言えるようにしましょう。</figcaption></figure>
 <p class="ref-p"><b>蒸留の装置の4つの約束は、理由とセットで書けるようにしましょう。</b>一方、ペーパークロマトグラフィーの展開の細かい手順は、覚えなくても問題が解けることがほとんどです。</p>
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">新しい課程では、固体が液体を経ずに直接気体になる変化を<b>昇華</b>、気体が直接固体になる変化を<b>凝華</b>と呼び分けます。古い参考書では、どちらも「昇華」と書かれていることがあります。分離の方法の名前は、今も「昇華法」です。</p></div>
 <h5 class="ref-h5">分離の方法を選ぶ手順</h5>
@@ -1033,6 +1038,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

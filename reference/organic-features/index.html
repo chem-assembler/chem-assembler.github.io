@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -926,14 +931,14 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-compare"><h4 class="ref-sec-h">有機化合物と無機化合物を比べる</h4><p class="ref-sec-lead">有機化合物は「少ない元素で、とても多くの種類」「共有結合でできた分子」「融点・沸点が低い」「水に溶けにくく、油に溶けやすい」「燃えやすい」「反応が遅い」。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">有機化合物と無機化合物の比較</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">比べる点</th><th style="text-align: left;">有機化合物</th><th style="text-align: left;">無機化合物</th></tr></thead><tbody><tr><td style="text-align: left;"><b>構成元素</b></td><td style="text-align: left;">C・H・O・N・Cl・S など<b>少数</b></td><td style="text-align: left;">ほぼすべての元素</td></tr><tr><td style="text-align: left;"><b>化合物の種類</b></td><td style="text-align: left;"><b>1億以上</b>（今も増え続けている）</td><td style="text-align: left;">数万</td></tr><tr><td style="text-align: left;"><b>結合</b></td><td style="text-align: left;"><b>共有結合</b></td><td style="text-align: left;">イオン結合が多い</td></tr><tr><td style="text-align: left;"><b>結晶の種類</b></td><td style="text-align: left;"><b>分子結晶</b></td><td style="text-align: left;">イオン結晶が多い</td></tr><tr><td style="text-align: left;"><b>融点・沸点</b></td><td style="text-align: left;"><b>低い</b></td><td style="text-align: left;">高い</td></tr><tr><td style="text-align: left;"><b>水への溶けやすさ</b></td><td style="text-align: left;"><b>溶けにくい</b></td><td style="text-align: left;">溶けやすい</td></tr><tr><td style="text-align: left;"><b>無極性溶媒（ヘキサン・エーテルなど）への溶けやすさ</b></td><td style="text-align: left;"><b>溶けやすい</b></td><td style="text-align: left;">溶けにくい</td></tr><tr><td style="text-align: left;"><b>燃えやすさ</b></td><td style="text-align: left;"><b>燃えるものが多い</b>（完全燃焼で CO₂ と H₂O）</td><td style="text-align: left;">燃えないものが多い</td></tr><tr><td style="text-align: left;"><b>反応の速さ</b></td><td style="text-align: left;"><b>遅い</b>（加熱が必要で時間がかかる）</td><td style="text-align: left;">速い</td></tr></tbody></table></div>
 <p class="ref-p">具体例で比べてみましょう。ろうそくのろう（パラフィン）は炭素と水素だけからなる有機化合物で、<b>60℃ほどで融け</b>、水には溶けず、火をつけると燃えて二酸化炭素と水になります。食塩（塩化ナトリウム NaCl）は無機化合物で、<b>融点は 801℃</b> と高く、水によく溶け、火をつけても燃えません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/organic-features-wax-salt.png" alt="ろうと食塩を比べた模式図。上の温度の目盛りでは、ろうが約60℃、食塩が801℃の位置に印がある。下の表の形の絵では、水に入れたろうは溶けずに残り、食塩は溶けて見えなくなる。火をつけると、ろうそくは炎を上げて燃え、皿の上の食塩は下から熱しても燃えない" loading="lazy"><figcaption class="ref-figure-cap">ろうと食塩は、表の3つの行（融点・沸点、水への溶けやすさ、燃えやすさ）で、ちょうど反対の側に立ちます。この違いがどこから来るのかは、次の節で見ます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/organic-features-wax-salt.png?h=caf5da4a" alt="ろうと食塩を比べた模式図。上の温度の目盛りでは、ろうが約60℃、食塩が801℃の位置に印がある。下の表の形の絵では、水に入れたろうは溶けずに残り、食塩は溶けて見えなくなる。火をつけると、ろうそくは炎を上げて燃え、皿の上の食塩は下から熱しても燃えない" loading="lazy"><figcaption class="ref-figure-cap">ろうと食塩は、表の3つの行（融点・沸点、水への溶けやすさ、燃えやすさ）で、ちょうど反対の側に立ちます。この違いがどこから来るのかは、次の節で見ます。</figcaption></figure>
 <p class="ref-p">簡単にいうと、「<b>水に溶けやすいのが無機化合物、油に溶けやすいのが有機化合物</b>」です。</p>
 <p class="ref-p"><b>この表は、行ごとに有機と無機のどちらが「高い・溶けやすい・速い」かを言えるようにしてください。</b>ただし、行をばらばらに暗記する必要はありません。次の節で見るとおり、<b>ほとんどの行は「共有結合でできた分子」という1つの理由から出てきます。</b>「1億以上・数万」のような数そのものは覚えなくて構いません。「有機化合物のほうが圧倒的に多い」と言えれば十分です。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">有機化合物はどれも水に溶けず、どれも燃える</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">表の行は「<b>そういうものが多い</b>」という傾向です。エタノール・酢酸・グルコースは<b>水によく溶ける</b>有機化合物ですし、四塩化炭素 CCl₄ は<b>燃えない</b>有機化合物です。酢酸ナトリウム CH₃COONa のように、<b>イオン結晶をつくる有機化合物</b>もあります。</span></p><p class="ref-mistake-why">表を「有機はこう、無機はこう」と白黒で覚えてしまうためです。水に溶ける有機化合物は、ヒドロキシ基 −OH やカルボキシ基 −COOH のような<b>極性の大きい部分</b>をもっています。選択肢に「すべて」「必ず」とあったら、例外を1つ思い浮かべてみましょう。</p></div>
 <section class="ref-sec" id="ref-sec-why"><h4 class="ref-sec-h">なぜそうなるのか</h4><p class="ref-sec-lead">表の性質は、ばらばらの暗記ではありません。「炭素骨格をいくらでも組める」と「共有結合でできた、極性の小さい分子」の2つから出てきます。</p></section>
 <p class="ref-p">表の違いがどこから出てくるのかを見ていきましょう。</p>
 <p class="ref-p"><b>種類が多い理由</b> … 炭素原子は<b>結合の手（原子価）を4本</b>もち、<b>炭素原子どうしで次々と共有結合をつくってつながる</b>ことができます。つながり方も、まっすぐな鎖・枝分かれ・環のように何通りもあり、単結合だけでなく二重結合や三重結合もつくれます。<b>炭素骨格を模型のように組み合わせれば、いくらでも新しい化合物をつくれる</b>ため、構成元素が少ないのに種類がとても多くなります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/organic-features-skeletons.png" alt="炭素原子4個からなる4つの分子の構造式を横に並べた図。左から、まっすぐな鎖のブタン、枝分かれした2-メチルプロパン、二重結合を1つもつ1-ブテン、4個の炭素が環になったシクロブタン" loading="lazy"><figcaption class="ref-figure-cap">炭素原子が<b>4個だけ</b>でも、<b>鎖</b>（ブタン）・<b>枝分かれ</b>（2-メチルプロパン）・<b>二重結合</b>（1-ブテン）・<b>環</b>（シクロブタン）と、つなぎ方でこれだけ別の分子ができます。炭素の数が増えれば、組み方はさらに増えます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/organic-features-skeletons.png?h=c404b0c0" alt="炭素原子4個からなる4つの分子の構造式を2つずつ2段に並べた図。左から、まっすぐな鎖のブタン、枝分かれした2-メチルプロパン、二重結合を1つもつ1-ブテン、4個の炭素が環になったシクロブタン" loading="lazy"><figcaption class="ref-figure-cap">炭素原子が<b>4個だけ</b>でも、<b>鎖</b>（ブタン）・<b>枝分かれ</b>（2-メチルプロパン）・<b>二重結合</b>（1-ブテン）・<b>環</b>（シクロブタン）と、つなぎ方でこれだけ別の分子ができます。炭素の数が増えれば、組み方はさらに増えます。</figcaption></figure>
 <p class="ref-p"><b>融点・沸点が低い理由</b> … 有機化合物は<b>共有結合でできた分子</b>で、固体は<b>分子結晶</b>です。分子の中の共有結合は強いのですが、融かす・沸騰させるときに切るのは<b>分子どうしを引きつける分子間力</b>で、これは<b>弱い力</b>です。イオン結晶のように陽イオンと陰イオンが強く引き合っているわけではないため、融点・沸点が低くなります。加熱すると、融ける前に分解してしまうものもあります。</p>
 <p class="ref-p"><b>水に溶けにくい理由</b> … 有機化合物は<b>極性の小さい分子</b>が多いため、極性の大きい水とはなじまず、ヘキサンやジエチルエーテルなどの<b>極性の小さい溶媒（有機溶媒）</b>に溶けやすくなります。電離してイオンになる無機化合物は、その逆です。</p>
 <p class="ref-p"><b>燃えやすい理由</b> … 有機化合物は炭素原子と水素原子を含むものがほとんどなので、<b>酸素と結びついて燃えやすく、完全燃焼すると二酸化炭素 CO₂ と水 H₂O が生じます。</b>この性質は、有機化合物に炭素や水素が含まれていることを確かめる実験にも使われます。</p>
@@ -1023,6 +1028,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -920,7 +925,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-apparatus"><h4 class="ref-sec-h">器具と使い方</h4><p class="ref-sec-lead">メスフラスコで正確に薄め、ホールピペットで正確に測りとり、コニカルビーカーの中でビュレットから滴下して中和させます。</p></section>
 <p class="ref-p">中和滴定で使う器具は4つです。<b>用途で言い切れるようにしてください。</b></p>
 <ul class="ref-list"><li><b>メスフラスコ</b> … 試料に純水を加えて正確に薄める（標線は1本で、測れる体積は1つだけ）</li><li><b>ホールピペット</b> … 試料の体積を正確に測りとる（標線は1本で、測れる体積は1つだけ）</li><li><b>ビュレット</b> … 滴定の前後の目盛りの差から、滴下した試料の体積を正確に測る</li><li><b>コニカルビーカー</b> … かき混ぜながら中和反応を行う</li></ul>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/titration-apparatus.png" alt="中和滴定の器具4つの線画。左から、首に標線が1本あるメスフラスコ、中ほどがふくらみ上の管に標線が1本あるホールピペット、右に目盛りとコックのついた縦長のビュレットがあり、その真下にコニカルビーカーが置かれている" loading="lazy"><figcaption class="ref-figure-cap">左から使う順に並べました。<b>メスフラスコとホールピペットは標線が1本だけ</b>で、標線に合わせた体積しか測れません。ビュレットは目盛りを滴定の前と後に読み、その差から滴下した体積を求めます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/titration-apparatus.png?h=9c2e7c01" alt="中和滴定の器具4つの線画。左から、首に標線が1本あるメスフラスコ、中ほどがふくらみ上の管に標線が1本あるホールピペット、右に目盛りとコックのついた縦長のビュレットがあり、その真下にコニカルビーカーが置かれている" loading="lazy"><figcaption class="ref-figure-cap">左から使う順に並べました。<b>メスフラスコとホールピペットは標線が1本だけ</b>で、標線に合わせた体積しか測れません。ビュレットは目盛りを滴定の前と後に読み、その差から滴下した体積を求めます。</figcaption></figure>
 <p class="ref-p">実験は何回か続けて行い、平均値を結果にします。そのため同じ器具を水洗いして繰り返し使いますが、器具によって<b>共洗い</b>するか、<b>純水でぬれたまま使う</b>かが決まっています。「すでにぬれている器具を、これから測りたい試料ですすぐこと」を<b>共洗い</b>といいます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">器具の扱い</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">器具</th><th style="text-align: left;">用途</th><th style="text-align: center;">共洗い</th><th style="text-align: center;">加熱乾燥</th></tr></thead><tbody><tr><td style="text-align: left;">メスフラスコ</td><td style="text-align: left;">試料を正確に薄める</td><td style="text-align: center;"><b>してはダメ</b></td><td style="text-align: center;">してはダメ</td></tr><tr><td style="text-align: left;">ホールピペット</td><td style="text-align: left;">試料を正確に測りとる</td><td style="text-align: center;"><b>しなければダメ</b></td><td style="text-align: center;">してはダメ</td></tr><tr><td style="text-align: left;">ビュレット</td><td style="text-align: left;">滴下した試料の体積を正確に測る</td><td style="text-align: center;"><b>しなければダメ</b></td><td style="text-align: center;">してはダメ</td></tr><tr><td style="text-align: left;">コニカルビーカー</td><td style="text-align: left;">中和反応を行う</td><td style="text-align: center;"><b>してはダメ</b></td><td style="text-align: center;">してもよい</td></tr></tbody></table></div>
 <p class="ref-p"><b>「ホールピペット・ビュレットは共洗いする、メスフラスコ・コニカルビーカーは共洗いしない」は必ず覚えてください。</b>理由は次のとおりです。</p>
@@ -939,13 +944,13 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/salt/">塩の水溶液の性質（強い方が勝つ）は、塩のページへ</a></p>
 <section class="ref-sec" id="ref-sec-curve"><h4 class="ref-sec-h">滴定曲線</h4><p class="ref-sec-lead">滴定曲線は、コニカルビーカーの水溶液の pH から始まり、ビュレットで滴下する水溶液の pH に近づいて終わります。中和点の近くで pH が一気に変わります（pH ジャンプ）。</p></section>
 <p class="ref-p">ビュレットから1滴ずつ加えるたびに、コニカルビーカーの中の pH は少しずつ変わっていきます。加えた体積（横軸）に対して pH（縦軸）がどう動くかを描いた線が<b>滴定曲線</b>です。まずは、塩酸へ水酸化ナトリウム水溶液を加えていく場合で見てみましょう。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/titration-curve-hcl-naoh.png" alt="横軸に滴下した水酸化ナトリウム水溶液の体積、縦軸に pH をとった滴定曲線。pH 1 付近から始まり、中和点付近で pH が一気に上がって pH 7 を通り、pH 13 に近づいていく" loading="lazy"><figcaption class="ref-figure-cap">塩酸（強酸）に水酸化ナトリウム水溶液（強塩基）を滴下したときの滴定曲線。<b>pH 1 から始まり、中和点（NaCl 水溶液・pH 7）で一気に変わり、pH 13 に近づきます</b>。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/titration-curve-hcl-naoh.png?h=2ec9126d" alt="横軸に滴下した水酸化ナトリウム水溶液の体積、縦軸に pH をとった滴定曲線。pH 1 付近から始まり、中和点付近で pH が一気に上がって pH 7 を通り、pH 13 に近づいていく" loading="lazy"><figcaption class="ref-figure-cap">塩酸（強酸）に水酸化ナトリウム水溶液（強塩基）を滴下したときの滴定曲線。<b>pH 1 から始まり、中和点（NaCl 水溶液・pH 7）で一気に変わり、pH 13 に近づきます</b>。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCl ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O</span></div><p class="ref-note">中和点では NaCl 水溶液になっているので pH 7 です。</p></div>
 <p class="ref-p">滴定曲線は、次の3つを押さえれば描けます。</p>
 <ol class="ref-list"><li><b>始まり</b>は、コニカルビーカーに入れた水溶液のおおよその pH。</li><li><b>中和点</b>の pH は、できた塩の液性で決まる（強い方が勝つ）。中和点の近くでは1滴で pH が一気に変わる（<b>pH ジャンプ</b>）。</li><li><b>終わり</b>は、ビュレットで滴下している水溶液のおおよその pH に近づく。</li></ol>
 <section class="ref-sec" id="ref-sec-indicator"><h4 class="ref-sec-h">指示薬の選び方</h4><p class="ref-sec-lead">指示薬は中和点を知るために使い、変色域を pH ジャンプの1滴で飛び越えられるものを選びます。フェノールフタレインは弱塩基に、メチルオレンジは弱酸に使えません。</p></section>
 <p class="ref-p">中和点を目で知るために加える、pH によって色が変わる物質を<b>指示薬</b>といい、色が変わる pH の範囲を<b>変色域</b>といいます。指示薬は、<b>変色域を pH ジャンプの1滴で飛び越えられる</b>ものでなければ使えません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/titration-curve-indicators.png" alt="強酸＋強塩基、弱酸＋強塩基、強酸＋弱塩基の3本の滴定曲線に、フェノールフタレイン（pH 8.0〜9.8）とメチルオレンジ（pH 3.1〜4.4）の変色域を帯で重ねた図" loading="lazy"><figcaption class="ref-figure-cap">酸に塩基を滴下した3本の滴定曲線と、<b>PP（pH 8.0〜9.8）・MO（pH 3.1〜4.4）の変色域</b>。pH ジャンプが帯を貫いていれば、その指示薬が使えます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/titration-curve-indicators.png?h=1f40104e" alt="強酸＋強塩基、弱酸＋強塩基、強酸＋弱塩基の3本の滴定曲線に、フェノールフタレイン（pH 8.0〜9.8）とメチルオレンジ（pH 3.1〜4.4）の変色域を帯で重ねた図" loading="lazy"><figcaption class="ref-figure-cap">酸に塩基を滴下した3本の滴定曲線と、<b>PP（pH 8.0〜9.8）・MO（pH 3.1〜4.4）の変色域</b>。pH ジャンプが帯を貫いていれば、その指示薬が使えます。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">中和滴定で使う2つの指示薬</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">指示薬</th><th style="text-align: center;">酸性側の色</th><th style="text-align: center;">変色域</th><th style="text-align: center;">塩基性側の色</th><th style="text-align: left;">使えない組み合わせ</th></tr></thead><tbody><tr><td style="text-align: left;">フェノールフタレイン（PP）</td><td style="text-align: center;">無色</td><td style="text-align: center;">pH 8.0〜9.8</td><td style="text-align: center;"><b>赤</b></td><td style="text-align: left;">弱塩基（強酸 ＋ 弱塩基）</td></tr><tr><td style="text-align: left;">メチルオレンジ（MO）</td><td style="text-align: center;"><b>赤</b></td><td style="text-align: center;">pH 3.1〜4.4</td><td style="text-align: center;">黄</td><td style="text-align: left;">弱酸（弱酸 ＋ 強塩基）</td></tr></tbody></table></div>
 <p class="ref-p"><b>PP は変色域が塩基性側にあるので弱塩基に使えず、MO は変色域が酸性側にあるので弱酸に使えません。</b>強酸と強塩基の滴定は pH ジャンプが大きいので、どちらも使えます。</p>
 <p class="ref-p">色は「<b>PP・MO ともに外側が赤</b>」と覚えましょう（PP は塩基性側が赤、MO は酸性側が赤）。フェノールフタレインとメチルオレンジのほかにメチルレッドも知られていますが、問題にはほとんど登場しません。</p>
@@ -1028,6 +1033,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

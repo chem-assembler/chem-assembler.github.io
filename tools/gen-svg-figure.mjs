@@ -46,6 +46,8 @@ const ONLY = args.filter(a => !a.startsWith('--'));
 /* 公開ページの本文の幅（図はこの幅いっぱいに出る）と、図の中の字の床（最終的な見た目・2026-09-24） */
 const BODY_W = 680;
 const MIN_TEXT = Number((process.argv.find(a => a.startsWith('--min-text=')) || '').split('=')[1] || 14);
+/* 下付き（添え字）の床（2026-09-24 ユーザー決定。見た目が小さすぎればあとで見直す） */
+const MIN_SUB = Number((process.argv.find(a => a.startsWith('--min-sub=')) || '').split('=')[1] || 11);
 const WARN_BYTES = 100 * 1024;   // 1枚 100KB を超えたら切り直しを促す（止めない）
 const MAX_W = 1200;
 
@@ -126,29 +128,42 @@ ${text}`, { waitUntil: 'load' });
                 const el = pg.locator('svg');
                 /* ★ 最終的な見た目の字の大きさ（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください」）。
                    図は公開ページで本文の幅 BODY_W（680px）いっぱいに出るので、字 f は f × BODY_W ÷ 図の幅 に見える */
-                const minFont = await pg.evaluate(() => {
-                    let m = Infinity;
+                /* ★ 下付き（添え字）は別の床 MIN_SUB（11px）で見る（2026-09-24 ユーザー「とりあえず11pxでやってみてよさそう」）。
+                   下付き ＝ `<text>` の中の `<tspan>` で、親の `<text>` より字が小さいもの。⚠ 別の `<text>` で書いた小さい字は本体として数える（厳しい側） */
+                const fonts = await pg.evaluate(() => {
+                    let main = Infinity, sub = Infinity;
                     document.querySelectorAll('svg text, svg tspan').forEach(t => {
-                        if (!t.textContent.trim()) return;
+                        if (![...t.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
                         const f = parseFloat(getComputedStyle(t).fontSize);
-                        if (f > 0 && f < m) m = f;
+                        if (!(f > 0)) return;
+                        const host = t.tagName.toLowerCase() === 'tspan' ? t.closest('text') : null;
+                        const isSub = host && f < parseFloat(getComputedStyle(host).fontSize) - 0.01;
+                        if (isSub) { if (f < sub) sub = f; } else if (f < main) main = f;
                     });
-                    return isFinite(m) ? m : null;
+                    return { main: isFinite(main) ? main : null, sub: isFinite(sub) ? sub : null };
                 });
-                const shown = minFont ? minFont * BODY_W / size.w : null;
-                if (shown && shown < MIN_TEXT) small.push(`${j.svg}（字 ${shown.toFixed(1)}px・いちばん小さい字 ${minFont}px → ${Math.ceil(MIN_TEXT * size.w / BODY_W)}px 以上に）`);
+                const shown = fonts.main ? fonts.main * BODY_W / size.w : null;
+                const shownSub = fonts.sub ? fonts.sub * BODY_W / size.w : null;
+                const lowMain = shown && shown < MIN_TEXT, lowSub = shownSub && shownSub < MIN_SUB;
+                if (lowMain || lowSub) {
+                    small.push(`${j.svg}（` + [
+                        lowMain ? `字 ${shown.toFixed(1)}px・いちばん小さい字 ${fonts.main}px → ${Math.ceil(MIN_TEXT * size.w / BODY_W)}px 以上に` : '',
+                        lowSub ? `下付き ${shownSub.toFixed(1)}px・${fonts.sub}px → ${Math.ceil(MIN_SUB * size.w / BODY_W)}px 以上に` : ''
+                    ].filter(Boolean).join('／') + '）');
+                }
                 const buf = await el.screenshot({ type: 'png' });
                 writeFileSync(path.join(IMG, j.src), buf);
                 const kb = buf.length / 1024;
                 console.log(`   ✅ ${j.src}  ${size.w}x${size.h}  ${kb.toFixed(0)}KB  ← reference-svg/${j.svg}（${j.id}）`
                     + (kb > WARN_BYTES / 1024 ? '  ⚠ 100KB 超' : '')
-                    + (shown ? `  字 ${shown.toFixed(1)}px${shown < MIN_TEXT ? ' ⚠床' + MIN_TEXT + '未満' : ''}` : ''));
+                    + (shown ? `  字 ${shown.toFixed(1)}px${lowMain ? ' ⚠床' + MIN_TEXT + '未満' : ''}` : '')
+                    + (shownSub ? `  下付き ${shownSub.toFixed(1)}px${lowSub ? ' ⚠床' + MIN_SUB + '未満' : ''}` : ''));
             } finally { await pg.close(); }
         }
     } finally { await browser.close(); }
     console.log(`✅ ${jobs.length} 枚を reference-img/ に焼きました`);
     if (small.length) {
-        console.log(`⚠ 字が床（本文の幅 ${BODY_W}px に出したとき ${MIN_TEXT}px）を下回る図が ${small.length} 枚:`);
+        console.log(`⚠ 字が床（本文の幅 ${BODY_W}px に出したとき 本体 ${MIN_TEXT}px・下付き ${MIN_SUB}px）を下回る図が ${small.length} 枚:`);
         small.forEach(x => console.log('   - ' + x));
     }
     console.log('   ⚠ 焼いたら**目で見る**（文字が枠からはみ出していないか）。そのあと gen-reference.mjs と gen-reference-pages.mjs');

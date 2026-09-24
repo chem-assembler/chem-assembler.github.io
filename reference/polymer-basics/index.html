@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -921,8 +926,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">具体例で見ます。エチレン CH₂=CH₂ が数千個つながると、ポリエチレンになります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CH₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CH₂］ₙ</span></div><p class="ref-note">左辺の n と、右辺の角かっこの外の n が対応します。</p></div>
 <p class="ref-p">重合体の中でくり返されている1つぶんの構造 ［CH₂−CH₂］ を<b>繰り返し単位</b>、くり返しの数 n を<b>重合度</b>といいます。ポリエチレンの「ポリ」は「たくさんの」という意味で、「たくさんのエチレン」という名前です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-polyethylene.png" alt="ポリエチレンの鎖の一部の構造式。CH₂ が6個一列につながり、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリエチレンの鎖の一部。CH₂−CH₂ の<b>繰り返し単位が3つ</b>並んでいて、両端の R の先にも同じ単位が続きます。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-repeat-unit.png" alt="ポリエチレンの鎖の一部の構造式で、まん中の CH₂−CH₂ 2個ぶんだけが破線の四角で囲まれ、繰り返し単位と書かれている図" loading="lazy"><figcaption class="ref-figure-cap">囲んだ <b>CH₂−CH₂ の2個ぶん</b>が繰り返し単位です。この単位が n 回くり返されて1本の鎖になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-polyethylene.png?h=966ee8b7" alt="ポリエチレンの鎖の一部の構造式。CH₂ が6個一列につながり、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリエチレンの鎖の一部。CH₂−CH₂ の<b>繰り返し単位が3つ</b>並んでいて、両端の R の先にも同じ単位が続きます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-repeat-unit.png?h=27f66d04" alt="ポリエチレンの鎖の一部の構造式で、まん中の CH₂−CH₂ 2個ぶんだけが破線の四角で囲まれ、繰り返し単位と書かれている図" loading="lazy"><figcaption class="ref-figure-cap">囲んだ <b>CH₂−CH₂ の2個ぶん</b>が繰り返し単位です。この単位が n 回くり返されて1本の鎖になります。</figcaption></figure>
 <p class="ref-p"><b>単量体・重合体・繰り返し単位・重合度の4語は必ず暗記してください。</b>以降のページはすべてこの4語で書いてあります。</p>
 <section class="ref-sec" id="ref-sec-average-mw"><h4 class="ref-sec-h">重合度と平均分子量</h4><p class="ref-sec-lead">高分子は重合度の違う分子の混ざりものなので、分子量は平均分子量で表します。平均分子量は、繰り返し単位の式量に重合度をかけたものです。</p></section>
 <p class="ref-p">同じポリエチレンでも、つながった数が1000個の分子もあれば1200個の分子もあります。<b>高分子は重合度の違う分子の混合物</b>なので、分子量が1つに決まりません。そこで<b>平均分子量</b>で表します。</p>
@@ -933,7 +938,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-addition"><h4 class="ref-sec-h">重合の型① 付加重合</h4><p class="ref-sec-lead">C=C が開いて、そのまま次々につながります。何も出ていかないので、繰り返し単位の組成は単量体と同じです。</p></section>
 <p class="ref-p">二重結合 C=C をもつ単量体が、付加反応をくり返してつながる重合を<b>付加重合</b>といいます。<b>つなぐときに何も出ていきません。</b></p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CHCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CHCl］ₙ</span></div><p class="ref-note">塩化ビニル → ポリ塩化ビニル。原子の出入りがないので、繰り返し単位の分子式は単量体と同じ C₂H₃Cl です。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-pvc.png" alt="ポリ塩化ビニルの鎖の一部の構造式。炭素が一列につながり、1個おきの炭素に塩素原子が付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリ塩化ビニルの鎖の一部。塩化ビニルの <b>C=C が単結合に変わって</b>つながっただけで、1単位あたりの原子の数は塩化ビニルと同じです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-pvc.png?h=bd505074" alt="ポリ塩化ビニルの鎖の一部の構造式。炭素が一列につながり、1個おきの炭素に塩素原子が付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリ塩化ビニルの鎖の一部。塩化ビニルの <b>C=C が単結合に変わって</b>つながっただけで、1単位あたりの原子の数は塩化ビニルと同じです。</figcaption></figure>
 <p class="ref-p">付加重合の単量体は、エチレンの H を1個別の原子・原子団 X に置きかえた <b>CH₂=CH−X</b> の形（ビニル化合物）が大半です。X が −Cl なら「ポリ塩化ビニル」、−CH₃ なら「ポリプロピレン」のように、「ポリ<span class="ref-blank">○○</span>」の<span class="ref-blank">○○</span>に単量体の名前が入ります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">付加重合の入口 —— アルケンの付加反応とビニル基</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">付加重合でできる樹脂（ポリエチレン・ポリスチレン・PMMA など）を並べて見る</a></p>
@@ -949,7 +954,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">環状の構造をもつ単量体が、環を開きながらつながる重合を<b>開環重合</b>といいます。付加重合と同じく、<b>何も出ていきません。</b></p>
 <p class="ref-p">具体例は、ε-カプロラクタム C₆H₁₁NO からできる<b>ナイロン6</b>です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n C₆H₁₁NO（ε-カプロラクタム）</span><span class="ref-rx-arrow"><span class="ref-rx-over">少量の水</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">［NH−(CH₂)₅−CO］ₙ</span></div><p class="ref-note">環の中のアミド結合が1か所切れて鎖になり、次の分子とつながります。水はきっかけとして働くだけなので、反応式の両辺には出てきません。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-nylon6.png" alt="ナイロン6の鎖の一部の構造式。NH、(CH₂)₅、C=O の順に並んだ単位が3つ一列につながり、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ナイロン6の鎖の一部（繰り返し単位3つぶん）。1単位は ε-カプロラクタムの<b>環をほどいて一直線に伸ばした形</b>です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-nylon6.png?h=f1b90da0" alt="ナイロン6の鎖の一部の構造式。NH、(CH₂)₅、C=O の順に並んだ単位が3つ一列につながり、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ナイロン6の鎖の一部（繰り返し単位3つぶん）。1単位は ε-カプロラクタムの<b>環をほどいて一直線に伸ばした形</b>です。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-compare"><h4 class="ref-sec-h">重合の型を並べる</h4><p class="ref-sec-lead">付加・縮合・開環の3つは「何が出ていくか」で見分けます。フェノール樹脂などの付加縮合は、付加と縮合をくり返す別の型です。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">重合の型</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">型</th><th style="text-align: left;">単量体に要るもの</th><th style="text-align: left;">出ていくもの</th><th style="text-align: left;">代表例</th></tr></thead><tbody><tr><td style="text-align: left;">付加重合</td><td style="text-align: left;">C=C（二重結合）</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ポリエチレン・ポリ塩化ビニル・ポリスチレン</td></tr><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">反応できる官能基が1分子に2つ</td><td style="text-align: left;"><b>水など</b></td><td style="text-align: left;">ポリエチレンテレフタラート・ナイロン66</td></tr><tr><td style="text-align: left;">開環重合</td><td style="text-align: left;">環状の構造</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ナイロン6</td></tr><tr><td style="text-align: left;">付加縮合</td><td style="text-align: left;">付加と縮合を交互にくり返せる組み合わせ</td><td style="text-align: left;"><b>水</b></td><td style="text-align: left;">フェノール樹脂・尿素樹脂・メラミン樹脂</td></tr></tbody></table></div>
 <p class="ref-p"><b>付加・縮合・開環の3つの名前と、「何が出ていくか」は必ず暗記してください。</b>「付加と開環は何も出ない、縮合は水が出る」と対にして覚えるのが確実です。</p>
@@ -963,7 +968,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/rubber/">SBR をはじめとする合成ゴムの単量体と性質</a></p>
 <section class="ref-sec" id="ref-sec-property"><h4 class="ref-sec-h">高分子はどんな物質か</h4><p class="ref-sec-lead">鎖がそろった結晶部分と、乱れた非晶部分が混ざっています。はっきりした融点がなく、加熱するとだんだんやわらかくなります。</p></section>
 <p class="ref-p">高分子の固体の中では、鎖が規則正しく並んだ<b>結晶部分</b>と、鎖が不規則にからみ合った<b>非晶部分</b>が混ざっています。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-crystal-amorphous.png" alt="固体の中の高分子の鎖の模式図。左では5本の鎖がそろって並び、右では同じ鎖がうねって交差している" loading="lazy"><figcaption class="ref-figure-cap">別々の粒が混ざっているのではなく、<b>1本の鎖が両方にまたがって</b>います。次の段落の「一斉に融けない」は、この形から来ます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-crystal-amorphous.png?h=4ce52e73" alt="固体の中の高分子の鎖の模式図。左では5本の鎖がそろって並び、右では同じ鎖がうねって交差している" loading="lazy"><figcaption class="ref-figure-cap">別々の粒が混ざっているのではなく、<b>1本の鎖が両方にまたがって</b>います。次の段落の「一斉に融けない」は、この形から来ます。</figcaption></figure>
 <p class="ref-p">高分子は<b>はっきりした融点を示さず、加熱すると徐々にやわらかくなります。</b>やわらかくなり始める温度を<b>軟化点</b>といいます。分子量の違う分子の混合物で、しかも結晶部分と非晶部分が混ざっているため、ある温度で一斉に融けることがないためです。</p>
 <p class="ref-p">結晶部分が多いほど、鎖どうしが密に詰まるので、<b>硬く、強く、不透明</b>になります。同じポリエチレンでも、枝分かれが少なく結晶部分の多いものは硬い材料になります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">結晶部分の多さで硬さが変わる例 —— 高密度ポリエチレンと低密度ポリエチレン</a></p>
@@ -1048,6 +1053,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 <script>

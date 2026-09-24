@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -920,9 +925,9 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">アルコールの一般式は CₙH₂ₙ₊₂O</h4><p class="ref-sec-lead">鎖状で飽和の1価アルコールは、炭素が n 個なら必ず C<sub>n</sub>H<sub>2n+2</sub>O。同じ式がエーテルにも当てはまります。</p></section>
 <p class="ref-p">鎖状で飽和の1価アルコールの一般式は <b>C<sub>n</sub>H<sub>2n+2</sub>O</b> です。n に炭素の数を代入すれば分子式が出ます —— n=2 を代入すると C₂H₆O で、これがエタノールの分子式です。</p>
 <p class="ref-p">この式は、アルカンの一般式 C<sub>n</sub>H<sub>2n+2</sub> に酸素原子 O を1個足しただけの形をしています。アルカンの <b>C−H 結合のあいだに O 原子を1個割り込ませる</b>と、アルコールになるためです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-from-alkane.png" alt="アルカンの構造式から矢印が伸び、C−H 間に O 原子を入れるとアルコールになることを示した図。左がアルカン CnH2n+2、右がアルコール CnH2n+2O" loading="lazy"><figcaption class="ref-figure-cap">アルカンの <b>C−H のあいだ</b>に O を1個入れると、末尾が −O−H ＝ ヒドロキシ基になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-from-alkane.png?h=98b268ee" alt="アルカンの構造式から矢印が伸び、C−H 間に O 原子を入れるとアルコールになることを示した図。左がアルカン CnH2n+2、右がアルコール CnH2n+2O" loading="lazy"><figcaption class="ref-figure-cap">アルカンの <b>C−H のあいだ</b>に O を1個入れると、末尾が −O−H ＝ ヒドロキシ基になります。</figcaption></figure>
 <p class="ref-p">同じ O 原子を <b>C−C 結合のあいだ</b>に割り込ませると、できるのは<b>エーテル</b>です。どちらもアルカンに O 原子を1個足しただけなので、一般式はどちらも C<sub>n</sub>H<sub>2n+2</sub>O になります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ether-from-alkane.png" alt="アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O" loading="lazy"><figcaption class="ref-figure-cap">同じ O を <b>C−C のあいだ</b>に入れると、炭素にはさまれた −O− ＝ エーテル結合になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ether-from-alkane.png?h=348d5b1b" alt="アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O" loading="lazy"><figcaption class="ref-figure-cap">同じ O を <b>C−C のあいだ</b>に入れると、炭素にはさまれた −O− ＝ エーテル結合になります。</figcaption></figure>
 <p class="ref-p">だから<b>炭素の数が同じアルコールとエーテルは、互いに構造異性体</b>です。エタノール C₂H₆O とジメチルエーテル C₂H₆O が、いちばん小さい組み合わせです。</p>
 <p class="ref-p">「互いに構造異性体」といえるのは<b>炭素の数が同じとき</b>なので、メタノール CH₄O とジエチルエーテル C₄H₁₀O は異性体ではありません。また C<sub>n</sub>H<sub>2n+2</sub>O が当てはまるのは<b>鎖状で飽和</b>のものだけで、環をもつシクロヘキサノールは C₆H₁₂O です。</p>
 <p class="ref-p"><b>一般式 C<sub>n</sub>H<sub>2n+2</sub>O は必ず暗記してください。</b>分子式 C₄H₁₀O を見た瞬間に「アルコールかエーテル」と言えることが、構造決定の出発点になります。</p>
@@ -985,7 +990,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>アルコール発酵の反応式は必ず書けるようにしてください。</b>一方、<b>メタノールの合成とエテンへの水の付加は、触媒の名前まで覚える必要はありません。</b>問題文に条件が与えられることがほとんどです。</p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">分子式 C₄H₁₀O のアルコール（ブタノール）は4種類あります。<b>(1) 4種類すべての示性式を書き、それぞれ何級のアルコールかを答えよ。(2) 4種類を沸点の高い順に並べよ。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>級は −OH が付いた炭素に結合している炭素の数で決めます。沸点は「第1級 ＞ 第2級 ＞ 第3級」が先で、同じ級なら「直鎖 ＞ 枝分かれ」。したがって <b>1-ブタノール（第1級・直鎖）＞ 2-メチル-1-プロパノール（第1級・枝分かれ）＞ 2-ブタノール（第2級）＞ 2-メチル-2-プロパノール（第3級）</b>の順です。</p><img class="ref-figure-img" src="/reference-img/alcohol-butanol-table.png" alt="ブタノール C4H10O の比較表。1-ブタノール・2-メチル-1-プロパノール・2-ブタノール・2-メチル-2-プロパノールについて、示性式・級・沸点が並んでいる" loading="lazy"></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">分子式 C₄H₁₀O のアルコール（ブタノール）は4種類あります。<b>(1) 4種類すべての示性式を書き、それぞれ何級のアルコールかを答えよ。(2) 4種類を沸点の高い順に並べよ。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>級は −OH が付いた炭素に結合している炭素の数で決めます。沸点は「第1級 ＞ 第2級 ＞ 第3級」が先で、同じ級なら「直鎖 ＞ 枝分かれ」。したがって <b>1-ブタノール（第1級・直鎖）＞ 2-メチル-1-プロパノール（第1級・枝分かれ）＞ 2-ブタノール（第2級）＞ 2-メチル-2-プロパノール（第3級）</b>の順です。</p><img class="ref-figure-img" src="/reference-img/alcohol-butanol-table.png?h=468bcd55" alt="ブタノール C4H10O の比較表。1-ブタノール・2-メチル-1-プロパノール・2-ブタノール・2-メチル-2-プロパノールについて、示性式・級・沸点が並んでいる" loading="lazy"></div></details></div>
 <p class="ref-p">この4種類の書き分けは、<b>構造決定の決め手になることが非常に多い</b>ので、何度でも書けるようにしておいてください。とくに <b>2-ブタノール</b>は、4つのうち唯一の第2級アルコールであり、唯一不斉炭素原子をもち、唯一ヨードホルム反応を示します。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">ヒドロキシ基そのものの位置づけ（同じ −OH でもベンゼン環に付けばフェノール類）はこちら</a></p>
 </div>
@@ -1062,6 +1067,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

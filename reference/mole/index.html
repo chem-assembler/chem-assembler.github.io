@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -937,7 +942,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">CH₄ 0.25mol の質量（倍率 ×1/4 を両方に掛ける）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">主語</th><th style="text-align: right;">物質量</th><th style="text-align: right;">質量</th></tr></thead><tbody><tr><td style="text-align: left;">CH₄（1mol の顔）</td><td style="text-align: right;">1mol</td><td style="text-align: right;">16g</td></tr><tr><td style="text-align: left;">倍率</td><td style="text-align: right;">×1/4</td><td style="text-align: right;">×1/4</td></tr><tr><td style="text-align: left;">CH₄（問題）</td><td style="text-align: right;">0.25mol</td><td style="text-align: right;">□ ＝ 4.0g</td></tr></tbody></table></div>
 <p class="ref-p">★ <b>内項と外項を掛ける（□ × 1 ＝ 16 × 0.25）解き方でも答えは同じです。</b>ただ、倍率で解くと「0.25mol は 1mol の 1/4 だから、質量も 1/4」と意味を追いながら計算できるので、桁の間違いにすぐ気づけます。</p>
 <p class="ref-p">倍率が分数のまま使えると計算が楽になります。銅原子 3.3×10²³ 個の物質量なら、3.3 と 6.0 の比 11/20 を倍率にして、1mol × 11/20 ＝ 0.55mol です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/mole-app-proportion.png" alt="ratio の比例式の画面。問1「水 H₂O 9.0g は何 mol か」。上の段が基準の 18g と 1mol、下の段が知りたい量の 9.0g と空欄の mol で、左の列に ×1/2 の倍率、右の列に「同じ倍率」の矢印がある。下に 18g : 1mol ＝ 9.0g : □mol の比例式" loading="lazy"><figcaption class="ref-figure-cap">上の段が 1mol の顔（基準）、下の段が問題の量です。<b>左の列で見つけた倍率 ×1/2 を、右の列にも同じように掛ける</b>と、□ は 0.50mol と決まります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/mole-app-proportion.png?h=df9d9b02" alt="ratio の比例式の画面。問1「水 H₂O 9.0g は何 mol か」。上の段が基準の 18g と 1mol、下の段が知りたい量の 9.0g と空欄の mol で、左の列に ×1/2 の倍率、右の列に「同じ倍率」の矢印がある。下に 18g : 1mol ＝ 9.0g : □mol の比例式" loading="lazy"><figcaption class="ref-figure-cap">上の段が 1mol の顔（基準）、下の段が問題の量です。<b>左の列で見つけた倍率 ×1/2 を、右の列にも同じように掛ける</b>と、□ は 0.50mol と決まります。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-via-mol"><h4 class="ref-sec-h">まずは mol を求めよう —— 2段の換算</h4><p class="ref-sec-lead">質量から体積、個数から質量のように「mol 以外どうし」を換算するときは、1段めで mol を出し、2段めで目的の量にします。</p></section>
 <p class="ref-p">g から L、個数から g のような換算も、<b>必ず mol を経由して2段で</b>解きます。道筋を先に書いておくと迷いません。</p>
 <ul class="ref-list"><li>g → 「1mol で分子量 g」→ mol → 「気体 1mol で 22.4L」→ L</li><li>個 → 「1mol で 6.0×10²³ 個」→ mol → 「1mol で分子量 g」→ g</li></ul>
@@ -1039,6 +1044,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

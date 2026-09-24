@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -947,7 +952,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">炭酸ナトリウムも炭酸水素ナトリウムも、塩酸などの強酸を加えると、<b>弱酸の炭酸が追い出されて</b>二酸化炭素が発生します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Na₂CO₃ ＋ 2HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2NaCl ＋ H₂O ＋ CO₂</span></div><p class="ref-note">弱酸の遊離。H₂CO₃ は不安定なので H₂O と CO₂ にして書きます。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NaHCO₃ ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O ＋ CO₂</span></div></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkali-metal-app-na2co3-hcl.png" alt="ビーカーの模式図。水中に Na⁺ 2個・Cl⁻ 2個・H₂O 1個が残り、CO₂ 1分子が水面の上へ抜けている" loading="lazy"><figcaption class="ref-figure-cap">Na₂CO₃ ＋ 2HCl の反応のあと。<b>CO₃²⁻ が H⁺ 2個を受け取り、CO₂ として水の外へ出ていく</b>一方、Na⁺ と Cl⁻ はイオンのまま残ります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkali-metal-app-na2co3-hcl.png?h=36e5d3f9" alt="ビーカーの模式図。水中に Na⁺ 2個・Cl⁻ 2個・H₂O 1個が残り、CO₂ 1分子が水面の上へ抜けている" loading="lazy"><figcaption class="ref-figure-cap">Na₂CO₃ ＋ 2HCl の反応のあと。<b>CO₃²⁻ が H⁺ 2個を受け取り、CO₂ として水の外へ出ていく</b>一方、Na⁺ と Cl⁻ はイオンのまま残ります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/acid-displacement/">弱酸の遊離の考え方は弱酸の遊離・揮発性の酸の遊離のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s6&amp;from=reference&amp;page=alkali-metal">炭酸ナトリウムと塩酸</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s12&amp;from=reference&amp;page=alkali-metal">炭酸ナトリウムと塩酸（酸性塩をつくる）</a></p>
@@ -963,7 +968,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">途中で回収して使い回す物質（NaHCO₃・NH₄Cl・NH₃・CO₂・CaO・Ca(OH)₂）が両辺で消えるように足し合わせます。① を2倍し、②〜⑤ をそのまま足すと次の式が残ります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2NaCl ＋ CaCO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Na₂CO₃ ＋ CaCl₂</span></div><p class="ref-note">①×2 ＋ ② ＋ ③ ＋ ④ ＋ ⑤。原料2つと生成物2つだけが残ります。</p></div>
 <p class="ref-p"><b>全体の式と、① ② の2本は必ず書けるようにしてください。</b> ③〜⑤ は、①② で使った NH₃ と CO₂ を「どこから補うか」を考えれば出てくる式なので、丸暗記しなくても構いません。全体の式は、原料（NaCl と CaCO₃）と、ほしい物（Na₂CO₃）を覚えていれば、余りが CaCl₂ になると分かります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/solvay-flow.png" alt="アンモニアソーダ法の流れ図。左の列は NaCl の飽和水溶液から ①②を経て Na₂CO₃ へ、右の列は石灰石 CaCO₃ から ③④⑤を経て CaCl₂ へ進む。②と③で出た CO₂、⑤で追い出した NH₃、①でできた NH₄Cl は点線の矢印で工程の中を戻っている" loading="lazy"><figcaption class="ref-figure-cap">実線をたどると、入っていくのは <b>NaCl と CaCO₃ だけ</b>、出てくるのは <b>Na₂CO₃ と CaCl₂ だけ</b>です。点線の分が両辺で消えるので、全体の式が 2NaCl ＋ CaCO₃ → Na₂CO₃ ＋ CaCl₂ になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/solvay-flow.png?h=4c6fdd73" alt="アンモニアソーダ法の流れ図。左の列は NaCl の飽和水溶液から ①②を経て Na₂CO₃ へ、右の列は石灰石 CaCO₃ から ③④⑤を経て CaCl₂ へ進む。②と③で出た CO₂、⑤で追い出した NH₃、①でできた NH₄Cl は点線の矢印で工程の中を戻っている" loading="lazy"><figcaption class="ref-figure-cap">実線をたどると、入っていくのは <b>NaCl と CaCO₃ だけ</b>、出てくるのは <b>Na₂CO₃ と CaCl₂ だけ</b>です。点線の分が両辺で消えるので、全体の式が 2NaCl ＋ CaCO₃ → Na₂CO₃ ＋ CaCl₂ になります。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">単体と水の反応、NaOH と CO₂、炭酸塩・炭酸水素塩の3本、アンモニアソーダ法の3本です。</p></section>
 <h5 class="ref-h5">必ず覚えるもの（★★★）</h5>
 <ul class="ref-list"><li>2Na ＋ 2H₂O → 2NaOH ＋ H₂</li><li>2NaOH ＋ CO₂ → Na₂CO₃ ＋ H₂O</li><li>Na₂CO₃ ＋ 2HCl → 2NaCl ＋ H₂O ＋ CO₂</li><li>2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂（加熱）</li><li>アンモニアソーダ法の ①・② と全体の式</li></ul>
@@ -1045,6 +1050,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

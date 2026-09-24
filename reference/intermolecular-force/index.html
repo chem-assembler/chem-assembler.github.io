@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -949,7 +954,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">分子間力は、気体の中でもはたらいています。実在の気体の分子は引き合うので、分子間力の無い理想気体よりも体積がわずかに小さくなります。分子間力が強い気体ほど、このずれは大きくなります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">標準状態（0℃・1.013×10⁵Pa）での気体 1mol の体積</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">気体</th><th style="text-align: right;">分子量</th><th style="text-align: right;">1mol の体積（L）</th><th style="text-align: left;">分子間力</th></tr></thead><tbody><tr><td style="text-align: left;">H₂</td><td style="text-align: right;">2</td><td style="text-align: right;">22.42</td><td style="text-align: left;">小</td></tr><tr><td style="text-align: left;">CH₄</td><td style="text-align: right;">16</td><td style="text-align: right;">22.37</td><td style="text-align: left;">↓</td></tr><tr><td style="text-align: left;">CO₂</td><td style="text-align: right;">44</td><td style="text-align: right;">22.26</td><td style="text-align: left;">↓</td></tr><tr><td style="text-align: left;">NH₃</td><td style="text-align: right;">17</td><td style="text-align: right;">22.09</td><td style="text-align: left;">大（極性分子）</td></tr></tbody></table></div>
 <p class="ref-p">無極性の H₂・CH₄・CO₂ では分子量が大きいほど体積が小さく、分子量の小さい NH₃ が極性分子のためにいちばん小さくなっています。<b>沸点の比べ方とまったく同じ順序</b>で、分子間力が効いていることがわかります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/intermolecular-force-real-gas.png" alt="2つの容器を並べた図。左の理想気体の容器では分子が大きさのない点として散らばっている。右の実在気体の容器では、分子が大きさのある粒として描かれ、近くの分子に向かって引き寄せられる矢印が付いている" loading="lazy"><figcaption class="ref-figure-cap">実在気体では分子どうしが分子間力で引き合うので、そのぶん気体の体積が理想気体より小さくなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/intermolecular-force-real-gas.png?h=2ea1e830" alt="2つの容器を並べた図。左の理想気体の容器では分子が大きさのない点として散らばっている。右の実在気体の容器では、分子が大きさのある粒として描かれ、近くの分子に向かって引き寄せられる矢印が付いている" loading="lazy"><figcaption class="ref-figure-cap">実在気体では分子どうしが分子間力で引き合うので、そのぶん気体の体積が理想気体より小さくなります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/real-gas/">実在気体が理想気体からずれるしくみ（分子間力と分子の体積）は、実在気体のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
@@ -1027,6 +1032,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

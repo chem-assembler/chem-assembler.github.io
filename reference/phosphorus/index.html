@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -924,7 +929,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">黄リンは P₄ という正四面体形の分子からなり、赤リンは多数の P 原子がつながった構造をしています。そのため黄リンは分子式 P₄、赤リンは組成式 P で書きます。</p>
 <p class="ref-p"><b>黄リンは空気中で自然発火するので水中に保存します。</b>「黄リンは水中、ナトリウムは石油中」と、保存方法をセットで覚えておきましょう。純度を上げると色が白くなるため、黄リンは白リンという名前でも呼ばれます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkali-metal/">ナトリウムを石油中に保存する理由はアルカリ金属のページへ</a></p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/p4-tetrahedron.png" alt="黄リンの分子模型の図。4個の P が正四面体の頂点に置かれ、手前の3個は実線、奥の1個は点線の結合で結ばれている。P−P の結合は全部で6本ある" loading="lazy"><figcaption class="ref-figure-cap">どの2個の P も直接つながっているので、結合は6本です。この形のままの粒が集まっているので、黄リンは分子式 P₄ で書きます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/p4-tetrahedron.png?h=adc70595" alt="黄リンの分子模型の図。4個の P が正四面体の頂点に置かれ、手前の3個は実線、奥の1個は点線の結合で結ばれている。P−P の結合は全部で6本ある" loading="lazy"><figcaption class="ref-figure-cap">どの2個の P も直接つながっているので、結合は6本です。この形のままの粒が集まっているので、黄リンは分子式 P₄ で書きます。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-p4o10"><h4 class="ref-sec-h">十酸化四リン P₄O₁₀ —— 強力な乾燥剤</h4><p class="ref-sec-lead">リンを燃やすと白色の P₄O₁₀ になります。水をよく吸うので乾燥剤に使い、水と反応するとリン酸になります。</p></section>
 <p class="ref-p">リンを空気中で燃焼させると、白色の粉末の十酸化四リン P₄O₁₀ になります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">4P ＋ 5O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">P₄O₁₀</span></div><p class="ref-note">リンの燃焼です。黄リンでも赤リンでも同じ P₄O₁₀ になります。</p></div>
@@ -1032,6 +1037,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

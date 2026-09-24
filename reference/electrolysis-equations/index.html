@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,7 +927,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">電気分解で反応する物質の3分類</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">陽極（酸化）</th><th style="text-align: left;">陰極（還元）</th></tr></thead><tbody><tr><td style="text-align: left;">金属</td><td style="text-align: left;">C・Au・Pt 以外の電極の金属が溶ける</td><td style="text-align: left;">Al よりイオン化傾向が小さい金属の陽イオンが析出する</td></tr><tr><td style="text-align: left;">ハロゲン化物イオン</td><td style="text-align: left;">Cl⁻・Br⁻・I⁻ がハロゲンの単体になる</td><td style="text-align: left;">——</td></tr><tr><td style="text-align: left;">水関係</td><td style="text-align: left;">H₂O（中・酸性）か OH⁻（塩基性）から O₂</td><td style="text-align: left;">H₂O（中・塩基性）か H⁺（酸性）から H₂</td></tr></tbody></table></div>
 <section class="ref-sec" id="ref-sec-metal"><h4 class="ref-sec-h">金属の反応式</h4><p class="ref-sec-lead">金属の単体と陽イオンは可逆で、陽極では単体が溶け、陰極では陽イオンが析出します。イオンの電荷を覚えていれば書けます。</p></section>
 <p class="ref-p">金属の単体は e⁻ を放出して陽イオンになる<b>還元剤</b>、金属の陽イオンは e⁻ を受け取って単体になる<b>酸化剤</b>で、この2つは1本の可逆な式で結ばれています。陽極では右向き（単体が溶ける）、陰極では左向き（陽イオンが析出する）に進みます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-equations-metal.png" alt="金属の反応の表。Cu ⇄ Cu²⁺ ＋ 2e⁻（Cu⁺ も存在するが Cu²⁺ になる）、Ag ⇄ Ag⁺ ＋ e⁻（Ag⁺ のみ）、Fe ⇄ Fe²⁺ ＋ 2e⁻（Fe³⁺ も存在するが Fe²⁺ になる）、Zn ⇄ Zn²⁺ ＋ 2e⁻、Al ⇄ Al³⁺ ＋ 3e⁻、H₂ ⇄ 2H⁺ ＋ 2e⁻。上に、還元剤の Cu が陽極で、酸化剤の Cu²⁺ が陰極で反応することを示す矢印" loading="lazy"><figcaption class="ref-figure-cap">右向きが陽極での反応、左向きが陰極での反応です。<b>Cu は Cu²⁺、Fe は Fe²⁺</b> になる、というイオンの電荷だけは覚えておきます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-equations-metal.png?h=28d93ef8" alt="金属の反応の表。Cu ⇄ Cu²⁺ ＋ 2e⁻（Cu⁺ も存在するが Cu²⁺ になる）、Ag ⇄ Ag⁺ ＋ e⁻（Ag⁺ のみ）、Fe ⇄ Fe²⁺ ＋ 2e⁻（Fe³⁺ も存在するが Fe²⁺ になる）、Zn ⇄ Zn²⁺ ＋ 2e⁻、Al ⇄ Al³⁺ ＋ 3e⁻、H₂ ⇄ 2H⁺ ＋ 2e⁻。上に、還元剤の Cu が陽極で、酸化剤の Cu²⁺ が陰極で反応することを示す矢印" loading="lazy"><figcaption class="ref-figure-cap">右向きが陽極での反応、左向きが陰極での反応です。<b>Cu は Cu²⁺、Fe は Fe²⁺</b> になる、というイオンの電荷だけは覚えておきます。</figcaption></figure>
 <p class="ref-p">具体例で、硫酸銅(Ⅱ)水溶液を銅電極で電気分解する場合の式を書きます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cu²⁺ ＋ 2e⁻</span></div><p class="ref-note">陽極。電極の Cu が溶けて Cu²⁺ になります。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu²⁺ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cu</span></div><p class="ref-note">陰極。水溶液中の Cu²⁺ が陰極の上に析出します。</p></div>
@@ -936,12 +941,12 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">水関係の反応式は、液性によって書き方が変わります。<b>中・塩基性の水溶液には H⁺ がほとんど無く、中・酸性の水溶液には OH⁻ がほとんど無い</b>ためです（そこに存在しない物質は、反応式の左辺には書けません）。</p>
 <div class="ref-table-wrap"><div class="ref-cap">水関係の4本の式</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">電極</th><th style="text-align: center;">液性</th><th style="text-align: center;">反応するもの</th><th style="text-align: left;">反応式</th></tr></thead><tbody><tr><td style="text-align: center;">陽極</td><td style="text-align: center;">中性・酸性</td><td style="text-align: center;">H₂O</td><td style="text-align: left;">2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻</td></tr><tr><td style="text-align: center;">陽極</td><td style="text-align: center;">塩基性</td><td style="text-align: center;">OH⁻</td><td style="text-align: left;">4OH⁻ → O₂ ＋ 2H₂O ＋ 4e⁻</td></tr><tr><td style="text-align: center;">陰極</td><td style="text-align: center;">中性・塩基性</td><td style="text-align: center;">H₂O</td><td style="text-align: left;">2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻</td></tr><tr><td style="text-align: center;">陰極</td><td style="text-align: center;">酸性</td><td style="text-align: center;">H⁺</td><td style="text-align: left;">2H⁺ ＋ 2e⁻ → H₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>「電気分解の反応式に出てくる H₂O の係数はすべて2」「陰極では H₂、陽極では O₂ が発生し、係数は1」と覚えましょう。</b>この2つを覚えておけば、4本とも残りは H と電荷の数合わせで出ます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-equations-water.png" alt="水関係の反応式のまとめ。陽極は 2H₂O → 4H⁺ ＋ O₂ ＋ 4e⁻ と 4OH⁻ → 2H₂O ＋ O₂ ＋ 4e⁻ が ＋OH⁻・＋H⁺ の矢印で行き来し、陰極は 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻ と 2H⁺ ＋ 2e⁻ → H₂ が ＋OH⁻・＋H⁺ の矢印で行き来する" loading="lazy"><figcaption class="ref-figure-cap">同じ電極の2本は、両辺に H⁺ か OH⁻ を足せば互いに書き換えられます。<b>陽極は「2H₂O が O₂ になる」式を、陰極は「2H⁺ が H₂ になる」式を起点にする</b>と楽です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-equations-water.png?h=8f649935" alt="水関係の反応式のまとめ。陽極は 2H₂O → 4H⁺ ＋ O₂ ＋ 4e⁻ と 4OH⁻ → 2H₂O ＋ O₂ ＋ 4e⁻ が ＋OH⁻・＋H⁺ の矢印で行き来し、陰極は 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻ と 2H⁺ ＋ 2e⁻ → H₂ が ＋OH⁻・＋H⁺ の矢印で行き来する" loading="lazy"><figcaption class="ref-figure-cap">同じ電極の2本は、両辺に H⁺ か OH⁻ を足せば互いに書き換えられます。<b>陽極は「2H₂O が O₂ になる」式を、陰極は「2H⁺ が H₂ になる」式を起点にする</b>と楽です。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-cathode-water"><h4 class="ref-sec-h">陰極の H₂O の式は H⁺ の式から導く</h4><p class="ref-sec-lead">簡単に書ける 2H⁺ ＋ 2e⁻ → H₂ の両辺に 2OH⁻ を足すと、中・塩基性の式になります。</p></section>
 <p class="ref-p">陰極の H⁺ の式は、金属の陽イオンと同じ要領ですぐ書けます。そこから H₂O の式を導く手順は次のとおりです。</p>
 <ol class="ref-list"><li>酸性の式 2H⁺ ＋ 2e⁻ → H₂ を書く。</li><li>左辺の H⁺ と同じ数の OH⁻（2OH⁻）を両辺に足す。</li><li>左辺の 2H⁺ ＋ 2OH⁻ を 2H₂O にまとめる。<div class="ref-li-hang">2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻</div></li></ol>
 <p class="ref-p">酸性の水溶液の中では、生じた OH⁻ はすぐに H⁺ と結びついて H₂O になる（中和）ので、H⁺ の式のまま書きます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-equations-app-condition.png" alt="アプリ「イオンでみる化学反応式」の液性の書き換えの画面。酸性条件の半反応式 2H⁺ ＋ 2e⁻ → H₂ を出発点に、両辺に足す OH⁻ の数を選ぶ欄と、H⁺ と OH⁻ が結びついて H₂O になる様子の図がある" loading="lazy"><figcaption class="ref-figure-cap">両辺に足す OH⁻ の数を選ぶと、H⁺ と OH⁻ が結びついて H₂O になる様子が見られます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-equations-app-condition.png?h=52a05d79" alt="アプリ「イオンでみる化学反応式」の液性の書き換えの画面。酸性条件の半反応式 2H⁺ ＋ 2e⁻ → H₂ を出発点に、両辺に足す OH⁻ の数を選ぶ欄と、H⁺ と OH⁻ が結びついて H₂O になる様子の図がある" loading="lazy"><figcaption class="ref-figure-cap">両辺に足す OH⁻ の数を選ぶと、H⁺ と OH⁻ が結びついて H₂O になる様子が見られます。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/condition.html?s=b1&amp;from=reference&amp;page=electrolysis-equations">水の電気分解の陰極の式を、酸性から塩基性に書き換える</a></p>
 <section class="ref-sec" id="ref-sec-anode-water"><h4 class="ref-sec-h">陽極の H₂O の式は直接つくる</h4><p class="ref-sec-lead">陽極は OH⁻ の式がつくりづらいので、「2H₂O が O₂ になる」ことだけを覚えて、H⁺ と e⁻ で数を合わせます。</p></section>
 <p class="ref-p">陽極の OH⁻ の式は、そのままではつくりづらいので、H₂O の式を直接つくります。<b>2H₂O が還元剤としてはたらいて O₂ になる</b>、と考えます。</p>
@@ -1032,6 +1037,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

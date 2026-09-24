@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -925,7 +930,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">ハロゲンは二原子分子の単体 X₂ をつくります。単体は<b>酸化剤</b>、ハロゲン化物イオン X⁻ は<b>還元剤</b>として、次の反応を行き来します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">X₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2X⁻</span></div><p class="ref-note">左から右へ進むとき X₂ は酸化剤、右から左へ進むとき X⁻ は還元剤です。X は F・Cl・Br・I のどれか。</p></div>
 <div class="ref-table-wrap"><div class="ref-cap">ハロゲンの単体の比較</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">元素</th><th style="text-align: left;">単体</th><th style="text-align: left;">状態（常温）</th><th style="text-align: left;">色</th><th style="text-align: left;">酸化力</th></tr></thead><tbody><tr><td style="text-align: left;">フッ素</td><td style="text-align: left;">F₂</td><td style="text-align: left;">気体</td><td style="text-align: left;">淡黄色</td><td style="text-align: left;">強い</td></tr><tr><td style="text-align: left;">塩素</td><td style="text-align: left;">Cl₂</td><td style="text-align: left;">気体</td><td style="text-align: left;">黄緑色</td><td style="text-align: left;">↓</td></tr><tr><td style="text-align: left;">臭素</td><td style="text-align: left;">Br₂</td><td style="text-align: left;">液体</td><td style="text-align: left;">赤褐色</td><td style="text-align: left;">↓</td></tr><tr><td style="text-align: left;">ヨウ素</td><td style="text-align: left;">I₂</td><td style="text-align: left;">固体</td><td style="text-align: left;">黒紫色</td><td style="text-align: left;">弱い</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/halogen-simple-table.png" alt="フッ素・塩素・臭素・ヨウ素の単体 F₂・Cl₂・Br₂・I₂ の状態（気体・気体・液体・固体）と色（淡黄色・黄緑色・赤褐色・黒紫色）の表。酸化力は上が強く下が弱い矢印で示されている" loading="lazy"><figcaption class="ref-figure-cap">色は文字の色でも見分けられるようにしてあります。酸化力は上ほど強くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/halogen-simple-table.png?h=b3bc99db" alt="フッ素・塩素・臭素・ヨウ素の単体 F₂・Cl₂・Br₂・I₂ の状態（気体・気体・液体・固体）と色（淡黄色・黄緑色・赤褐色・黒紫色）の表。酸化力は上が強く下が弱い矢印で示されている" loading="lazy"><figcaption class="ref-figure-cap">色は文字の色でも見分けられるようにしてあります。酸化力は上ほど強くなります。</figcaption></figure>
 <p class="ref-p"><b>単体の状態と色はよく登場するので、4つとも必ず暗記してください。</b>「気・気・液・固」「淡黄・黄緑・赤褐・黒紫」と上から唱えれば覚えられます。</p>
 <p class="ref-p">酸化力が原子半径の小さい順になるのは、クーロン力が距離の2乗に反比例するためです。ハロゲンどうしでは有効核電荷が等しいので、距離の影響だけを考えればよく、原子核に近いところへ e⁻ を引き込める小さい原子ほど e⁻ を強く受け取ります。</p>
 <h5 class="ref-h5">酸化力を比べる —— 強い方が勝つ</h5>
@@ -941,7 +946,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">HF が弱酸なのは、分子間で水素結合するから</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">HF の<b>沸点が高い</b>のは水素結合のためです。<b>弱酸である</b>理由は別の話で、水素結合では説明できません。</span></p><p class="ref-mistake-why">「HF だけが特別」という2つの事実（弱酸・沸点が高い）を1つの理由で片付けたくなるためです。高校では弱酸である理由は問われないので、事実だけを覚えておけば困りません。</p></div>
 <section class="ref-sec" id="ref-sec-agx"><h4 class="ref-sec-h">ハロゲン化銀 —— AgF だけが水に溶ける</h4><p class="ref-sec-lead">Ag⁺ とハロゲン化物イオンの塩は、AgF を除いて水に溶けにくく沈殿します。色は AgCl 白・AgBr 淡黄・AgI 黄。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">ハロゲン化銀の比較</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">ハロゲン化銀</th><th style="text-align: left;">化学式</th><th style="text-align: right;">ハロゲンの電気陰性度</th><th style="text-align: right;">Ag（1.9）との差</th><th style="text-align: left;">沈殿の色</th></tr></thead><tbody><tr><td style="text-align: left;">フッ化銀</td><td style="text-align: left;">AgF</td><td style="text-align: right;">4.0</td><td style="text-align: right;">2.1</td><td style="text-align: left;">沈殿しない（水に溶ける）</td></tr><tr><td style="text-align: left;">塩化銀</td><td style="text-align: left;">AgCl</td><td style="text-align: right;">3.2</td><td style="text-align: right;">1.3</td><td style="text-align: left;">白</td></tr><tr><td style="text-align: left;">臭化銀</td><td style="text-align: left;">AgBr</td><td style="text-align: right;">3.0</td><td style="text-align: right;">1.1</td><td style="text-align: left;">淡黄</td></tr><tr><td style="text-align: left;">ヨウ化銀</td><td style="text-align: left;">AgI</td><td style="text-align: right;">2.7</td><td style="text-align: right;">0.8</td><td style="text-align: left;">黄</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/halogen-agx-table.png" alt="フッ化銀 AgF・塩化銀 AgCl・臭化銀 AgBr・ヨウ化銀 AgI の沈殿の色（AgF はなし、白・淡黄・黄）の表。右へ行くほど沈殿しやすいことを矢印で示している" loading="lazy"><figcaption class="ref-figure-cap">F から I へ進むほど、Ag との電気陰性度の差が小さくなって沈殿しやすくなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/halogen-agx-table.png?h=e0b095d0" alt="フッ化銀 AgF・塩化銀 AgCl・臭化銀 AgBr・ヨウ化銀 AgI の沈殿の色（AgF はなし、白・淡黄・黄）の表。右へ行くほど沈殿しやすいことを矢印で示している" loading="lazy"><figcaption class="ref-figure-cap">F から I へ進むほど、Ag との電気陰性度の差が小さくなって沈殿しやすくなります。</figcaption></figure>
 <p class="ref-p"><b>「AgF は溶ける、AgCl 白・AgBr 淡黄・AgI 黄」は丸暗記してください。</b>沈殿の色を問う問題で繰り返し登場します。</p>
 <p class="ref-p">AgF だけが溶けるのは、F と Ag の電気陰性度の差が大きく、結合がイオン結合に近いためです。差が小さくなるほど結合の性質が共有結合に近づいて電離しにくくなり、沈殿しやすくなります。2つの原子の電気陰性度の差がおよそ 1.7 より大きいとイオン結合、小さいと共有結合になります（厳密な境界ではありません）。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/precipitate/">陰イオンごとに沈む相手と沈殿の色の一覧はこちら</a></p>
@@ -1059,6 +1064,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

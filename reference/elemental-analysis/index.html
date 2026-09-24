@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -919,7 +924,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/element-detection/">どの元素が含まれているかを調べる操作は、元素の確認のページへ</a></p>
 <section class="ref-sec" id="ref-sec-apparatus"><h4 class="ref-sec-h">装置 —— 燃やして、水と二酸化炭素を別々に受ける</h4><p class="ref-sec-lead">試料を CuO で完全に酸化し、生じた H₂O を塩化カルシウム管、CO₂ をソーダ石灰管で吸収します。</p></section>
 <p class="ref-p">乾燥した酸素を送りながら試料を加熱して燃焼させ、生じた気体を2本の吸収管に順に通します。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/elemental-analysis-apparatus.png" alt="元素分析の装置の図。左から乾燥した酸素が入り、試料と酸化銅(II)を入れてバーナーで加熱する燃焼管、次に塩化カルシウム管、最後にソーダ石灰管がつながっている。燃焼管を出た気体には H₂O と CO₂ があり、塩化カルシウム管を通ったあとは CO₂ だけになる" loading="lazy"><figcaption class="ref-figure-cap">気体は左から右へ一本道で流れます。どちらの吸収管も、<b>つなぐ前と後の質量の差</b>がそのまま吸収した H₂O・CO₂ の質量になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/elemental-analysis-apparatus.png?h=e6e68fdf" alt="元素分析の装置の図。左から乾燥した酸素が入り、試料と酸化銅(II)を入れてバーナーで加熱する燃焼管、次に塩化カルシウム管、最後にソーダ石灰管がつながっている。燃焼管を出た気体には H₂O と CO₂ があり、塩化カルシウム管を通ったあとは CO₂ だけになる" loading="lazy"><figcaption class="ref-figure-cap">気体は左から右へ一本道で流れます。どちらの吸収管も、<b>つなぐ前と後の質量の差</b>がそのまま吸収した H₂O・CO₂ の質量になります。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">装置の各部の役目</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">位置</th><th style="text-align: left;">もの</th><th style="text-align: left;">役目</th></tr></thead><tbody><tr><td style="text-align: left;">入口</td><td style="text-align: left;">乾燥した O₂（または空気）</td><td style="text-align: left;">燃焼に使う。湿っていると、その水まで1本目に吸収されてしまう</td></tr><tr><td style="text-align: left;">燃焼管</td><td style="text-align: left;">試料 ＋ <b>酸化銅(II) CuO</b></td><td style="text-align: left;">試料を<b>完全に酸化</b>する酸化剤。CO やすすを残さない</td></tr><tr><td style="text-align: left;">1本目</td><td style="text-align: left;"><b>塩化カルシウム管</b>（CaCl₂）</td><td style="text-align: left;">中性の乾燥剤なので <b>H₂O だけ</b>を吸収する。増えた質量 ＝ H₂O の質量</td></tr><tr><td style="text-align: left;">2本目</td><td style="text-align: left;"><b>ソーダ石灰管</b>（NaOH ＋ CaO）</td><td style="text-align: left;">塩基性なので酸性の <b>CO₂</b> を吸収する。増えた質量 ＝ CO₂ の質量</td></tr></tbody></table></div>
 <p class="ref-p">燃焼管に酸化銅(II) を入れておくのは、試料の炭素と水素を残らず CO₂ と H₂O に変えるためです。CuO は酸素を渡す側、つまり酸化剤として働きます。不完全燃焼で CO やすすが残ると、吸収管で量った質量が試料中の C の量と合わなくなるためです。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">試料（C・H・O からなる） ＋ O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">CuO・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂ ＋ H₂O</span></div><p class="ref-note">試料中の C は全部 CO₂ に、H は全部 H₂O になります。係数は試料の分子式によって変わるので、ここでは書いていません。</p></div>
@@ -945,7 +950,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">組成式は「原子の<b>数の比</b>」を、分子式は「1分子中の原子の<b>数</b>」を表します。そのため分子式は組成式の整数倍になり、倍率は「分子量 ÷ 組成式の式量」で決まります。</p>
 <p class="ref-p">たとえば組成式 CH₂O（式量30）で分子量が60なら、60 ÷ 30 ＝ 2 なので分子式は C₂H₄O₂ です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">組成式が CH₂O になる化合物</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分子式</th><th style="text-align: right;">分子量</th><th style="text-align: left;">組成式の何倍か</th><th style="text-align: left;">化合物の例</th></tr></thead><tbody><tr><td style="text-align: left;">CH₂O</td><td style="text-align: right;">30</td><td style="text-align: left;">1倍</td><td style="text-align: left;">ホルムアルデヒド HCHO</td></tr><tr><td style="text-align: left;">C₂H₄O₂</td><td style="text-align: right;">60</td><td style="text-align: left;">2倍</td><td style="text-align: left;">酢酸 CH₃COOH</td></tr><tr><td style="text-align: left;">C₃H₆O₃</td><td style="text-align: right;">90</td><td style="text-align: left;">3倍</td><td style="text-align: left;">乳酸 CH₃CH(OH)COOH</td></tr><tr><td style="text-align: left;">C₆H₁₂O₆</td><td style="text-align: right;">180</td><td style="text-align: left;">6倍</td><td style="text-align: left;">グルコース</td></tr></tbody></table></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/elemental-analysis-acetic-acid.png" alt="酢酸の構造式。メチル基の炭素に、C=O と −OH をもつカルボキシ基の炭素がつながっている" loading="lazy"><figcaption class="ref-figure-cap">酢酸 CH₃COOH。組成式は CH₂O で、その<b>2倍</b>が分子式 C₂H₄O₂ です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/elemental-analysis-acetic-acid.png?h=cad34851" alt="酢酸の構造式。メチル基の炭素に、C=O と −OH をもつカルボキシ基の炭素がつながっている" loading="lazy"><figcaption class="ref-figure-cap">酢酸 CH₃COOH。組成式は CH₂O で、その<b>2倍</b>が分子式 C₂H₄O₂ です。</figcaption></figure>
 <p class="ref-p">組成式だけでは、どの化合物か決まりません。上の4つはどれも組成式が CH₂O です。分子式まで出すには、分子量が必要です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">酢酸・乳酸の性質はカルボン酸のページへ</a></p>
 <h5 class="ref-h5">分子量はどこから来るか</h5>
@@ -1039,6 +1044,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

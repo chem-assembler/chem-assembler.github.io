@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -922,7 +927,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">U字管の真ん中を半透膜で仕切り、片側に純水、もう片側に溶液を入れて置いておくと、水分子が膜をくぐり抜けて、溶液のほうへしみ込んでいきます。この現象が<b>浸透</b>です。</p>
 <p class="ref-p">水が移ると、溶液側の液面が上がり、純水側の液面が下がって、液面に差がつきます。差はやがてそれ以上変わらなくなります。</p>
 <p class="ref-p">この液面の差をなくすには、溶液側の液面に余分な圧力を加えなければなりません。<b>この圧力を溶液の浸透圧</b>といい、Π（パイ）で表します。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/osmotic-pressure-utube.png" alt="半透膜で真ん中を仕切った U 字管を3つ並べた図。左は純水、右は溶質の粒を描いた溶液。①は液面が同じ高さ、②は溶液側の液面が上がって差がつき、③は溶液側にピストンで圧力 Π を加えて液面をそろえている" loading="lazy"><figcaption class="ref-figure-cap">浸透圧は「溶液が吸い上げる力」ではなく、<b>上がろうとするのを押さえ込むのに要る圧力</b>です。③ のように液面をそろえたときの圧力で測ります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/osmotic-pressure-utube.png?h=05ba36aa" alt="半透膜で真ん中を仕切った U 字管を3つ並べた図。左は純水、右は溶質の粒を描いた溶液。①は液面が同じ高さ、②は溶液側の液面が上がって差がつき、③は溶液側にピストンで圧力 Π を加えて液面をそろえている" loading="lazy"><figcaption class="ref-figure-cap">浸透圧は「溶液が吸い上げる力」ではなく、<b>上がろうとするのを押さえ込むのに要る圧力</b>です。③ のように液面をそろえたときの圧力で測ります。</figcaption></figure>
 <p class="ref-p">水が溶液側へ移るのは、半透膜の両側で<b>純水側から溶液側へ通り抜ける水分子のほうが、逆向きより多い</b>ためです。溶液側では、膜にぶつかる粒子の一部が通り抜けられない溶質なので、そのぶん水分子が出ていきにくくなります。</p>
 <section class="ref-sec" id="ref-sec-van-t-hoff"><h4 class="ref-sec-h">ΠV ＝ nRT —— 気体と同じ式</h4><p class="ref-sec-lead">希薄溶液の浸透圧 Π は、溶液の体積 V、溶質の物質量 n、絶対温度 T を使って ΠV ＝ nRT と書けます。R は気体定数そのものです。</p></section>
 <p class="ref-p">希薄溶液の浸透圧 Π〔Pa〕は、溶液の体積 V〔L〕、溶質の物質量 n〔mol〕、絶対温度 T〔K〕を使って、次の式で表されます。これを<b>ファントホッフの法則</b>といいます。</p>
@@ -1027,6 +1032,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

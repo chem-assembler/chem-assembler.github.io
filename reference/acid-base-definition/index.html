@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -925,7 +930,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">構造で言い直すと、<b>酸は H⁺ と陰イオンがくっついた構造</b>、<b>塩基は OH⁻ と陽イオンがくっついた構造</b>をしています。水に溶けると、このくっつきが離れてイオンに分かれます（<b>電離</b>）。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H⁺ ＋ Cl⁻</span></div><p class="ref-note">塩化水素は H⁺ と陰イオン Cl⁻ がくっついた構造なので酸です。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Na⁺ ＋ OH⁻</span></div><p class="ref-note">水酸化ナトリウムは OH⁻ と陽イオン Na⁺ がくっついた構造なので塩基です。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acid-base-definition-arrhenius.png" alt="酸は H⁺ と陰イオンがくっついたもの、塩基は陽イオンと OH⁻ がくっついたもので、どちらも水中で電離して2つのイオンに分かれることを示した模式図" loading="lazy"><figcaption class="ref-figure-cap">アレニウスの定義。<b>酸は「H⁺＋陰イオン」、塩基は「陽イオン＋OH⁻」</b>の組み合わせで、水中で電離して分かれます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acid-base-definition-arrhenius.png?h=a46dadcd" alt="酸は H⁺ と陰イオンがくっついたもの、塩基は陽イオンと OH⁻ がくっついたもので、どちらも水中で電離して2つのイオンに分かれることを示した模式図" loading="lazy"><figcaption class="ref-figure-cap">アレニウスの定義。<b>酸は「H⁺＋陰イオン」、塩基は「陽イオン＋OH⁻」</b>の組み合わせで、水中で電離して分かれます。</figcaption></figure>
 <p class="ref-p">アレニウスの定義では、水に溶けたときに H⁺ を出すか OH⁻ を出すかで決めるので、<b>物質ごとに酸か塩基かが決まっています</b>。</p>
 <section class="ref-sec" id="ref-sec-bronsted"><h4 class="ref-sec-h">ブレンステッド・ローリーの定義</h4><p class="ref-sec-lead">反応相手に H⁺ を与える物質が酸、反応相手から H⁺ を受け取る物質が塩基です。</p></section>
 <p class="ref-p">「<b>反応相手に水素イオン H⁺ を与える物質</b>」を<b>酸</b>、「<b>反応相手から H⁺ を受け取る物質</b>」を<b>塩基</b>といいます。これを<b>ブレンステッド・ローリーの定義</b>といいます。アレニウスの定義を広げたものです。</p>
@@ -946,7 +951,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">アンモニアは分子の中に OH を持っていないので、「水に溶けて OH⁻ を出す」というアレニウスの定義ではうまく説明できません。ブレンステッド・ローリーの定義なら「水から H⁺ を受け取るから塩基」と説明できます。</p>
 <section class="ref-sec" id="ref-sec-role"><h4 class="ref-sec-h">酸か塩基かは反応相手によって変わる</h4><p class="ref-sec-lead">ブレンステッド・ローリーの定義では、同じ物質でも相手によって酸にも塩基にもなります。H₂O と HCO₃⁻ がその代表です。</p></section>
 <p class="ref-p">ブレンステッド・ローリーの定義は、2つの物質が反応したときの <b>H⁺ のやりとり</b>で決めるので、酸・塩基は物質の種類ではなく<b>反応における役割</b>です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acid-base-definition-amphoteric.png" alt="H₂O が NH₃ 相手には H⁺ を渡して酸、HCl 相手には H⁺ を受け取って塩基になること、HCO₃⁻ が OH⁻ 相手には酸、H⁺ 相手には塩基になることを、H⁺ の移動の矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap"><b>H₂O は NH₃ 相手では酸、HCl 相手では塩基</b>。<b>HCO₃⁻ は OH⁻ 相手では酸、H⁺ 相手では塩基</b>としてはたらきます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acid-base-definition-amphoteric.png?h=208e49a9" alt="H₂O が NH₃ 相手には H⁺ を渡して酸、HCl 相手には H⁺ を受け取って塩基になること、HCO₃⁻ が OH⁻ 相手には酸、H⁺ 相手には塩基になることを、H⁺ の移動の矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap"><b>H₂O は NH₃ 相手では酸、HCl 相手では塩基</b>。<b>HCO₃⁻ は OH⁻ 相手では酸、H⁺ 相手では塩基</b>としてはたらきます。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">HCO₃⁻ ＋ OH⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₃²⁻ ＋ H₂O</span></div><p class="ref-note">HCO₃⁻ が OH⁻ に H⁺ を渡しているので、HCO₃⁻ は酸です。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">HCO₃⁻ ＋ H⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂CO₃</span></div><p class="ref-note">HCO₃⁻ が H⁺ を受け取っているので、HCO₃⁻ は塩基です。</p></div>
 <h5 class="ref-h5">水が左辺にある反応式の見分け方</h5>
@@ -1034,6 +1039,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

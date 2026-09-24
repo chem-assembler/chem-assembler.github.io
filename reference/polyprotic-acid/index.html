@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -939,8 +944,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">1段目に Ka ＝ cα² の近似（1 − α ≒ 1）を使ってよいかも、同じ物差しで確かめられます。この炭酸水では α ＝ 10⁻⁴·¹⁷／10⁻² ≒ 0.0067 で、0.05 より十分小さいので使えます。<b>酸の濃度と [H⁺] が 10 の指数で2桁以上違えば、確実に使えます</b>。</p>
 <section class="ref-sec" id="ref-sec-why"><h4 class="ref-sec-h">2段目の電離が起こりにくい理由</h4><p class="ref-sec-lead">電離するには、H⁺ と陰イオンのあいだのクーロン力を断ち切る必要があります。2段目は −2 の陰イオンから H⁺ を引き離すので、1段目より強い引力を断ち切らなければなりません。</p></section>
 <p class="ref-p">イオンのあいだにはたらくクーロン力は、電荷の積に比例します。1段目は H⁺（＋1）と HCO₃⁻（−1）で 1 × 1 ＝ 1、2段目は H⁺（＋1）と CO₃²⁻（−2）で 1 × 2 ＝ 2 です。<b>2段目のほうが強い引力を断ち切る必要があるため、電離しにくくなります</b>。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polyprotic-acid-coulomb-1.png" alt="1段階目の電離 H₂CO₃ ⇄ H⁺ ＋ HCO₃⁻。H⁺ の下に ＋1、HCO₃⁻ の下に −1 の札があり、両向きの矢印でつながれ、「クーロン力は 1 × 1 ＝ 1」と添えてある" loading="lazy"><figcaption class="ref-figure-cap">1段目は ＋1 と −1 を引き離します。クーロン力は電荷の積で 1 です。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polyprotic-acid-coulomb-2.png" alt="2段階目の電離 HCO₃⁻ ⇄ H⁺ ＋ CO₃²⁻。H⁺ の下に ＋1、CO₃²⁻ の下に −2 の札があり、両向きの矢印でつながれ、「クーロン力は 1 × 2 ＝ 2」と添えてある" loading="lazy"><figcaption class="ref-figure-cap">2段目は ＋1 と −2 を引き離すので、クーロン力は 2 になります。1段目の2倍の引力を断ち切らなければなりません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polyprotic-acid-coulomb-1.png?h=6d539b31" alt="1段階目の電離 H₂CO₃ ⇄ H⁺ ＋ HCO₃⁻。H⁺ の下に ＋1、HCO₃⁻ の下に −1 の札があり、両向きの矢印でつながれ、「クーロン力は 1 × 1 ＝ 1」と添えてある" loading="lazy"><figcaption class="ref-figure-cap">1段目は ＋1 と −1 を引き離します。クーロン力は電荷の積で 1 です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polyprotic-acid-coulomb-2.png?h=d438ec3a" alt="2段階目の電離 HCO₃⁻ ⇄ H⁺ ＋ CO₃²⁻。H⁺ の下に ＋1、CO₃²⁻ の下に −2 の札があり、両向きの矢印でつながれ、「クーロン力は 1 × 2 ＝ 2」と添えてある" loading="lazy"><figcaption class="ref-figure-cap">2段目は ＋1 と −2 を引き離すので、クーロン力は 2 になります。1段目の2倍の引力を断ち切らなければなりません。</figcaption></figure>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1.0 × 10⁻² mol/L の炭酸水の pH を小数第2位まで求めよ。ただし K₁ ＝ 4.5 × 10⁻⁷ mol/L、K₂ ＝ 6.0 × 10⁻¹¹ mol/L、log₁₀2 ＝ 0.30、log₁₀3 ＝ 0.48 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>2段目は無視して1価の弱酸とみなす。[H⁺] ＝ √(cK₁) ＝ √(1.0 × 10⁻² × 4.5 × 10⁻⁷) ＝ √(45 × 10⁻¹⁰) ＝ 3√5 × 10⁻⁵。2 ＝ 10⁰·³⁰ から 5 ＝ 10⁰·⁷⁰、3 ＝ 10⁰·⁴⁸ なので [H⁺] ＝ 10⁰·⁴⁸⁺⁰·³⁵⁻⁵·⁰⁰ ＝ 10⁻⁴·¹⁷ mol/L。よって <b>pH ＝ 4.17</b></p></div></details></div>
@@ -1017,6 +1022,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

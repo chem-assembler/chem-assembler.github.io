@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -930,7 +935,7 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">酸素の実験室的製法</h5>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2H₂O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">MnO₂（触媒）</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O ＋ O₂↑</span></div><p class="ref-note">過酸化水素水に触媒として酸化マンガン(Ⅳ) MnO₂ を加えます。H₂O₂ は不安定なので、安定な H₂O になって O₂ を出します。</p></div>
 <p class="ref-p">この反応は、酸化剤も還元剤も H₂O₂ という<b>自己酸化還元反応</b>です。H₂O₂ が酸化剤としてはたらく半反応式と、還元剤としてはたらく半反応式を足すと組み立てられます（下の「過酸化水素」の節）。反応速度の単元でもよく登場し、「H₂O₂ の係数は2だが1次反応」と覚えておきます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxygen-ozone-h2o2-decomp.png" alt="H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O と H₂O₂ → O₂ ＋ 2H⁺ ＋ 2e⁻ を足して 2H₂O₂ → 2H₂O ＋ O₂ を得る筆算" loading="lazy"><figcaption class="ref-figure-cap">酸化剤の H₂O₂ と還元剤の H₂O₂ を足すと、H⁺ と e⁻ が消えて分解の式になります。実用性はありませんが、H₂O₂ の2本の半反応式を覚える助けになります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxygen-ozone-h2o2-decomp.png?h=7ca3485e" alt="H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O と H₂O₂ → O₂ ＋ 2H⁺ ＋ 2e⁻ を足して 2H₂O₂ → 2H₂O ＋ O₂ を得る筆算" loading="lazy"><figcaption class="ref-figure-cap">酸化剤の H₂O₂ と還元剤の H₂O₂ を足すと、H⁺ と e⁻ が消えて分解の式になります。実用性はありませんが、H₂O₂ の2本の半反応式を覚える助けになります。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2KClO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">MnO₂（触媒）・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2KCl ＋ 3O₂↑</span></div><p class="ref-note">塩素酸カリウム KClO₃ と酸化マンガン(Ⅳ)の混合物を加熱します。どちらも固体なので加熱が必要です。KClO₃ の Cl（+5）が安定な Cl⁻ になって O₂ を出す自己酸化還元反応です。</p></div>
 <p class="ref-p">希硫酸や水酸化ナトリウム水溶液を電気分解しても、<b>陽極</b>から O₂ が出ます（陰極からは H₂）。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">O₂↑ ＋ 4H⁺ ＋ 4e⁻</span></div><p class="ref-note">希硫酸（酸性）の電気分解の陽極。</p></div>
@@ -947,7 +952,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/transition-oxidizers/">過マンガン酸カリウム・二クロム酸カリウムの半反応式はこちら</a></p>
 <p class="ref-p">二酸化硫黄 SO₂ が相手なら、H₂O₂ は酸化剤としてはたらき、硫酸ができます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂O₂ ＋ SO₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂SO₄</span></div><p class="ref-note">H₂O₂ が酸化剤、SO₂ が還元剤。H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O と SO₂ ＋ 2H₂O → SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻ を足すと、H⁺ と H₂O が打ち消し合います。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxygen-ozone-h2o2-so2.png" alt="H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O と SO₂ ＋ 2H₂O → SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻ を足し、両辺の 2H⁺ と 2H₂O を消して H₂O₂ ＋ SO₂ → H₂SO₄ を得る筆算" loading="lazy"><figcaption class="ref-figure-cap">両辺にある H⁺ と H₂O を消すと、残った SO₄²⁻ と 2H⁺ が組んで H₂SO₄ になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxygen-ozone-h2o2-so2.png?h=eed5b8d8" alt="H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O と SO₂ ＋ 2H₂O → SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻ を足し、両辺の 2H⁺ と 2H₂O を消して H₂O₂ ＋ SO₂ → H₂SO₄ を得る筆算" loading="lazy"><figcaption class="ref-figure-cap">両辺にある H⁺ と H₂O を消すと、残った SO₄²⁻ と 2H⁺ が組んで H₂SO₄ になります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/sulfur/">二酸化硫黄が還元剤としてはたらく反応はこちら</a></p>
 <section class="ref-sec" id="ref-sec-ozone"><h4 class="ref-sec-h">オゾン —— O₂ より不安定で、酸化力が極めて強い</h4><p class="ref-sec-lead">O₃ は淡青色・特異臭の気体で、O₂ の無声放電でできます。中・塩基性で使う半反応式は O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ です。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">オゾン O₃ の性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">オゾン O₃</th><th style="text-align: left;">理由・補足</th></tr></thead><tbody><tr><td style="text-align: left;">色・におい</td><td style="text-align: left;">淡青色・特異臭</td><td style="text-align: left;">「オゾン臭」としか言えないにおい</td></tr><tr><td style="text-align: left;">分子量</td><td style="text-align: left;">48</td><td style="text-align: left;">−</td></tr><tr><td style="text-align: left;">水への溶解</td><td style="text-align: left;">少し溶ける</td><td style="text-align: left;">極性分子なので O₂ より水に溶けやすい</td></tr><tr><td style="text-align: left;">酸化剤／還元剤</td><td style="text-align: left;">強い酸化剤</td><td style="text-align: left;">O₂ より不安定（反応しやすい）で、殺菌・消毒・漂白に使われる</td></tr></tbody></table></div>
@@ -959,8 +964,8 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">O₃ ＋ 2H⁺ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">O₂↑ ＋ H₂O</span></div><p class="ref-note">酸性条件の半反応式。</p></div>
 <p class="ref-p">中・塩基性の水溶液では、H⁺ は OH⁻ と結びついて H₂O として存在しています。そこで、酸性の式の<b>両辺に H⁺ と同じ数だけ OH⁻ を足し</b>、H⁺ と OH⁻ を H₂O にしてから、両辺に共通する H₂O を消します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">O₃ ＋ H₂O ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">O₂↑ ＋ 2OH⁻</span></div><p class="ref-note">中・塩基性条件の半反応式。O₃ が実際に使われるのはこの条件なので、<b>O₃ の半反応式はこちらを使います</b>。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxygen-ozone-o3-basic.png" alt="O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O の両辺に 2OH⁻ を足し、左辺の 2H₂O と右辺の H₂O を1つずつ消して O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ を得る筆算" loading="lazy"><figcaption class="ref-figure-cap">両辺に OH⁻ を2個ずつ足すと、左辺の 2H⁺ は 2H₂O になります。両辺に共通する H₂O を1つ消せば中・塩基性の式です。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxygen-ozone-app-o3-basic.png" alt="酸性条件の半反応式 O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O を出発点にし、両辺に OH⁻ を足して書き直す画面。H⁺ が2個残っていて、OH⁻ があと2個必要だと示している" loading="lazy"><figcaption class="ref-figure-cap">同じ書き換えを、足す OH⁻ の数を自分で決めながら進める画面です。H⁺ が2個残っているあいだは、塩基性の式になりません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxygen-ozone-o3-basic.png?h=563673d4" alt="O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O の両辺に 2OH⁻ を足し、左辺の 2H₂O と右辺の H₂O を1つずつ消して O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ を得る筆算" loading="lazy"><figcaption class="ref-figure-cap">両辺に OH⁻ を2個ずつ足すと、左辺の 2H⁺ は 2H₂O になります。両辺に共通する H₂O を1つ消せば中・塩基性の式です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxygen-ozone-app-o3-basic.png?h=77eda719" alt="酸性条件の半反応式 O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O を出発点にし、両辺に OH⁻ を足して書き直す画面。H⁺ が2個残っていて、OH⁻ があと2個必要だと示している" loading="lazy"><figcaption class="ref-figure-cap">同じ書き換えを、足す OH⁻ の数を自分で決めながら進める画面です。H⁺ が2個残っているあいだは、塩基性の式になりません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/condition.html?s=b3&amp;from=reference&amp;page=oxygen-ozone">オゾンの半反応式を酸性から塩基性に書き換える</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/half-reaction-condition/">液性による半反応式の書き換え（H⁺ と OH⁻ は共存しない）はこちら</a></p>
 <h5 class="ref-h5">オゾンの検出 —— ヨウ化カリウムデンプン紙</h5>
@@ -1044,6 +1049,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

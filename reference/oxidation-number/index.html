@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -933,13 +938,13 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">酸化数を決める優先順位</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">原子</th><th style="text-align: center;">酸化数</th><th style="text-align: left;">備考</th></tr></thead><tbody><tr><td style="text-align: left;">アルカリ金属</td><td style="text-align: center;">＋1</td><td style="text-align: left;">絶対に ＋1</td></tr><tr><td style="text-align: left;">アルカリ土類金属</td><td style="text-align: center;">＋2</td><td style="text-align: left;">絶対に ＋2。アルカリ土類金属は2族すべてなので、Be・Mg も ＋2</td></tr><tr><td style="text-align: left;">H</td><td style="text-align: center;">＋1</td><td style="text-align: left;">NaH など金属の水素化物の中では H⁻ となっており −1</td></tr><tr><td style="text-align: left;">O</td><td style="text-align: center;">−2</td><td style="text-align: left;">H₂O₂ など過酸化物の中では −1</td></tr><tr><td style="text-align: left;">ハロゲン</td><td style="text-align: center;">−1</td><td style="text-align: left;">F 以外は −1 〜 ＋7 の酸化数をとり、例外はそれなりにある</td></tr></tbody></table></div>
 <p class="ref-p"><b>この表は必ず暗記してください。</b>上から順に当てはめ、確定しない原子は電荷の合計から逆算します。</p>
 <ol class="ref-list"><li>電離できるものは、まず電離する。<div class="ref-li-hang">Cu(NO₃)₂ → Cu²⁺ ＋ 2NO₃⁻</div></li><li>単原子イオンの酸化数は、電荷と一致させる。<div class="ref-li-hang">Cu²⁺ の Cu は ＋2</div></li><li>多原子イオンはさらに単原子イオンに（仮想的に）分け、酸化数がわかる原子から決める。<div class="ref-li-hang">NO₃⁻ → N<span class="ref-blank">○○</span> ＋ 3O²⁻ として、O は −2</div></li><li>イオン全体の電荷を合わせて、残りの原子の酸化数を決める。<div class="ref-li-hang">−1 ＝ (N の酸化数) ＋ 3×(−2) より、N は ＋5</div></li></ol>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxidation-number-rules.png" alt="酸化数の決め方の表（アルカリ金属 ＋1、アルカリ土類金属 ＋2、H ＋1、O −2、ハロゲン −1 と、それぞれの例外）と、硝酸銅(Ⅱ)を例に ①電離 ②単原子イオンの電荷 ③わかる原子 ④全体の電荷 の順で N の酸化数 ＋5 を出す図" loading="lazy"><figcaption class="ref-figure-cap">優先順位の表と、Cu(NO₃)₂ の N の酸化数を決める4段。<b>「①電離 → ②単原子イオン → ③わかる原子 → ④全体の電荷」</b>の順です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxidation-number-rules.png?h=9a0128b1" alt="酸化数の決め方の表（アルカリ金属 ＋1、アルカリ土類金属 ＋2、H ＋1、O −2、ハロゲン −1 と、それぞれの例外）と、硝酸銅(Ⅱ)を例に ①電離 ②単原子イオンの電荷 ③わかる原子 ④全体の電荷 の順で N の酸化数 ＋5 を出す図" loading="lazy"><figcaption class="ref-figure-cap">優先順位の表と、Cu(NO₃)₂ の N の酸化数を決める4段。<b>「①電離 → ②単原子イオン → ③わかる原子 → ④全体の電荷」</b>の順です。</figcaption></figure>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">化合物の中の O は、いつでも酸化数 −2 である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">過酸化水素 H₂O₂ のような<b>過酸化物の中の O は −1</b> です。</span></p><p class="ref-mistake-why">表で O より上にある H（＋1）が先に決まるためです。H₂O₂ は H が2個で ＋2、全体は 0 なので、O 2個で −2、つまり O 1個あたり −1 になります。同じ理由で、NaH の H は、表で上にある Na（＋1）が先に決まるので −1 になります。</p></div>
 <section class="ref-sec" id="ref-sec-electronegativity"><h4 class="ref-sec-h">電気陰性度から決める —— なぜ H は ＋1、O は −2 なのか</h4><p class="ref-sec-lead">共有電子対は、少しでも強く引きつけている原子がすべてもっていると判定します。</p></section>
 <p class="ref-p">電気陰性度は「共有結合した原子が共有電子対を引きつける力の強さ」です。<b>酸化数を決めるときは、共有電子対は少しでも強く引きつけている原子がすべてもっている</b>と判定します。</p>
 <p class="ref-p">主な元素の電気陰性度の順は次のとおりです。</p>
 <p class="ref-p">F（4.0）＞ O（3.4）＞ Cl（3.2）＞ N（3.0）＞ C（2.6）など ＞ H（2.2）＞ ふつうの金属 ＞ アルカリ土類金属・アルカリ金属</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/water-electron-pull.png" alt="水分子の電子式の図。O と2つの H を結ぶ共有電子対の点が、どちらも O 側に寄せて描かれ、O と4組の電子をまとめて破線で囲んである。O に酸化数 −2、2つの H にそれぞれ ＋1 と書かれている" loading="lazy"><figcaption class="ref-figure-cap">共有電子対を O のものとして数えると、O は電子を2個多くもった形（−2）、H は自分の電子をとられた形（＋1）になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/water-electron-pull.png?h=1f2207d7" alt="水分子の電子式の図。O と2つの H を結ぶ共有電子対の点が、どちらも O 側に寄せて描かれ、O と4組の電子をまとめて破線で囲んである。O に酸化数 −2、2つの H にそれぞれ ＋1 と書かれている" loading="lazy"><figcaption class="ref-figure-cap">共有電子対を O のものとして数えると、O は電子を2個多くもった形（−2）、H は自分の電子をとられた形（＋1）になります。</figcaption></figure>
 <h5 class="ref-h5">水 H₂O の場合</h5>
 <p class="ref-p">O の電気陰性度は 3.4、H は 2.2 なので、O−H の共有電子対は O 側に偏ります。O は両側の H から1個ずつ、合計2個の e⁻ をとったと考えるので<b>酸化数 −2</b>（O²⁻ と同じ状態）、H は自分の e⁻ をとられたので<b>酸化数 ＋1</b>（H⁺ と同じ状態）です。</p>
 <h5 class="ref-h5">単体の酸化数が 0 である理由</h5>
@@ -960,7 +965,7 @@ a.ref-link::before { content: '→ '; }
 <ul class="ref-list"><li>C−H の共有電子対は C 側に偏っており、C が e⁻ を1個得る（−1）</li><li>C−C の共有電子対はど真ん中に位置し、e⁻ のやりとりはない（0）</li><li>C−O の共有電子対は O 側に偏っており、C が e⁻ を1個失う（＋1）。C=O なら2個失う（＋2）</li></ul>
 <h5 class="ref-h5">具体例 —— 酢酸 CH₃−COOH</h5>
 <p class="ref-p">メチル基の C は、3個の H から合計3個の e⁻ をとっているので<b>酸化数 −3</b>です。カルボキシ基の C は、C=O で2個、C−O で1個、合わせて3個の e⁻ を O にとられているので<b>酸化数 ＋3</b>です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acetic-acid-oxidation-number.png" alt="酢酸の構造式の図。左のメチル基の炭素では3本の C−H の矢印がどれも C を向き、右のカルボキシ基の炭素では C=O と C−O の矢印が O を向いている。C−C には矢印がない。左の C に −3、右の C に ＋3 と書かれている" loading="lazy"><figcaption class="ref-figure-cap">矢印は共有電子対が寄るほうを指しています。C に向いた矢印1本が −1、C から出た矢印1本が ＋1 で、数えた本数がそのまま酸化数です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acetic-acid-oxidation-number.png?h=d2d8b2f6" alt="酢酸の構造式の図。左のメチル基の炭素では3本の C−H の矢印がどれも C を向き、右のカルボキシ基の炭素では C=O と C−O の矢印が O を向いている。C−C には矢印がない。左の C に −3、右の C に ＋3 と書かれている" loading="lazy"><figcaption class="ref-figure-cap">矢印は共有電子対が寄るほうを指しています。C に向いた矢印1本が −1、C から出た矢印1本が ＋1 で、数えた本数がそのまま酸化数です。</figcaption></figure>
 <h5 class="ref-h5">アルコールの酸化との関係</h5>
 <p class="ref-p">エタノール CH₃CH₂OH の −OH が付いた C は −1、アセトアルデヒド CH₃CHO の −CHO の C は ＋1、酢酸 CH₃COOH の −COOH の C は ＋3 です。アルコールを酸化すると、<b>−OH が付いた炭素の酸化数が2ずつ増えていきます</b>。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-oxidation-map/">第1級・第2級・第3級アルコールの酸化の行き先は「アルコールを酸化するとどうなるか」で <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
@@ -1039,6 +1044,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 

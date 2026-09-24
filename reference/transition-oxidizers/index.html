@@ -213,6 +213,11 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* 図を押すと大きく出す（ZOOM_JS・2026-09-24） */
+.ref-scope img.ref-figure-img{cursor:zoom-in}
+.ref-zoom{position:fixed;inset:0;z-index:1000;background:rgba(20,24,32,.88);overflow:auto;cursor:zoom-out;padding:12px 2vw 24px;box-sizing:border-box;text-align:center}
+.ref-zoom img{display:inline-block;max-width:none;height:auto;background:#fff;border-radius:6px}
+.ref-zoom-hint{color:#fff;font-size:14px;margin:0 0 8px}
 /* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
    アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
    ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
@@ -929,7 +934,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">酸性にするのに<b>硫酸</b>を使うのは、塩酸では Cl⁻ が MnO₄⁻ に酸化されて Cl₂ になってしまい、硝酸ではそれ自身が酸化剤としてはたらいてしまうためです。<b>「KMnO₄ は硫酸酸性」と組にして覚えてください。</b></p>
 <p class="ref-p">鉄(Ⅱ)イオンとの反応では、MnO₄⁻ 1個が e⁻ を5個受け取るので、Fe²⁺ は5個要ります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">MnO₄⁻ ＋ 5Fe²⁺ ＋ 8H⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Mn²⁺ ＋ 5Fe³⁺ ＋ 4H₂O</span></div><p class="ref-note">酸化剤の半反応式と Fe²⁺ → Fe³⁺ ＋ e⁻ を5倍して足したもの。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/transition-oxidizers-app-kmno4-fe.png" alt="模式図。左に Fe²⁺ が5個並び、それぞれから e⁻ が1個ずつ矢印で右の MnO₄⁻ と 8H⁺ の枠へ移っている。下に「MnO₄⁻ 1個と Fe²⁺ 5個でちょうど反応する」とある" loading="lazy"><figcaption class="ref-figure-cap">MnO₄⁻ 1個が受け取る e⁻ は5個。<b>還元剤が出す e⁻ と酸化剤が受け取る e⁻ の数をそろえる</b>と、係数が決まります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/transition-oxidizers-app-kmno4-fe.png?h=c5482659" alt="模式図。左に Fe²⁺ が5個並び、それぞれから e⁻ が1個ずつ矢印で右の MnO₄⁻ と 8H⁺ の枠へ移っている。下に「MnO₄⁻ 1個と Fe²⁺ 5個でちょうど反応する」とある" loading="lazy"><figcaption class="ref-figure-cap">MnO₄⁻ 1個が受け取る e⁻ は5個。<b>還元剤が出す e⁻ と酸化剤が受け取る e⁻ の数をそろえる</b>と、係数が決まります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/redox.html?rxn=rs1&amp;from=reference&amp;page=transition-oxidizers">過マンガン酸カリウムと鉄(Ⅱ)</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/redox.html?rxn=rs3&amp;from=reference&amp;page=transition-oxidizers">過マンガン酸カリウムとシュウ酸</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/halfreaction.html?q=MnO4_red&amp;from=reference&amp;page=transition-oxidizers">過マンガン酸イオンの半反応式を組む</a></p>
@@ -1040,6 +1045,36 @@ document.addEventListener('click', function (e) {
   update();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
 
