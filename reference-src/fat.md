@@ -32,6 +32,9 @@ terms:
 - 高級脂肪酸
 - 飽和脂肪酸
 - 不飽和脂肪酸
+codes:
+- org.fat.structure
+- org.fat.fatty-acids
 :::
 
 グリセリンは −OH を3個もつので、**3分子の脂肪酸と3か所でエステル結合をつくります**。つまり油脂は、エステル結合を3つもつ1個の分子です。
@@ -81,6 +84,10 @@ terms:
 - 脂肪油
 - 乾性油
 - 硬化油
+codes:
+- org.fat.solid-liquid
+- org.fat.hardening
+- org.fat.drying-oil
 :::
 
 分子間力が大きいほど融点は高くなります。同じ種類の分子どうしなら、分子量が大きいほど分子間力（分散力）が大きくなるためです。
@@ -183,6 +190,9 @@ lead: 「分子量＝構成脂肪酸3分子＋38」と「ステアリン酸だ�
 terms:
 - けん化価
 - ヨウ素価
+codes:
+- org.fat.saponification-value
+- org.fat.iodine-value
 :::
 
 油脂はグリセリンと脂肪酸3分子から水3分子がとれたものなので、分子量は次のようになります。
