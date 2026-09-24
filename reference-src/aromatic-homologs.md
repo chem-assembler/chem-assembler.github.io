@@ -127,6 +127,16 @@ formula: C8H10
 text: 分子式 C₈H₁₀ の芳香族炭化水素をアプリで書き出してみる（4種）
 :::
 
+## 例題 —— 分子式 C₈H₁₀ の芳香族炭化水素
+
+紙に書いて解いてみてください。答え合わせは「解答を見る」から。
+
+:::exercise
+source: draft:reference-outline/aromatic.md の aromatic-homologs の例題1（C₈H₁₀ の数え上げの手順から作った問い。どの本の問題も見ていない）
+prompt: 分子式 C₈H₁₀ の芳香族炭化水素の名称をすべて答えよ。
+answer: **エチルベンゼン・o-キシレン・m-キシレン・p-キシレン**の4種です。環の外の炭素2個を、1本にまとめる（エチル基）か、2本に分ける（メチル基2本で o・m・p）かで場合分けします。
+:::
+
 :::section
 anchor: styrene-naphthalene
 title: スチレンとナフタレン
@@ -246,6 +256,20 @@ to: synthetic-fiber
 text: テレフタル酸からつくる PET（ポリエチレンテレフタラート）のページへ
 :::
 
+## 例題 —— 側鎖の酸化
+
+:::exercise
+source: draft:reference-outline/aromatic.md の aromatic-homologs の例題2を、m 体を選択肢から外して答えが1つに決まる形に直した問い（側鎖の酸化とフタル酸の分子内脱水から作った）
+prompt: o-キシレンと p-キシレンのどちらかである化合物 A・B がある。それぞれを KMnO₄ で酸化して得た酸を加熱すると、A から得た酸だけが脱水した。A・B はそれぞれどちらか。
+answer: **A は o-キシレン、B は p-キシレン**です。o-キシレンからはフタル酸ができ、2個の −COOH が隣り合っているので、加熱すると分子内脱水して無水フタル酸になります。p-キシレンからできるテレフタル酸は、−COOH が離れているので脱水しません。
+:::
+
+:::exercise
+source: draft:reference-outline/aromatic.md の aromatic-homologs の「根もとの炭素1個だけが残る」の規則から作った問い
+prompt: エチルベンゼンを過マンガン酸カリウムで十分に酸化すると、何ができるか。
+answer: **安息香酸 C₆H₅COOH** です。側鎖の長さにかかわらず、環に付いた根もとの炭素1個だけが −COOH になるので、トルエンを酸化したときと同じものができます。
+:::
+
 :::section
 anchor: ortho-hbond
 title: o- 体だけ性質が違うことがある
@@ -272,28 +296,6 @@ caption: o-ニトロフェノールでは、隣り合う **−OH の H** と **�
 :::link
 to: intermolecular-force
 text: 水素結合と沸点の関係をもう少し詳しく
-:::
-
-## 例題
-
-紙に書いて解いてみてください。答え合わせは「解答を見る」から。
-
-:::exercise
-source: draft:reference-outline/aromatic.md の aromatic-homologs の例題1（C₈H₁₀ の数え上げの手順から作った問い。どの本の問題も見ていない）
-prompt: 分子式 C₈H₁₀ の芳香族炭化水素の名称をすべて答えよ。
-answer: **エチルベンゼン・o-キシレン・m-キシレン・p-キシレン**の4種です。環の外の炭素2個を、1本にまとめる（エチル基）か、2本に分ける（メチル基2本で o・m・p）かで場合分けします。
-:::
-
-:::exercise
-source: draft:reference-outline/aromatic.md の aromatic-homologs の例題2を、m 体を選択肢から外して答えが1つに決まる形に直した問い（側鎖の酸化とフタル酸の分子内脱水から作った）
-prompt: o-キシレンと p-キシレンのどちらかである化合物 A・B がある。それぞれを KMnO₄ で酸化して得た酸を加熱すると、A から得た酸だけが脱水した。A・B はそれぞれどちらか。
-answer: **A は o-キシレン、B は p-キシレン**です。o-キシレンからはフタル酸ができ、2個の −COOH が隣り合っているので、加熱すると分子内脱水して無水フタル酸になります。p-キシレンからできるテレフタル酸は、−COOH が離れているので脱水しません。
-:::
-
-:::exercise
-source: draft:reference-outline/aromatic.md の aromatic-homologs の「根もとの炭素1個だけが残る」の規則から作った問い
-prompt: エチルベンゼンを過マンガン酸カリウムで十分に酸化すると、何ができるか。
-answer: **安息香酸 C₆H₅COOH** です。側鎖の長さにかかわらず、環に付いた根もとの炭素1個だけが −COOH になるので、トルエンを酸化したときと同じものができます。
 :::
 
 
