@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="860" height="250" viewBox="0 0 860 250" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="716.667" height="208.333" viewBox="0 0 860 250" role="img">
   <!-- 単糖・二糖・多糖。丸1つが単糖1個。右へ縮合でつながり、左へ加水分解で切れる。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
