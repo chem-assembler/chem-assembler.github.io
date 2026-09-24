@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="370" viewBox="0 0 900 370" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="663.158" height="272.632" viewBox="0 0 900 370" role="img">
   <!-- 4成分を3回の分液で分ける樹形図。まっすぐ下がエーテル層、右へ出るのが水層。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 順序: ①塩酸（アニリン）→ ②NaHCO3（安息香酸）→ ③NaOH（フェノール）。②と③は入れ替えられない。 -->
