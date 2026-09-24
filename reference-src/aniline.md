@@ -157,6 +157,8 @@ terms:
 :::reaction
 left: C₆H₅NH₂ ＋ (CH₃CO)₂O
 right: C₆H₅NHCOCH₃ ＋ CH₃COOH
+gen: アニリン ＋ 無水酢酸 → アセトアニリド ＋ 酢酸
+app: acetylation
 level: ★★★
 note: アセトアニリドができます。−NH−CO− の結合を**アミド結合**といいます。
 :::
