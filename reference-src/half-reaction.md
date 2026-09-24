@@ -44,6 +44,8 @@ title: 書き方その1 —— H₂O → H⁺ → e⁻
 lead: O を H₂O で、H を H⁺ で、電荷を e⁻ で合わせます。
 terms:
 - 書き方その1
+codes:
+- theo.redox.half-method
 :::
 
 過マンガン酸カリウム KMnO₄ の半反応式を、次の4段で書きます。
@@ -88,6 +90,8 @@ title: 書き方その2 —— 酸化数 → e⁻ → H⁺ → H₂O
 lead: 先に酸化数の変化から e⁻ の数を決め、電荷を H⁺ で、O を H₂O で合わせます。
 terms:
 - 書き方その2
+codes:
+- theo.redox.half-electron
 :::
 
 同じ KMnO₄ を、酸化数から書く手順です。
@@ -119,6 +123,8 @@ lead: 9本。反応前後の物質は必ず暗記します。
 terms:
 - 酸化剤
 - 酸化力のある酸
+codes:
+- theo.redox.oxidizer-products
 :::
 
 次の9本は**必ず暗記してください**。表の物質名から、反応後の物質と半反応式が書けるようにしておきましょう。
@@ -224,6 +230,9 @@ title: 主な還元剤の半反応式
 lead: 金属の単体を含めて11本。金属イオンの種類と電荷も暗記します。
 terms:
 - 還元剤
+codes:
+- theo.redox.reducer-products
+- theo.redox.dual-role
 :::
 
 次の還元剤も**必ず暗記してください**。
