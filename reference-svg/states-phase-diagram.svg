@@ -10,8 +10,8 @@
     .atm { stroke: #c62828; stroke-width: 2; stroke-dasharray: 7 4; fill: none; }
     .b { stroke: #1565c0; stroke-width: 3; fill: none; }
     .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
-    .tiny { font-size: 13px; fill: #666; }
+    .small { font-size: 18px; fill: #444; }
+    .tiny { font-size: 18px; fill: #666; }
     .pt { fill: #6a1b9a; }
   </style>
 
