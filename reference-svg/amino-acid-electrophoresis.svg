@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="860" height="380" viewBox="0 0 860 380" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="668.889" height="295.556" viewBox="0 0 860 380" role="img">
   <!-- 電気泳動の装置。中央に置いたアミノ酸が、陽イオンは陰極（−）へ、陰イオンは陽極（＋）へ動く。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 左が陰極（−）・右が陽極（＋）。電源の短い線が −、長い線が ＋。 -->
