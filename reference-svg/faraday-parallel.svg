@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="750" viewBox="0 0 680 750" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="850" viewBox="0 0 680 850" role="img">
   <!-- ファラデーの法則・並列回路を示す図。
        元はスライドの図。文字サイズを確保するため縦横を組み替えて SVG に描き直した（2026-09-24・字の床 14px）。 -->
   <style>
@@ -33,7 +33,7 @@
     <text x="310" y="45" font-size="24">e<tspan font-size="16" dy="-8">-</tspan></text>
 
     <!-- 電解槽 I -->
-    <rect x="70" y="150" width="160" height="90" class="solution" />
+    <rect x="50" y="150" width="200" height="90" class="solution" />
     <rect x="90" y="110" width="40" height="80" class="electrode" />
     <rect x="170" y="110" width="40" height="80" class="electrode" />
     <text x="150" y="230" class="ctext">電解液中はイオンが移動</text>
@@ -46,7 +46,7 @@
     <text x="190" y="138" class="ctext">陰極</text>
 
     <!-- 電解槽 II -->
-    <rect x="70" y="320" width="160" height="90" class="solution" />
+    <rect x="50" y="320" width="200" height="90" class="solution" />
     <rect x="90" y="280" width="40" height="80" class="electrode" />
     <rect x="170" y="280" width="40" height="80" class="electrode" />
     <text x="150" y="400" class="ctext">電解液中はイオンが移動</text>
@@ -106,7 +106,7 @@
   </g>
 
   <!-- 下部: テキスト解説 -->
-  <g transform="translate(20, 520)">
+  <g transform="translate(20, 500)">
     <text x="0" y="0">電流が枝分かれしている回路を並列回路という</text>
     
     <text x="0" y="30" font-weight="bold">【陽極・陰極の見分け方１】</text>
@@ -118,22 +118,22 @@
     <text x="20" y="175">（電解槽が１つの電気分解に見える）</text>
 
     <!-- 式のボックス -->
-    <rect class="descBox" x="320" y="100" width="340" height="110" />
-    <rect class="boxY" x="360" y="115" width="30" height="30" />
-    <text x="375" y="138" class="eq ctext">I</text>
+    <rect class="descBox" x="0" y="210" width="640" height="110" />
+    <rect class="boxY" x="190" y="225" width="30" height="30" />
+    <text x="205" y="248" class="eq ctext">I</text>
 
-    <text x="420" y="138" class="eq ctext">＝</text>
+    <text x="250" y="248" class="eq ctext">＝</text>
 
-    <rect class="boxG" x="460" y="115" width="30" height="30" />
-    <text x="475" y="138" class="eq ctext">I<tspan font-size="14" dy="5">1</tspan></text>
+    <rect class="boxG" x="290" y="225" width="30" height="30" />
+    <text x="305" y="248" class="eq ctext">I<tspan font-size="14" dy="5">1</tspan></text>
 
-    <text x="520" y="138" class="eq ctext">＋</text>
+    <text x="350" y="248" class="eq ctext">＋</text>
 
-    <rect class="boxB" x="560" y="115" width="30" height="30" />
-    <text x="575" y="138" class="eq ctext">I<tspan font-size="14" dy="5">2</tspan></text>
+    <rect class="boxB" x="390" y="225" width="30" height="30" />
+    <text x="405" y="248" class="eq ctext">I<tspan font-size="14" dy="5">2</tspan></text>
 
-    <text x="490" y="175" class="textOrange ctext" font-size="16">（<tspan font-family="Times New Roman, serif" font-style="italic">I</tspan>のe<tspan font-size="12" dy="-5">-</tspan><tspan dy="5">[mol]） ＝ （</tspan><tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">1</tspan></tspan><tspan dy="-5">のe</tspan><tspan font-size="12" dy="-5">-</tspan><tspan dy="5">[mol]） ＋ （</tspan><tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">2</tspan></tspan><tspan dy="-5">のe</tspan><tspan font-size="12" dy="-5">-</tspan><tspan dy="5">[mol]）</tspan></text>
-    <text x="490" y="195" class="textOrange ctext" font-size="16">（<tspan font-family="Times New Roman, serif" font-style="italic">I</tspan>の電気量C） ＝ （<tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">1</tspan></tspan><tspan dy="-5">の電気量C） ＋ （</tspan><tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">2</tspan></tspan><tspan dy="-5">の電気量C）</tspan></text>
+    <text x="320" y="285" class="textOrange ctext" font-size="16">（<tspan font-family="Times New Roman, serif" font-style="italic">I</tspan>のe<tspan font-size="12" dy="-5">-</tspan><tspan dy="5">[mol]） ＝ （</tspan><tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">1</tspan></tspan><tspan dy="-5">のe</tspan><tspan font-size="12" dy="-5">-</tspan><tspan dy="5">[mol]） ＋ （</tspan><tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">2</tspan></tspan><tspan dy="-5">のe</tspan><tspan font-size="12" dy="-5">-</tspan><tspan dy="5">[mol]）</tspan></text>
+    <text x="320" y="305" class="textOrange ctext" font-size="16">（<tspan font-family="Times New Roman, serif" font-style="italic">I</tspan>の電気量C） ＝ （<tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">1</tspan></tspan><tspan dy="-5">の電気量C） ＋ （</tspan><tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">2</tspan></tspan><tspan dy="-5">の電気量C）</tspan></text>
 
   </g>
 </svg>
