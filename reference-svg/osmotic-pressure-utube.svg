@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="820" height="376" viewBox="0 0 820 376" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="675.294" height="309.647" viewBox="0 0 820 376" role="img">
   <!-- 半透膜で仕切った U 字管の3段。① 入れた直後 ② 置くと溶液側が上がる ③ 圧力 Π で液面をそろえる。
        ⚠ 溶質は色だけでなく粒（茶色の丸）でも描き、半透膜を通れないことが見えるようにした。
        図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
