@@ -6,8 +6,8 @@
     .grid { stroke: #bbb; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
     .cv { stroke: #1565c0; stroke-width: 3; fill: none; }
     .tan { stroke: #6a1b9a; stroke-width: 2; stroke-dasharray: 7 5; fill: none; }
-    .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 16px; fill: #444; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
     .blue { fill: #1565c0; }
     .purple { fill: #6a1b9a; }
     .lead { stroke: #666; stroke-width: 1.5; fill: none; }
