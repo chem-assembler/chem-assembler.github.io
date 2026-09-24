@@ -183,8 +183,8 @@ function runDataTests(DATA) {
   //   無機・理論の単元 ＝ 参考書の目次（reference-src/TOC.txt）の節。id は「sec-<節の本体の先頭ページ id>」。
   //   並びは教科書順（化学基礎 → 化学）。有機の17単元（ユーザー決定の並び）は第4編・第5編の位置にそのまま入る。
   //   ★ 組み直しの道具は scratchpad の qa-units.js（統合セッション）。項目コードは学習記録のキーなので変えていない
-  t("単元: 教科書の章立て（科目・編つき）で、有機17単元の並びが崩れず、旧 id が残っていない", function () {
-    var ORG = ["anal", "aliphatic", "alcohol", "aldketone", "carboxyl", "fat", "aro", "phenol",
+  t("単元: 教科書の章立て（科目・編つき）で、有機の単元の並びが崩れず、旧 id が残っていない", function () {
+    var ORG = ["anal", "alcohol", "aldketone", "carboxyl", "fat", "aro", "phenol",
       "aroAcid", "aroNitrogen", "aroSep", "structure", "sugar", "aminoAcid", "protein", "nucleic", "poly"];
     var got = units.map(function (u) { return u.id; });
     assert(got.filter(function (id) { return ORG.indexOf(id) >= 0; }).join(",") === ORG.join(","),
@@ -201,11 +201,41 @@ function runDataTests(DATA) {
     var ps = []; units.forEach(function (u) { var k = u.course + "/" + u.part; if (ps[ps.length - 1] !== k) ps.push(k); });
     var dup = ps.filter(function (k, i) { return ps.indexOf(k) !== i; });
     assert(!dup.length, "同じ編が離れて2回出る: " + dup.join(","));
-    ["carbonyl", "aroN", "bio", "clue", "inorgBasis", "inorgNonmetal", "inorgMetal", "inorgQual", "theoLife",
+    ["aliphatic", "carbonyl", "aroN", "bio", "clue", "inorgBasis", "inorgNonmetal", "inorgMetal", "inorgQual", "theoLife",
       "theoStructure", "theoMole", "theoAcidBase", "theoRedox", "theoElectro", "theoState",
       "theoSolution", "theoThermo", "theoKinetics", "theoEquilibrium", "theoIonicEq"].forEach(function (old) {
       assert(!patterns.some(function (p) { return p.unit === old; }), "旧 id が項目に残っている: " + old);
     });
+  });
+
+  // ★ 2026-09-24 ユーザー「脂肪族炭化水素の分割：参考書のページと粒度を揃えたほうがよい／かわりに、分類階層を設けたい」。
+  //   88項目の1単元を参考書の節（TOC.txt）7つに分け、編と単元の間に「分類」（category）を1段足した
+  t("単元: 脂肪族炭化水素を参考書の節7つに分け、分類（category）は同じ編の中で続けて並び、2単元以上を束ねる", function () {
+    var SPLIT = { "sec-organic-features": 7, "sec-hydrocarbon-classes": 12, "sec-organic-formulas": 6,
+      "sec-alkane-isomers": 5, "sec-stereoisomers": 11, "sec-alkane": 17, "sec-alkene": 30 };
+    var ali = patterns.filter(function (p) { return /^org\.ali\./.test(p.code); });
+    assert(ali.length === 88, "org.ali の項目が 88 件でない: " + ali.length + "（分けるときに項目が増減した）");
+    Object.keys(SPLIT).forEach(function (id) {
+      var n = patterns.filter(function (p) { return p.unit === id; }).length;
+      assert(n === SPLIT[id], id + ": 項目 " + n + " 件（" + SPLIT[id] + " 件のはず）");
+    });
+    var ids = units.map(function (u) { return u.id; });
+    patterns.forEach(function (p) { assert(ids.indexOf(p.unit) >= 0, p.code + ": 単元 " + p.unit + " が units に無い"); });
+    var seen = [], last = null;
+    units.forEach(function (u) {
+      var c = u.category || null;
+      if (c && c !== last) {
+        assert(seen.indexOf(c) < 0, "分類「" + c + "」が離れて2回出る");
+        seen.push(c);
+      }
+      last = c;
+    });
+    seen.forEach(function (c) {
+      var ms = units.filter(function (u) { return u.category === c; });
+      assert(ms.length >= 2, "分類「" + c + "」が1単元しか束ねていない（段を増やすだけ）");
+      assert(ms.every(function (u) { return u.part === ms[0].part && u.course === ms[0].course; }), "分類「" + c + "」が編をまたぐ");
+    });
+    assert(seen.indexOf("脂肪族炭化水素") >= 0, "分類「脂肪族炭化水素」が無い");
   });
 
   t("必須項目: group・knowledge・difficulty(1-4) が揃っている", function () {
@@ -1513,6 +1543,26 @@ function runUiTests(doc, DATA) {
         var first = d.querySelector('#domain-tabs button[data-domain="' + (saved || "化学基礎") + '"]');
         if (first) first.click();
       }
+    });
+
+    t("ホーム: 分類の見出しが分類の数だけ並び、項目数は束ねた単元の合計・「まとめて」の回はその全単元から出る", function () {
+      var cats = [];
+      DATA.units.forEach(function (u) { if (u.category && cats.indexOf(u.category) < 0) cats.push(u.category); });
+      var heads = Array.prototype.slice.call(d.querySelectorAll("#unit-list > .cat-head"));
+      assert(heads.length === cats.length, "分類の見出し " + heads.length + " 個 ≠ 分類 " + cats.length + " 個");
+      heads.forEach(function (h, i) {
+        var name = h.querySelector("h4").textContent;
+        assert(name === cats[i], "分類の見出しの並びが違う: " + name + " ≠ " + cats[i]);
+        var ms = DATA.units.filter(function (u) { return u.category === name; }).map(function (u) { return u.id; });
+        var want = DATA.patterns.filter(function (p) { return ms.indexOf(p.unit) >= 0; }).length;
+        var m = h.textContent.match(/知識項目\s*(\d+)/);
+        assert(m && Number(m[1]) === want, name + ": 項目数の表示 " + (m && m[1]) + " ≠ " + want);
+        // 見出しのすぐ後ろのカードが、その分類の単元（in-cat）
+        var next = h.nextElementSibling;
+        assert(next && next.classList.contains("unit") && next.classList.contains("in-cat"), name + ": 見出しの直後が分類の単元カードでない");
+      });
+      assert(d.querySelectorAll("#unit-list > .unit.in-cat").length === DATA.units.filter(function (u) { return u.category; }).length,
+        "分類に入る単元カード（.in-cat）の数が違う");
     });
 
     t("ホーム: 各カードに知識項目数が表示され、0件のカードがない", function () {

@@ -123,7 +123,24 @@ function slTrack(name, params) {
     }
     return a;
   }
+  /* ★ 分類（編と単元の間の段・2026-09-24 ユーザー「分類階層を設けたい」）。
+   *   単元の `category` が同じものを束ね、「まとめて解く」の回は unitId に 'cat:<分類名>' を持つ。
+   *   ⚠ 分類は単元の並びで**続けて**現れる（同じ編の中）。分類の無い単元はこれまでどおり編の直下 */
+  var CAT_PREFIX = 'cat:';
+  function isCatId(id) { return typeof id === 'string' && id.indexOf(CAT_PREFIX) === 0; }
+  function unitsOfCat(name) {
+    return DATA.units.filter(function (u) { return u.category === name; });
+  }
+  // 回の単元（分類の回なら、その分類の先頭の単元）。科目のタブを合わせるのに使う
+  function unitOfSession(id) {
+    if (isCatId(id)) return unitsOfCat(id.slice(CAT_PREFIX.length))[0] || null;
+    return DATA.units.filter(function (x) { return x.id === id; })[0] || null;
+  }
   function patternsOf(unitId) {
+    if (isCatId(unitId)) {
+      var ids = unitsOfCat(unitId.slice(CAT_PREFIX.length)).map(function (u) { return u.id; });
+      return DATA.patterns.filter(function (p) { return ids.indexOf(p.unit) >= 0; });
+    }
     return DATA.patterns.filter(function (p) { return p.unit === unitId; });
   }
   function pickVariant(pattern, mode) {
@@ -235,7 +252,7 @@ function slTrack(name, params) {
     //   追うのは同じ回につき1度だけ（そのあとタブで選び直したら、そちらを優先する）
     if (session && session !== domainFollowed) {
       domainFollowed = session;
-      var su = DATA.units.filter(function (x) { return x.id === session.unitId; })[0];
+      var su = unitOfSession(session.unitId);
       if (su) setDomain(domainOf(su));
     }
     if (doms.indexOf(curDomain) < 0) curDomain = doms[0];
@@ -254,8 +271,38 @@ function slTrack(name, params) {
       });
     });
 
-    var lastPart = null;
+    var lastPart = null, lastCat = null;
     DATA.units.forEach(function (u) {
+      // 分類の見出し（分類が変わったところに1つ）。カードと同じ段に置く ＝ #unit-list の子は見出しとカード
+      var cat = u.category || null;
+      if (u.part !== lastPart) lastCat = null;
+      if (cat && cat !== lastCat) {
+        var members = unitsOfCat(cat);
+        var cps = patternsOf(CAT_PREFIX + cat);
+        var cDone = cps.filter(function (p) { return stateOf(p.code) === 'done'; }).length;
+        var cPct = cps.length ? Math.round((cDone / cps.length) * 100) : 0;
+        // 編の見出しより先に出さないよう、編の見出しを先に置く（下の編の見出しの処理と同じ条件）
+        if (u.part && u.part !== lastPart) {
+          lastPart = u.part;
+          var ph0 = document.createElement('h3');
+          ph0.className = 'part-head' + (domainOf(u) === curDomain ? '' : ' hidden');
+          ph0.textContent = u.part;
+          host.appendChild(ph0);
+        }
+        var ch = document.createElement('div');
+        ch.className = 'cat-head' + (domainOf(u) === curDomain ? '' : ' hidden');
+        ch.setAttribute('data-domain', domainOf(u));
+        ch.innerHTML =
+          '<div class="cat-title"><h4>' + esc(cat) + '</h4>' +
+            '<span class="cat-meta">' + members.length + '単元・知識項目 ' + cps.length + '</span></div>' +
+          '<div class="meter"><span style="width:' + cPct + '%"></span></div>' +
+          '<div class="u-actions">' +
+            '<button class="btn primary" data-unit="' + esc(CAT_PREFIX + cat) + '" data-mode="flip">まとめて暗記</button>' +
+            '<button class="btn ghost" data-unit="' + esc(CAT_PREFIX + cat) + '" data-mode="choice">まとめて選択問題</button>' +
+          '</div>';
+        host.appendChild(ch);
+      }
+      lastCat = cat;
       var ps = patternsOf(u.id);
       var total = ps.length;
       var mastered = ps.filter(function (p) { return stateOf(p.code) === 'done'; }).length;
@@ -273,7 +320,7 @@ function slTrack(name, params) {
       }
       var el = document.createElement('div');
       // 選んでいない科目のカードは隠すだけ（DOM には残す ＝ 飛び道具・テストがボタンを引ける）
-      el.className = 'unit' + (domainOf(u) === curDomain ? '' : ' hidden');
+      el.className = 'unit' + (cat ? ' in-cat' : '') + (domainOf(u) === curDomain ? '' : ' hidden');
       el.setAttribute('data-domain', domainOf(u));
       el.innerHTML =
         '<h2>' + esc(u.name) + '</h2>' +
@@ -1202,7 +1249,7 @@ function slTrack(name, params) {
      *   割り直しの前に控えた続きは**消えた id** を持っていて、そのまま戻すと「もう一度」が
      *   0問の回になる ＝ いま居る項目の単元に読み替える（単元をまたがない回＝null はそのまま） */
     var unitId = s.unitId;
-    if (unitId && !DATA.units.some(function (u) { return u.id === unitId; })) unitId = byCode[code].unit;
+    if (unitId && !unitOfSession(unitId)) unitId = byCode[code].unit;
     session = {
       unitId: unitId, mode: s.mode, scope: s.scope, lv: s.lv,
       queue: queue, idx: s.idx, right: s.right, wrong: s.wrong, marked: marked
@@ -1293,7 +1340,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=157')
+  fetch('data/exam_usage.jsonl?v=158')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -1308,7 +1355,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=157')
+  fetch('questions.json?v=158')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
