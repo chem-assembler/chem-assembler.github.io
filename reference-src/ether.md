@@ -140,6 +140,8 @@ left: 2C₂H₅OH
 over: 濃硫酸
 under: 130〜140℃
 right: C₂H₅OC₂H₅ ＋ H₂O
+gen: 2 エタノール → ジエチルエーテル ＋ 水
+app: dehydration_inter
 level: ★★★
 note: エタノール2分子から水1分子がとれて、**ジエチルエーテル**ができます。
 :::
