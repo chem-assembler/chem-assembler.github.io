@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="380" viewBox="0 0 680 380" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="450" viewBox="0 0 680 450" role="img">
   <!-- 強酸と強塩基の滴定曲線を示す図。
-       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。
+       2026-09-25: 見出しの字が二重に描かれ囲みからはみ出していたので、重複を消して見出しを図の上に横長で置いた。 -->
   <style>
     text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
     .eq { font-family: "Times New Roman", serif; font-size: 18px; }
@@ -14,8 +15,13 @@
     .smallText { font-size: 14px; }
   </style>
 
+  <!-- 見出し（図の上に横長の囲みで置く。以前は同じ字が二重に描かれ、囲みからはみ出していた） -->
+  <rect class="titleBox" x="10" y="10" width="660" height="64" fill="#fff" />
+  <text x="22" y="36" class="titleText">コニカルビーカーに塩酸を入れ，ビュレットで水酸化ナトリウム水溶液を</text>
+  <text x="22" y="62" class="titleText">滴下していったときのpH変化のグラフ</text>
+
   <!-- 左側: グラフ -->
-  <g transform="translate(110, 20)">
+  <g transform="translate(110, 90)">
     <!-- 軸 -->
     <line class="axis" x1="0" y1="300" x2="250" y2="300" />
     <line class="axis" x1="0" y1="0" x2="0" y2="300" />
@@ -52,42 +58,30 @@
   </g>
 
   <!-- 右側: テキスト -->
-  <g transform="translate(380, 20)">
-    <!-- ボックス -->
-    <rect class="titleBox" x="0" y="0" width="290" height="70" />
-    <text x="10" y="25" class="titleText">コニカルビーカーに塩酸を入れ，ビュ</text>
-    <text x="10" y="50" class="titleText">レットで水酸化ナトリウム水溶液を滴</text>
-    <text x="10" y="75" class="titleText"></text>
-    <text x="10" y="55" class="titleText">下していったときpH変化のグラフ</text>
-    <!-- ※ SVGのtextでは改行をtspanやy座標調整で行う -->
-    <rect class="titleBox" x="0" y="-10" width="290" height="85" fill="#fff" />
-    <text x="10" y="15" class="titleText">コニカルビーカーに塩酸を入れ，ビュ</text>
-    <text x="10" y="40" class="titleText">レットで水酸化ナトリウム水溶液を滴</text>
-    <text x="10" y="65" class="titleText">下していったときpH変化のグラフ</text>
-
+  <g transform="translate(380, 90)">
     <!-- 反応式 -->
-    <text x="0" y="105" font-size="18">【反応式】 HCl + NaOH → NaCl + H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+    <text x="0" y="20">【反応式】 HCl + NaOH → NaCl + H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
 
     <!-- 箇条書き -->
-    <circle cx="10" cy="135" r="3" fill="#222" />
-    <text x="25" y="140">塩酸は強酸なのでおおよそpH=1か</text>
-    <text x="25" y="160">らスタート</text>
+    <circle cx="10" cy="50" r="3" fill="#222" />
+    <text x="25" y="55">塩酸は強酸なのでおおよそpH=1か</text>
+    <text x="25" y="75">らスタート</text>
 
-    <circle cx="10" cy="185" r="3" fill="#222" />
-    <text x="25" y="190">水酸化ナトリウム水溶液を少しずつ</text>
-    <text x="25" y="210">加えていくとpHが徐々に上昇する</text>
+    <circle cx="10" cy="100" r="3" fill="#222" />
+    <text x="25" y="105">水酸化ナトリウム水溶液を少しずつ</text>
+    <text x="25" y="125">加えていくとpHが徐々に上昇する</text>
 
-    <circle cx="10" cy="235" r="3" fill="#222" />
-    <text x="25" y="240">中和点付近ではpHは一気に変化する</text>
+    <circle cx="10" cy="150" r="3" fill="#222" />
+    <text x="25" y="155">中和点付近ではpHは一気に変化する</text>
 
-    <circle cx="10" cy="265" r="3" fill="#222" />
-    <text x="25" y="270">中和点はNaCl水溶液になっているの</text>
-    <text x="25" y="290">でpH=7</text>
+    <circle cx="10" cy="180" r="3" fill="#222" />
+    <text x="25" y="185">中和点はNaCl水溶液になっているの</text>
+    <text x="25" y="205">でpH=7</text>
 
-    <circle cx="10" cy="315" r="3" fill="#222" />
-    <text x="25" y="320">中和点を過ぎると，滴下している水</text>
-    <text x="25" y="340">酸化ナトリウム水溶液のpH=13に近</text>
-    <text x="25" y="360">づいていく</text>
+    <circle cx="10" cy="230" r="3" fill="#222" />
+    <text x="25" y="235">中和点を過ぎると，滴下している水</text>
+    <text x="25" y="255">酸化ナトリウム水溶液のpH=13に近</text>
+    <text x="25" y="275">づいていく</text>
   </g>
 
 </svg>
