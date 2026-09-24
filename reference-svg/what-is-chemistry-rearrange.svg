@@ -34,13 +34,13 @@
 
   <path class="arw" d="M 405 147 L 475 147" marker-end="url(#ar)" />
 
-  <!-- 後: H₂O ×2 -->
-  <circle class="o" cx="580" cy="118" r="27" /><text class="ot" x="580" y="125">O</text>
-  <circle class="h" cx="540" cy="150" r="20" /><text class="ht" x="540" y="156">H</text>
-  <circle class="h" cx="620" cy="150" r="20" /><text class="ht" x="620" y="156">H</text>
-  <circle class="o" cx="760" cy="138" r="27" /><text class="ot" x="760" y="145">O</text>
-  <circle class="h" cx="720" cy="170" r="20" /><text class="ht" x="720" y="176">H</text>
-  <circle class="h" cx="800" cy="170" r="20" /><text class="ht" x="800" y="176">H</text>
+  <!-- 後: H₂O ×2（2026-09-24 ユーザー「O と H の輪郭を重ねる」→ H を O に寄せて重ね、O を上に描く） -->
+  <circle class="h" cx="548" cy="144" r="20" /><text class="ht" x="548" y="151">H</text><circle class="h" cx="612" cy="144" r="20" /><text class="ht" x="612" y="151">H</text><circle class="o" cx="580" cy="118" r="27" /><text class="ot" x="580" y="125">O</text>
+  
+  
+  <circle class="h" cx="728" cy="164" r="20" /><text class="ht" x="728" y="171">H</text><circle class="h" cx="792" cy="164" r="20" /><text class="ht" x="792" y="171">H</text><circle class="o" cx="760" cy="138" r="27" /><text class="ot" x="760" y="145">O</text>
+  
+  
 
   <text class="eq" x="210" y="226">2H₂ ＋ O₂</text>
   <text class="eq" x="670" y="226">2H₂O</text>

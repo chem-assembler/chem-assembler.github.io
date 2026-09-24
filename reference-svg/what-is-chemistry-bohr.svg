@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="440" viewBox="0 0 680 440" role="img">
+  <!-- ボーアの原子モデル（ナトリウム原子 Na: K殻2・L殻8・M殻1）。2026-09-24 ユーザーの校正メモ「ボーアモデルの図」。
+       ⚠ 字の床: 幅 680 ＝ 公開ページの本文の幅なので、字はそのままの大きさで見える（いちばん小さい字 16px）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; }
+    .shell { fill: none; stroke: #90a4ae; stroke-width: 2; }
+    .nuc { fill: #ef5350; stroke: #b71c1c; stroke-width: 2.5; }
+    .nt { font-size: 20px; fill: #fff; text-anchor: middle; font-weight: bold; }
+    .el { fill: #1e88e5; stroke: #0d47a1; stroke-width: 1.8; }
+    .val { fill: #fb8c00; stroke: #e65100; stroke-width: 1.8; }
+    .lbl { font-size: 18px; fill: #37474f; }
+    .lblv { font-size: 18px; fill: #e65100; font-weight: bold; }
+    .ttl { font-size: 20px; fill: #222; text-anchor: middle; font-weight: bold; }
+    .note { font-size: 16px; fill: #555; }
+  </style>
+
+  <text class="ttl" x="220" y="34">ナトリウム原子 Na</text>
+
+  <!-- 電子殻（内側から K・L・M） -->
+  <circle class="shell" cx="220" cy="230" r="62" />
+  <circle class="shell" cx="220" cy="230" r="112" />
+  <circle class="shell" cx="220" cy="230" r="162" />
+
+  <!-- 原子核 -->
+  <circle class="nuc" cx="220" cy="230" r="30" />
+  <text class="nt" x="220" y="237">＋11</text>
+
+  <!-- K殻: 2個 -->
+  <circle class="el" cx="220" cy="168" r="9" />
+  <circle class="el" cx="220" cy="292" r="9" />
+  <!-- L殻: 8個（45°おき） -->
+  <circle class="el" cx="220" cy="118" r="9" />
+  <circle class="el" cx="299.2" cy="150.8" r="9" />
+  <circle class="el" cx="332" cy="230" r="9" />
+  <circle class="el" cx="299.2" cy="309.2" r="9" />
+  <circle class="el" cx="220" cy="342" r="9" />
+  <circle class="el" cx="140.8" cy="309.2" r="9" />
+  <circle class="el" cx="108" cy="230" r="9" />
+  <circle class="el" cx="140.8" cy="150.8" r="9" />
+  <!-- M殻: 1個（いちばん外側の電子） -->
+  <circle class="val" cx="334.6" cy="115.4" r="10" />
+
+  <!-- 右の説明 -->
+  <circle class="nuc" cx="420" cy="120" r="12" />
+  <text class="lbl" x="442" y="126">原子核（陽子 11個で ＋11）</text>
+  <circle class="el" cx="420" cy="170" r="9" />
+  <text class="lbl" x="442" y="176">電子（−）</text>
+  <circle class="val" cx="420" cy="220" r="10" />
+  <text class="lblv" x="442" y="226">いちばん外側の電子</text>
+  <text class="note" x="442" y="250">（化学反応の主役）</text>
+
+  <text class="lbl" x="410" y="300">電子殻（内側から）</text>
+  <text class="lbl" x="410" y="328">K殻 2個・L殻 8個・M殻 1個</text>
+</svg>
