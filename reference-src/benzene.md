@@ -128,7 +128,7 @@ over: Ni または Pt
 under: 高温・高圧
 right: C₆H₁₂
 gen: ベンゼン ＋ 3 水素 → シクロヘキサン
-app: addition
+app: hydrogenate_benzene_ring
 level: ★★★
 note: シクロヘキサンになります。二重結合3本ぶんに一度に水素が付くので、H₂ の係数は 3 です。
 :::
@@ -138,7 +138,7 @@ left: C₆H₆ ＋ 3Cl₂
 over: 紫外線
 right: C₆H₆Cl₆
 gen: ベンゼン ＋ 3 塩素 → ヘキサクロロシクロヘキサン
-app: addition
+app: add_cl2_benzene_ring
 level: ★★★
 note: ヘキサクロロシクロヘキサンになります。
 :::
@@ -227,3 +227,5 @@ answer: (1) C₆H₆ ＋ Cl₂ → C₆H₅Cl ＋ HCl（置換・クロロベン
 to: molecular-shape
 text: 平面で 120° になるしくみ（電子対の反発）をもう少し詳しく
 :::
+
+

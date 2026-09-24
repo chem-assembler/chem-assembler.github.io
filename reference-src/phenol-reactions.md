@@ -58,7 +58,7 @@ terms:
 left: C₆H₅OH ＋ 3Br₂
 right: C₆H₂Br₃OH↓ ＋ 3HBr
 gen: フェノール ＋ 3 臭素 → 2,4,6-トリブロモフェノール ＋ 3 臭化水素
-app: substitution_cl
+app: bromination_activated_ring
 level: ★★★
 note: 2,4,6-トリブロモフェノールの白色沈殿ができます。−OH から見て o・p・o の3か所に入ります。
 :::
@@ -288,4 +288,5 @@ source: draft:reference-outline/aromatic.md の phenol-reactions の例題3を�
 prompt: 分子式 C₇H₈O で、ベンゼン環を1個もつ化合物 X がある。X は塩化鉄(III) で呈色せず、金属ナトリウムとも反応しなかった。X の名称と示性式を答えよ。
 answer: **アニソール（メトキシベンゼン）C₆H₅OCH₃** です。呈色しないのでフェノール類（クレゾール）ではなく、ナトリウムと反応しないので −OH をもつベンジルアルコールでもありません。残るのは −O− をもつエーテルです。
 :::
+
 

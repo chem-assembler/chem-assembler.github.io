@@ -39,7 +39,7 @@ left: C₆H₆ ＋ Cl₂
 over: Fe または FeCl₃
 right: C₆H₅Cl ＋ HCl
 gen: ベンゼン ＋ 塩素 → クロロベンゼン ＋ 塩化水素
-app: substitution_cl
+app: aromatic_halogenation
 level: ★★★
 note: クロロベンゼンと塩化水素ができます。触媒の鉄が要ることが、紫外線での付加反応との分かれ目です。
 :::
@@ -229,6 +229,7 @@ source: draft:reference-outline/aromatic.md の benzene-substitution の表（3�
 prompt: ベンゼンに濃硫酸を加えて加熱したときにできる化合物の名称と示性式を答えよ。また、その水溶液の性質を答えよ。
 answer: **ベンゼンスルホン酸 C₆H₅SO₃H** です。スルホ基がほぼ完全に電離するので、水溶液は**強い酸性**を示します。
 :::
+
 
 
 
