@@ -32,6 +32,8 @@ terms:
 - 一般式
 - カルボニル化合物
 - 構造異性体
+codes:
+- org.carbonyl.formyl
 :::
 
 鎖式で飽和のアルデヒドの一般式は **C~n~H~2n~O** です。n に炭素の数を代入すれば分子式が出ます —— n=2 を代入すると C₂H₄O で、これがアセトアルデヒドの分子式です。
@@ -83,6 +85,11 @@ terms:
 - 還元性
 - 銀鏡反応
 - フェーリング液の還元
+codes:
+- org.carbonyl.aldehyde-oxidation
+- org.carbonyl.silver-mirror
+- org.carbonyl.fehling
+- org.carbonyl.reduction
 :::
 
 アルデヒドは1級アルコールを酸化すると生じ、**さらに酸化されるとカルボン酸になります**。この2段目がとても起こりやすいことが、アルデヒドのいちばんの特徴です。
@@ -182,6 +189,10 @@ lead: アルデヒドで各論として出るのはこの2つ。どちらも「�
 terms:
 - ホルマリン
 - ビニルアルコール
+codes:
+- org.carbonyl.formaldehyde
+- org.carbonyl.formaldehyde-prep
+- org.carbonyl.acetaldehyde-prep
 :::
 
 **ホルムアルデヒド HCHO** は無色で刺激臭のある**気体**で、水によく溶けます。その約37パーセント水溶液が**ホルマリン**で、消毒剤や防腐剤に使われます。シックハウス症候群の原因物質になることについて言及されることもあります。
