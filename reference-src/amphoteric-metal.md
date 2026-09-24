@@ -55,6 +55,10 @@ terms:
 - 両性元素
 - 両性金属
 - 不動態
+codes:
+- inorg.metal.amphoteric-elements
+- inorg.metal.amphoteric-naoh
+- inorg.metal.passivation
 :::
 
 ## 酸との反応
@@ -138,6 +142,8 @@ terms:
 - 両性水酸化物
 - 両性酸化物
 - テトラヒドロキシドアルミン酸イオン
+codes:
+- inorg.metal.amphoteric-hydroxide
 :::
 
 Al³⁺ や Zn²⁺ に水酸化ナトリウム水溶液を少しずつ加えると、はじめは水酸化物の**白色沈殿**ができ、さらに加えると沈殿が**溶けて無色の水溶液**になります。溶けるのは、水酸化物に OH⁻ が配位して錯イオンになるためです。2段に分けて書きます。
@@ -293,6 +299,9 @@ terms:
 - 溶融塩電解
 - テルミット反応
 - ミョウバン
+codes:
+- inorg.metal.aluminium-production
+- inorg.metal.alum
 :::
 
 アルミニウムはイオン化傾向が大きいので、水溶液の電気分解では得られません。鉱石の**ボーキサイト**から純粋な酸化アルミニウム（アルミナ）をつくり、**氷晶石**とともに融解して電気分解（溶融塩電解）します。氷晶石を加えるのは、融点を下げるためです。
