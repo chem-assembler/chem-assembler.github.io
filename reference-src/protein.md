@@ -48,6 +48,8 @@ terms:
 :::reaction
 left: H₂N−CH₂−COOH ＋ H₂N−CH₂−COOH
 right: H₂N−CH₂−CO−NH−CH₂−COOH ＋ H₂O
+gen: グリシン ＋ グリシン → グリシルグリシン ＋ 水
+app: amidation
 level: ★★★
 note: 左のグリシンの −COOH の OH と、右のグリシンの −NH₂ の H から水がとれています。
 :::
