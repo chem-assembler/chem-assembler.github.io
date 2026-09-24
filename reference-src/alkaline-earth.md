@@ -40,6 +40,9 @@ lead: Ca・Sr・Ba は常温の水と反応しますが、Mg は熱水とでな�
 terms:
 - アルカリ土類金属
 - 炎色反応
+codes:
+- inorg.metal.alkaline-earth-def
+- inorg.metal.mg-vs-ca
 :::
 
 :::table
@@ -110,6 +113,9 @@ terms:
 - 消石灰
 - 石灰水
 - 炭酸水素カルシウム
+codes:
+- inorg.metal.calcium-compounds
+- inorg.metal.limewater-co2
 :::
 
 :::table
@@ -208,6 +214,9 @@ terms:
 - 硫酸バリウム
 - セッコウ
 - 焼きセッコウ
+codes:
+- inorg.metal.barium-sulfate
+- inorg.metal.gypsum
 :::
 
 硫酸イオン SO₄²⁻ は、Ba²⁺・Ca²⁺・Pb²⁺ と白色の沈殿をつくります。電荷が合うようにイオンを組み合わせれば、式はそのまま書けます。
