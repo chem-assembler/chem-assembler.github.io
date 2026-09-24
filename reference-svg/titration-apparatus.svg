@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="500" viewBox="0 0 880 500" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="741.053" height="421.053" viewBox="0 0 880 500" role="img">
   <!-- 中和滴定の4つの器具（線画）。左から、薄める → 測りとる → 滴下して中和させる の順。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ★ 教科書・スライドの絵は写していない（本文の器具の説明から自分で組んだ）。
