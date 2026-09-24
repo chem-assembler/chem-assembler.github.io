@@ -41,6 +41,8 @@ terms:
 - コロイド
 - コロイド溶液
 - 真の溶液
+codes:
+- theo.solution.colloid-size
 :::
 
 直径がおよそ **1 nm〜1 μm**（10⁻⁹〜10⁻⁶ m）の粒子を**コロイド粒子**といいます。コロイド粒子がほかの物質の中に均一に散らばっている状態を**コロイド**、液体の中に散らばったものを**コロイド溶液**といいます。
@@ -82,6 +84,10 @@ terms:
 - 分散媒
 - ゾル
 - ゲル
+codes:
+- theo.solution.colloid-kinds
+- theo.solution.dispersoid
+- theo.solution.sol-gel
 :::
 
 散らばっている側、つまりコロイド粒子になっている物質が**分散質**、それを受け止めて全体に広げている側の物質が**分散媒**です。具体例として、牛乳では脂肪やタンパク質が分散質、水が分散媒です。
@@ -117,6 +123,8 @@ title: 酸化水酸化鉄(Ⅲ)のコロイドのつくり方
 lead: 沸騰している水に塩化鉄(Ⅲ)の水溶液を垂らすと、赤褐色の酸化水酸化鉄(Ⅲ) FeO(OH) がコロイド粒子になって生じます。
 terms:
 - 酸化水酸化鉄(Ⅲ)
+codes:
+- theo.solution.iron-colloid
 :::
 
 沸騰させた水へ塩化鉄(Ⅲ) FeCl₃ の水溶液を少しずつ落としていくと、次の反応で**赤褐色の酸化水酸化鉄(Ⅲ) FeO(OH) のコロイド**が生じます。このページの性質は、すべてこのコロイドで確かめられます。
@@ -151,6 +159,10 @@ terms:
 - 電気泳動
 - 正コロイド
 - 負コロイド
+codes:
+- theo.solution.colloid-properties
+- theo.solution.colloid-charge
+- theo.solution.dialysis-check
 :::
 
 :::table
@@ -193,6 +205,11 @@ terms:
 - 凝析
 - 塩析
 - 保護コロイド
+codes:
+- theo.solution.coagulation
+- theo.solution.salting-out
+- theo.solution.coagulation-use
+- theo.solution.colloid-stability
 :::
 
 水とのなじみが小さいコロイドを**疎水コロイド**、水とのなじみが大きく、粒子のまわりに多くの水分子が水和しているコロイドを**親水コロイド**といいます。

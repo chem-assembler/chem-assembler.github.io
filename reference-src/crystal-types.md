@@ -45,6 +45,9 @@ terms:
 - 金属結晶
 - 展性
 - 延性
+codes:
+- theo.structure.metallic-bond
+- theo.structure.non-molecular-formula
 :::
 
 金属元素の原子は、価電子を放出しやすい性質をもっています。多くの金属原子が集まると、価電子は元の原子を離れ、**金属全体を自由に動き回る**ようになります。この電子を**自由電子**といい、自由電子による原子どうしの結びつきを**金属結合**、金属結合でできた結晶を**金属結晶**といいます。
@@ -76,6 +79,11 @@ terms:
 - 共有結合の結晶
 - 分子結晶
 - 結晶
+codes:
+- theo.structure.crystal-particle-force
+- theo.structure.crystal-classify
+- theo.structure.crystal-conductivity
+- theo.structure.crystal-hardness
 :::
 
 粒子が規則正しく並んだ固体を**結晶**といいます。結晶は、何の粒子が何の力でつながっているかで、次の4つに分かれます。
@@ -154,6 +162,8 @@ title: 融点の比べ方
 lead: 融点は、粒子をつなぐ力の強さの順に、共有結合の結晶 ＞ イオン結晶 ＞ 分子結晶 となります。金属結晶は物質によって大きく違います。
 terms:
 - 融点
+codes:
+- theo.structure.crystal-mp
 :::
 
 固体が融けるには、粒子が並びをくずして動けるだけのエネルギーが要ります。だから、**粒子をつなぐ力が強い結晶ほど融点が高く**なります。
@@ -194,6 +204,9 @@ terms:
 - 石英ガラス
 - アモルファスシリコン
 - アモルファス合金
+codes:
+- theo.structure.amorphous
+- theo.structure.amorphous-reason
 :::
 
 非晶質は、化学の範囲です。

@@ -34,6 +34,8 @@ lead: Cl₂ は黄緑色・刺激臭の気体です。水に少し溶けて酸�
 terms:
 - 塩素
 - 下方置換
+codes:
+- inorg.nonmetal.chlorine-props
 :::
 
 :::table
@@ -60,6 +62,9 @@ lead: 実験室では MnO₂ に濃塩酸を加えて加熱します。出てき
 terms:
 - 洗気瓶
 - 高度さらし粉
+codes:
+- inorg.nonmetal.chlorine-prep
+- inorg.nonmetal.chlorine-washing
 :::
 
 ## 実験室的製法1 —— 酸化マンガン(Ⅳ)に濃塩酸を加えて加熱する
@@ -124,6 +129,9 @@ terms:
 - 次亜塩素酸
 - さらし粉
 - 自己酸化還元反応
+codes:
+- inorg.nonmetal.chlorine-water
+- inorg.nonmetal.bleaching-powder
 :::
 
 :::reaction
@@ -228,6 +236,9 @@ terms:
 - 塩化水素
 - 塩酸
 - 白煙
+codes:
+- inorg.nonmetal.hcl-prep
+- inorg.nonmetal.hcl-roles
 :::
 
 :::table
@@ -342,6 +353,8 @@ terms:
 - 次亜塩素酸イオン
 - 塩素のオキソ酸
 - 塩素酸カリウム
+codes:
+- inorg.nonmetal.chlorine-oxoacid
 :::
 
 次亜塩素酸 HClO・高度さらし粉 Ca(ClO)₂・2H₂O・さらし粉 CaCl(ClO)・H₂O など、**ClO⁻ を含む化合物は強い酸化剤**です。ClO⁻ の Cl（+1）が安定な Cl⁻（−1）になるので、2価です。

@@ -38,6 +38,11 @@ terms:
 - 融点
 - 氷酢酸
 - 双性イオン
+codes:
+- org.clue.diethyl-ether-bp
+- org.clue.acetic-mp
+- org.clue.formaldehyde-gas
+- org.clue.amino-acid-mp
 :::
 
 :::table
@@ -92,6 +97,11 @@ terms:
 - 昇華
 - 油状
 - 芳香
+codes:
+- org.clue.nitrobenzene-look
+- org.clue.aniline-look
+- org.clue.naphthalene-sublime
+- org.clue.ester-smell
 :::
 
 :::table

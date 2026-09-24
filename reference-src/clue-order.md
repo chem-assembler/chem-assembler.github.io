@@ -31,6 +31,8 @@ terms:
 - 構造決定
 - 分類
 - 物性
+codes:
+- org.clue.order
 :::
 
 条件は次の3段に分けて、上から順に使います。
@@ -191,6 +193,9 @@ title: 数から当たりを付ける（2）窒素則
 lead: C・H・O・N だけの化合物では、分子量が奇数なら窒素は奇数個、偶数なら偶数個です。
 terms:
 - 窒素則
+codes:
+- org.clue.nitrogen-parity
+- org.clue.amino-acid-mw-parity
 :::
 
 C・H・O・N だけからなる化合物では、**分子量の偶奇と窒素原子の数の偶奇が一致します**。これを窒素則といいます。
@@ -224,6 +229,9 @@ answer: 分子量が奇数なので、窒素原子は奇数個（ふつうは1�
 anchor: ratio
 title: 数から当たりを付ける（3）組成式
 lead: 組成式から物質を当てにいけるのは例外的です。CHO ならブテン二酸、CH₂O は分子量を待ちます。
+codes:
+- org.clue.cho-ratio
+- org.clue.ch2o-ratio
 :::
 
 組成式だけで物質を当てにいけるのは、ごく限られた場合です。
@@ -246,6 +254,9 @@ terms:
 - 質量分析
 - 赤外吸収スペクトル
 - 核磁気共鳴
+codes:
+- org.anal.ir-carbonyl
+- org.anal.equivalent-h
 :::
 
 :::table

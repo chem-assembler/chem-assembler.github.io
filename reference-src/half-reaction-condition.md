@@ -55,6 +55,8 @@ title: 書き換えの手順 —— 両辺に OH⁻ を足して打ち消す
 lead: H⁺ と同じ数の OH⁻ を両辺に足し、H⁺ ＋ OH⁻ を H₂O にまとめます。
 terms:
 - 書き換え
+codes:
+- theo.redox.basic-rewrite
 :::
 
 酸性で書いた式を塩基性に直すときは、次の順に進めます。
@@ -125,6 +127,8 @@ title: 楽な道 —— 陰極は H⁺ の式から、陽極は 2H₂O から直
 lead: 陰極の H₂O の式は H⁺ の式から導き、陽極の H₂O の式は 2H₂O → O₂ を直接つくるのが楽です。
 terms:
 - 水関係の反応式
+codes:
+- theo.redox.water-half
 :::
 
 陰極の H₂O の式は、簡単に書ける H⁺ の式（金属の陽イオンと同じ要領）から導くのが楽です。
@@ -162,6 +166,9 @@ lead: オゾン・過酸化水素・過マンガン酸イオンを、中・塩�
 terms:
 - オゾン
 - 燃料電池
+codes:
+- theo.redox.ozone-half
+- theo.redox.mno4-neutral
 :::
 
 ## オゾン O₃

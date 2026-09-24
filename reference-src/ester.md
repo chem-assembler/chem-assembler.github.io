@@ -34,6 +34,9 @@ terms:
 - エステル結合
 - 一般式
 - 構造異性体
+codes:
+- org.carbonyl.ester-bond
+- org.carbonyl.ethyl-acetate
 :::
 
 鎖式で不飽和結合をもたないエステルの一般式は **C~n~H~2n~O~2~** です。n = 3 を代入すると C₃H₆O₂ ＝ 酢酸メチル CH₃COOCH₃ の分子式が得られます。
@@ -70,6 +73,8 @@ lead: 「カルボン酸の名前」＋「アルコールから来たアルキ�
 terms:
 - 酢酸エチル
 - ギ酸メチル
+codes:
+- org.carbonyl.ester-naming
 :::
 
 エステルの名称は「**（カルボン酸の名称）＋（カルボン酸の H 原子を置換したアルキル基の名称）**」です。カルボン酸の名前を慣用名で覚えているので、エステルの名前も慣用名でよいです。
@@ -123,6 +128,8 @@ terms:
 - エステル化
 - 加水分解
 - けん化
+codes:
+- org.carbonyl.formate-ester
 :::
 
 カルボン酸とアルコールに濃硫酸を加えて加熱すると、脱水縮合してエステルと水が生じます（**エステル化**）。逆に、希硫酸などの酸を触媒として水を加えるとカルボン酸とアルコールにもどり（**加水分解**）、水酸化ナトリウム水溶液を加えて加熱するとカルボン酸の塩とアルコールに分かれます（**けん化**）。
@@ -207,6 +214,12 @@ lead: エステル結合が2つあるとき、同じ分子の中で結ばれた�
 terms:
 - ラクトン
 - ニトログリセリン
+codes:
+- org.carbonyl.ester-valence
+- org.carbonyl.polyester-hydrolysis
+- org.carbonyl.diester-arrangement
+- org.carbonyl.lactone
+- org.carbonyl.inorganic-ester
 :::
 
 エステル結合1つが O 原子を2個使うので、**分子式の酸素の数から、エステル結合の数は多くてもその半分**と決まります。O が4個なら、エステル結合は多くても2つです。
