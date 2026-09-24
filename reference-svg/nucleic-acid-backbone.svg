@@ -6,9 +6,9 @@
     .s { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2; }
     .b { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2; }
     .bond { stroke: #333; stroke-width: 2.5; fill: none; }
-    .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
-    .sym { font-size: 20px; }
+    .lab { font-size: 25px; fill: #222; }
+    .small { font-size: 25px; fill: #444; }
+    .sym { font-size: 26px; }
   </style>
 
   <!-- 背骨の結合（左右は続きを表す） -->
