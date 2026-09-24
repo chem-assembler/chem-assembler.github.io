@@ -6,10 +6,10 @@
        図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
   <style>
     .cell { fill: #fcfcfc; stroke: #333; stroke-width: 2; }
-    .val { font-size: 19px; fill: #222; }
-    .head { font-size: 16px; fill: #555; }
-    .title { font-size: 17px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .val { font-size: 22px; fill: #222; }
+    .head { font-size: 19px; fill: #555; }
+    .title { font-size: 20px; fill: #222; }
+    .small { font-size: 18px; fill: #444; }
   </style>
 
   <!-- ===== 左: 密度 ===== -->
@@ -17,14 +17,14 @@
   <text class="head" x="150" y="94" text-anchor="middle">質量</text>
   <text class="head" x="310" y="94" text-anchor="middle">体積</text>
 
-  <rect class="cell" x="90" y="108" width="120" height="48" />
+  <rect class="cell" x="90" y="108" width="135" height="53" />
   <text class="val" x="150" y="139" text-anchor="middle">1.51 g</text>
-  <rect class="cell" x="250" y="108" width="120" height="48" />
+  <rect class="cell" x="250" y="108" width="135" height="53" />
   <text class="val" x="310" y="139" text-anchor="middle">1 cm³</text>
 
-  <rect class="cell" x="90" y="248" width="120" height="48" />
+  <rect class="cell" x="90" y="248" width="135" height="53" />
   <text class="val" x="150" y="279" text-anchor="middle">302 g</text>
-  <rect class="cell" x="250" y="248" width="120" height="48" />
+  <rect class="cell" x="250" y="248" width="135" height="53" />
   <text class="val" x="310" y="279" text-anchor="middle">200 cm³</text>
 
   <path d="M 150 164 L 150 234" style="stroke:#1565c0;stroke-width:2;fill:none" />
@@ -46,8 +46,8 @@
   <path d="M 460 108 L 460 96 L 800 96 L 800 108" style="stroke:#555;stroke-width:1.5;fill:none" />
   <text class="head" x="630" y="86" text-anchor="middle">溶液 100 g</text>
 
-  <rect x="460" y="134" width="126" height="52" fill="#ddeefb" stroke="#333" stroke-width="2" />
-  <rect x="586" y="134" width="214" height="52" fill="#fae3c8" stroke="#333" stroke-width="2" />
+  <rect x="460" y="134" width="141" height="57" fill="#ddeefb" stroke="#333" stroke-width="2" />
+  <rect x="586" y="134" width="229" height="57" fill="#fae3c8" stroke="#333" stroke-width="2" />
   <text class="val" x="523" y="167" text-anchor="middle">水 37 g</text>
   <text class="val" x="693" y="167" text-anchor="middle">HNO₃ 63 g</text>
 
