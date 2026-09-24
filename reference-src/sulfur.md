@@ -187,6 +187,7 @@ text: 硫化物で分ける系統分離の樹を試す
 
 :::figure
 src: sulfur-sulfide-ionization.png
+svg: sulfur-sulfide-ionization.svg
 alt: イオン化列 Li＞K＞Ca＞Na＞Mg＞Al＞Zn＞Fe＞Ni＞Sn＞Pb＞H₂＞Cu＞Hg＞Ag＞Pt＞Au の上に、Al〜Ni を「中・塩基性で沈殿（酸性では沈殿しない）」、Sn〜Ag を「酸性溶液中でも沈殿」と囲み、Li〜Mg は「S²⁻ で沈殿しない」と示した図
 caption: イオン化傾向が小さいほど、陽イオンが S²⁻ と沈殿をつくりやすくなります。Al だけは Al(OH)₃ として沈みます。
 :::

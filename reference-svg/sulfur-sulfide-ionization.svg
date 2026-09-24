@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="240" viewBox="0 0 680 240" role="img">
+  <!-- イオン化傾向と硫化物の沈殿の関係を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; text-anchor: middle; }
+    .titleText { font-size: 18px; font-weight: bold; fill: #00b050; text-anchor: start; }
+    .eq { font-family: "Times New Roman", serif; font-size: 24px; }
+    .arrowBlue { stroke: #1f618d; stroke-width: 4; fill: none; marker-end: url(#arrowheadBlue); marker-start: url(#arrowheadBlue-start); }
+    .arrowPurple { stroke: #6a1b9a; stroke-width: 4; fill: none; marker-end: url(#arrowheadPurple); marker-start: url(#arrowheadPurple-start); }
+    .arrowOrange { stroke: #e0762b; stroke-width: 4; fill: none; marker-end: url(#arrowheadOrange); }
+    .boxGreen { fill: none; stroke: #4caf50; stroke-width: 2; rx: 4; }
+    .boxYellow { fill: none; stroke: #ffb300; stroke-width: 2; rx: 4; }
+    .boxOrangeLabel { fill: none; stroke: #e0762b; stroke-width: 1.5; }
+    .lead { stroke: #e0762b; stroke-width: 1.5; fill: none; }
+    .textGreen { fill: #4caf50; font-size: 14px; }
+    .textYellow { fill: #ffb300; font-size: 14px; }
+    .textPurple { fill: #6a1b9a; font-size: 14px; }
+    .textOrange { fill: #e0762b; font-size: 14px; }
+  </style>
+
+  <defs>
+    <marker id="arrowheadBlue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#1f618d" />
+    </marker>
+    <marker id="arrowheadBlue-start" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse">
+      <polygon points="0,0 6,3 0,6" fill="#1f618d" />
+    </marker>
+    <marker id="arrowheadPurple" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#6a1b9a" />
+    </marker>
+    <marker id="arrowheadPurple-start" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse">
+      <polygon points="0,0 6,3 0,6" fill="#6a1b9a" />
+    </marker>
+    <marker id="arrowheadOrange" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#e0762b" />
+    </marker>
+  </defs>
+
+  <!-- 上部の注釈 -->
+  <!-- Al の注釈 -->
+  <rect class="boxOrangeLabel" x="10" y="10" width="225" height="50" />
+  <text x="122.5" y="30" font-size="14">Al<tspan font-size="10" dy="3">2</tspan><tspan dy="-3">S</tspan><tspan font-size="10" dy="3">3</tspan><tspan dy="-3"> + 6H</tspan><tspan font-size="10" dy="3">2</tspan><tspan dy="-3">O → 2Al(OH)</tspan><tspan font-size="10" dy="3">3</tspan><tspan dy="-3"> + 3H</tspan><tspan font-size="10" dy="3">2</tspan><tspan dy="-3">S</tspan></text>
+  <text x="122.5" y="50" font-size="14">と加水分解してAl(OH)<tspan font-size="10" dy="3">3</tspan><tspan dy="-3">が沈殿する</tspan></text>
+  <path class="lead" d="M 235 40 L 275 60" /> <!-- Alへ指す -->
+
+  <!-- 沈殿条件のテキスト -->
+  <text x="330" y="30" class="textGreen">中・塩基性で沈殿</text>
+  <text x="330" y="50" class="textGreen">（酸性では沈殿しない）</text>
+
+  <text x="530" y="30" class="textYellow">酸性溶液中で<tspan font-weight="bold" font-size="16">も</tspan>沈殿</text>
+  <text x="530" y="50" class="textYellow">（中塩基性は当然沈殿）</text>
+
+  <!-- イオン化列 -->
+  <g transform="translate(0, 100)">
+    <!-- テキスト -->
+    <text x="325" y="0" class="eq">Li&gt;K&gt;Ca&gt;Na&gt;Mg&gt; Al&gt;Zn&gt;Fe&gt;Ni &gt; Sn&gt;Pb&gt;H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">&gt;Cu&gt;Hg&gt;Ag &gt;Pt&gt;Au</tspan></text>
+
+    <!-- 枠線 -->
+    <!-- Al>Zn>Fe>Ni -->
+    <rect class="boxGreen" x="268" y="-22" width="125" height="30" />
+    <!-- Sn>Pb>H2>Cu>Hg>Ag -->
+    <rect class="boxYellow" x="415" y="-22" width="175" height="30" />
+
+    <!-- 左のタイトル -->
+    <rect class="boxGreen" x="25" y="10" width="105" height="30" stroke="#a5d4a1" />
+    <text x="35" y="32" class="titleText">イオン化傾向</text>
+    
+    <text x="145" y="34" class="titleText" font-size="22">大</text>
+    <text x="655" y="34" class="titleText" font-size="22">小</text>
+    <path class="arrowBlue" d="M 175 25 L 635 25" />
+
+    <!-- 下部の矢印とテキスト -->
+    <path class="arrowPurple" d="M 150 55 L 260 55" />
+    <text x="205" y="75" class="textPurple">S<tspan font-size="10" dy="-5">2-</tspan><tspan dy="5">で沈殿しない</tspan></text>
+
+    <path class="arrowOrange" d="M 270 55 L 610 55" />
+    <text x="440" y="75" class="textOrange">陽イオンがS<tspan font-size="10" dy="-5">2-</tspan><tspan dy="5">と沈殿をつくりやすい</tspan></text>
+  </g>
+
+</svg>
