@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="705.882" height="370.588" viewBox="0 0 800 420" role="img">
   <!-- 乳化。油の粒に疎水基が入り込み、親水基が外を向いた粒になって水の中に散らばる。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 油は「溶けた」のではなく、包まれて散っているだけ。 -->
