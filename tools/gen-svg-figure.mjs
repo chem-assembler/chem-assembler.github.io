@@ -174,7 +174,9 @@ ${text}`, { waitUntil: 'load' });
                         const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
                         const host = rects.filter(b => cx > b.left && cx < b.right && cy > b.top && cy < b.bottom)
                             .sort((p, q) => p.width * p.height - q.width * q.height)[0];
-                        if (host && (r.left < host.left - 2 || r.right > host.right + 2 || r.top < host.top - 3 || r.bottom > host.bottom + 3)) {
+                        // ⚠ 字の外枠は上下に字の高さの余白を含むので、縦は字の高さの 30% まで許す（核酸の A・T・G・C の小さい枠で誤って赤くなった）
+                        const vt = Math.max(3, r.height * 0.3);
+                        if (host && (r.left < host.left - 2 || r.right > host.right + 2 || r.top < host.top - vt || r.bottom > host.bottom + vt)) {
                             out.push(`枠からはみ出す「${o.s}」`);
                         }
                     });
@@ -185,6 +187,8 @@ ${text}`, { waitUntil: 'load' });
                             const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
                             if (w <= 0 || h <= 0) continue;
                             const small = Math.min(a.width * a.height, b.width * b.height);
+                            // ⚠ 2行に積んだ字（上下の行）は外枠が少し重なる ＝ 縦の重なりが字の高さの 35% を超えたときだけ重なりとみなす
+                            if (h < Math.min(a.height, b.height) * 0.35) continue;
                             if (w * h > small * 0.25) out.push(`字が重なる「${texts[i].s}」と「${texts[k].s}」`);
                         }
                     }
