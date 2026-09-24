@@ -6,12 +6,12 @@
   <style>
     .ax { stroke: #333; stroke-width: 2; fill: none; }
     .curve { stroke: #6a1b9a; stroke-width: 3.5; fill: none; }
-    .lab { font-size: 19px; fill: #222; }
-    .big { font-size: 21px; }
-    .sub { font-size: 16px; }
+    .lab { font-size: 20px; fill: #222; }
+    .big { font-size: 22px; }
+    .sub { font-size: 17px; }
     .red { fill: #c62828; }
     .blue { fill: #1565c0; }
-    .note { font-size: 16px; fill: #333; }
+    .note { font-size: 17px; fill: #333; }
   </style>
 
   <!-- 領域の地色（薄く。色だけに意味は持たせず、文字でも書く） -->
