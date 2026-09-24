@@ -36,6 +36,8 @@ terms:
 - 酸化マンガン(Ⅳ)
 - 二クロム酸カリウム
 - クロム酸カリウム
+codes:
+- inorg.metal.mn-cr-colors
 :::
 
 :::table
@@ -68,6 +70,9 @@ lead: KMnO₄ は硫酸酸性で強い酸化剤になり、赤紫色が消えま
 terms:
 - 硫酸酸性
 - 触媒
+codes:
+- inorg.metal.permanganate
+- inorg.metal.mno2-roles
 :::
 
 ## 過マンガン酸カリウム KMnO₄【酸化剤】
@@ -182,6 +187,9 @@ lead: 二クロム酸カリウムは硫酸酸性で酸化剤になり、橙赤�
 terms:
 - クロム酸イオン
 - 二クロム酸イオン
+codes:
+- inorg.metal.chromate-dichromate
+- inorg.metal.chromate-precipitate
 :::
 
 クロムの単体は銀白色の硬い金属で、さびにくいので**めっき**やステンレス鋼に使われます。
