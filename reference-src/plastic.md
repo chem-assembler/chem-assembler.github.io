@@ -82,6 +82,8 @@ terms:
 :::reaction
 left: n CH₂=CH₂
 right: ［CH₂−CH₂］ₙ
+gen: n エチレン → ［ポリエチレン］n
+app: addition_polymerization
 level: ★★★
 note: 同じ式でも、つくり方で枝分かれの数が変わり、別の性質の材料になります。
 :::
@@ -134,6 +136,8 @@ items:
 :::reaction
 left: n CH₂=CH−CH₃
 right: ［CH₂−CH(CH₃)］ₙ
+gen: n プロペン → ［ポリプロピレン］n
+app: addition_polymerization
 level: ★★★
 note: プロピレン → ポリプロピレン。X ＝ −CH₃ の場合です。
 :::
@@ -148,6 +152,8 @@ caption: ポリプロピレンの鎖の一部。**1個おきの炭素に X ＝ �
 :::reaction
 left: n CH₂=CHCl
 right: ［CH₂−CHCl］ₙ
+gen: n 塩化ビニル → ［ポリ塩化ビニル］n
+app: addition_polymerization
 level: ★★★
 note: 塩化ビニル → ポリ塩化ビニル（PVC）。X ＝ −Cl。
 :::
@@ -155,8 +161,19 @@ note: 塩化ビニル → ポリ塩化ビニル（PVC）。X ＝ −Cl。
 :::reaction
 left: n CH₂=CH−C₆H₅
 right: ［CH₂−CH(C₆H₅)］ₙ
+gen: n スチレン → ［ポリスチレン］n
+app: addition_polymerization
 level: ★★★
 note: スチレン → ポリスチレン。X ＝ −C₆H₅（フェニル基）。
+:::
+
+:::reaction
+left: n CH₂=CCl₂
+right: ［CH₂−CCl₂］ₙ
+gen: n 塩化ビニリデン → ［ポリ塩化ビニリデン］n
+app: addition_polymerization summon=塩化ビニリデン
+level: ★☆☆
+note: 塩化ビニリデン → ポリ塩化ビニリデン。1つの炭素に −Cl が2個付いた形です。気体や水蒸気を通しにくいので、食品用のラップに使われます。
 :::
 
 :::table
@@ -200,6 +217,8 @@ terms:
 :::reaction
 left: n CH₂=CH−OCOCH₃
 right: ［CH₂−CH(OCOCH₃)］ₙ
+gen: n 酢酸ビニル → ［ポリ酢酸ビニル］n
+app: addition_polymerization
 level: ★★★
 note: X ＝ −OCOCH₃ のビニル化合物です。
 :::
@@ -209,6 +228,8 @@ note: X ＝ −OCOCH₃ のビニル化合物です。
 :::reaction
 left: ［CH₂−CH(OCOCH₃)］ₙ ＋ n NaOH
 right: ［CH₂−CH(OH)］ₙ ＋ n CH₃COONa
+gen: ［ポリ酢酸ビニル］n ＋ n 水酸化ナトリウム → ［ポリビニルアルコール］n ＋ n 酢酸ナトリウム
+app: saponification summon=ポリ酢酸ビニル
 level: ★★★
 note: 繰り返し単位ごとにエステル結合が1つあるので、NaOH も n 個要ります。酢酸ナトリウムが出ていき、−OH が残ります。
 :::
@@ -248,6 +269,8 @@ terms:
 :::reaction
 left: n CH₂=C(CH₃)COOCH₃
 right: ［CH₂−C(CH₃)(COOCH₃)］ₙ
+gen: n メタクリル酸メチル → ［ポリメタクリル酸メチル］n
+app: addition_polymerization
 level: ★★☆
 note: 1つの炭素に −CH₃ と −COOCH₃ の2つがぶら下がっています。側鎖がかさばって鎖が規則正しく並べず、光を散らす結晶部分ができにくいので透明になります。
 :::
@@ -257,6 +280,8 @@ note: 1つの炭素に −CH₃ と −COOCH₃ の2つがぶら下がってい�
 :::reaction
 left: n CF₂=CF₂
 right: ［CF₂−CF₂］ₙ
+gen: n テトラフルオロエチレン → ［ポリテトラフルオロエチレン］n
+app: addition_polymerization
 level: ★★☆
 note: エチレンの H が4つとも F に置きかわった形です。C−F 結合がとても強いので、薬品に侵されにくくなります。
 :::
@@ -284,6 +309,8 @@ terms:
 :::reaction
 left: n HOOC−C₆H₄−COOH ＋ n HO−CH₂CH₂−OH
 right: ［CO−C₆H₄−CO−O−CH₂CH₂−O］ₙ ＋ 2n H₂O
+gen: n テレフタル酸 ＋ n エチレングリコール → ［ポリエチレンテレフタラート］n ＋ 2n 水
+app: condensation_polymerization
 level: ★★★
 note: 鎖状の縮合重合体なので熱可塑性で、溶かして成形し直せます。ペットボトルの PET です。
 :::
@@ -537,6 +564,8 @@ terms:
 :::reaction
 left: n CH≡CH
 right: ［CH=CH］ₙ
+gen: n アセチレン → ［ポリアセチレン］n
+app: alkyne_polymerization
 level: ★☆☆
 note: 三重結合が二重結合に開いてつながります。
 :::

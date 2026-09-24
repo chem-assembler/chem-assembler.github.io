@@ -109,6 +109,8 @@ terms:
 :::reaction
 left: CH≡CH ＋ Br₂
 right: CHBr=CHBr
+gen: アセチレン ＋ 臭素 → 1,2-ジブロモエテン
+app: add_br2
 level: ★★★
 note: 1段階目。三重結合が二重結合になり、1,2-ジブロモエテンができます。
 :::
@@ -116,6 +118,8 @@ note: 1段階目。三重結合が二重結合になり、1,2-ジブロモエテ
 :::reaction
 left: CHBr=CHBr ＋ Br₂
 right: CHBr₂CHBr₂
+gen: 1,2-ジブロモエテン ＋ 臭素 → 1,1,2,2-テトラブロモエタン
+app: add_br2
 level: ★★★
 note: 2段階目。二重結合が単結合になり、1,1,2,2-テトラブロモエタンになります。
 :::
@@ -159,8 +163,30 @@ rows:
 :::
 
 :::reaction
+left: CH≡CH ＋ H₂
+over: PtまたはNi
+right: CH₂=CH₂
+gen: アセチレン ＋ 水素 → エチレン
+app: add_h2
+level: ★★☆
+note: 1分子付加するとエテン（エチレン）。さらに H₂ が付加すると、エタンまで進みます（次の式）。
+:::
+
+:::reaction
+left: CH₂=CH₂ ＋ H₂
+over: PtまたはNi
+right: CH₃CH₃
+gen: エチレン ＋ 水素 → エタン
+app: add_h2
+level: ★☆☆
+note: 2段目。三重結合は2回付加して、単結合（アルカン）まで進みます。
+:::
+
+:::reaction
 left: CH≡CH ＋ HCl
 right: CH₂=CHCl
+gen: アセチレン ＋ 塩化水素 → 塩化ビニル
+app: add_hcl
 level: ★★★
 note: 塩化ビニル。付加重合させるとポリ塩化ビニルになります。
 :::
@@ -168,8 +194,18 @@ note: 塩化ビニル。付加重合させるとポリ塩化ビニルになり�
 :::reaction
 left: CH≡CH ＋ CH₃COOH
 right: CH₃COOCH=CH₂
+gen: アセチレン ＋ 酢酸 → 酢酸ビニル
+app: add_carboxylic_acid_alkyne
 level: ★★★
 note: 酢酸ビニル。付加重合させるとポリ酢酸ビニルになります。
+:::
+
+:::reaction
+left: CH≡CH ＋ HCN
+right: CH₂=CH−CN
+gen: アセチレン ＋ シアン化水素 → アクリロニトリル
+level: ★★☆
+note: アクリロニトリル。付加重合させるとポリアクリロニトリル（アクリル繊維の主成分）になります。
 :::
 
 **この表の4つは、そのまま高分子の単量体（モノマー）になります。**エチンは「ビニル化合物の入口」だと思っておくと、あとで高分子を学ぶときに効いてきます。
@@ -204,6 +240,8 @@ caption: **−OH の水素が、二重結合のもう一方の炭素へ移る**�
 left: CH≡CH ＋ H₂O
 over: HgSO₄
 right: CH₃CHO
+gen: アセチレン ＋ 水 → アセトアルデヒド
+app: add_water
 level: ★★★
 note: 途中でビニルアルコールを経ますが、最後まで進めてアセトアルデヒドと答えます。
 :::
@@ -273,6 +311,8 @@ terms:
 left: 3C₂H₂
 over: 赤熱した鉄管
 right: C₆H₆
+gen: 3 アセチレン → ベンゼン
+app: alkyne_trimerization
 level: ★★★
 note: エチン3分子が輪になって手をつなぎ、六員環ができます。芳香族の入口になる反応です。
 :::

@@ -7018,6 +7018,27 @@ class ReferenceBook {
         lv.textContent = block.level + ' ' + (REF_LEVEL_WORDS[block.level] || '');
         box.appendChild(lv);
 
+        /* ★★ 構造式の図（`gen:`・I-0125・2026-09-24 ユーザー「参考書の反応式を 示性式 → 構造式 を基本に」）。
+         *   図を主に置き、下に示性式の式を1行残す（ユーザー決定）。⚠ 上の注記の「画像＋下に文字にしない」は、
+         *   図を**作図器が式（gen:）から焼き、示性式と原子の数で突き合わせる**ことで解いた（2か所に持っても食い違えない） */
+        if (block.img) {
+            box.classList.add('ref-rx-has-img');
+            const fig = document.createElement('div');
+            fig.className = 'ref-rx-fig';
+            const img = document.createElement('img');
+            img.className = 'ref-figure-img ref-rx-img ref-figure-img-scroll';
+            img.src = REF_IMG_DIR + block.img;
+            img.alt = '構造式の反応式: ' + block.left + ' ' + (block.arrow || '→') + ' ' + block.right;
+            img.loading = 'lazy';
+            /* ★ 長い式（縮合重合）は縮めずに焼いてあるので、いつも横スクロールの箱に入れ、幅は PNG の幅 ÷ 1150 の割合（:::figure の scroll と同じ） */
+            img.addEventListener('load', () => { if (!img.style.width && img.naturalWidth) img.style.width = (img.naturalWidth / REF_FIGURE_BASE_W * 100) + '%'; });
+            const wrap = document.createElement('div');
+            wrap.className = 'ref-figure-scroll';
+            wrap.appendChild(img);
+            fig.appendChild(wrap);
+            box.appendChild(fig);
+        }
+
         const eq = document.createElement('div');
         eq.className = 'ref-rx-eq';
         const left = document.createElement('span');
@@ -7045,6 +7066,19 @@ class ReferenceBook {
         right.textContent = block.right;
         eq.appendChild(right);
         box.appendChild(eq);
+
+        /* ★★ アプリで試す（`app:`・I-0126・ユーザー「反応式ごとにアプリへのリンクを追加」）。
+         *   分子を呼び出し、その反応を選んだ状態でアプリを開く（?summon=&reagent=・受け口は game.js applyOpenParam） */
+        if (block.appHref) {
+            const p = document.createElement('p');
+            p.className = 'ref-rx-app';
+            const a = document.createElement('a');
+            a.href = block.appHref;
+            a.textContent = 'アプリで試す ▶';
+            a.title = '「' + (block.appSummon || '') + '」を呼び出して、この反応を選んだ状態でアプリを開きます';
+            p.appendChild(a);
+            box.appendChild(p);
+        }
 
         if (block.note) {
             const n = document.createElement('p');

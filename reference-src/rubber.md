@@ -56,6 +56,8 @@ caption: イソプレン CH₂=C(CH₃)−CH=CH₂。**C=C を2本**もち、2�
 :::reaction
 left: n CH₂=C(CH₃)−CH=CH₂
 right: ［CH₂−C(CH₃)=CH−CH₂］ₙ
+gen: n イソプレン → ［ポリイソプレン］n
+app: diene_polymerization
 level: ★★★
 note: 繰り返し単位の真ん中に C=C が1本残っていることに注目してください。原子の出入りはないので、繰り返し単位の組成はイソプレンと同じ C₅H₈ です。
 :::
@@ -198,6 +200,8 @@ terms:
 :::reaction
 left: n CH₂=CH−CH=CH₂
 right: ［CH₂−CH=CH−CH₂］ₙ
+gen: n 1,3-ブタジエン → ［ポリブタジエン］n
+app: diene_polymerization
 level: ★★★
 note: イソプレンから −CH₃ を取った形です。ポリイソプレンの式と並べると、そのまま見比べられます。
 :::
@@ -216,6 +220,8 @@ caption: クロロプレン CH₂=CCl−CH=CH₂。イソプレンの −CH₃ �
 :::reaction
 left: n CH₂=CCl−CH=CH₂
 right: ［CH₂−CCl=CH−CH₂］ₙ
+gen: n クロロプレン → ［ポリクロロプレン］n
+app: diene_polymerization
 level: ★★☆
 note: 1,3-ブタジエンの2番の炭素の H が Cl に変わっただけです。
 :::
@@ -235,6 +241,17 @@ note: スチレンの単位は付加重合、ブタジエンの単位は 1,4-付
 :::link
 to: polymer-basics
 text: 2種類以上の単量体をまぜて重合させる共重合
+:::
+
+## アクリロニトリル-ブタジエンゴム（NBR）
+
+アクリロニトリルと 1,3-ブタジエンを**共重合**させると、**アクリロニトリル-ブタジエンゴム（NBR）**ができます。**油に強い（油を吸って膨らみにくい）**ので、石油を扱うホースやパッキンに使われます。
+
+:::reaction
+left: n CH₂=CH−CH=CH₂ ＋ m CH₂=CH−CN
+right: ［CH₂−CH=CH−CH₂］ₙ［CH₂−CH(CN)］ₘ
+level: ★☆☆
+note: SBR のスチレンがアクリロニトリルに変わった形です。極性の大きい −C≡N を含むので、極性の小さい油になじみにくくなります。
 :::
 
 ## シリコーンゴム

@@ -186,6 +186,8 @@ terms:
 :::reaction
 left: CH₂=CH₂ ＋ Br₂
 right: CH₂BrCH₂Br
+gen: エチレン ＋ 臭素 → 1,2-ジブロモエタン
+app: add_br2
 level: ★★★
 note: できるのは 1,2-ジブロモエタン。二重結合が切れて、両側の炭素に Br が1個ずつ入っています。
 :::
@@ -196,6 +198,8 @@ note: できるのは 1,2-ジブロモエタン。二重結合が切れて、両
 left: CH₂=CH₂ ＋ H₂
 over: PtまたはNi
 right: CH₃CH₃
+gen: エチレン ＋ 水素 → エタン
+app: add_h2
 level: ★★★
 note: エテンに水素が付加してエタンになります。不飽和だったものが飽和になる、という言い方もします。
 :::
@@ -205,6 +209,8 @@ note: エテンに水素が付加してエタンになります。不飽和だ�
 :::reaction
 left: CH₂=CH₂ ＋ HCl
 right: CH₃CH₂Cl
+gen: エチレン ＋ 塩化水素 → クロロエタン
+app: add_hcl
 level: ★★★
 note: クロロエタンができます。H と Cl が二重結合の両側の炭素に1個ずつ入りました。
 :::
@@ -212,6 +218,8 @@ note: クロロエタンができます。H と Cl が二重結合の両側の�
 :::reaction
 left: CH₂=CH₂ ＋ H₂O
 right: CH₃CH₂OH
+gen: エチレン ＋ 水 → エタノール
+app: add_water
 level: ★★★
 note: 水が付加するとアルコール（エタノール）になります。
 :::
@@ -219,6 +227,8 @@ note: 水が付加するとアルコール（エタノール）になります�
 :::reaction
 left: CH₂=CH₂ ＋ CH₃COOH
 right: CH₃COOC₂H₅
+gen: エチレン ＋ 酢酸 → 酢酸エチル
+app: add_carboxylic_acid_alkyne
 level: ★★★
 note: 酢酸は「電離する H」と「残りの原子団 −OCOCH₃」に分かれて付加し、酢酸エチルになります。
 :::
@@ -258,6 +268,26 @@ caption: 緑の炭素には H が**2個**、紫の炭素には H が**1個**。H
 
 マルコフニコフ則で分かるのは**どちらが主に生じるか**だけで、**どの程度の割合で偏るかまでは分かりません。**
 
+プロペンに臭化水素が付加すると、主に 2-ブロモプロパンができます。水が付加すると、主に 2-プロパノールができます。どちらも H は端の炭素（H が2個）に、Br や −OH は真ん中の炭素に付きます。
+
+:::reaction
+left: CH₂=CH−CH₃ ＋ HBr
+right: CH₃−CHBr−CH₃
+gen: プロペン ＋ 臭化水素 → 2-ブロモプロパン
+app: add_hbr
+level: ★★☆
+note: 主生成物は **2-ブロモプロパン**。副生成物は 1-ブロモプロパン CH₂Br−CH₂−CH₃ です。
+:::
+
+:::reaction
+left: CH₂=CH−CH₃ ＋ H₂O
+right: CH₃−CH(OH)−CH₃
+gen: プロペン ＋ 水 → 2-プロパノール
+app: add_water
+level: ★☆☆
+note: 主生成物は **2-プロパノール**。副生成物は 1-プロパノール CH₂(OH)−CH₂−CH₃ です。
+:::
+
 :::link
 to: zaitsev
 text: アルコールの脱水でアルケンが2通りできるとき、どちらが主に生じるか（ザイツェフ則）
@@ -284,6 +314,8 @@ terms:
 :::reaction
 left: n CH₂=CHCl
 right: ［CH₂−CHCl］ₙ
+gen: n 塩化ビニル → ［ポリ塩化ビニル］n
+app: addition_polymerization
 level: ★★★
 note: 塩化ビニルが付加重合してポリ塩化ビニルになります。左辺の n と、右辺の角かっこの外の n が対応します。
 :::
@@ -354,6 +386,8 @@ left: CH₃CH₂OH
 over: 濃硫酸
 under: 160〜170℃
 right: CH₂=CH₂ ＋ H₂O
+gen: エタノール → エチレン ＋ 水
+app: dehydration_intra
 level: ★★★
 note: 1つの分子の中から水がとれるので**分子内脱水**といいます。無機化学で学んだ濃硫酸の脱水作用を使っています。
 :::
@@ -365,6 +399,8 @@ left: 2CH₃CH₂OH
 over: 濃硫酸
 under: 130〜140℃
 right: C₂H₅OC₂H₅ ＋ H₂O
+gen: 2 エタノール → ジエチルエーテル ＋ 水
+app: dehydration_inter
 level: ★★★
 note: 2分子から水が1個とれてジエチルエーテルになります。温度が低いほうが分子間脱水、と覚えます。
 :::
@@ -381,6 +417,8 @@ text: エタノール以外のアルコールを脱水すると、どのアル�
 :::reaction
 left: CH₂=CH₂ ＋ Cl₂
 right: CH₂ClCH₂Cl
+gen: エチレン ＋ 塩素 → 1,2-ジクロロエタン
+app: add_cl2
 level: ★★★
 note: まず塩素が付加して 1,2-ジクロロエタンになります。
 :::
@@ -389,6 +427,8 @@ note: まず塩素が付加して 1,2-ジクロロエタンになります。
 left: CH₂ClCH₂Cl
 over: 熱分解
 right: CH₂=CHCl ＋ HCl
+gen: 1,2-ジクロロエタン → 塩化ビニル ＋ 塩化水素
+app: dehydrohalogenation
 level: ★★☆
 note: 塩化水素が外れて（脱離して）塩化ビニルになります。工業的に塩化ビニルをつくるのに実際に使われている方法です。
 :::

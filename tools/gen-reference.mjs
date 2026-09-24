@@ -224,13 +224,13 @@ function pngSize(file) {
  * ⚠⚠ 新しい器に図の欄を足したら、**ここにも足す**。足し忘れると
  *   「どのページからも参照されていない図」で生成が止まる（＝ 黙っては壊れないが、
  *   その図を消すまで生成が通らない）。★ `REF23` がこの台帳と原稿の食い違いを見張る。 */
-const FIGURE_KEYS = { figure: ['src'], exercise: ['promptSrc', 'answerSrc'] };
+const FIGURE_KEYS = { figure: ['src'], exercise: ['promptSrc', 'answerSrc'], reaction: ['img'] };   // reaction.img は gen: から決まる名前（作図器が焼く・I-0125）
 
 function checkFigures(pages) {
     const used = new Map();   // ファイル名 → { ページ, 器の名前 }
     pages.forEach(p => (p.blocks || []).forEach(b => {
         (FIGURE_KEYS[b.kind] || []).forEach(k => {
-            if (b[k] && !used.has(b[k])) used.set(b[k], { id: p.id, kind: b.kind, scroll: !!b.scroll });
+            if (b[k] && !used.has(b[k])) used.set(b[k], { id: p.id, kind: b.kind, scroll: !!b.scroll || b.kind === 'reaction' });   // 反応式の図はいつも横スクロールの箱（learn.js）
         });
     }));
     const onDisk = existsSync(IMG_DIR) ? readdirSync(IMG_DIR).filter(f => !f.startsWith('.')) : [];

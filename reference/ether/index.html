@@ -807,6 +807,12 @@ a.ref-link::before { content: '→ '; }
 .ref-ex-answer[open] .ref-ex-open::before { content: '▼ '; }
 .ref-ex-a { margin-top: 9px; font-size: 12.5px; line-height: 1.75; color: var(--text-primary); }
 .ref-ex-a p { margin: 0; }
+/* ★ 反応式の構造式（gen:）とアプリへのリンク（app:）（2026-09-24・I-0125・I-0126） */
+.ref-rx-fig { margin: 6px 0 2px; }
+.ref-rx-fig .ref-rx-img { display: block; width: 100%; height: auto; }
+.ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
+.ref-rx-app { margin: 4px 0 0; text-align: right; }
+.ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */

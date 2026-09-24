@@ -9432,7 +9432,8 @@ function findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits) {
 /* ★ 2026-09-01（v1491）に `ring_opening_polymerization`（ε-カプロラクタム → ナイロン6）を追加。
  *   ⚠ **ここに入れてよい形である**ことを確かめてから足した ―― 相手は「自分と同じ分子」で、
  *   別の単量体も水も要らない（§21-3 (b)「入口は SELF_PARTNER_RULES に1行足すだけ」）。 */
-const SELF_PARTNER_RULES = ['addition_polymerization', 'alkyne_polymerization', 'diene_polymerization',
+// ★ alkyne_trimerization（アセチレン3分子 → ベンゼン）も「自分をあと2つ呼ぶ」で届く（2026-09-24・参考書の『アプリで試す』のため・I-0126）
+const SELF_PARTNER_RULES = ['addition_polymerization', 'alkyne_polymerization', 'alkyne_trimerization', 'diene_polymerization',
     'ring_opening_polymerization'];
 /**
  * 呼び出して並べる単量体の数（自分を含む）。**3 にした根拠**（v1437・§15.1 に実測）:

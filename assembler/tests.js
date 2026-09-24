@@ -6535,7 +6535,8 @@
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
-        const isAlkane = m => m.atoms.every(a => a.element === 'C' || a.element === 'H') &&
+        // ⚠ 炭素を1つは含むこと（v1647 で水素 H₂ を登録した。H だけの分子はアルカンではない）
+        const isAlkane = m => m.atoms.some(a => a.element === 'C') && m.atoms.every(a => a.element === 'C' || a.element === 'H') &&
             m.bonds.every(b => b.type === 1) && !W.findAnyCycle(m);
         const fails = [];
         let alkaneCount = 0;
@@ -55743,6 +55744,46 @@
      *   `node tools/gen-reference.mjs --check`（`verify-release.js` の規則10）が見る。
      *   ★ `ORDER.txt` を突き合わせているのは、この穴を半分埋めるため。
      */
+    /* ★★ REFRX1（v1647・I-0126・I-0022）: 参考書の反応式の「アプリで試す」（:::reaction の app:）が、
+     *   **その分子を呼び出すと、その反応が本当に押せる（またはその反応の相手を呼ぶ札が出る）**こと。
+     *   ⚠ リンクは作れても、アプリ側の反応ルールの名前が変わる・呼ぶ分子の名前が引けなくなると、押した先で何も起きない
+     *   ＝ リンクの数だけ実際に呼び出して確かめる。★ 否定対照: 無いルールの名前は赤になる */
+    test('REFRX1: 参考書の反応式の「アプリで試す」は、呼んだ分子でその反応が押せる（否定対照つき）', async (c) => {
+        const g = c.game, W = c.W;
+        const res = await fetch('reference.json?nocache=' + Date.now());
+        assert(res.ok, 'reference.json が読めない');
+        const pages = await res.json();
+        const links = [];
+        pages.forEach(p => (p.blocks || []).forEach(b => { if (b.kind === 'reaction' && b.appRule) links.push({ page: p.id, b }); }));
+        assert(links.length >= 30, `「アプリで試す」付きの反応式が ${links.length} 本しかない（30本以上のはず）`);
+        const reach = (summon, ruleId) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            if (!g.summonMolecule(summon)) return '呼び出せない';
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            if (!rule) return 'アプリにその反応ルールが無い';
+            let n = 0;
+            try { n = (rule.detect(g.userMolecule) || []).length; } catch (e) { return '判定でエラー ' + e.message; }
+            if (n > 0) return null;
+            const hints = W.findPartnerHints(g) || [];
+            return hints.some(h => h.ruleId === ruleId) ? null : '呼んだ分子ではその反応が押せず、相手を呼ぶ札も出ない';
+        };
+        const bad = [];
+        try {
+            links.forEach(({ page, b }) => {
+                const why = reach(b.appSummon, b.appRule);
+                if (why) bad.push(`${page}: ${b.left} → ${b.right}（${b.appSummon} ／ ${b.appRule}）: ${why}`);
+            });
+            // 否定対照: 無いルールは赤になる（この検査が素通りしていない証拠）
+            assert(reach('エチレン', 'no_such_rule') === 'アプリにその反応ルールが無い', '否定対照: 無いルール名が赤にならない');
+            assert(reach('エタン', 'add_br2') !== null, '否定対照: エタンに Br₂ の付加が「押せる」と出た（判定を見ていない）');
+        } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+        assert(!bad.length, `「アプリで試す」の先で反応が押せない式が ${bad.length} 本:\n    ` + bad.join('\n    '));
+        return `${links.length} 本の「アプリで試す」が全部、呼んだ分子で反応まで届く`;
+    });
+
     test('REF17: reference.json は reference-src/*.md から生成したものと1バイト一致（手で直すと赤）', async (c) => {
         const W = c.W;
         const RM = window.ReferenceMd;

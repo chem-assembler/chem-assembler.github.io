@@ -132,6 +132,8 @@ terms:
 :::reaction
 left: n HOOC−(CH₂)₄−COOH ＋ n H₂N−(CH₂)₆−NH₂
 right: ［CO−(CH₂)₄−CO−NH−(CH₂)₆−NH］ₙ ＋ 2n H₂O
+gen: n アジピン酸 ＋ n ヘキサメチレンジアミン → ［ナイロン66］n ＋ 2n 水
+app: condensation_polymerization
 level: ★★★
 note: 1つの繰り返し単位の中にアミド結合が2か所あるので、n 組つなぐと水は 2n 個とれます。
 :::
@@ -171,6 +173,8 @@ left: n C₆H₁₁NO（ε-カプロラクタム）
 over: 少量の水
 under: 加熱
 right: ［NH−(CH₂)₅−CO］ₙ
+gen: n ε-カプロラクタム → ［ナイロン6］n
+app: ring_opening_polymerization
 level: ★★★
 note: 環の中のアミド結合が切れて鎖になり、次の分子とつながります。水はきっかけとして働くだけで、反応式には出てきません。
 :::
@@ -249,6 +253,8 @@ terms:
 :::reaction
 left: n HOOC−C₆H₄−COOH ＋ n HO−CH₂CH₂−OH
 right: ［CO−C₆H₄−CO−O−CH₂CH₂−O］ₙ ＋ 2n H₂O
+gen: n テレフタル酸 ＋ n エチレングリコール → ［ポリエチレンテレフタラート］n ＋ 2n 水
+app: condensation_polymerization
 level: ★★★
 note: 1つの繰り返し単位の中にエステル結合が2か所あるので、水は 2n 個とれます。ナイロン66 のアミド結合が、エステル結合に変わった形です。
 :::
@@ -274,6 +280,8 @@ terms:
 :::reaction
 left: n CH₂=CH−CN
 right: ［CH₂−CH(CN)］ₙ
+gen: n アクリロニトリル → ［ポリアクリロニトリル］n
+app: addition_polymerization
 level: ★★★
 note: X ＝ −CN のビニル化合物の付加重合です。実際には、染まりやすくするために他の単量体と共重合させることが多いです。
 :::
