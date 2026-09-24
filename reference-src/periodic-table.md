@@ -40,6 +40,8 @@ terms:
 - 族
 - 周期
 - 価電子
+codes:
+- inorg.basis.periodic-law
 :::
 
 原子番号の順に並べた元素の性質が周期的に変化することを**周期律**といいます。電子は電子殻に規則的に入るので、価電子の数が規則的に変わり、周期律が現れます。
@@ -55,6 +57,9 @@ lead: 1・2・13〜18族が典型元素、3〜12族が遷移元素です。遷�
 terms:
 - 典型元素
 - 遷移元素
+codes:
+- inorg.basis.typical-transition
+- inorg.basis.typical-props
 :::
 
 :::figure
@@ -96,6 +101,8 @@ terms:
 - アルカリ土類金属
 - ハロゲン
 - 貴ガス
+codes:
+- inorg.basis.named-groups
 :::
 
 :::table
@@ -134,6 +141,8 @@ lead: 周期表の左下の元素ほど陽イオンになりやすく（陽性�
 terms:
 - 陽性
 - 陰性
+codes:
+- inorg.basis.electropositive
 :::
 
 原子核が電子をつかむ力の弱い元素は、自分の電子を手放して陽イオンになりがちです。この傾向を**陽性**とよびます。逆に、電子をつかむ力が強く、よそから電子を奪って陰イオンになりがちな傾向が**陰性**です。
@@ -149,6 +158,8 @@ lead: 原子核が最外殻電子を引きつけるクーロン力は、電荷�
 terms:
 - クーロン力
 - 有効核電荷
+codes:
+- inorg.basis.coulomb
 :::
 
 同じ符号の電荷どうしには反発する力（斥力）、異なる符号の電荷どうしには引き合う力（引力）がはたらきます。これを**クーロン力**といいます。クーロン力は**電荷の積に比例し、距離の2乗に反比例**します。
@@ -179,6 +190,12 @@ terms:
 - 電子親和力
 - 電気陰性度
 - 結合の極性
+codes:
+- inorg.basis.three-values
+- inorg.basis.max-elements
+- inorg.basis.ie-graph
+- inorg.basis.electron-affinity
+- inorg.basis.trend-direction
 :::
 
 ## イオン化エネルギー
