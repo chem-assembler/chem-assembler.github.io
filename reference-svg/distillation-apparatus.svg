@@ -11,7 +11,7 @@
     .to { stroke: #555; stroke-width: 15; fill: none; stroke-linecap: round; }
     .ti { stroke: #fff; stroke-width: 10; fill: none; stroke-linecap: round; }
     .liq { fill: #ddeefb; }
-    .lab { font-size: 15px; fill: #333; }
+    .lab { font-size: 18px; fill: #333; }
     .lead { stroke: #999; stroke-width: 1.2; fill: none; }
   </style>
 
