@@ -8,13 +8,13 @@
     .water { fill: #eaf3fb; stroke: none; }
     .surf { stroke: #90caf9; stroke-width: 2; fill: none; }
     .solid { fill: #cfd8dc; stroke: #607d8b; stroke-width: 2; }
-    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
-    .note { font-size: 17px; fill: #333; text-anchor: middle; }
-    .key { font-size: 20px; fill: #6a1b9a; text-anchor: middle; }
-    .ion { font-size: 13px; fill: #fff; text-anchor: middle; }
-    .solidlab { font-size: 14px; fill: #37474f; text-anchor: middle; }
+    .ttl { font-size: 26px; fill: #222; text-anchor: middle; }
+    .note { font-size: 23px; fill: #333; text-anchor: middle; }
+    .key { font-size: 26px; fill: #6a1b9a; text-anchor: middle; }
+    .ion { font-size: 19px; fill: #fff; text-anchor: middle; }
+    .solidlab { font-size: 20px; fill: #37474f; text-anchor: middle; }
     .eq { stroke: #6a1b9a; stroke-width: 2.5; fill: none; }
-    .eqlab { font-size: 14px; fill: #6a1b9a; }
+    .eqlab { font-size: 20px; fill: #6a1b9a; }
   </style>
 
   <!-- ================= 左: 沈殿が多い ================= -->
