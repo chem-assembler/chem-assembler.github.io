@@ -38,6 +38,9 @@ terms:
 - 三角錐形
 - 正四面体形
 - 結合角
+codes:
+- theo.structure.molecular-shape
+- theo.structure.formula-not-shape
 :::
 
 分子の立体的な形は、分子ごとに決まっています。隣り合う2つの共有結合がつくる角度を**結合角**といいます。まずは代表の分子の形を表で見ておきましょう。
@@ -77,6 +80,10 @@ terms:
 - 電子対の反発
 - 共有電子対
 - 非共有電子対
+codes:
+- theo.structure.electron-domain
+- theo.structure.bond-angle-order
+- theo.structure.shape-naming
 :::
 
 では、なぜ H₂O は折れ線で CH₄ は正四面体になるのかを見ていきましょう。鍵は、**電子対はどれも負の電荷をもっている**ことです。負どうしは反発するので、中心の原子のまわりにある電子対は、**たがいにいちばん遠くなる位置へ散ります**。
@@ -172,6 +179,9 @@ terms:
 - 結合の極性
 - 極性分子
 - 無極性分子
+codes:
+- theo.structure.electronegativity
+- theo.structure.molecular-polarity
 :::
 
 結合している2つの原子は、あいだの共有電子対を自分の側へ引っぱり合っています。その引っぱる強さを原子ごとに数で表したのが**電気陰性度**です。フッ素 F が最大で、貴ガスを除くと周期表の右上の元素ほど大きくなります。

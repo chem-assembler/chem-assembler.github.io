@@ -29,6 +29,8 @@ lead: 炭素原子を含み、炭素骨格をもつ化合物が有機化合物�
 terms:
 - 有機化合物
 - 無機化合物
+codes:
+- org.ali.organic-def
 :::
 
 **炭素原子を含み、炭素骨格をもつ化合物**を**有機化合物**といいます。有機化合物以外の化合物を**無機化合物**といいます。
@@ -67,6 +69,9 @@ terms:
 - 分子結晶
 - 無極性溶媒
 - 有機溶媒
+codes:
+- org.ali.organic-properties
+- org.ali.organic-exceptions
 :::
 
 :::table
@@ -124,6 +129,10 @@ terms:
 - 炭素骨格
 - 分子間力
 - 原子価
+codes:
+- org.ali.organic-diversity
+- org.ali.organic-mp-reason
+- org.ali.organic-slow-reaction
 :::
 
 表の違いがどこから出てくるのかを見ていきましょう。
@@ -165,6 +174,8 @@ lead: 種類が多いので、有機化合物は「骨格（炭化水素の部�
 terms:
 - 炭化水素
 - 官能基
+codes:
+- org.ali.organic-organize
 :::
 
 1億を超える有機化合物を1つずつ覚えることはできません。そこで有機化学では、**炭素と水素だけでできた骨格（炭化水素）**と、**性質を決めるパーツ（官能基）**の2つに分けて整理します。同じ官能基をもつ化合物は、骨格が違っても似た性質を示すので、**官能基ごとにまとめて学べば、覚える量がぐっと減ります。**

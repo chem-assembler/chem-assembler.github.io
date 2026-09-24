@@ -40,6 +40,9 @@ terms:
 - 溶鉱炉
 - 銑鉄
 - 鋼
+codes:
+- inorg.metal.iron-smelting
+- inorg.metal.iron-ore
 :::
 
 鉄鉱石には**赤鉄鉱**（主成分 Fe₂O₃）や**磁鉄鉱**（主成分 Fe₃O₄）があります。これを**コークス C** と**石灰石 CaCO₃** といっしょに溶鉱炉に入れ、下から熱風を送ります。
@@ -72,6 +75,10 @@ lead: 鉄は希塩酸・希硫酸に溶けて水素を出し、Fe³⁺ ではな
 terms:
 - 不動態
 - 赤さび
+codes:
+- inorg.metal.iron-dilute-acid
+- inorg.metal.iron-rust
+- inorg.metal.fe3-oxidant
 :::
 
 鉄はイオン化傾向が H₂ より大きいので、希塩酸や希硫酸に溶けて水素を発生します。このとき生じるのは **鉄(Ⅱ)イオン Fe²⁺** です。
@@ -108,6 +115,9 @@ terms:
 - ヘキサシアニド鉄(Ⅲ)酸カリウム
 - ヘキサシアニド鉄(Ⅱ)酸カリウム
 - チオシアン酸カリウム
+codes:
+- inorg.metal.iron-ion-color
+- inorg.metal.iron-ion-test
 :::
 
 :::table
@@ -176,6 +186,8 @@ title: Fe²⁺ は還元剤 —— 酸化されて Fe³⁺ になる
 lead: Fe²⁺ は e⁻ を1個出して Fe³⁺ になりやすく、過マンガン酸カリウムや二クロム酸カリウムの相手（還元剤）としてよく登場します。
 terms:
 - 還元剤
+codes:
+- inorg.metal.iron-fe2-reductant
 :::
 
 :::reaction

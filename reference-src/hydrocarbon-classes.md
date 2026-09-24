@@ -35,6 +35,11 @@ terms:
 - 芳香族炭化水素
 - 鎖式炭化水素
 - 環式炭化水素
+codes:
+- org.ali.class-hydrocarbon
+- org.ali.class-aliphatic
+- org.ali.class-chain-ring
+- org.ali.class-saturated
 :::
 
 1本目の線は**ベンゼン環をもつかどうか**です。**ベンゼン環をもつものを芳香族炭化水素、もたないものを脂肪族炭化水素**といいます。**芳香族炭化水素は、高校化学ではこれ以上細かく分類する必要はありません。**
@@ -55,6 +60,11 @@ terms:
 - シクロアルケン
 - シクロアルキン
 - 一般式
+codes:
+- org.ali.formula-alkene
+- org.ali.formula-alkyne
+- org.ali.formula-cycloalkane
+- org.ali.formula-cycloalkene
 :::
 
 :::table
@@ -99,6 +109,8 @@ lead: 単結合だけなら -ane、二重結合があれば -ene、三重結合�
 terms:
 - 語尾
 - 接頭辞
+codes:
+- org.ali.suffix
 :::
 
 炭化水素の名前は、**アルカンを基準にして**、語尾と語頭を変えてつくります。
@@ -125,6 +137,8 @@ lead: 一般式は化合物グループの分子式を1つの式にまとめた�
 terms:
 - 一般式
 - 同族体
+codes:
+- org.ali.homolog
 :::
 
 **化合物グループの分子式を、一般化して1つの式にまとめたもの**を**一般式**といいます。
@@ -145,6 +159,8 @@ lead: 一般式を6つとも丸暗記しなくても、アルカンを基準に�
 terms:
 - 不飽和結合
 - 付加反応
+codes:
+- org.ali.unsaturation
 :::
 
 アルカンの単結合 C−C を**二重結合 C=C にすると、水素原子が2個減ります。**それぞれの炭素から手が1本ずつ、たがいのほうへ回されるためです。**三重結合 C≡C にすると、水素原子は4個減ります。**

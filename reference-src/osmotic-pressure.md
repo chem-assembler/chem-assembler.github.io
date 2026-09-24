@@ -35,6 +35,10 @@ terms:
 - 半透膜
 - 浸透
 - 浸透圧
+codes:
+- theo.solution.osmosis
+- theo.solution.semipermeable
+- theo.solution.osmosis-direction
 :::
 
 セロハン膜は、水のような小さい分子は通しますが、デンプンのような大きい分子は通しません。このように、**溶液の中の粒子を大きさなどでふるい分け、通すものと通さないものがある膜**が**半透膜**です。
@@ -61,6 +65,9 @@ lead: 希薄溶液の浸透圧 Π は、溶液の体積 V、溶質の物質量 n
 terms:
 - ファントホッフの法則
 - 気体定数
+codes:
+- theo.solution.van-t-hoff
+- theo.solution.concentration-kind
 :::
 
 希薄溶液の浸透圧 Π〔Pa〕は、溶液の体積 V〔L〕、溶質の物質量 n〔mol〕、絶対温度 T〔K〕を使って、次の式で表されます。これを**ファントホッフの法則**といいます。
@@ -185,6 +192,8 @@ lead: 浸透圧を測れば溶質の mol がわかり、溶かした質量を mo
 terms:
 - 分子量の決定
 - 逆浸透
+codes:
+- theo.solution.osmotic-molar-mass
 :::
 
 Π・V・T を測れば、比例・反比例で溶質の物質量 n が出るので、溶かした質量から分子量がわかります。分子量を求める公式 M ＝ wRT/(ΠV) は、気体と同じく**覚えずにその場で出します**。

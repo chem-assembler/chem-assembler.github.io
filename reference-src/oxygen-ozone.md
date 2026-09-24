@@ -33,6 +33,9 @@ lead: 酸素 O₂ は無色・無臭で水に溶けにくい気体です。空�
 terms:
 - 酸素
 - 燃焼
+codes:
+- inorg.nonmetal.oxygen-oxidant
+- inorg.nonmetal.oxygen-prep
 :::
 
 :::table
@@ -150,6 +153,8 @@ terms:
 - 過酸化水素
 - オキシドール
 - 自己酸化還元反応
+codes:
+- inorg.nonmetal.h2o2-dual
 :::
 
 過酸化水素 H₂O₂ は無色の液体で、ふつうは水溶液（過酸化水素水）として使います。約3%の水溶液は**オキシドール**とよばれ、消毒に使われます。傷口に塗ると泡が出るのは、H₂O₂ が分解して O₂ が発生するためです。
@@ -220,6 +225,9 @@ terms:
 - オゾン
 - 無声放電
 - 同素体
+codes:
+- inorg.nonmetal.ozone
+- inorg.nonmetal.ozone-half
 :::
 
 :::table

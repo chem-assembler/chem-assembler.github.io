@@ -36,6 +36,8 @@ title: 加水分解の式は電離の逆反応から
 lead: 弱酸の陰イオンは H⁺ とくっついてもとの弱酸に戻りたがります。電離の逆反応を書き、H⁺ を出したのが H₂O なら両辺に OH⁻ を足すと、加水分解の式になります。
 terms:
 - 塩の加水分解
+codes:
+- theo.ionic-eq.hydrolysis-equation
 :::
 
 CH₃COO⁻ は H⁺ とくっついて CH₃COOH に戻りやすいイオンです。H⁺ をくれる相手が HCl なら弱酸の遊離、H₂O なら加水分解になります。**どちらも弱酸の電離の逆反応で、同じ仕組み**です。
@@ -87,6 +89,8 @@ lead: 加水分解の平衡定数を加水分解定数 Kh といいます。塩�
 terms:
 - 加水分解定数
 - 加水分解度
+codes:
+- theo.ionic-eq.hydrolysis-constant
 :::
 
 弱酸の電離のときの α を h に置き換えるだけで、同じ3行表が書けます。CH₃COONa はすべて電離するので、CH₃COO⁻ の濃度ははじめ c mol/L です。
@@ -130,6 +134,8 @@ title: KaKh ＝ Kw —— Kh は Ka から出す
 lead: 弱酸の電離定数 Ka と、その陰イオンの加水分解定数 Kh を掛けると、水のイオン積 Kw になります。Kh は問題で与えられないことが多いので、Kh ＝ Kw／Ka で出します。
 terms:
 - 水のイオン積
+codes:
+- theo.ionic-eq.ka-kh-kw
 :::
 
 2つの式を掛けると、[CH₃COOH] と [CH₃COO⁻] が約分で消えます。
@@ -165,6 +171,8 @@ title: 塩の水溶液の pH の計算
 lead: Kh ＝ Kw／Ka を「逆数で書く」形で出し、[OH⁻]（または [H⁺]）＝ √(cKh) に代入します。桁は「14 − 5 ＝ 9」のように引き算で出します。
 terms:
 - 塩の水溶液の pH
+codes:
+- theo.ionic-eq.salt-ph
 :::
 
 手順は次のとおりです。

@@ -33,6 +33,9 @@ lead: 貴ガスは価電子が0個で安定な単原子分子です。沸点が�
 terms:
 - 貴ガス
 - 単原子分子
+codes:
+- inorg.nonmetal.noble-gas-props
+- inorg.nonmetal.noble-gas-uses
 :::
 
 18族のヘリウム He・ネオン Ne・アルゴン Ar・クリプトン Kr・キセノン Xe・ラドン Rn を**貴ガス**といいます。電子配置がすでに安定しているので、価電子の数は0個と数えます。ほかの原子と電子をやりとりする必要がなく、化合物はほとんどできません。常温ではすべて無色・無臭の**単原子分子**の気体です。
@@ -65,6 +68,8 @@ lead: 水素 H₂ は無色・無臭で最も密度が小さい気体です。�
 terms:
 - 水素
 - 水上置換
+codes:
+- inorg.nonmetal.hydrogen-props
 :::
 
 :::table
@@ -99,6 +104,8 @@ terms:
 - 実験室的製法
 - 工業的製法
 - 水性ガス
+codes:
+- inorg.nonmetal.hydrogen-prep
 :::
 
 ## 実験室的製法1 —— 亜鉛に希硫酸を加える
@@ -182,6 +189,9 @@ terms:
 - 還元剤
 - 酸水素炎
 - 塩素爆鳴気
+codes:
+- inorg.nonmetal.hydrogen-reductant
+- inorg.nonmetal.hydride-ion
 :::
 
 水素 H₂ は高温では**2価の還元剤**としてはたらきます。H 原子は基本的に H⁺ になると覚えれば、半反応式は1本で済みます。
