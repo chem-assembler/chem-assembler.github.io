@@ -59,11 +59,14 @@
   <path class="lead" d="M 190 56 L 196 56" />
   <text class="lab" x="176" y="160" text-anchor="end">球部は枝の付け根に</text>
   <path class="lead" d="M 180 156 L 194 168" />
-  <text class="lab" x="140" y="250" text-anchor="end">枝付きフラスコ</text>
+  <text class="lab" x="140" y="235" text-anchor="end">枝付き</text>
+  <text class="lab" x="140" y="255" text-anchor="end">フラスコ</text>
   <path class="lead" d="M 144 246 L 152 248" />
-  <text class="lab" x="140" y="296" text-anchor="end">液量は半分以下</text>
+  <text class="lab" x="140" y="285" text-anchor="end">液量は</text>
+  <text class="lab" x="140" y="305" text-anchor="end">半分以下</text>
   <path class="lead" d="M 144 292 L 162 284" />
-  <text class="lab" x="140" y="322" text-anchor="end">沸騰石を入れる</text>
+  <text class="lab" x="140" y="335" text-anchor="end">沸騰石を</text>
+  <text class="lab" x="140" y="355" text-anchor="end">入れる</text>
   <path class="lead" d="M 144 318 L 178 303" />
 
   <text class="lab" x="470" y="132" text-anchor="middle">リービッヒ冷却器</text>
@@ -75,7 +78,9 @@
   <path d="M 392 196 L 392 182" style="stroke:#1565c0;stroke-width:2;fill:none" />
   <polygon points="392,172 386,186 398,186" fill="#1565c0" />
 
-  <text class="lab" x="688" y="356">受け器（密栓しない）</text>
-  <path class="lead" d="M 684 352 L 664 366" />
-  <text class="lab" x="688" y="380">純水がたまる</text>
+  <text class="lab" x="680" y="340">受け器</text>
+  <text class="lab" x="680" y="365">（密栓しない）</text>
+  <path class="lead" d="M 676 352 L 664 366" />
+  <text class="lab" x="680" y="390">純水が</text>
+  <text class="lab" x="680" y="415">たまる</text>
 </svg>
