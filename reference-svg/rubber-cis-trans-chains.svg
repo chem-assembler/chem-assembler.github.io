@@ -4,8 +4,8 @@
   <style>
     .c1 { stroke: #1565c0; stroke-width: 4; fill: none; stroke-linecap: round; }
     .c2 { stroke: #6a1b9a; stroke-width: 4; fill: none; stroke-linecap: round; }
-    .lab { font-size: 26px; fill: #222; }
-    .small { font-size: 25px; fill: #444; }
+    .lab { font-size: 30px; fill: #222; }
+    .small { font-size: 29px; fill: #444; }
     .divider { stroke: #bbb; stroke-width: 1; stroke-dasharray: 5 5; }
   </style>
 
