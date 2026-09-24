@@ -26,6 +26,9 @@ terms:
 - エステル化
 - エステル結合
 - 脱水縮合
+codes:
+- org.carbonyl.esterification
+- org.carbonyl.ester-water-origin
 :::
 
 カルボン酸 R−COOH とアルコール R′−OH の混合物に、触媒として少量の**濃硫酸**を加えて加熱すると、脱水縮合してエステルが生じます。これが**エステル化**です。
@@ -90,6 +93,9 @@ lead: 酸を使えばもとのカルボン酸とアルコールに戻ります�
 terms:
 - 加水分解
 - けん化
+codes:
+- org.carbonyl.ester-hydrolysis
+- org.carbonyl.saponification
 :::
 
 エステルに希硫酸などの**酸**を触媒として水を加えると、カルボン酸とアルコールにもどります。これが**加水分解**です。
