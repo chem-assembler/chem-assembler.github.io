@@ -6,21 +6,21 @@
   <style>
     .band { stroke: none; }
     .edge { fill: none; stroke: #555; stroke-width: 1.5; }
-    .name { font-size: 17px; fill: #222; }
-    .small { font-size: 14px; fill: #555; }
-    .tick { font-size: 13px; fill: #666; }
+    .name { font-size: 21px; fill: #222; }
+    .small { font-size: 18px; fill: #555; }
+    .tick { font-size: 17px; fill: #666; }
   </style>
 
   <!-- 帯 -->
-  <rect class="band" x="90" y="120" width="160" height="56" fill="#d1c4e9" />
-  <rect class="band" x="250" y="120" width="45" height="56" fill="#7b1fa2" />
-  <rect class="band" x="295" y="120" width="45" height="56" fill="#3949ab" />
-  <rect class="band" x="340" y="120" width="45" height="56" fill="#2e7d32" />
-  <rect class="band" x="385" y="120" width="45" height="56" fill="#f9a825" />
-  <rect class="band" x="430" y="120" width="45" height="56" fill="#ef6c00" />
-  <rect class="band" x="475" y="120" width="45" height="56" fill="#c62828" />
-  <rect class="band" x="520" y="120" width="240" height="56" fill="#ffccbc" />
-  <rect class="edge" x="90" y="120" width="670" height="56" />
+  <rect class="band" x="90" y="120" width="175" height="61" fill="#d1c4e9" />
+  <rect class="band" x="250" y="120" width="60" height="61" fill="#7b1fa2" />
+  <rect class="band" x="295" y="120" width="60" height="61" fill="#3949ab" />
+  <rect class="band" x="340" y="120" width="60" height="61" fill="#2e7d32" />
+  <rect class="band" x="385" y="120" width="60" height="61" fill="#f9a825" />
+  <rect class="band" x="430" y="120" width="60" height="61" fill="#ef6c00" />
+  <rect class="band" x="475" y="120" width="60" height="61" fill="#c62828" />
+  <rect class="band" x="520" y="120" width="255" height="61" fill="#ffccbc" />
+  <rect class="edge" x="90" y="120" width="685" height="61" />
   <path class="edge" d="M 250 120 L 250 176 M 520 120 L 520 176" />
 
   <text class="name" x="170" y="108" text-anchor="middle">紫外線</text>
