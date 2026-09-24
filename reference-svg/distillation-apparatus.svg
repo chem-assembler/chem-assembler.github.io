@@ -61,13 +61,13 @@
   <path class="lead" d="M 180 156 L 194 168" />
   <text class="lab" x="140" y="235" text-anchor="end">枝付き</text>
   <text class="lab" x="140" y="255" text-anchor="end">フラスコ</text>
-  <path class="lead" d="M 144 246 L 152 248" />
+  <path class="lead" d="M 144 240 L 152 244" />
   <text class="lab" x="140" y="285" text-anchor="end">液量は</text>
   <text class="lab" x="140" y="305" text-anchor="end">半分以下</text>
   <path class="lead" d="M 144 292 L 162 284" />
   <text class="lab" x="140" y="335" text-anchor="end">沸騰石を</text>
   <text class="lab" x="140" y="355" text-anchor="end">入れる</text>
-  <path class="lead" d="M 144 318 L 178 303" />
+  <path class="lead" d="M 144 336 L 178 305" />
 
   <text class="lab" x="470" y="132" text-anchor="middle">リービッヒ冷却器</text>
   <path class="lead" d="M 470 140 L 462 222" />
