@@ -10,16 +10,16 @@
       <path d="M 0 0 L 12 6 L 0 12 z" fill="#1565c0" /></marker>
   </defs>
   <style>
-    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
-    .cap { font-size: 16px; fill: #333; text-anchor: middle; }
+    .ttl { font-size: 24px; fill: #222; text-anchor: middle; }
+    .cap { font-size: 20px; fill: #333; text-anchor: middle; }
     .bond { stroke: #333; stroke-width: 3; fill: none; }
     .back { stroke: #333; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
     .cont { stroke: #aaa; stroke-width: 2; fill: none; }
     .at { fill: #eceff1; stroke: #333; stroke-width: 2.5; }
     .sheet { fill: none; stroke: #333; stroke-width: 2; }
     .weak { stroke: #bbb; stroke-width: 1.6; fill: none; stroke-dasharray: 3 5; }
-    .note { font-size: 15px; fill: #555; }
-    .e { font-size: 15px; fill: #1565c0; }
+    .note { font-size: 19px; fill: #555; }
+    .e { font-size: 19px; fill: #1565c0; }
   </style>
 
   <text class="ttl" x="215" y="36">ダイヤモンド</text>
