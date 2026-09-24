@@ -38,6 +38,8 @@ terms:
 left: C₆H₆ ＋ Cl₂
 over: Fe または FeCl₃
 right: C₆H₅Cl ＋ HCl
+gen: ベンゼン ＋ 塩素 → クロロベンゼン ＋ 塩化水素
+app: substitution_cl
 level: ★★★
 note: クロロベンゼンと塩化水素ができます。触媒の鉄が要ることが、紫外線での付加反応との分かれ目です。
 :::
@@ -53,6 +55,8 @@ left: C₆H₆ ＋ HNO₃
 over: 濃硫酸
 under: 約60℃
 right: C₆H₅NO₂ ＋ H₂O
+gen: ベンゼン ＋ 硝酸 → ニトロベンゼン ＋ 水
+app: substitution_no2
 level: ★★★
 note: ニトロベンゼンと水ができます。濃硫酸は反応物ではなく、触媒としてはたらきます。
 :::
@@ -67,6 +71,8 @@ note: ニトロベンゼンと水ができます。濃硫酸は反応物では�
 left: C₆H₆ ＋ H₂SO₄
 over: 加熱
 right: C₆H₅SO₃H ＋ H₂O
+gen: ベンゼン ＋ 硫酸 → ベンゼンスルホン酸 ＋ 水
+app: substitution_so3h
 level: ★★★
 note: ベンゼンスルホン酸と水ができます。ニトロ化と違い、ここでは硫酸そのものが反応物です。
 :::
@@ -188,6 +194,8 @@ left: C₆H₅CH₃ ＋ 3HNO₃
 over: 濃硫酸
 under: 加熱
 right: C₆H₂(CH₃)(NO₂)₃ ＋ 3H₂O
+gen: トルエン ＋ 3 硝酸 → 2,4,6-トリニトロトルエン ＋ 3 水
+app: substitution_no2
 level: ★☆☆
 note: 2,4,6-トリニトロトルエン（TNT）ができます。メチル基から見て o・p・o の3か所に入るので、位置番号が 2,4,6 になります。
 :::
