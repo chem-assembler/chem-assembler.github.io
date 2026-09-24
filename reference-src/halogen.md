@@ -34,6 +34,8 @@ lead: ハロゲンの原子は価電子を7個もち、あと1個 e⁻ が入れ
 terms:
 - ハロゲン
 - 電気陰性度
+codes:
+- inorg.nonmetal.halogen-atom
 :::
 
 ハロゲンは価電子が7個なので、e⁻ を1個受け取って貴ガスと同じ電子配置の**1価の陰イオン**（F⁻・Cl⁻・Br⁻・I⁻）になりやすい元素です。陰性が強く、同じ周期の中で電子親和力・電気陰性度が最大で、イオン化エネルギーは貴ガスに次いで大きくなります。
@@ -52,6 +54,9 @@ lead: 単体はすべて二原子分子で酸化剤。状態と色は F₂ か�
 terms:
 - 酸化力
 - ハロゲンの単体
+codes:
+- inorg.nonmetal.halogen-state
+- inorg.nonmetal.halogen-oxidizing
 :::
 
 ハロゲンは二原子分子の単体 X₂ をつくります。単体は**酸化剤**、ハロゲン化物イオン X⁻ は**還元剤**として、次の反応を行き来します。
@@ -145,6 +150,8 @@ lead: HCl・HBr・HI は強酸、HF だけが弱酸です。HF は分子間で�
 terms:
 - ハロゲン化水素
 - フッ化水素酸
+codes:
+- inorg.nonmetal.hydrogen-halide
 :::
 
 :::table
@@ -178,6 +185,8 @@ lead: Ag⁺ とハロゲン化物イオンの塩は、AgF を除いて水に溶�
 terms:
 - ハロゲン化銀
 - 感光性
+codes:
+- inorg.nonmetal.silver-halide
 :::
 
 :::table
@@ -221,6 +230,8 @@ terms:
 - フッ化水素
 - ホタル石
 - ヘキサフルオロケイ酸
+codes:
+- inorg.nonmetal.fluorine
 :::
 
 :::table
@@ -326,6 +337,9 @@ terms:
 - ヨウ素
 - ヨウ素デンプン反応
 - 三ヨウ化物イオン
+codes:
+- inorg.nonmetal.iodine
+- inorg.nonmetal.bromine
 :::
 
 ## 臭素
