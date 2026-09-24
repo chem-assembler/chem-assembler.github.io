@@ -37,8 +37,8 @@
   <text x="270" y="150" class="eq">→</text>
   <text x="315" y="150" class="eq">Mn<tspan font-size="14" dy="-10">2+</tspan></text>
   <text x="370" y="150" class="eq">＋</text>
-  <rect class="boxOrange" x="385" y="125" width="70" height="28" />
-  <text x="390" y="150" class="eq">4H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  <rect class="boxOrange" x="385" y="125" width="75" height="28" />
+  <text x="395" y="150" class="eq">4H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
 
   <rect class="boxRight" x="470" y="105" width="200" height="40" />
   <text x="475" y="122" font-size="14">右辺にH原子が8個あるので</text>
