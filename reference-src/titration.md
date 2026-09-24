@@ -153,6 +153,7 @@ terms:
 
 :::figure
 src: titration-curve-hcl-naoh.png
+svg: titration-curve-hcl-naoh.svg
 alt: 横軸に滴下した水酸化ナトリウム水溶液の体積、縦軸に pH をとった滴定曲線。pH 1 付近から始まり、中和点付近で pH が一気に上がって pH 7 を通り、pH 13 に近づいていく
 caption: 塩酸（強酸）に水酸化ナトリウム水溶液（強塩基）を滴下したときの滴定曲線。**pH 1 から始まり、中和点（NaCl 水溶液・pH 7）で一気に変わり、pH 13 に近づきます**。
 :::
