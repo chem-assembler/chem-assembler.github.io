@@ -165,6 +165,16 @@ to: stereoisomers
 text: 不斉炭素原子と立体異性体の数え方は異性体のページへ
 :::
 
+## 例題 —— グルコースの鎖状構造
+
+紙に書いて解いてみてください。答え合わせは「解答を見る」から。
+
+:::exercise
+source: reference-outline/bio.md 第2部 saccharide の例題1（①ドラフトのために起こした問い）
+prompt: グルコース C₆H₁₂O₆ の鎖状構造を示性式で書き、不斉炭素原子の数を答えよ。
+answer: CH₂OH−CHOH−CHOH−CHOH−CHOH−CHO。**不斉炭素原子は4個**です（両端の CH₂OH と CHO を除いた4つの CHOH の炭素）。
+:::
+
 :::section
 anchor: ring
 title: 環状構造と α形・β形
@@ -306,6 +316,14 @@ why: 「還元性 ＝ ホルミル基」を逆向きに使って「ホルミル�
 
 **「単糖はすべて還元性を示す」と覚えてください。**変わる仕組みの名前や途中の構造は、覚える必要はありません。
 
+## 例題 —— フルクトースが還元性を示すわけ
+
+:::exercise
+source: reference-outline/bio.md 第2部 saccharide の例題3（①ドラフトのために起こした記述問題）
+prompt: フルクトースは鎖状構造にホルミル基をもたないのに、フェーリング液を還元する。その理由を書け。
+answer: フェーリング液の反応が起こる塩基性の水溶液中で、フルクトースの**一部がホルミル基をもつ構造に変わる**ためです。
+:::
+
 :::section
 anchor: fermentation
 title: アルコール発酵
@@ -338,26 +356,12 @@ to: alcohol
 text: 発酵で得られるエタノールの性質はアルコールのページへ
 :::
 
-## 例題
-
-紙に書いて解いてみてください。答え合わせは「解答を見る」から。
-
-:::exercise
-source: reference-outline/bio.md 第2部 saccharide の例題1（①ドラフトのために起こした問い）
-prompt: グルコース C₆H₁₂O₆ の鎖状構造を示性式で書き、不斉炭素原子の数を答えよ。
-answer: CH₂OH−CHOH−CHOH−CHOH−CHOH−CHO。**不斉炭素原子は4個**です（両端の CH₂OH と CHO を除いた4つの CHOH の炭素）。
-:::
+## 例題 —— アルコール発酵
 
 :::exercise
 source: reference-outline/bio.md 第2部 saccharide の例題2（①ドラフトのために起こした計算問題）
 prompt: グルコース 18.0 g を酵母で完全にアルコール発酵させたとき、生じるエタノールの質量と二酸化炭素の体積（標準状態）を求めよ。H ＝ 1、C ＝ 12、O ＝ 16 とする。
 answer: グルコースの分子量は180なので 0.100 mol。反応式の係数からエタノールも CO₂ も 0.200 mol。エタノール（分子量46）は **9.20 g**、CO₂ は 0.200 × 22.4 ＝ **4.48 L** です。
-:::
-
-:::exercise
-source: reference-outline/bio.md 第2部 saccharide の例題3（①ドラフトのために起こした記述問題）
-prompt: フルクトースは鎖状構造にホルミル基をもたないのに、フェーリング液を還元する。その理由を書け。
-answer: フェーリング液の反応が起こる塩基性の水溶液中で、フルクトースの**一部がホルミル基をもつ構造に変わる**ためです。
 :::
 
 :::example
