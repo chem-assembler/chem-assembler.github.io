@@ -3,8 +3,8 @@
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
     .f { font-size: 24px; fill: #222; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 19px; fill: #444; }
     .arw { stroke: #333; stroke-width: 2.5; fill: none; }
     .move { stroke: #c62828; stroke-width: 2.5; fill: none; }
     .red { fill: #c62828; }

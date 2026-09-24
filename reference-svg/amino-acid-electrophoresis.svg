@@ -6,8 +6,8 @@
     .vessel { fill: #eaf3fb; stroke: #333; stroke-width: 2.5; }
     .rod { fill: #555; stroke: #333; stroke-width: 2; }
     .wire { stroke: #333; stroke-width: 2.5; fill: none; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 14px; fill: #444; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 18px; fill: #444; }
     .red { fill: #c62828; }
     .blue { fill: #1565c0; }
     .purple { fill: #6a1b9a; }
