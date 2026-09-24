@@ -35,6 +35,10 @@ lead: 単体は軟らかく軽い金属で、常温の水と反応して水素�
 terms:
 - アルカリ金属
 - 溶融塩電解
+codes:
+- inorg.metal.alkali-water
+- inorg.metal.alkali-storage-prep
+- inorg.metal.alkali-reactivity
 :::
 
 アルカリ金属は**イオン化傾向がとても大きい**ので、すぐにほかの元素と結びつきます。自然界で見つかるのは、化合物になった姿だけです。同じ理由で、水溶液を電気分解しても単体は得られません（先に水が還元されます）。単体は、塩化ナトリウムなどを**融解して電気分解（溶融塩電解）**してつくります。
@@ -120,6 +124,9 @@ terms:
 - 炭酸水素ナトリウム
 - 潮解
 - 風解
+codes:
+- inorg.metal.deliquescence-efflorescence
+- inorg.metal.carbonate-bicarbonate
 :::
 
 :::table
@@ -245,6 +252,8 @@ lead: 塩化ナトリウムと石灰石から炭酸ナトリウムをつくる�
 terms:
 - アンモニアソーダ法
 - ソルベー法
+codes:
+- inorg.metal.solvay
 :::
 
 原料は**塩化ナトリウム NaCl（飽和水溶液）と石灰石 CaCO₃** の2つだけです。途中で使う NH₃ と CO₂ は、工程の中で回収して再び使います。
