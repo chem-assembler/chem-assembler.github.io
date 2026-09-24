@@ -38,6 +38,8 @@ lead: 色・におい・水への溶けやすさ・水溶液の液性を並べ�
 terms:
 - 刺激臭
 - 腐卵臭
+codes:
+- inorg.basis.gas-color
 :::
 
 :::table
@@ -79,6 +81,8 @@ title: 製法の一覧 —— 反応の型で分ける
 lead: 実験室での製法は、ほとんどが遊離か酸化還元の型です。型が分かれば、反応式は型の手順で書けます。
 terms:
 - 実験室的製法
+codes:
+- inorg.basis.gas-prep-type
 :::
 
 :::table
@@ -140,6 +144,8 @@ text: 弱酸の遊離・揮発性の酸の遊離のページへ
 anchor: heating
 title: 加熱が要るかどうか
 lead: 濃硫酸を使う反応と、固体どうしの反応は加熱が要ります。
+codes:
+- inorg.basis.gas-heating
 :::
 
 :::list
@@ -161,6 +167,8 @@ terms:
 - 水上置換
 - 下方置換
 - 上方置換
+codes:
+- inorg.basis.gas-collection
 :::
 
 :::list
@@ -195,6 +203,8 @@ lead: 乾燥剤は、乾燥したい気体と中和しないものを選びま�
 terms:
 - 乾燥剤
 - ソーダ石灰
+codes:
+- inorg.basis.drying-agent
 :::
 
 :::table
