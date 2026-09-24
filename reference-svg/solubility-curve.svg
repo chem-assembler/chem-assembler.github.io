@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="860" height="450" viewBox="0 0 860 450" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="716.667" height="375" viewBox="0 0 860 450" role="img">
   <!-- 溶解度曲線。多くの固体は高温ほど溶けるが、NaCl はほとんど変わらず、Ca(OH)2 は減る（本文の「例外2つ」）。
        ⚠ Ca(OH)2 は 0.2 g 未満で目盛りでは軸に重なるため、見えるように持ち上げて描き、札に実際の大きさを書いた。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
