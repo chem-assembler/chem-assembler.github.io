@@ -16,10 +16,10 @@
   <style>
     .box { fill: #fff; stroke: #333; stroke-width: 2; }
     .edge { fill: #eceff1; stroke: #333; stroke-width: 3; }
-    .t { font-size: 17px; fill: #222; text-anchor: middle; }
-    .tb { font-size: 19px; fill: #222; text-anchor: middle; }
-    .tag { font-size: 15px; fill: #555; }
-    .note { font-size: 15px; fill: #555; }
+    .t { font-size: 19px; fill: #222; text-anchor: middle; }
+    .tb { font-size: 21px; fill: #222; text-anchor: middle; }
+    .tag { font-size: 19px; fill: #555; }
+    .note { font-size: 19px; fill: #555; }
     .flow { stroke: #333; stroke-width: 2.5; fill: none; marker-end: url(#ad); }
     .co2 { stroke: #1565c0; stroke-width: 2; fill: none; stroke-dasharray: 7 5; marker-end: url(#ab); }
     .co2p { stroke: #1565c0; stroke-width: 2; fill: none; stroke-dasharray: 7 5; }
