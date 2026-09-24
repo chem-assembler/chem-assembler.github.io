@@ -10,7 +10,7 @@
     .tick { stroke: #333; stroke-width: 1.5; fill: none; }
     .lead { stroke: #666; stroke-width: 1.5; fill: none; }
     .name { font-size: 20px; font-weight: bold; fill: #222; }
-    .small { font-size: 16px; fill: #444; }
+    .small { font-size: 19px; fill: #444; }
     .red { fill: #c62828; }
     .mid { text-anchor: middle; }
   </style>
