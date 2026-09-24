@@ -43,10 +43,10 @@
 
     <!-- 電子移動 -->
     <path class="electron" d="M 50 80 L 50 10 L 150 10 L 150 5 L 170 15 L 150 25 L 150 20 L 55 20 L 55 80 Z" />
-    <text x="100" y="0" font-size="28" font-weight="bold">e<tspan font-size="20" dy="-10">-</tspan></text>
+    <text x="100" y="45" font-size="28" font-weight="bold">e<tspan font-size="20" dy="-10">-</tspan></text>
     
     <path class="electron" d="M 285 20 L 345 20 L 345 80 L 340 80 L 350 100 L 360 80 L 355 80 L 355 10 L 285 10 Z" />
-    <text x="315" y="0" font-size="28" font-weight="bold">e<tspan font-size="20" dy="-10">-</tspan></text>
+    <text x="315" y="45" font-size="28" font-weight="bold">e<tspan font-size="20" dy="-10">-</tspan></text>
 
     <!-- イオン -->
     <ellipse cx="60" cy="220" rx="25" ry="20" class="ionZn" />
@@ -73,8 +73,8 @@
 
     <rect x="320" y="190" width="90" height="50" class="boxBrown" />
     <ellipse cx="365" cy="220" rx="25" ry="20" class="ionCu" />
-    <text x="365" y="225" class="wtext">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
-    <text x="365" y="200" class="wtext">酸化剤</text>
+    <text x="365" y="230" class="wtext">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
+    <text x="365" y="210" class="wtext">酸化剤</text>
     
     <!-- Cu2+移動矢印 -->
     <polygon points="350,175 340,185 355,185" class="arrowOrange" />
@@ -136,8 +136,8 @@
 
     <rect x="120" y="170" width="90" height="50" class="boxBrown" />
     <ellipse cx="165" cy="200" rx="25" ry="20" class="ionCu" />
-    <text x="165" y="205" class="wtext">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
-    <text x="165" y="180" class="wtext">酸化剤</text>
+    <text x="165" y="210" class="wtext">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
+    <text x="165" y="190" class="wtext">酸化剤</text>
     
     <!-- Cu2+移動矢印 -->
     <polygon points="120,180 135,175 130,190" class="arrowOrange" />
