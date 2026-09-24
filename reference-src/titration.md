@@ -39,6 +39,10 @@ terms:
 - ビュレット
 - コニカルビーカー
 - 共洗い
+codes:
+- theo.acid-base.titration-apparatus
+- theo.acid-base.titration-rinse
+- theo.acid-base.rinse-reason
 :::
 
 中和滴定で使う器具は4つです。**用途で言い切れるようにしてください。**
@@ -102,6 +106,8 @@ items:
 anchor: approx-ph
 title: 酸・塩基のおおよその pH
 lead: 約 0.1 mol/L の1価の酸・塩基で、弱い方の電離度を 0.01 とすると、強酸 pH ＝ 1、弱酸 pH ＝ 3、弱塩基 pH ＝ 11、強塩基 pH ＝ 13 です。
+codes:
+- theo.acid-base.approx-ph
 :::
 
 中和滴定はふつう約 0.1 mol/L の水溶液どうしで行います。弱酸・弱塩基の電離度が約 0.01 であることと合わせると、おおよその pH は次の4つになります。
@@ -147,6 +153,9 @@ terms:
 - 滴定曲線
 - 中和点
 - pH ジャンプ
+codes:
+- theo.acid-base.titration-curve
+- theo.acid-base.curve-reverse
 :::
 
 ビュレットから1滴ずつ加えるたびに、コニカルビーカーの中の pH は少しずつ変わっていきます。加えた体積（横軸）に対して pH（縦軸）がどう動くかを描いた線が**滴定曲線**です。まずは、塩酸へ水酸化ナトリウム水溶液を加えていく場合で見てみましょう。
@@ -200,6 +209,8 @@ terms:
 - 変色域
 - フェノールフタレイン
 - メチルオレンジ
+codes:
+- theo.acid-base.indicator
 :::
 
 中和点を目で知るために加える、pH によって色が変わる物質を**指示薬**といい、色が変わる pH の範囲を**変色域**といいます。指示薬は、**変色域を pH ジャンプの1滴で飛び越えられる**ものでなければ使えません。
@@ -249,6 +260,9 @@ terms:
 - 二段階中和
 - 第一中和点
 - 第二中和点
+codes:
+- theo.acid-base.two-step-neutralization
+- theo.acid-base.two-step-mixture
 :::
 
 炭酸ナトリウムは、強塩基 NaOH と弱酸 CO₂（H₂CO₃）からできた正塩で、水溶液は塩基性です。塩酸を滴下すると、次の2段階で反応します。1段目がすっかり終わってから2段目が始まります。CO₃²⁻ のほうが HCO₃⁻ より H⁺ を受け取りやすいためです。
