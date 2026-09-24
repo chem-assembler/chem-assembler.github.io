@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="840" height="430" viewBox="0 0 840 430" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="606.667" height="310.556" viewBox="0 0 840 430" role="img">
   <!-- 熱量の測定：下がっていく直線を混ぜた時刻まで延ばして最高温度を読む。
        本文の具体例に合わせた（はじめ 20.0℃・温度計の最高 29.8℃・延ばした先 30.6℃・Δt＝10.6K）。
        ⚠ 下がる直線の傾きは、1分で 0.8℃ 逃げる（29.8→30.6 の差）ようにそろえてある。
@@ -8,8 +8,8 @@
     .grid { stroke: #ddd; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
     .mes { stroke: #1565c0; stroke-width: 3; fill: none; }
     .ext { stroke: #c62828; stroke-width: 2.5; stroke-dasharray: 7 5; fill: none; }
-    .small { font-size: 15px; fill: #444; }
-    .tick { font-size: 13px; fill: #666; }
+    .small { font-size: 20px; fill: #444; }
+    .tick { font-size: 18px; fill: #666; }
   </style>
 
   <!-- 軸 -->

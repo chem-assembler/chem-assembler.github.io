@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="820" height="240" viewBox="0 0 820 240" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="723.529" height="211.765" viewBox="0 0 820 240" role="img">
   <!-- 「炭水化物」という呼び名の由来。C6H12O6 を C6(H2O)6 と書き直せることを見せる。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 実際に水の分子が入っているわけではない、を必ず添える。 -->
   <style>
-    .f { font-size: 36px; fill: #222; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .f { font-size: 38px; fill: #222; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
     .arw { stroke: #333; stroke-width: 2.5; fill: none; }
     .brace { stroke: #1565c0; stroke-width: 2; fill: none; }
     .blue { fill: #1565c0; }

@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="820" height="290" viewBox="0 0 820 290" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="723.529" height="255.882" viewBox="0 0 820 290" role="img">
   <!-- セッケンの分子を「長い棒（疎水基）＋丸い頭（親水基）」の記号に置きかえる図。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 記号の向きは示性式と同じ（左が炭化水素の鎖、右が −COO⁻Na⁺）。 -->
   <style>
-    .f { font-size: 30px; fill: #222; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .f { font-size: 32px; fill: #222; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
     .brace { stroke: #333; stroke-width: 2; fill: none; }
     .drop { stroke: #999; stroke-width: 1.5; stroke-dasharray: 5 5; fill: none; }
     .tail { stroke: #e65100; stroke-width: 14; stroke-linecap: round; fill: none; }

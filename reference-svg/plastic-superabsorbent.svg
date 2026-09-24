@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="370" viewBox="0 0 880 370" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="602.105" height="253.158" viewBox="0 0 880 370" role="img">
   <!-- 高吸水性樹脂。水を吸うと −COONa が電離し、−COO⁻ どうしの反発で網目が広がって水をかかえこむ。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
     .net { stroke: #6a1b9a; stroke-width: 2.5; fill: none; }
     .arw { stroke: #333; stroke-width: 2.5; fill: none; }
     .rep { stroke: #c62828; stroke-width: 2; fill: none; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 14px; fill: #444; }
-    .ion { font-size: 13px; fill: #c62828; }
+    .lab { font-size: 23px; fill: #222; }
+    .small { font-size: 20px; fill: #444; }
+    .ion { font-size: 19px; fill: #c62828; }
     .w { fill: #1565c0; }
   </style>
 

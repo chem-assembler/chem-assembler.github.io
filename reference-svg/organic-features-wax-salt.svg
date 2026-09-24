@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="480" viewBox="0 0 880 480" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="694.737" height="378.947" viewBox="0 0 880 480" role="img">
   <!-- ろう（パラフィン・有機化合物）と食塩（NaCl・無機化合物）を、融ける温度・水・火の3つで比べる模式図。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ★ 中身は本文の「具体例で比べてみましょう」の段落だけ（ろう 60℃ほど・食塩 801℃・水・燃えるか）。
@@ -9,10 +9,10 @@
     .tick { stroke: #333; stroke-width: 1.5; fill: none; }
     .glass { stroke: #333; stroke-width: 2.5; fill: none; stroke-linejoin: round; }
     .div { stroke: #bbb; stroke-width: 1.5; stroke-dasharray: 5 5; fill: none; }
-    .lab { font-size: 19px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
-    .name { font-size: 23px; font-weight: bold; }
-    .res { font-size: 20px; font-weight: bold; fill: #222; }
+    .lab { font-size: 23px; fill: #222; }
+    .small { font-size: 19px; fill: #444; }
+    .name { font-size: 27px; font-weight: bold; }
+    .res { font-size: 24px; font-weight: bold; fill: #222; }
     .mid { text-anchor: middle; }
     .blue { fill: #1565c0; }
     .red { fill: #c62828; }
@@ -55,12 +55,12 @@
 
   <!-- ===== ろう × 水: 溶けずに残る ===== -->
   <path d="M 267 218 L 267 294 Q 267 300 273 300 L 327 300 Q 333 300 333 294 L 333 218 Z" fill="#dbe9f7" />
-  <rect x="283" y="210" width="34" height="16" rx="4" fill="#f5efd6" stroke="#8a7f5a" stroke-width="1.5" />
+  <rect x="283" y="210" width="49" height="21" rx="4" fill="#f5efd6" stroke="#8a7f5a" stroke-width="1.5" />
   <path class="glass" d="M 262 188 L 267 193 L 267 294 Q 267 300 273 300 L 327 300 Q 333 300 333 294 L 333 193 L 338 188" />
   <text class="res" x="370" y="252">溶けない</text>
 
   <!-- ===== ろう × 火: 燃える ===== -->
-  <rect x="598" y="238" width="24" height="62" fill="#f5efd6" stroke="#8a7f5a" stroke-width="1.5" />
+  <rect x="598" y="238" width="39" height="67" fill="#f5efd6" stroke="#8a7f5a" stroke-width="1.5" />
   <path d="M 610 238 L 610 226" stroke="#333" stroke-width="2" />
   <path d="M 610 188 C 598 204, 600 222, 610 226 C 620 222, 622 204, 610 188 Z" fill="#ffd27a" stroke="#e8892a" stroke-width="2" />
   <text class="res" x="660" y="244">燃える</text>

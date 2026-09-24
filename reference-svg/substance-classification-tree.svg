@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="400" viewBox="0 0 760 400" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="617.5" height="325" viewBox="0 0 760 400" role="img">
   <!-- 物質の分類の木。2回の問いで4つに分かれる（本文の「2回の問い」と同じ順）。
        ⚠ ①は「物質が何種類か」、②は「元素が何種類か」。ここを取り違えないよう箱の中に書いた。
        図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
   <style>
     .box { fill: #fcfcfc; stroke: #555; stroke-width: 2; }
-    .n { font-size: 19px; fill: #222; }
-    .s { font-size: 13px; fill: #555; }
-    .ex { font-size: 13px; fill: #777; }
-    .q { font-size: 15px; fill: #6a1b9a; }
+    .n { font-size: 22px; fill: #222; }
+    .s { font-size: 19px; fill: #555; }
+    .ex { font-size: 19px; fill: #777; }
+    .q { font-size: 19px; fill: #6a1b9a; }
     .ln { stroke: #555; stroke-width: 2; fill: none; }
   </style>
 
@@ -20,28 +20,28 @@
   <text class="q" x="480" y="176" text-anchor="middle">② 何種類の元素からできているか</text>
 
   <!-- 物質 -->
-  <rect class="box" x="40" y="145" width="120" height="56" rx="6" />
+  <rect class="box" x="40" y="145" width="135" height="61" rx="6" />
   <text class="n" x="100" y="180" text-anchor="middle">物質</text>
 
   <!-- 混合物 -->
-  <rect class="box" x="290" y="54" width="140" height="56" rx="6" />
+  <rect class="box" x="290" y="54" width="155" height="61" rx="6" />
   <text class="n" x="360" y="80" text-anchor="middle">混合物</text>
   <text class="s" x="360" y="100" text-anchor="middle">2種類以上の物質</text>
   <text class="ex" x="360" y="130" text-anchor="middle">空気・海水・塩酸</text>
 
   <!-- 純物質 -->
-  <rect class="box" x="290" y="236" width="140" height="56" rx="6" />
+  <rect class="box" x="290" y="236" width="155" height="61" rx="6" />
   <text class="n" x="360" y="262" text-anchor="middle">純物質</text>
   <text class="s" x="360" y="282" text-anchor="middle">1種類の物質だけ</text>
 
   <!-- 単体 -->
-  <rect class="box" x="530" y="190" width="160" height="56" rx="6" />
+  <rect class="box" x="530" y="190" width="175" height="61" rx="6" />
   <text class="n" x="610" y="216" text-anchor="middle">単体</text>
   <text class="s" x="610" y="236" text-anchor="middle">元素が1種類</text>
   <text class="ex" x="610" y="266" text-anchor="middle">O₂・Fe・Cu</text>
 
   <!-- 化合物 -->
-  <rect class="box" x="530" y="300" width="160" height="56" rx="6" />
+  <rect class="box" x="530" y="300" width="175" height="61" rx="6" />
   <text class="n" x="610" y="326" text-anchor="middle">化合物</text>
   <text class="s" x="610" y="346" text-anchor="middle">元素が2種類以上</text>
   <text class="ex" x="610" y="376" text-anchor="middle">H₂O・NaCl・CO₂</text>

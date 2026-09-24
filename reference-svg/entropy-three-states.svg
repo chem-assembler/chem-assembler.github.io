@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="366" viewBox="0 44 880 366" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="694.737" height="288.947" viewBox="0 44 880 366" role="img">
   <!-- 固体・液体・気体の粒子の並びと、エントロピー（乱雑さ）の大小。
        固体は格子に並べ、液体は少しずつずらして詰め、気体はまばらに置いて動く向きの尾を付けた。
        ⚠ 粒子の数は3つでそろえていない（模式図。気体の箱に同じ数を入れると「まばら」が見えない）。
@@ -7,15 +7,15 @@
     .box { fill: #fafafa; stroke: #bbb; stroke-width: 1.5; }
     .p { fill: #bbdefb; stroke: #1565c0; stroke-width: 1.6; }
     .tail { stroke: #90a4ae; stroke-width: 2.5; stroke-linecap: round; }
-    .lab { font-size: 20px; fill: #222; font-weight: bold; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 24px; fill: #222; font-weight: bold; }
+    .small { font-size: 19px; fill: #444; }
     .arrow { stroke: #333; stroke-width: 2; fill: none; }
     .big { stroke: #c62828; stroke-width: 4; fill: none; }
-    .bigtxt { font-size: 18px; fill: #c62828; font-weight: bold; }
+    .bigtxt { font-size: 22px; fill: #c62828; font-weight: bold; }
   </style>
 
   <!-- 固体：規則正しく並ぶ -->
-  <rect class="box" x="30" y="60" width="240" height="220" rx="6" />
+  <rect class="box" x="30" y="60" width="255" height="225" rx="6" />
   <g>
     <circle class="p" cx="78" cy="98" r="13" /><circle class="p" cx="114" cy="98" r="13" /><circle class="p" cx="150" cy="98" r="13" /><circle class="p" cx="186" cy="98" r="13" /><circle class="p" cx="222" cy="98" r="13" />
     <circle class="p" cx="78" cy="134" r="13" /><circle class="p" cx="114" cy="134" r="13" /><circle class="p" cx="150" cy="134" r="13" /><circle class="p" cx="186" cy="134" r="13" /><circle class="p" cx="222" cy="134" r="13" />
@@ -27,7 +27,7 @@
   <text class="small" x="150" y="332" text-anchor="middle">決まった位置に規則正しく並ぶ</text>
 
   <!-- 液体：寄り集まっているが並びはくずれている -->
-  <rect class="box" x="320" y="60" width="240" height="220" rx="6" />
+  <rect class="box" x="320" y="60" width="255" height="225" rx="6" />
   <g>
     <circle class="p" cx="388" cy="147" r="13" /><circle class="p" cx="419" cy="153" r="13" /><circle class="p" cx="455" cy="149" r="13" /><circle class="p" cx="487" cy="154" r="13" />
     <circle class="p" cx="350" cy="186" r="13" /><circle class="p" cx="385" cy="181" r="13" /><circle class="p" cx="452" cy="183" r="13" /><circle class="p" cx="489" cy="186" r="13" /><circle class="p" cx="522" cy="181" r="13" />
@@ -38,7 +38,7 @@
   <text class="small" x="440" y="332" text-anchor="middle">寄り集まったまま位置を変える</text>
 
   <!-- 気体：まばらに飛び回る（尾は動いてきた向き） -->
-  <rect class="box" x="610" y="60" width="240" height="220" rx="6" />
+  <rect class="box" x="610" y="60" width="255" height="225" rx="6" />
   <g>
     <line class="tail" x1="632" y1="98" x2="614" y2="98" />
     <line class="tail" x1="753" y1="99" x2="767" y2="113" />

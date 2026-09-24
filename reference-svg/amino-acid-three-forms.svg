@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="940" height="330" viewBox="0 0 940 330" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="658" height="231" viewBox="0 0 940 330" role="img">
   <!-- 陽イオン ⇄ 双性イオン ⇄ 陰イオン。下に pH の向き（左が酸性側）と電気泳動での動きを添えた。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 陽イオンは陰極へ、陰イオンは陽極へ。等電点ではどちらへも動かない。 -->
   <style>
-    .f { font-size: 21px; fill: #222; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 14px; fill: #444; }
+    .f { font-size: 27px; fill: #222; }
+    .lab { font-size: 26px; fill: #222; }
+    .small { font-size: 26px; fill: #444; }
     .arw { stroke: #333; stroke-width: 2.5; fill: none; }
     .ax { stroke: #333; stroke-width: 2; fill: none; }
     .red { fill: #c62828; }

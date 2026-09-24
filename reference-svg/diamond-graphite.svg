@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="420" viewBox="0 0 880 420" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="694.737" height="331.579" viewBox="0 0 880 420" role="img">
   <!-- ダイヤモンドと黒鉛の構造の違い。左＝1個の C に4本の共有結合（正四面体がどこまでも続く立体網目）、
        右＝1個の C に3本（六角形の平面の層が重なる）。4個目の価電子が層の中を動くことを矢印で示す。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
@@ -10,16 +10,16 @@
       <path d="M 0 0 L 12 6 L 0 12 z" fill="#1565c0" /></marker>
   </defs>
   <style>
-    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
-    .cap { font-size: 16px; fill: #333; text-anchor: middle; }
+    .ttl { font-size: 24px; fill: #222; text-anchor: middle; }
+    .cap { font-size: 20px; fill: #333; text-anchor: middle; }
     .bond { stroke: #333; stroke-width: 3; fill: none; }
     .back { stroke: #333; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
     .cont { stroke: #aaa; stroke-width: 2; fill: none; }
     .at { fill: #eceff1; stroke: #333; stroke-width: 2.5; }
     .sheet { fill: none; stroke: #333; stroke-width: 2; }
     .weak { stroke: #bbb; stroke-width: 1.6; fill: none; stroke-dasharray: 3 5; }
-    .note { font-size: 15px; fill: #555; }
-    .e { font-size: 15px; fill: #1565c0; }
+    .note { font-size: 19px; fill: #555; }
+    .e { font-size: 19px; fill: #1565c0; }
   </style>
 
   <text class="ttl" x="215" y="36">ダイヤモンド</text>

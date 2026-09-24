@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="380" viewBox="0 0 880 380" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="741.053" height="320" viewBox="0 0 880 380" role="img">
   <!-- 高分子の固体の模式図。左半分は鎖がそろって並ぶ結晶部分、右半分は不規則にからまる非晶部分。
        ★ 1本の鎖が左右どちらにもまたがるように描く（別々の粒が混ざっているのではない）。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
@@ -8,13 +8,13 @@
     .frame { stroke: #333; stroke-width: 2; fill: none; }
     .zone { fill: #e3f0fb; }
     .divider { stroke: #999; stroke-width: 1.5; stroke-dasharray: 6 5; }
-    .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 16px; fill: #444; }
+    .lab { font-size: 21px; fill: #222; }
+    .small { font-size: 19px; fill: #444; }
   </style>
 
   <!-- 枠と結晶部分の地 -->
-  <rect class="zone" x="41" y="51" width="359" height="248" />
-  <rect class="frame" x="40" y="50" width="800" height="250" rx="4" />
+  <rect class="zone" x="41" y="51" width="374" height="253" />
+  <rect class="frame" x="40" y="50" width="815" height="255" rx="4" />
   <path class="divider" d="M 400 50 L 400 300" />
 
   <!-- 鎖5本。左はそろって並び、右はからまる -->

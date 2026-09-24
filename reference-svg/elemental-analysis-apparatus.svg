@@ -1,81 +1,86 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="340" viewBox="0 0 880 340" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="390" viewBox="0 0 880 390" role="img">
   <!-- 元素分析の装置。左から 乾燥した O2 → 燃焼管（試料＋CuO・加熱）→ 塩化カルシウム管（H2O）→ ソーダ石灰管（CO2）。
        ★ 順番が命の図: 水を先に取ってからでないと CO2 だけを量れない。
+       ⚠ 「試料」「CuO」の札は管の上に出して引き出し線で指す（管の中に書くと字どうしが重なる）。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
     .glass { stroke: #333; stroke-width: 3; fill: #fff; }
     .pipe { stroke: #333; stroke-width: 3.5; fill: none; stroke-linecap: round; }
-    .name { font-size: 18px; fill: #222; text-anchor: middle; }
-    .role { font-size: 15px; fill: #555; text-anchor: middle; }
-    .in { font-size: 15px; fill: #444; text-anchor: middle; }
-    .gas { font-size: 15px; fill: #1565c0; text-anchor: middle; }
+    .name { font-size: 30px; fill: #222; text-anchor: middle; font-weight: bold; }
+    .role { font-size: 29px; fill: #555; text-anchor: middle; }
+    .in { font-size: 29px; fill: #444; text-anchor: middle; }
+    .gas { font-size: 29px; fill: #1565c0; text-anchor: middle; font-weight: bold; }
+    .lead { stroke: #999; stroke-width: 1.2; fill: none; }
   </style>
 
   <!-- ===== 名前と役目 ===== -->
-  <text class="name" x="250" y="46">燃焼管</text>
-  <text class="role" x="250" y="68">試料を完全に酸化する</text>
-  <text class="name" x="535" y="46">塩化カルシウム管</text>
-  <text class="role" x="535" y="68">H₂O だけを吸収</text>
-  <text class="name" x="755" y="46">ソーダ石灰管</text>
-  <text class="role" x="755" y="68">CO₂ を吸収</text>
+  <text class="name" x="250" y="38">燃焼管</text>
+  <text class="role" x="250" y="70">試料を完全に酸化する</text>
+  <text class="name" x="535" y="38">塩化カルシウム管</text>
+  <text class="role" x="535" y="70">H₂O だけを吸収</text>
+  <text class="name" x="755" y="38">ソーダ石灰管</text>
+  <text class="role" x="755" y="70">CO₂ を吸収</text>
 
   <!-- ===== 入口 ===== -->
-  <path class="pipe" d="M 30 175 L 96 175" />
-  <polygon points="104 175 86 167 86 183" fill="#1565c0" />
-  <text class="gas" x="66" y="146">乾燥した O₂</text>
+  <path class="pipe" d="M 30 225 L 96 225" />
+  <polygon points="104 225 86 217 86 233" fill="#1565c0" />
+  <text class="gas" x="64" y="176">乾燥した</text>
+  <text class="gas" x="62" y="208">O₂</text>
 
   <!-- ===== 燃焼管 ===== -->
-  <path class="glass" d="M 130 140 L 370 140 A 35 35 0 0 1 370 210 L 130 210 A 35 35 0 0 1 130 140 Z" />
-  <path class="pipe" d="M 96 175 L 136 175 M 364 175 L 452 175" />
+  <path class="glass" d="M 130 190 L 370 190 A 35 35 0 0 1 370 260 L 130 260 A 35 35 0 0 1 130 190 Z" />
+  <path class="pipe" d="M 96 225 L 136 225 M 364 225 L 452 225" />
   <!-- 試料（磁製のボート） -->
-  <path d="M 150 206 L 226 206 L 232 190 L 144 190 Z" fill="#e0e0e0" stroke="#777" stroke-width="1.5" />
-  <path d="M 156 190 C 172 182, 202 182, 220 190 Z" fill="#9e9e9e" stroke="#777" stroke-width="1.5" />
-  <text class="in" x="188" y="172">試料</text>
+  <path d="M 150 256 L 226 256 L 232 240 L 144 240 Z" fill="#e0e0e0" stroke="#777" stroke-width="1.5" />
+  <path d="M 156 240 C 172 232, 202 232, 220 240 Z" fill="#9e9e9e" stroke="#777" stroke-width="1.5" />
+  <text class="in" x="172" y="150">試料</text>
+  <path class="lead" d="M 176 158 L 188 232" />
   <!-- 酸化銅(II) -->
   <g fill="#c8b4a0" stroke="#7d6652" stroke-width="1.2">
-    <circle cx="266" cy="200" r="7" /><circle cx="284" cy="192" r="7" /><circle cx="302" cy="201" r="7" />
-    <circle cx="320" cy="192" r="7" /><circle cx="338" cy="201" r="7" /><circle cx="276" cy="205" r="5" />
-    <circle cx="312" cy="206" r="5" /><circle cx="348" cy="194" r="5" /><circle cx="294" cy="207" r="5" />
-    <circle cx="330" cy="205" r="5" />
+    <circle cx="266" cy="250" r="7" /><circle cx="284" cy="242" r="7" /><circle cx="302" cy="251" r="7" />
+    <circle cx="320" cy="242" r="7" /><circle cx="338" cy="251" r="7" /><circle cx="276" cy="255" r="5" />
+    <circle cx="312" cy="256" r="5" /><circle cx="348" cy="244" r="5" /><circle cx="294" cy="257" r="5" />
+    <circle cx="330" cy="255" r="5" />
   </g>
-  <text class="in" x="306" y="172">CuO（酸化銅(II)）</text>
+  <text class="in" x="345" y="150">CuO（酸化銅(II)）</text>
+  <path class="lead" d="M 328 158 L 312 234" />
 
   <!-- ===== バーナー2つ ===== -->
   <g stroke-width="2.5" fill="none">
-    <path d="M 178 268 C 174 250, 190 246, 188 218 C 202 240, 208 252, 204 268 Z" stroke="#c62828" />
-    <rect x="182" y="268" width="16" height="36" stroke="#333" />
-    <path d="M 168 304 L 212 304 L 222 320 L 158 320 Z" stroke="#333" />
-    <path d="M 296 268 C 292 250, 308 246, 306 218 C 320 240, 326 252, 322 268 Z" stroke="#c62828" />
-    <rect x="300" y="268" width="16" height="36" stroke="#333" />
-    <path d="M 286 304 L 330 304 L 340 320 L 276 320 Z" stroke="#333" />
+    <path d="M 178 318 C 174 300, 190 296, 188 268 C 202 290, 208 302, 204 318 Z" stroke="#c62828" />
+    <rect x="182" y="318" width="31" height="41" stroke="#333" />
+    <path d="M 168 354 L 212 354 L 222 370 L 158 370 Z" stroke="#333" />
+    <path d="M 296 318 C 292 300, 308 296, 306 268 C 320 290, 326 302, 322 318 Z" stroke="#c62828" />
+    <rect x="300" y="318" width="31" height="41" stroke="#333" />
+    <path d="M 286 354 L 330 354 L 340 370 L 276 370 Z" stroke="#333" />
   </g>
-  <text class="in" x="392" y="300">加熱する</text>
+  <text class="in" x="392" y="350">加熱する</text>
 
   <!-- ===== 塩化カルシウム管 ===== -->
-  <path class="glass" d="M 470 152 L 600 152 A 24 24 0 0 1 600 200 L 470 200 A 24 24 0 0 1 470 152 Z" />
-  <path class="pipe" d="M 452 175 L 472 175 M 598 175 L 672 175" />
+  <path class="glass" d="M 470 202 L 600 202 A 24 24 0 0 1 600 250 L 470 250 A 24 24 0 0 1 470 202 Z" />
+  <path class="pipe" d="M 452 225 L 472 225 M 598 225 L 672 225" />
   <g fill="#eceff1" stroke="#90a4ae" stroke-width="1.2">
-    <circle cx="488" cy="166" r="7" /><circle cx="506" cy="184" r="7" /><circle cx="524" cy="166" r="7" />
-    <circle cx="542" cy="184" r="7" /><circle cx="560" cy="166" r="7" /><circle cx="578" cy="184" r="7" />
-    <circle cx="500" cy="167" r="5" /><circle cx="536" cy="167" r="5" /><circle cx="572" cy="167" r="5" />
-    <circle cx="520" cy="186" r="5" /><circle cx="556" cy="186" r="5" /><circle cx="590" cy="172" r="5" />
+    <circle cx="488" cy="216" r="7" /><circle cx="506" cy="234" r="7" /><circle cx="524" cy="216" r="7" />
+    <circle cx="542" cy="234" r="7" /><circle cx="560" cy="216" r="7" /><circle cx="578" cy="234" r="7" />
+    <circle cx="500" cy="217" r="5" /><circle cx="536" cy="217" r="5" /><circle cx="572" cy="217" r="5" />
+    <circle cx="520" cy="236" r="5" /><circle cx="556" cy="236" r="5" /><circle cx="590" cy="222" r="5" />
   </g>
 
   <!-- ===== ソーダ石灰管 ===== -->
-  <path class="glass" d="M 690 152 L 820 152 A 24 24 0 0 1 820 200 L 690 200 A 24 24 0 0 1 690 152 Z" />
-  <path class="pipe" d="M 672 175 L 692 175 M 818 175 L 856 175" />
+  <path class="glass" d="M 690 202 L 820 202 A 24 24 0 0 1 820 250 L 690 250 A 24 24 0 0 1 690 202 Z" />
+  <path class="pipe" d="M 672 225 L 692 225 M 818 225 L 856 225" />
   <g fill="#d7ccc8" stroke="#8d6e63" stroke-width="1.2">
-    <circle cx="708" cy="166" r="7" /><circle cx="726" cy="184" r="7" /><circle cx="744" cy="166" r="7" />
-    <circle cx="762" cy="184" r="7" /><circle cx="780" cy="166" r="7" /><circle cx="798" cy="184" r="7" />
-    <circle cx="720" cy="167" r="5" /><circle cx="756" cy="167" r="5" /><circle cx="792" cy="167" r="5" />
-    <circle cx="740" cy="186" r="5" /><circle cx="776" cy="186" r="5" /><circle cx="810" cy="172" r="5" />
+    <circle cx="708" cy="216" r="7" /><circle cx="726" cy="234" r="7" /><circle cx="744" cy="216" r="7" />
+    <circle cx="762" cy="234" r="7" /><circle cx="780" cy="216" r="7" /><circle cx="798" cy="234" r="7" />
+    <circle cx="720" cy="217" r="5" /><circle cx="756" cy="217" r="5" /><circle cx="792" cy="217" r="5" />
+    <circle cx="740" cy="236" r="5" /><circle cx="776" cy="236" r="5" /><circle cx="810" cy="222" r="5" />
   </g>
 
   <!-- ===== 流れていくもの ===== -->
-  <polygon points="440 175 424 167 424 183" fill="#1565c0" />
-  <polygon points="660 175 644 167 644 183" fill="#1565c0" />
-  <text class="gas" x="424" y="244">H₂O と CO₂</text>
-  <text class="gas" x="646" y="244">CO₂ だけ</text>
-  <path d="M 424 230 L 424 198" stroke="#1565c0" stroke-width="1.2" stroke-dasharray="4 4" fill="none" />
-  <path d="M 646 230 L 646 198" stroke="#1565c0" stroke-width="1.2" stroke-dasharray="4 4" fill="none" />
+  <polygon points="440 225 424 217 424 233" fill="#1565c0" />
+  <polygon points="660 225 644 217 644 233" fill="#1565c0" />
+  <text class="gas" x="424" y="294">H₂O と CO₂</text>
+  <text class="gas" x="646" y="294">CO₂ だけ</text>
+  <path d="M 424 280 L 424 248" stroke="#1565c0" stroke-width="1.2" stroke-dasharray="4 4" fill="none" />
+  <path d="M 646 280 L 646 248" stroke="#1565c0" stroke-width="1.2" stroke-dasharray="4 4" fill="none" />
 </svg>

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="392" viewBox="0 48 880 392" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="602.105" height="268.211" viewBox="0 48 880 392" role="img">
   <!-- NaCl の結晶が水に溶けるようす。Na+ には水分子の O 側、Cl- には H 側が向く。
        ⚠ 水分子は <defs> の1つを回して置いている（回すと文字が逆さになるので、O・H・δ の札は
           左下の見本の1個だけに付けた）。図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
@@ -12,15 +12,15 @@
     </g>
   </defs>
   <style>
-    .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
-    .ion { font-size: 13px; fill: #222; }
+    .lab { font-size: 24px; fill: #222; }
+    .small { font-size: 21px; fill: #444; }
+    .ion { font-size: 19px; fill: #222; }
     .na { fill: #bbdefb; stroke: #1565c0; stroke-width: 1.6; }
     .cl { fill: #c8e6c9; stroke: #2e7d32; stroke-width: 1.6; }
   </style>
 
   <!-- 結晶（Na+ と Cl- が交互に並ぶ。右上の1か所は抜けたあと） -->
-  <rect x="38" y="78" width="204" height="204" rx="6" fill="#fafafa" stroke="#ddd" />
+  <rect x="38" y="78" width="219" height="209" rx="6" fill="#fafafa" stroke="#ddd" />
   <circle class="cl" cx="70" cy="110" r="24" /><text class="ion" x="70" y="115" text-anchor="middle">Cl⁻</text>
   <circle class="na" cx="116" cy="110" r="16" /><text class="ion" x="116" y="115" text-anchor="middle">Na⁺</text>
   <circle class="cl" cx="162" cy="110" r="24" /><text class="ion" x="162" y="115" text-anchor="middle">Cl⁻</text>
