@@ -119,6 +119,7 @@ items:
 
 :::figure
 src: redox-equation-assemble.png
+svg: redox-equation-assemble.svg
 alt: 過マンガン酸イオンの半反応式を2倍、過酸化水素の半反応式を5倍して足し、2MnO₄⁻ ＋ 6H⁺ ＋ 5H₂O₂ → 2Mn²⁺ ＋ 5O₂ ＋ 8H₂O を得る図と、その両辺に 2K⁺ と 3SO₄²⁻ を加える段
 caption: 1段目で 8H⁺ の2倍の 16H⁺ と、右辺の 10H⁺ が打ち消し合って 6H⁺ が残ります。2段目で、**省略されていた K⁺ と SO₄²⁻** を両辺に戻します。
 :::
