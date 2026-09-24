@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="420" viewBox="0 0 880 420" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="694.737" height="331.579" viewBox="0 0 880 420" role="img">
   <!-- ダイヤモンドと黒鉛の構造の違い。左＝1個の C に4本の共有結合（正四面体がどこまでも続く立体網目）、
        右＝1個の C に3本（六角形の平面の層が重なる）。4個目の価電子が層の中を動くことを矢印で示す。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
