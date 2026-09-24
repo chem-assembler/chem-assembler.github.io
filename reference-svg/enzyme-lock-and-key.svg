@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="820" height="400" viewBox="0 0 820 400" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="771.765" height="376.471" viewBox="0 0 820 400" role="img">
   <!-- 基質特異性の「鍵と鍵穴」。左＝活性部位に形の合う基質がはまる／右＝形の違う基質は入らない。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
