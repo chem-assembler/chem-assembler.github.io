@@ -150,6 +150,16 @@ to: aromatic-separation
 text: 中性物質の代表として、分離でどこに残るか
 :::
 
+## 例題 —— ニトロベンゼン
+
+紙に書いて解いてみてください。答え合わせは「解答を見る」から。
+
+:::exercise
+source: draft:reference-outline/aromatic.md の benzene-substitution の例題1（ニトロ化の反応式とニトロベンゼンの密度から作った問い。どの本の問題も見ていない）
+prompt: ベンゼンに混酸を加えて約 60℃ に温めたときの反応式を書け。また、生成物を水と混ぜると、上の層と下の層のどちらに来るか。
+answer: C₆H₆ ＋ HNO₃ → C₆H₅NO₂ ＋ H₂O です。ニトロベンゼンは**水より重い**ので、**下の層**に来ます。
+:::
+
 :::section
 anchor: sulfonic
 title: ベンゼンスルホン酸
@@ -173,6 +183,14 @@ note: ほぼ完全に電離します。弱酸のカルボン酸や、さらに�
 :::link
 to: phenol-reactions
 text: ベンゼンスルホン酸ナトリウムやクロロベンゼンからフェノールをつくる
+:::
+
+## 例題 —— ベンゼンスルホン酸
+
+:::exercise
+source: draft:reference-outline/aromatic.md の benzene-substitution の表（3つの置換反応の試薬と生成物）から作った問い
+prompt: ベンゼンに濃硫酸を加えて加熱したときにできる化合物の名称と示性式を答えよ。また、その水溶液の性質を答えよ。
+answer: **ベンゼンスルホン酸 C₆H₅SO₃H** です。スルホ基がほぼ完全に電離するので、水溶液は**強い酸性**を示します。
 :::
 
 :::section
@@ -212,22 +230,6 @@ mark: kind=文字 at=環C5 label=m
 mark: kind=文字 at=環C4 label=p
 alt: トルエンの構造式で、メチル基の付いた炭素の両隣に o、その次の2か所に m、向かい側の1か所に p と書き添えた図
 caption: メチル基の付いた炭素から見て、両隣が **o（オルト）**、1つ飛ばしが **m（メタ）**、向かい側が **p（パラ）** です。トルエンのニトロ化では o と p に入ります。
-:::
-
-## 例題
-
-紙に書いて解いてみてください。答え合わせは「解答を見る」から。
-
-:::exercise
-source: draft:reference-outline/aromatic.md の benzene-substitution の例題1（ニトロ化の反応式とニトロベンゼンの密度から作った問い。どの本の問題も見ていない）
-prompt: ベンゼンに混酸を加えて約 60℃ に温めたときの反応式を書け。また、生成物を水と混ぜると、上の層と下の層のどちらに来るか。
-answer: C₆H₆ ＋ HNO₃ → C₆H₅NO₂ ＋ H₂O です。ニトロベンゼンは**水より重い**ので、**下の層**に来ます。
-:::
-
-:::exercise
-source: draft:reference-outline/aromatic.md の benzene-substitution の表（3つの置換反応の試薬と生成物）から作った問い
-prompt: ベンゼンに濃硫酸を加えて加熱したときにできる化合物の名称と示性式を答えよ。また、その水溶液の性質を答えよ。
-answer: **ベンゼンスルホン酸 C₆H₅SO₃H** です。スルホ基がほぼ完全に電離するので、水溶液は**強い酸性**を示します。
 :::
 
 
