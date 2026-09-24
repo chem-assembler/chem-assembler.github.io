@@ -5,10 +5,10 @@
   <style>
     .glass { stroke: #333; stroke-width: 3; fill: #fff; }
     .pipe { stroke: #333; stroke-width: 3.5; fill: none; stroke-linecap: round; }
-    .name { font-size: 26px; fill: #222; text-anchor: middle; font-weight: bold; }
-    .role { font-size: 25px; fill: #555; text-anchor: middle; }
-    .in { font-size: 25px; fill: #444; text-anchor: middle; }
-    .gas { font-size: 25px; fill: #1565c0; text-anchor: middle; font-weight: bold; }
+    .name { font-size: 30px; fill: #222; text-anchor: middle; font-weight: bold; }
+    .role { font-size: 29px; fill: #555; text-anchor: middle; }
+    .in { font-size: 29px; fill: #444; text-anchor: middle; }
+    .gas { font-size: 29px; fill: #1565c0; text-anchor: middle; font-weight: bold; }
   </style>
 
   <!-- ===== 名前と役目 ===== -->
@@ -43,10 +43,10 @@
   <!-- ===== バーナー2つ ===== -->
   <g stroke-width="2.5" fill="none">
     <path d="M 178 268 C 174 250, 190 246, 188 218 C 202 240, 208 252, 204 268 Z" stroke="#c62828" />
-    <rect x="182" y="268" width="16" height="36" stroke="#333" />
+    <rect x="182" y="268" width="31" height="41" stroke="#333" />
     <path d="M 168 304 L 212 304 L 222 320 L 158 320 Z" stroke="#333" />
     <path d="M 296 268 C 292 250, 308 246, 306 218 C 320 240, 326 252, 322 268 Z" stroke="#c62828" />
-    <rect x="300" y="268" width="16" height="36" stroke="#333" />
+    <rect x="300" y="268" width="31" height="41" stroke="#333" />
     <path d="M 286 304 L 330 304 L 340 320 L 276 320 Z" stroke="#333" />
   </g>
   <text class="in" x="392" y="300">加熱する</text>
