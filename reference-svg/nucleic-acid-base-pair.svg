@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="360" viewBox="0 0 760 360" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="712.5" height="337.5" viewBox="0 0 760 360" role="img">
   <!-- 相補的塩基対 A−T（水素結合2本）と G−C（3本）。塩基の形は模式（環2つ＝A・G、環1つ＝T・C）。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 構造式そのものは作図器の仕事。ここは「2本の鎖のあいだで相手が決まる」ことだけを見せる。 -->
