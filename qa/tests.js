@@ -184,8 +184,11 @@ function runDataTests(DATA) {
   //   並びは教科書順（化学基礎 → 化学）。有機の17単元（ユーザー決定の並び）は第4編・第5編の位置にそのまま入る。
   //   ★ 組み直しの道具は scratchpad の qa-units.js（統合セッション）。項目コードは学習記録のキーなので変えていない
   t("単元: 教科書の章立て（科目・編つき）で、有機の単元の並びが崩れず、旧 id が残っていない", function () {
-    var ORG = ["anal", "alcohol", "aldketone", "carboxyl", "fat", "aro", "phenol",
-      "aroAcid", "aroNitrogen", "aroSep", "structure", "sugar", "aminoAcid", "protein", "nucleic", "poly"];
+    // ★ 2026-09-25（I-0143）: 有機の単元も参考書の目次の節にそろえた（元素分析と構造式の決定は2単元・
+    //   有機反応のしくみは独立・カルボン酸／エステル／油脂・セッケンは3単元 ＝ ユーザー決定）。旧 id の poly は消した
+    var ORG = ["anal", "structure", "alcohol", "aldketone", "carboxyl", "ester", "fat", "aro", "phenol",
+      "aroAcid", "aroNitrogen", "aroSep", "mechanism", "polyBasics", "sugar", "polysaccharide", "aminoAcid", "protein", "nucleic",
+      "fiber", "plastic", "rubber"];
     var got = units.map(function (u) { return u.id; });
     assert(got.filter(function (id) { return ORG.indexOf(id) >= 0; }).join(",") === ORG.join(","),
       "有機の単元の並びが違う: " + got.filter(function (id) { return ORG.indexOf(id) >= 0; }).join(","));
@@ -201,7 +204,7 @@ function runDataTests(DATA) {
     var ps = []; units.forEach(function (u) { var k = u.course + "/" + u.part; if (ps[ps.length - 1] !== k) ps.push(k); });
     var dup = ps.filter(function (k, i) { return ps.indexOf(k) !== i; });
     assert(!dup.length, "同じ編が離れて2回出る: " + dup.join(","));
-    ["aliphatic", "carbonyl", "aroN", "bio", "clue", "inorgBasis", "inorgNonmetal", "inorgMetal", "inorgQual", "theoLife",
+    ["aliphatic", "carbonyl", "aroN", "bio", "clue", "poly", "inorgBasis", "inorgNonmetal", "inorgMetal", "inorgQual", "theoLife",
       "theoStructure", "theoMole", "theoAcidBase", "theoRedox", "theoElectro", "theoState",
       "theoSolution", "theoThermo", "theoKinetics", "theoEquilibrium", "theoIonicEq"].forEach(function (old) {
       assert(!patterns.some(function (p) { return p.unit === old; }), "旧 id が項目に残っている: " + old);
@@ -211,8 +214,9 @@ function runDataTests(DATA) {
   // ★ 2026-09-24 ユーザー「脂肪族炭化水素の分割：参考書のページと粒度を揃えたほうがよい／かわりに、分類階層を設けたい」。
   //   88項目の1単元を参考書の節（TOC.txt）7つに分け、編と単元の間に「分類」（category）を1段足した
   t("単元: 脂肪族炭化水素を参考書の節7つに分け、分類（category）は同じ編の中で続けて並び、2単元以上を束ねる", function () {
-    var SPLIT = { "sec-organic-features": 7, "sec-hydrocarbon-classes": 12, "sec-organic-formulas": 6,
-      "sec-alkane-isomers": 5, "sec-stereoisomers": 11, "sec-alkane": 17, "sec-alkene": 30 };
+    // ★ 2026-09-25（I-0143）: 項目は載っている参考書のページの節へ（はみ出していた1項目ずつと、反応のしくみ・アルコールの脱水へ移った分で数が変わった）
+    var SPLIT = { "sec-organic-features": 7, "sec-hydrocarbon-classes": 11, "sec-organic-formulas": 6,
+      "sec-alkane-isomers": 4, "sec-stereoisomers": 11, "sec-alkane": 18, "sec-alkene": 26 };
     var ali = patterns.filter(function (p) { return /^org\.ali\./.test(p.code); });
     assert(ali.length === 88, "org.ali の項目が 88 件でない: " + ali.length + "（分けるときに項目が増減した）");
     Object.keys(SPLIT).forEach(function (id) {

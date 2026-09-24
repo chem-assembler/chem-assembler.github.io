@@ -656,12 +656,23 @@
     },
     {
       "id": "anal",
-      "name": "元素の確認・元素分析",
+      "name": "元素の確認と元素分析",
       "category_l": "有機化学",
-      "category_m": "元素分析",
-      "summary": "成分元素の見つけ方と、燃焼の結果から組成式・分子式を出す手順を身につけよう。",
+      "category_m": "元素の確認と元素分析",
+      "summary": "成分元素の確かめ方と、燃焼の結果から組成式・分子式を出す手順を身につけよう。",
       "course": "adv",
-      "part": "有機化合物のきほん"
+      "part": "有機化合物のきほん",
+      "category": "元素分析と構造式の決定"
+    },
+    {
+      "id": "structure",
+      "name": "構造式の決定",
+      "category_l": "有機化学",
+      "category_m": "構造式の決定",
+      "summary": "手がかりから物質に当たりを付けよう。まず官能基で絞り、数や物性はそのあと。確度の印も見よう。",
+      "course": "adv",
+      "part": "有機化合物のきほん",
+      "category": "元素分析と構造式の決定"
     },
     {
       "id": "sec-alkane",
@@ -685,9 +696,9 @@
     },
     {
       "id": "alcohol",
-      "name": "アルコール・エーテル",
+      "name": "アルコールとエーテル",
       "category_l": "有機化学",
-      "category_m": "アルコール・エーテル",
+      "category_m": "アルコールとエーテル",
       "summary": "アルコールの級と反応（Na・脱水・酸化）、エーテルとの違いをおさえよう。",
       "course": "adv",
       "part": "脂肪族化合物",
@@ -695,9 +706,9 @@
     },
     {
       "id": "aldketone",
-      "name": "アルデヒド・ケトン",
+      "name": "アルデヒドとケトン",
       "category_l": "有機化学",
-      "category_m": "アルデヒド・ケトン",
+      "category_m": "アルデヒドとケトン",
       "summary": "アルデヒドの還元性（銀鏡・フェーリング）と、ケトンとの見分け方をおさえよう。",
       "course": "adv",
       "part": "脂肪族化合物",
@@ -705,11 +716,21 @@
     },
     {
       "id": "carboxyl",
-      "name": "カルボン酸・エステル",
+      "name": "カルボン酸",
       "category_l": "有機化学",
-      "category_m": "カルボン酸・エステル",
-      "summary": "カルボン酸の酸性とギ酸・酢酸の性質、エステルのでき方と加水分解をおさえよう。",
+      "category_m": "カルボン酸",
+      "summary": "カルボン酸の酸性と、ギ酸・酢酸・2価のカルボン酸の性質をおさえよう。",
       "course": "adv",
+      "part": "脂肪族化合物",
+      "category": "酸素を含む脂肪族化合物"
+    },
+    {
+      "id": "ester",
+      "name": "エステル",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "エステル",
+      "summary": "エステルの命名と、エステル化・加水分解・けん化の関係をおさえよう。",
       "part": "脂肪族化合物",
       "category": "酸素を含む脂肪族化合物"
     },
@@ -752,38 +773,56 @@
     },
     {
       "id": "aroNitrogen",
-      "name": "芳香族窒素化合物",
+      "name": "アニリンとアゾ化合物",
       "category_l": "有機化学",
-      "category_m": "芳香族窒素化合物",
+      "category_m": "アニリンとアゾ化合物",
       "summary": "アニリンの塩基性と検出、ジアゾ化とカップリングでアゾ染料ができる流れをおさえよう。",
       "course": "adv",
       "part": "芳香族化合物"
     },
     {
       "id": "aroSep",
-      "name": "芳香族の分離",
+      "name": "芳香族化合物の分離",
       "category_l": "有機化学",
-      "category_m": "芳香族の分離",
+      "category_m": "芳香族化合物の分離",
       "summary": "酸・塩基の強さの違いを使って、芳香族化合物をエーテル層と水層に分けよう。",
       "course": "adv",
       "part": "芳香族化合物"
     },
     {
-      "id": "structure",
-      "name": "構造決定",
+      "id": "mechanism",
+      "name": "有機反応のしくみ（発展）",
       "category_l": "有機化学",
-      "category_m": "構造決定",
-      "summary": "手がかりから物質に当たりを付けよう。まず官能基で絞り、数や物性はそのあと。確度の印も見よう。",
       "course": "adv",
-      "part": "構造決定"
+      "category_m": "有機反応のしくみ（発展）",
+      "summary": "巻矢印で、置換・付加・脱離がどう進むかを読めるようにしよう。",
+      "part": "有機反応のしくみ"
+    },
+    {
+      "id": "polyBasics",
+      "name": "高分子とは",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "高分子とは",
+      "summary": "単量体と重合体、付加重合・縮合重合・開環重合の見分け方をおさえよう。",
+      "part": "高分子のきほん"
     },
     {
       "id": "sugar",
-      "name": "糖",
+      "name": "単糖と二糖",
       "category_l": "有機化学",
-      "category_m": "糖",
-      "summary": "単糖・二糖・多糖のつくりと還元性、デンプンとセルロースの違いをおさえよう。",
+      "category_m": "単糖と二糖",
+      "summary": "単糖・二糖のつくりと還元性、加水分解でできる単糖をおさえよう。",
       "course": "adv",
+      "part": "天然高分子"
+    },
+    {
+      "id": "polysaccharide",
+      "name": "多糖",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "多糖",
+      "summary": "デンプン・グリコーゲン・セルロースのつくりの違いと、ヨウ素デンプン反応をおさえよう。",
       "part": "天然高分子"
     },
     {
@@ -797,9 +836,9 @@
     },
     {
       "id": "protein",
-      "name": "タンパク質・酵素",
+      "name": "タンパク質と酵素",
       "category_l": "有機化学",
-      "category_m": "タンパク質・酵素",
+      "category_m": "タンパク質と酵素",
       "summary": "ペプチド結合と立体構造、変性と呈色反応、酵素のはたらき方をおさえよう。",
       "course": "adv",
       "part": "天然高分子"
@@ -814,12 +853,30 @@
       "part": "天然高分子"
     },
     {
-      "id": "poly",
-      "name": "合成高分子",
+      "id": "fiber",
+      "name": "合成繊維",
       "category_l": "有機化学",
-      "category_m": "合成高分子",
-      "summary": "付加重合と縮合重合の違い、代表的な樹脂・繊維・ゴムを原料と結びつけよう。",
       "course": "adv",
+      "category_m": "合成繊維",
+      "summary": "ナイロン・ポリエステル・アクリル繊維・ビニロンを、原料と重合の型で結びつけよう。",
+      "part": "合成高分子"
+    },
+    {
+      "id": "plastic",
+      "name": "合成樹脂と機能性高分子",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "合成樹脂と機能性高分子",
+      "summary": "熱可塑性樹脂と熱硬化性樹脂、イオン交換樹脂などの機能性高分子をおさえよう。",
+      "part": "合成高分子"
+    },
+    {
+      "id": "rubber",
+      "name": "ゴム",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "ゴム",
+      "summary": "天然ゴムと合成ゴムの単量体、加硫のはたらきをおさえよう。",
       "part": "合成高分子"
     }
   ],
@@ -996,7 +1053,7 @@
     },
     {
       "code": "org.ali.formula-alkane",
-      "unit": "sec-hydrocarbon-classes",
+      "unit": "sec-alkane",
       "group": "分類・一般式",
       "difficulty": 1,
       "tags": [
@@ -1476,7 +1533,7 @@
     },
     {
       "code": "org.ali.alkane-chlorination",
-      "unit": "sec-alkane",
+      "unit": "mechanism",
       "group": "アルカン",
       "difficulty": 1,
       "tags": [
@@ -2222,7 +2279,7 @@
     },
     {
       "code": "org.ali.alkene-h2o",
-      "unit": "sec-alkene",
+      "unit": "mechanism",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2334,7 +2391,7 @@
     },
     {
       "code": "org.ali.alkene-br2",
-      "unit": "sec-alkene",
+      "unit": "mechanism",
       "group": "アルケン",
       "difficulty": 1,
       "tags": [
@@ -2650,7 +2707,7 @@
     },
     {
       "code": "org.ali.ethylene-prep",
-      "unit": "sec-alkene",
+      "unit": "alcohol",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2698,7 +2755,7 @@
     },
     {
       "code": "org.ali.ethanol-dehydration",
-      "unit": "sec-alkene",
+      "unit": "alcohol",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -4650,7 +4707,7 @@
     },
     {
       "code": "org.alcohol.iodoform",
-      "unit": "alcohol",
+      "unit": "aldketone",
       "group": "アルコールの反応",
       "difficulty": 2,
       "tags": [
@@ -5701,7 +5758,7 @@
     },
     {
       "code": "org.carbonyl.formula-isomer",
-      "unit": "aldketone",
+      "unit": "alcohol",
       "group": "カルボニル化合物（総論）",
       "difficulty": 2,
       "tags": [
@@ -7022,7 +7079,7 @@
     },
     {
       "code": "org.carbonyl.ester-bond",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 1,
       "tags": [
@@ -7070,7 +7127,7 @@
     },
     {
       "code": "org.carbonyl.esterification",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 1,
       "tags": [
@@ -7124,7 +7181,7 @@
     },
     {
       "code": "org.carbonyl.ester-water-origin",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 3,
       "tags": [
@@ -7173,7 +7230,7 @@
     },
     {
       "code": "org.carbonyl.ethyl-acetate",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 1,
       "tags": [
@@ -7216,7 +7273,7 @@
     },
     {
       "code": "org.carbonyl.ester-hydrolysis",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -7269,7 +7326,7 @@
     },
     {
       "code": "org.carbonyl.saponification",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -7322,7 +7379,7 @@
     },
     {
       "code": "org.carbonyl.ester-naming",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -7369,7 +7426,7 @@
     },
     {
       "code": "org.carbonyl.inorganic-ester",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 4,
       "tags": [
@@ -7723,7 +7780,7 @@
     },
     {
       "code": "org.aro.halogenation",
-      "unit": "aro",
+      "unit": "mechanism",
       "group": "置換反応",
       "difficulty": 1,
       "tags": [
@@ -7769,7 +7826,7 @@
     },
     {
       "code": "org.aro.nitration",
-      "unit": "aro",
+      "unit": "mechanism",
       "group": "置換反応",
       "difficulty": 1,
       "tags": [
@@ -7865,7 +7922,7 @@
     },
     {
       "code": "org.aro.sulfonation",
-      "unit": "aro",
+      "unit": "mechanism",
       "group": "置換反応",
       "difficulty": 2,
       "tags": [
@@ -9124,7 +9181,7 @@
     },
     {
       "code": "org.phenol.separation",
-      "unit": "phenol",
+      "unit": "aroSep",
       "group": "酸性と塩",
       "difficulty": 2,
       "tags": [
@@ -9461,7 +9518,7 @@
     },
     {
       "code": "org.aroN.diazotization",
-      "unit": "aroNitrogen",
+      "unit": "mechanism",
       "group": "ジアゾ化とカップリング",
       "difficulty": 1,
       "tags": [
@@ -9560,7 +9617,7 @@
     },
     {
       "code": "org.aroN.coupling",
-      "unit": "aroNitrogen",
+      "unit": "mechanism",
       "group": "ジアゾ化とカップリング",
       "difficulty": 1,
       "tags": [
@@ -11668,7 +11725,7 @@
     },
     {
       "code": "org.bio.polysaccharide-def",
-      "unit": "sugar",
+      "unit": "polysaccharide",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -11716,7 +11773,7 @@
     },
     {
       "code": "org.bio.starch",
-      "unit": "sugar",
+      "unit": "polysaccharide",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -11764,7 +11821,7 @@
     },
     {
       "code": "org.bio.starch-iodine",
-      "unit": "sugar",
+      "unit": "polysaccharide",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -11810,7 +11867,7 @@
     },
     {
       "code": "org.bio.starch-hydrolysis",
-      "unit": "sugar",
+      "unit": "polysaccharide",
       "group": "多糖類",
       "difficulty": 2,
       "tags": [
@@ -11856,7 +11913,7 @@
     },
     {
       "code": "org.bio.glycogen",
-      "unit": "sugar",
+      "unit": "polysaccharide",
       "group": "多糖類",
       "difficulty": 3,
       "tags": [
@@ -11902,7 +11959,7 @@
     },
     {
       "code": "org.bio.cellulose",
-      "unit": "sugar",
+      "unit": "polysaccharide",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -11951,7 +12008,7 @@
     },
     {
       "code": "org.bio.cellulose-oh",
-      "unit": "sugar",
+      "unit": "polysaccharide",
       "group": "多糖類",
       "difficulty": 3,
       "tags": [
@@ -12003,7 +12060,7 @@
     },
     {
       "code": "org.bio.nitrocellulose",
-      "unit": "sugar",
+      "unit": "polysaccharide",
       "group": "多糖類",
       "difficulty": 2,
       "tags": [
@@ -12053,7 +12110,7 @@
     },
     {
       "code": "org.bio.cellulose-fiber",
-      "unit": "sugar",
+      "unit": "polysaccharide",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -13705,7 +13762,7 @@
     },
     {
       "code": "org.poly.monomer-polymer",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 1,
       "tags": [
@@ -13758,7 +13815,7 @@
     },
     {
       "code": "org.poly.average-mw",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 1,
       "tags": [
@@ -13804,7 +13861,7 @@
     },
     {
       "code": "org.poly.addition-vs-condensation",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 2,
       "tags": [
@@ -13862,7 +13919,7 @@
     },
     {
       "code": "org.poly.ring-opening",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 2,
       "tags": [
@@ -13913,7 +13970,7 @@
     },
     {
       "code": "org.poly.copolymer",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 1,
       "tags": [
@@ -13965,7 +14022,7 @@
     },
     {
       "code": "org.poly.crystalline-amorphous",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 2,
       "tags": [
@@ -14010,7 +14067,7 @@
     },
     {
       "code": "org.poly.thermoplastic-thermoset",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱可塑性樹脂",
       "difficulty": 1,
       "tags": [
@@ -14057,7 +14114,7 @@
     },
     {
       "code": "org.poly.polyethylene",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱可塑性樹脂",
       "difficulty": 1,
       "tags": [
@@ -14112,7 +14169,7 @@
     },
     {
       "code": "org.poly.vinyl-monomers",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱可塑性樹脂",
       "difficulty": 1,
       "tags": [
@@ -14173,7 +14230,7 @@
     },
     {
       "code": "org.poly.pvac-pva",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱可塑性樹脂",
       "difficulty": 2,
       "tags": [
@@ -14228,7 +14285,7 @@
     },
     {
       "code": "org.poly.pmma-teflon",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱可塑性樹脂",
       "difficulty": 2,
       "tags": [
@@ -14279,7 +14336,7 @@
     },
     {
       "code": "org.poly.pet",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱可塑性樹脂",
       "difficulty": 1,
       "tags": [
@@ -14334,7 +14391,7 @@
     },
     {
       "code": "org.poly.phenol-resin",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱硬化性樹脂と機能性高分子",
       "difficulty": 1,
       "tags": [
@@ -14385,7 +14442,7 @@
     },
     {
       "code": "org.poly.urea-melamine-alkyd",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱硬化性樹脂と機能性高分子",
       "difficulty": 1,
       "tags": [
@@ -14435,7 +14492,7 @@
     },
     {
       "code": "org.poly.superabsorbent",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱硬化性樹脂と機能性高分子",
       "difficulty": 2,
       "tags": [
@@ -14478,7 +14535,7 @@
     },
     {
       "code": "org.poly.ion-exchange",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱硬化性樹脂と機能性高分子",
       "difficulty": 2,
       "tags": [
@@ -14529,7 +14586,7 @@
     },
     {
       "code": "org.poly.conducting",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱硬化性樹脂と機能性高分子",
       "difficulty": 4,
       "tags": [
@@ -14578,7 +14635,7 @@
     },
     {
       "code": "org.poly.biodegradable-recycle",
-      "unit": "poly",
+      "unit": "plastic",
       "group": "熱硬化性樹脂と機能性高分子",
       "difficulty": 2,
       "tags": [
@@ -14621,7 +14678,7 @@
     },
     {
       "code": "org.poly.fiber-classification",
-      "unit": "poly",
+      "unit": "fiber",
       "group": "合成繊維",
       "difficulty": 2,
       "tags": [
@@ -14662,7 +14719,7 @@
     },
     {
       "code": "org.poly.nylon66",
-      "unit": "poly",
+      "unit": "fiber",
       "group": "合成繊維",
       "difficulty": 1,
       "tags": [
@@ -14719,7 +14776,7 @@
     },
     {
       "code": "org.poly.nylon6",
-      "unit": "poly",
+      "unit": "fiber",
       "group": "合成繊維",
       "difficulty": 1,
       "tags": [
@@ -14769,7 +14826,7 @@
     },
     {
       "code": "org.poly.polyamide-silk",
-      "unit": "poly",
+      "unit": "fiber",
       "group": "合成繊維",
       "difficulty": 1,
       "tags": [
@@ -14817,7 +14874,7 @@
     },
     {
       "code": "org.poly.acrylic",
-      "unit": "poly",
+      "unit": "fiber",
       "group": "合成繊維",
       "difficulty": 2,
       "tags": [
@@ -14869,7 +14926,7 @@
     },
     {
       "code": "org.poly.vinylon",
-      "unit": "poly",
+      "unit": "fiber",
       "group": "合成繊維",
       "difficulty": 1,
       "tags": [
@@ -14920,7 +14977,7 @@
     },
     {
       "code": "org.poly.vinylon-acetal",
-      "unit": "poly",
+      "unit": "fiber",
       "group": "合成繊維",
       "difficulty": 1,
       "tags": [
@@ -14973,7 +15030,7 @@
     },
     {
       "code": "org.poly.fiber-polymerization-type",
-      "unit": "poly",
+      "unit": "fiber",
       "group": "合成繊維",
       "difficulty": 2,
       "tags": [
@@ -15024,7 +15081,7 @@
     },
     {
       "code": "org.poly.natural-rubber",
-      "unit": "poly",
+      "unit": "rubber",
       "group": "ゴム",
       "difficulty": 1,
       "tags": [
@@ -15074,7 +15131,7 @@
     },
     {
       "code": "org.poly.rubber-cis-trans",
-      "unit": "poly",
+      "unit": "rubber",
       "group": "ゴム",
       "difficulty": 2,
       "tags": [
@@ -15126,7 +15183,7 @@
     },
     {
       "code": "org.poly.vulcanization",
-      "unit": "poly",
+      "unit": "rubber",
       "group": "ゴム",
       "difficulty": 1,
       "tags": [
@@ -15178,7 +15235,7 @@
     },
     {
       "code": "org.poly.rubber-aging",
-      "unit": "poly",
+      "unit": "rubber",
       "group": "ゴム",
       "difficulty": 3,
       "tags": [
@@ -15223,7 +15280,7 @@
     },
     {
       "code": "org.poly.butadiene-rubber",
-      "unit": "poly",
+      "unit": "rubber",
       "group": "ゴム",
       "difficulty": 2,
       "tags": [
@@ -15275,7 +15332,7 @@
     },
     {
       "code": "org.poly.chloroprene-rubber",
-      "unit": "poly",
+      "unit": "rubber",
       "group": "ゴム",
       "difficulty": 2,
       "tags": [
@@ -15324,7 +15381,7 @@
     },
     {
       "code": "org.poly.sbr-copolymer",
-      "unit": "poly",
+      "unit": "rubber",
       "group": "ゴム",
       "difficulty": 1,
       "tags": [
@@ -15378,7 +15435,7 @@
     },
     {
       "code": "org.poly.silicone-rubber",
-      "unit": "poly",
+      "unit": "rubber",
       "group": "ゴム",
       "difficulty": 2,
       "tags": [
@@ -15470,7 +15527,7 @@
     },
     {
       "code": "org.ali.alkyl-count",
-      "unit": "sec-alkane-isomers",
+      "unit": "sec-alkane",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -15774,7 +15831,7 @@
     },
     {
       "code": "org.carbonyl.ester-valence",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -15820,7 +15877,7 @@
     },
     {
       "code": "org.carbonyl.diester-arrangement",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 4,
       "tags": [
@@ -15866,7 +15923,7 @@
     },
     {
       "code": "org.carbonyl.polyester-hydrolysis",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -15913,7 +15970,7 @@
     },
     {
       "code": "org.carbonyl.lactone",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -15959,7 +16016,7 @@
     },
     {
       "code": "org.carbonyl.formate-ester",
-      "unit": "carboxyl",
+      "unit": "ester",
       "group": "エステル",
       "difficulty": 4,
       "tags": [
@@ -17122,7 +17179,7 @@
     },
     {
       "code": "org.poly.end-group",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 2,
       "tags": [
@@ -17168,7 +17225,7 @@
     },
     {
       "code": "org.poly.polymer-def",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 1,
       "tags": [
@@ -17217,7 +17274,7 @@
     },
     {
       "code": "org.poly.monomer-from-repeat-unit",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 2,
       "tags": [
@@ -17266,7 +17323,7 @@
     },
     {
       "code": "org.poly.condensation-water-count",
-      "unit": "poly",
+      "unit": "polyBasics",
       "group": "高分子の総論",
       "difficulty": 2,
       "tags": [

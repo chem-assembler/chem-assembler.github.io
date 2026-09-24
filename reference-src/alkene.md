@@ -7,6 +7,7 @@ title: アルケン —— 二重結合を1個もつ炭化水素
 summary: 二重結合のまわりの形、回転できないことから生まれるシス－トランス異性体、そして付加反応・付加重合・酸化開裂。エテン（エチレン）の性質と製法まで、二重結合について引きに来ることを1枚にまとめました。
 codes:
   - org.ali.alkene-functional
+  - org.ali.name-ene-yne-priority
   - org.ali.alkene-shape
   - org.ali.alkene-bondlength
   - org.ali.alkene-addition

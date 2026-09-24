@@ -7,6 +7,7 @@ title: 糖類の分類と単糖類
 summary: 糖類は −OH をたくさんもち、ホルミル基かカルボニル基を1個もつ化合物です。単糖・二糖・多糖の分け方、グルコースの鎖状構造と環状構造（α形・β形）の平衡、還元性の出どころ、アルコール発酵までを1枚にしました。
 codes:
   - org.bio.saccharide-def
+  - org.bio.fructose-reducing
   - org.bio.saccharide-class
   - org.bio.monosaccharide
   - org.bio.glucose-structure
