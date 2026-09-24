@@ -37,6 +37,8 @@ terms:
 - 系統分離
 - ろ過
 - ろ液
+codes:
+- inorg.qual.separation-order
 :::
 
 Ag⁺・Cu²⁺・Fe³⁺・Zn²⁺・Ca²⁺・Na⁺ を含む水溶液を例に、手順を見ていきます。各操作のあとは**ろ過して沈殿とろ液に分け、ろ液に次の試薬を加えます。**
@@ -91,6 +93,10 @@ terms:
 - 煮沸
 - 希硝酸
 - 塩化アンモニウム
+codes:
+- inorg.qual.separation-h2s-twice
+- inorg.qual.separation-nitric-acid
+- inorg.qual.separation-nh4cl
 :::
 
 順番には、1段ずつ理由があります。
@@ -157,6 +163,8 @@ terms:
 - 熱水
 - クロム酸カリウム
 - 両性水酸化物
+codes:
+- inorg.qual.separation-within-group
 :::
 
 同じ段に2種類のイオンが沈むときは、その沈殿をさらに分けます。
