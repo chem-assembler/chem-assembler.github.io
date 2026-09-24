@@ -6339,6 +6339,8 @@ const REF_ANCHOR_PREFIX = 'ref-sec-';
 /* 図の置き場所。★ **ルート絶対**（面A `/reference/<id>/` と 面B `/assembler/` の両方から
    同じ URL で読める）。⚠ `_config.yml` の exclude に掛からない場所であること（§19-4）。 */
 const REF_IMG_DIR = '/reference-img/';
+/* 図の基準の幅（gen-figure の OUT_W・スライドの切り出しの幅）。本文の幅いっぱいに出す図の元の幅。横スクロールの図の倍率の物差し */
+const REF_FIGURE_BASE_W = 1150;
 
 /* ★★ 重要度の印。⚠⚠ **`★★★` が基本**（取り違えると52ページに波及する・§18-3）。
    ★ **画面に記号だけを出さない**（ユーザー指示）ので、言葉を必ず添える。 */
@@ -6957,7 +6959,21 @@ class ReferenceBook {
         img.src = REF_IMG_DIR + block.src;
         img.alt = block.alt;
         img.loading = 'lazy';
-        fig.appendChild(img);
+        if (block.scroll) {
+            /* ★ 横に長い図（高分子の鎖・2026-09-24）。縮めずに、ほかの図と同じ字の大きさで出して横にスクロールする。
+               ほかの図は横 REF_FIGURE_BASE_W（1150px）を本文の幅いっぱいに出すので、この図は
+               （画像の幅 ÷ 1150）倍の幅で出す ＝ 字の大きさがそろう。⚠ 面A は生成器が画像の幅から % を書き込む */
+            const wrap = document.createElement('div');
+            wrap.className = 'ref-figure-scroll';
+            img.classList.add('ref-figure-img-scroll');
+            img.addEventListener('load', () => {
+                if (!img.style.width && img.naturalWidth) img.style.width = (img.naturalWidth / REF_FIGURE_BASE_W * 100) + '%';
+            });
+            wrap.appendChild(img);
+            fig.appendChild(wrap);
+        } else {
+            fig.appendChild(img);
+        }
         const cap = document.createElement('figcaption');
         cap.className = 'ref-figure-cap';
         cap.innerHTML = block.caption;

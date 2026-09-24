@@ -644,6 +644,9 @@ footer a:hover{color:var(--brand)}
 /* 出典（他人の写真・2026-09-24）。キャプションより一段小さく、リンクは下線で分かるように */
 .ref-figure-credit { font-size: 10.5px; color: var(--text-muted); margin: 2px 0 0; line-height: 1.5; }
 .ref-figure-credit a { color: inherit; text-decoration: underline; }
+/* 横に長い図（scroll: true）は縮めずに横スクロール（2026-09-24） */
+.ref-figure-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ref-figure-scroll .ref-figure-img-scroll { max-width: none; }
 /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・§19-5） */
 .ref-rx {
     margin: 0 0 14px;

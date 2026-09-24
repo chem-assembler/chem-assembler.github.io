@@ -230,7 +230,7 @@ function checkFigures(pages) {
     const used = new Map();   // ファイル名 → { ページ, 器の名前 }
     pages.forEach(p => (p.blocks || []).forEach(b => {
         (FIGURE_KEYS[b.kind] || []).forEach(k => {
-            if (b[k] && !used.has(b[k])) used.set(b[k], { id: p.id, kind: b.kind });
+            if (b[k] && !used.has(b[k])) used.set(b[k], { id: p.id, kind: b.kind, scroll: !!b.scroll });
         });
     }));
     const onDisk = existsSync(IMG_DIR) ? readdirSync(IMG_DIR).filter(f => !f.startsWith('.')) : [];
@@ -257,6 +257,7 @@ function checkFigures(pages) {
         if (!size || !size.h) return;                       // PNG 以外は測らない
         const aspect = size.w / size.h;
         if (aspect <= MAX_ASPECT) return;
+        if ((used.get(f) || {}).scroll) return;           // ★ 横スクロールの図（scroll: true）は縮めずに見せるので床の外（2026-09-24 PET の鎖）
         const shown = Math.round(BODY_WIDTH * size.h / size.w);
         throw new Error(`reference-img/${f} が平たすぎます（${size.w}x${size.h} ＝ ${aspect.toFixed(1)}:1）\n`
             + `   本文の幅 ${BODY_WIDTH}px に入れると高さ ${shown}px にしかならず、図に添えた小さい字が読めません\n`

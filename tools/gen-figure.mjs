@@ -143,6 +143,9 @@ const MAX_H = 760;
 const FIT_W = 400;
 /* 公開ページの本文の幅（図はこの幅いっぱいに出る）。字の大きさの見積もり（minText）に使う */
 const BODY_W = 680;
+/* 横スクロールの図（scroll: true）の倍率。FIT_W の2倍 ＝ 小さい分子の図の半分の倍率（字は 20px 台）。
+   FIT_W と同じにすると PET の字が 46px・幅 2,600px になり、スクロールが長すぎた（2026-09-24） */
+const SCROLL_FIT_W = 800;
 /* 図の中の字の床（最終的な見た目・パソコン幅）。下回ったら黄で申し送る（2026-09-24） */
 const MIN_TEXT = Number((process.argv.find(a => a.startsWith('--min-text=')) || '').split('=')[1] || 14);
 /* 下付き（添え字）の床（2026-09-24 ユーザー決定） */
@@ -241,6 +244,7 @@ function collect() {
             } else if (between.length) {
                 throw new Error(`${where} の ${b.src}: between: は gen: を2行以上書いた図にだけ書けます`);
             }
+            if (b.scroll) specs.forEach(sp => { sp.scroll = true; });
             jobs.push({ id, src: b.src, gen: gens.join(' ＋ '), spec: specs[0], parts: specs.length > 1 ? specs : null, between });
         });
     });
@@ -258,6 +262,12 @@ function parseGen(text, where) {
         if (tok === 'plain') { spec.plain = true; return; }
         /* ★ `newrow`（2026-09-24 ユーザー「2x2」）: 分子を複数並べる図で、この分子から次の段にする（縦に積む） */
         if (tok === 'newrow') { spec.newrow = true; return; }
+        /* ★ `dots`（2026-09-24 ユーザー「末端は ー 価標のまま … の方がよい」）: 高分子の鎖の両端の R を「…」で描く。
+           アプリ（キャンバス）は設計上 R のまま。図だけの描き方 */
+        if (tok === 'dots') { spec.dots = true; return; }
+        /* ★ `straight`（同「斜めに伸ばすのはうまくない」）: R から R への主鎖を横一直線に並べ直す。
+           主鎖が通るベンゼン環はパラ位で通る形だけ（正六角形を主鎖の上に置く）。枝は上へ（2本目は下へ） */
+        if (tok === 'straight') { spec.straight = true; return; }
         if (tok === 'haworth') { spec.haworth = true; return; }
         if (tok === 'paper') { spec.paper = true; return; }
         if (tok === 'circle') { spec.circle = true; return; }
@@ -302,7 +312,7 @@ function parseGen(text, where) {
         }
         const m = /^(name|formula|chain|subs)=(.+)$/.exec(tok);
         if (!m) throw new Error(`${where}: :::figure の gen に読めない語「${tok}」があります`
-            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand= / kekule= / stereo= / fischer= / flip= / vinyl / ch2n / units=1）');
+            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand= / kekule= / stereo= / fischer= / flip= / vinyl / ch2n / units=1 / tight / newrow / dots / straight）');
         spec[m[1]] = m[2];
     });
     if (!spec.name) throw new Error(`${where}: :::figure の gen に name= がありません（図が何の分子かを名乗ってください）`);
@@ -479,6 +489,61 @@ async function bake(jobs) {
             /* ★ 裏返し（v1618・I-0112）: 紙の図の型は登録の座標をそのまま使う（learn.js の renderStandardFigure の
                ipCoordsUsable の道）ので、渡す前に座標を裏返すだけ。⚠ 作図はここに書かない */
             /* ★ 繰り返し単位1つぶん（v1619・I-0040）。⚠ 作図はしない —— 登録の原子と座標から1周期を切り出すだけ */
+            if (spec.straight) {
+                const Rs = mol.atoms.filter(a => a.element === 'R');
+                if (Rs.length !== 2) return { error: `straight: 「${spec.name}」の両端が R の鎖として読めません（R が ${Rs.length} 個）` };
+                const nb = id => mol.getNeighbors(id).map(x => x.atom);
+                const prev = new Map([[Rs[0].id, null]]);
+                const q = [Rs[0].id];
+                while (q.length) { const c = q.shift(); if (c === Rs[1].id) break; nb(c).forEach(x => { if (!prev.has(x.id)) { prev.set(x.id, c); q.push(x.id); } }); }
+                if (!prev.has(Rs[1].id)) return { error: `straight: 「${spec.name}」の R と R がつながっていません` };
+                const path = [];
+                for (let c = Rs[1].id; c; c = prev.get(c)) path.unshift(c);
+                const onPath = new Set(path);
+                const at = id => mol.atoms.find(a => a.id === id);
+                const lens = mol.bonds.map(b => { const p = at(b.atomId1), r = at(b.atomId2); return Math.hypot(p.x - r.x, p.y - r.y); }).sort((a, b) => a - b);
+                const B = lens[Math.floor(lens.length / 2)];
+                const ring = (typeof ringAtomIdsOf === 'function') ? ringAtomIdsOf(mol) : new Set();
+                const H = B * Math.sqrt(3) / 2;
+                const pos = new Map();
+                let x = 0, i = 0;
+                while (i < path.length) {
+                    const id = path[i];
+                    if (ring.has(id) && i + 1 < path.length && ring.has(path[i + 1])) {
+                        let j = i;
+                        while (j + 1 < path.length && ring.has(path[j + 1])) j++;
+                        const seg = path.slice(i, j + 1);
+                        if (seg.length !== 4) return { error: `straight: 「${spec.name}」の主鎖が環をパラ位で通っていません（環の中の主鎖 ${seg.length} 原子）` };
+                        const others = (a, notIn) => nb(a).filter(z => ring.has(z.id) && !seg.includes(z.id) && !notIn.has(z.id)).map(z => z.id);
+                        const v5 = others(seg[0], new Set())[0], v4 = others(seg[3], new Set())[0];
+                        if (!v4 || !v5) return { error: `straight: 「${spec.name}」の環の残りの2原子が見つかりません` };
+                        pos.set(seg[0], { x, y: 0 }); pos.set(seg[1], { x: x + B / 2, y: -H }); pos.set(seg[2], { x: x + 1.5 * B, y: -H });
+                        pos.set(seg[3], { x: x + 2 * B, y: 0 }); pos.set(v4, { x: x + 1.5 * B, y: H }); pos.set(v5, { x: x + B / 2, y: H });
+                        x += 3 * B; i = j + 1; continue;
+                    }
+                    pos.set(id, { x, y: 0 });
+                    x += B; i++;
+                }
+                // 枝（主鎖にも環にも入らない原子）: 1本目は上・2本目は下へ、1歩ずつ伸ばす
+                for (const id of path) {
+                    const sides = nb(id).filter(z => !onPath.has(z.id) && !pos.has(z.id));
+                    for (let k = 0; k < sides.length; k++) {
+                        const dir = k === 0 ? -1 : 1;
+                        let cur = sides[k], depth = 1;
+                        const p0 = pos.get(id);
+                        while (cur) {
+                            if (ring.has(cur.id)) return { error: `straight: 「${spec.name}」の枝に環があります（まだ並べられません）` };
+                            pos.set(cur.id, { x: p0.x, y: dir * depth * B });
+                            const nx = nb(cur.id).filter(z => !pos.has(z.id) && !onPath.has(z.id));
+                            if (nx.length > 1) return { error: `straight: 「${spec.name}」の枝が枝分かれしています（まだ並べられません）` };
+                            cur = nx[0]; depth++;
+                        }
+                    }
+                }
+                if (pos.size !== mol.atoms.length) return { error: `straight: 「${spec.name}」の原子 ${mol.atoms.length - pos.size} 個を置けませんでした` };
+                mol.atoms.forEach(a => { const p = pos.get(a.id); a.x = p.x; a.y = p.y; });
+                via += '・主鎖を横一直線に';
+            }
             if (spec.units) {
                 const Rs = mol.atoms.filter(a => a.element === 'R');
                 if (Rs.length !== 2) return { error: `units=1: 「${spec.name}」の両端が R の鎖として読めません（R が ${Rs.length} 個）` };
@@ -548,7 +613,7 @@ async function bake(jobs) {
         };
     });
     for (const job of jobs) {
-        const bakeOne = (spec, parts, between) => pg.evaluate(({ spec, parts, between, OUT_W, MAX_H, FIT_W, BODY_W }) => {
+        const bakeOne = (spec, parts, between) => pg.evaluate(({ spec, parts, between, OUT_W, MAX_H, FIT_W, BODY_W, SCROLL_FIT_W }) => {
             const g = window.game;
             /* ── ② アプリの描画をそのまま呼ぶ（★ ここに作図を書かない）──────────── */
             document.getElementById('figbake')?.remove();
@@ -588,6 +653,12 @@ async function bake(jobs) {
                    ＝ 形にも結合にも触っていない（描いたあとで文字を1種類だけ取り去るだけ） */
                 if (sp.plain) {
                     svgEl.querySelectorAll('.quiz-atoms > text:not(.svg-atom-text)').forEach(t => t.remove());
+                }
+                /* ★ dots: 鎖の両端の R を「…」に（価標は R の字の縁まで伸びたまま ＝「−…」に見える） */
+                if (sp.dots) {
+                    let n = 0;
+                    svgEl.querySelectorAll('text').forEach(t => { if (t.textContent.trim() === 'R') { t.textContent = '…'; n++; } });
+                    if (!n) return { error: where + 'dots: 図に R がありません（高分子の鎖の図だけに書けます）' };
                 }
                 return res;
             };
@@ -704,6 +775,8 @@ async function bake(jobs) {
             /* ★ 狭い分子は左右に余白を足して、どの図も同じ横幅から始める（結合の長さをそろえる） */
             if (vb[2] < FIT_W && !spec.tight) { vb[0] -= (FIT_W - vb[2]) / 2; vb[2] = FIT_W; svg.setAttribute('viewBox', vb.join(' ')); }
             let w = OUT_W, h = Math.round(OUT_W * vb[3] / vb[2]);
+            /* ★ scroll（横スクロールの図）: 縮めずに、viewBox の SCROLL_FIT_W が本文の幅に当たる倍率で焼く */
+            if (spec.scroll) { const k = OUT_W / SCROLL_FIT_W; w = Math.round(vb[2] * k); h = Math.round(vb[3] * k); }
             if (h > MAX_H) { h = MAX_H; w = Math.round(MAX_H * vb[2] / vb[3]); }
             svg.style.width = (w / 2) + 'px';
             svg.style.height = (h / 2) + 'px';
@@ -722,10 +795,12 @@ async function bake(jobs) {
                 if (host && f < parseFloat(getComputedStyle(host).fontSize) - 0.01) { if (f < minSubFont) minSubFont = f; }
                 else if (f < minFont) minFont = f;
             });
-            const minText = isFinite(minFont) ? minFont * BODY_W / vb[2] : null;
-            const minSub = isFinite(minSubFont) ? minSubFont * BODY_W / vb[2] : null;
+            /* scroll の図は縮めずに出す（viewBox の SCROLL_FIT_W が本文の BODY_W に当たる） */
+            const shownW = spec.scroll ? SCROLL_FIT_W : vb[2];
+            const minText = isFinite(minFont) ? minFont * BODY_W / shownW : null;
+            const minSub = isFinite(minSubFont) ? minSubFont * BODY_W / shownW : null;
             return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: nMarks, markWarn, minText, minSub };
-        }, { spec, parts: parts || null, between: between || [], OUT_W, MAX_H, FIT_W, BODY_W });
+        }, { spec, parts: parts || null, between: between || [], OUT_W, MAX_H, FIT_W, BODY_W, SCROLL_FIT_W });
         let r = await bakeOne(job.spec, job.parts, job.between);
         /* ★ 紙の図の型は字の長さぶん価標を伸ばすので、長い鎖（ステアリン酸 C₁₈）は横に伸びて床 9:1 を超える（v1562 実測 10.1:1）。
            ⚠ 鎖を (CH₂)₁₆ に畳むかはユーザーの判断待ちなので、ここでは決めない ——
@@ -744,7 +819,7 @@ async function bake(jobs) {
             await browser.close();
             process.exit(1);
         }
-        if (r.aspect > ASPECT_WARN) {
+        if (r.aspect > ASPECT_WARN && !job.spec.scroll) {
             console.error(`❌ ${job.src} が平たすぎます（${r.aspect.toFixed(1)}:1）。`
                 + `本文の幅では小さい字が読めません（床は ${ASPECT_WARN}:1）`);
             await browser.close();

@@ -920,6 +920,15 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
         const h = createHash('sha1').update(readFileSync(p)).digest('hex').slice(0, 8);
         return `src="/reference-img/${file}?h=${h}"`;
     });
+    /* ★ 横スクロールの図（scroll: true）: 画像の幅 ÷ 1150 倍の幅で出す（ほかの図と字の大きさをそろえる）。
+       面Bは learn.js が読み込み後に同じ % を入れる。面Aはここで画像の幅から書き込む（load の処理は焼いた HTML に残らない） */
+    blocks = blocks.replace(/<img([^>]*class="[^"]*ref-figure-img-scroll[^"]*"[^>]*)>/g, (m, attrs) => {
+        const file = (attrs.match(/src="\/reference-img\/([a-z0-9-]+\.png)/) || [])[1];
+        const buf = file && existsSync(path.join(ROOT, 'reference-img', file)) ? readFileSync(path.join(ROOT, 'reference-img', file)) : null;
+        if (!buf || buf.readUInt32BE(0) !== 0x89504e47) return m;
+        const pct = (buf.readUInt32BE(16) / 1150 * 100).toFixed(1);
+        return `<img${attrs.replace(/\sstyle="[^"]*"/, '')} style="width:${pct}%">`;
+    });
     if (home.course === 'basic') {
         blocks = blocks.replace(/(<a class="ref-link" href="\/reference\/([a-z0-9-]+)\/"[^>]*>)([\s\S]*?)(<\/a>)/g, (m, open, id, text, close) => {
             const to = TOC_HOME[id];

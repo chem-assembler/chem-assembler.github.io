@@ -460,7 +460,9 @@
            `licenseUrl`（ライセンスの本文）。⚠ 4つそろえて書く（1つでも欠けると表示の条件を満たさない）。
            ★ 図の下に「写真: <credit> ／ <license>」をリンクつきで出す（learn.js の renderFigure ＝ 面A・面B 共通）。
            ⚠ URL は `raw`（記法も文字の検査も通さない）。画面には textContent と href でしか出さない */
-        figure: { order: ['src', 'gen', 'shot', 'svg', 'mark', 'between', 'alt', 'caption', 'credit', 'creditUrl', 'license', 'licenseUrl'], req: ['src', 'alt', 'caption'], list: [], multi: ['gen', 'mark', 'between'], oneScalar: ['gen'], prose: ['caption'], raw: ['shot', 'mark', 'between', 'creditUrl', 'licenseUrl'] },
+        /* ★ `scroll: true`（2026-09-24 ユーザー「図はスクロールでどうでしょうか」）: 横に長い図（高分子の鎖）を縮めずに焼き、
+           横にスクロールして見せる。gen-figure は字の大きさを他の図とそろえて焼き、画面は本文の幅に対して広く出す */
+        figure: { order: ['src', 'gen', 'shot', 'svg', 'mark', 'between', 'scroll', 'alt', 'caption', 'credit', 'creditUrl', 'license', 'licenseUrl'], req: ['src', 'alt', 'caption'], list: [], multi: ['gen', 'mark', 'between'], oneScalar: ['gen'], prose: ['caption'], raw: ['shot', 'mark', 'between', 'creditUrl', 'licenseUrl'], bool: ['scroll'] },
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
            `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒）。
            ★ `arrow` は矢印そのもの（§31-2）。**書かなければ →**（有機46枚は1文字も変わらない） */

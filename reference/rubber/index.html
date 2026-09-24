@@ -644,6 +644,9 @@ footer a:hover{color:var(--brand)}
 /* 出典（他人の写真・2026-09-24）。キャプションより一段小さく、リンクは下線で分かるように */
 .ref-figure-credit { font-size: 10.5px; color: var(--text-muted); margin: 2px 0 0; line-height: 1.5; }
 .ref-figure-credit a { color: inherit; text-decoration: underline; }
+/* 横に長い図（scroll: true）は縮めずに横スクロール（2026-09-24） */
+.ref-figure-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ref-figure-scroll .ref-figure-img-scroll { max-width: none; }
 /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・§19-5） */
 .ref-rx {
     margin: 0 0 14px;
@@ -970,7 +973,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/polymer-basics/">2種類以上の単量体をまぜて重合させる共重合</a></p>
 <h5 class="ref-h5">シリコーンゴム</h5>
 <p class="ref-p">ケイ素原子 Si と酸素原子 O が交互に並んだ −Si−O−Si−O− を主鎖にもつゴムを<b>シリコーンゴム</b>といいます。ケイ素にはメチル基などが付いています。<b>主鎖に炭素原子を含まず、Si−O 結合が強いので、熱にも寒さにも強く、化学的に安定</b>です。医療用のチューブや調理器具に使われます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-silicone.png?h=11eef9a1" alt="シリコーンの鎖の一部の構造式。ケイ素原子 Si と酸素原子 O が交互に一列につながり、どのケイ素にもメチル基が上下に1つずつ付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">主鎖は <b>−Si−O−Si−O−</b> で、炭素を含みません。炭素はケイ素に付いたメチル基 −CH₃ にだけあります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-silicone.png?h=20043ecd" alt="シリコーンの鎖の一部の構造式。ケイ素原子 Si と酸素原子 O が交互に一列につながり、どのケイ素にもメチル基が上下に1つずつ付き、両端の価標の先の「…」で、鎖がさらに続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">主鎖は <b>−Si−O−Si−O−</b> で、炭素を含みません。炭素はケイ素に付いたメチル基 −CH₃ にだけあります。</figcaption></figure>
 <p class="ref-p">シリコーンゴムは、ジクロロジメチルシランを加水分解してできる化合物を<b>縮合重合</b>させてつくります。<b>主鎖に C=C が無いので硫黄では加硫できず、</b>別の方法で橋かけします。</p>
 <p class="ref-p">「<b>シリコーンゴムは主鎖に炭素が無い</b>」の一点で十分でしょう。</p>
 <section class="ref-sec" id="ref-sec-summary"><h4 class="ref-sec-h">おもなゴムの一覧</h4><p class="ref-sec-lead">ゴムを、単量体・重合の型・特徴で並べます。シリコーンゴム以外はどれも主鎖に C=C が残ります。</p></section>

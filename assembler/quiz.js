@@ -1924,6 +1924,49 @@ function figureMarkHits(mol, at) {
         const order = [...new Set(withH.map(a => rank.get(a.id)))].sort((p, q) => p - q);
         return withH.map(a => ({ ids: [a.id], label: 'abcdefghij'[order.indexOf(rank.get(a.id))] }));
     }
+    /* ⑤-3 繰り返し単位（`at=繰り返し単位`・2026-09-24・PET の鎖の図。ユーザー「繰り返し単位は示す」）。
+     * 両端が R の鎖で、R から R への主鎖（最短の道）の原子を「元素＋枝＋次の結合」の並びにして、いちばん短い周期を探す
+     * （参考書の図の `units=1` と同じ考え）。芳香環の結合は 'a' として比べる（ケクレの描き分けで周期がずれないように）。
+     * 当たるのは**真ん中の1単位**（主鎖の原子＋そこから主鎖を通らずに届く枝・環の残り）。周期が無ければ空 */
+    if (spec === '繰り返し単位') {
+        const Rs = mol.atoms.filter(a => a.element === 'R');
+        if (Rs.length !== 2) return [];
+        const nb = id => mol.getNeighbors(id).map(x => x.atom);
+        const prev = new Map([[Rs[0].id, null]]);
+        const q = [Rs[0].id];
+        while (q.length) { const c = q.shift(); if (c === Rs[1].id) break; nb(c).forEach(x => { if (!prev.has(x.id)) { prev.set(x.id, c); q.push(x.id); } }); }
+        if (!prev.has(Rs[1].id)) return [];
+        const path = [];
+        for (let c = Rs[1].id; c; c = prev.get(c)) path.unshift(c);
+        const onPath = new Set(path);
+        const arom = typeof findAromaticBondKeys === 'function' ? (findAromaticBondKeys(mol) || new Set()) : new Set();
+        const bondType = (p, r) => {
+            const k = p < r ? `${p}_${r}` : `${r}_${p}`;
+            if (arom.has(k)) return 'a';
+            return (mol.bonds.find(b => (b.atomId1 === p && b.atomId2 === r) || (b.atomId1 === r && b.atomId2 === p)) || {}).type;
+        };
+        const inner = path.slice(1, -1);
+        const sig = inner.map((id, i) => {
+            const a = mol.atoms.find(x => x.id === id);
+            const side = nb(id).filter(x => !onPath.has(x.id)).map(x => x.element + bondType(id, x.id)).sort().join(',');
+            return a.element + '[' + side + ']' + bondType(id, path[i + 2]);
+        });
+        let per = 0;
+        for (let p = 1; p < sig.length; p++) {
+            if (sig.length % p) continue;
+            if (sig.every((x, i) => i + p >= sig.length || x === sig[i + p])) { per = p; break; }
+        }
+        if (!per || per === sig.length) return [];
+        const k = Math.floor((sig.length / per - 1) / 2);   // 真ん中の単位（3単位なら2つ目）
+        const unit = inner.slice(k * per, (k + 1) * per);
+        const ids = new Set(unit);
+        const stack = unit.slice();
+        while (stack.length) {
+            const c = stack.pop();
+            nb(c).forEach(x => { if (!onPath.has(x.id) && !ids.has(x.id)) { ids.add(x.id); stack.push(x.id); } });
+        }
+        return [{ ids: [...ids] }];
+    }
     // ⑥ 芳香環の位置番号（`at=環C2`）
     const ar = /^環C(\d+)$/.exec(spec);
     if (ar) {
@@ -1979,7 +2022,7 @@ function figureMarkHits(mol, at) {
         return hits;
     }
     throw new Error(`印の at=「${spec}」を知りません`
-        + `（書けるのは ${Object.keys(FIGURE_MARK_GROUPS).join(' / ')} / 不斉炭素 / ベンゼン環 / グリコシド結合 / 環の酸素 / 環 / 環の水素の種類`
+        + `（書けるのは ${Object.keys(FIGURE_MARK_GROUPS).join(' / ')} / 不斉炭素 / ベンゼン環 / グリコシド結合 / 環の酸素 / 環 / 環の水素の種類 / 繰り返し単位`
         + ' / 環C<番号> / C<番号> / C<番号>-OH / C<番号>-C<番号>）');
 }
 

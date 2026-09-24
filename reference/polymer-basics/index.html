@@ -644,6 +644,9 @@ footer a:hover{color:var(--brand)}
 /* 出典（他人の写真・2026-09-24）。キャプションより一段小さく、リンクは下線で分かるように */
 .ref-figure-credit { font-size: 10.5px; color: var(--text-muted); margin: 2px 0 0; line-height: 1.5; }
 .ref-figure-credit a { color: inherit; text-decoration: underline; }
+/* 横に長い図（scroll: true）は縮めずに横スクロール（2026-09-24） */
+.ref-figure-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ref-figure-scroll .ref-figure-img-scroll { max-width: none; }
 /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・§19-5） */
 .ref-rx {
     margin: 0 0 14px;
@@ -926,8 +929,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">具体例で見ます。エチレン CH₂=CH₂ が数千個つながると、ポリエチレンになります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CH₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CH₂］ₙ</span></div><p class="ref-note">左辺の n と、右辺の角かっこの外の n が対応します。</p></div>
 <p class="ref-p">重合体の中でくり返されている1つぶんの構造 ［CH₂−CH₂］ を<b>繰り返し単位</b>、くり返しの数 n を<b>重合度</b>といいます。ポリエチレンの「ポリ」は「たくさんの」という意味で、「たくさんのエチレン」という名前です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-polyethylene.png?h=966ee8b7" alt="ポリエチレンの鎖の一部の構造式。CH₂ が6個一列につながり、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリエチレンの鎖の一部。CH₂−CH₂ の<b>繰り返し単位が3つ</b>並んでいて、両端の R の先にも同じ単位が続きます。</figcaption></figure>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-repeat-unit.png?h=27f66d04" alt="ポリエチレンの鎖の一部の構造式で、まん中の CH₂−CH₂ 2個ぶんだけが破線の四角で囲まれ、繰り返し単位と書かれている図" loading="lazy"><figcaption class="ref-figure-cap">囲んだ <b>CH₂−CH₂ の2個ぶん</b>が繰り返し単位です。この単位が n 回くり返されて1本の鎖になります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-polyethylene.png?h=153f132c" alt="ポリエチレンの鎖の一部の構造式。CH₂ が6個一列につながり、両端の価標の先の「…」で、鎖がさらに続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリエチレンの鎖の一部。CH₂−CH₂ の<b>繰り返し単位が3つ</b>並んでいて、両端の「…」の先にも同じ単位が続きます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-repeat-unit.png?h=ead3b955" alt="ポリエチレンの鎖の一部の構造式で、まん中の CH₂−CH₂ 2個ぶんだけが破線の四角で囲まれ、繰り返し単位と書かれている図" loading="lazy"><figcaption class="ref-figure-cap">囲んだ <b>CH₂−CH₂ の2個ぶん</b>が繰り返し単位です。この単位が n 回くり返されて1本の鎖になります。</figcaption></figure>
 <p class="ref-p"><b>単量体・重合体・繰り返し単位・重合度の4語は必ず暗記してください。</b>以降のページはすべてこの4語で書いてあります。</p>
 <section class="ref-sec" id="ref-sec-average-mw"><h4 class="ref-sec-h">重合度と平均分子量</h4><p class="ref-sec-lead">高分子は重合度の違う分子の混ざりものなので、分子量は平均分子量で表します。平均分子量は、繰り返し単位の式量に重合度をかけたものです。</p></section>
 <p class="ref-p">同じポリエチレンでも、つながった数が1000個の分子もあれば1200個の分子もあります。<b>高分子は重合度の違う分子の混合物</b>なので、分子量が1つに決まりません。そこで<b>平均分子量</b>で表します。</p>
@@ -938,7 +941,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-addition"><h4 class="ref-sec-h">重合の型① 付加重合</h4><p class="ref-sec-lead">C=C が開いて、そのまま次々につながります。何も出ていかないので、繰り返し単位の組成は単量体と同じです。</p></section>
 <p class="ref-p">二重結合 C=C をもつ単量体が、付加反応をくり返してつながる重合を<b>付加重合</b>といいます。<b>つなぐときに何も出ていきません。</b></p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CHCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CHCl］ₙ</span></div><p class="ref-note">塩化ビニル → ポリ塩化ビニル。原子の出入りがないので、繰り返し単位の分子式は単量体と同じ C₂H₃Cl です。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-pvc.png?h=bd505074" alt="ポリ塩化ビニルの鎖の一部の構造式。炭素が一列につながり、1個おきの炭素に塩素原子が付き、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリ塩化ビニルの鎖の一部。塩化ビニルの <b>C=C が単結合に変わって</b>つながっただけで、1単位あたりの原子の数は塩化ビニルと同じです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-pvc.png?h=8be1ccf8" alt="ポリ塩化ビニルの鎖の一部の構造式。炭素が一列につながり、1個おきの炭素に塩素原子が付き、両端の価標の先の「…」で、鎖がさらに続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリ塩化ビニルの鎖の一部。塩化ビニルの <b>C=C が単結合に変わって</b>つながっただけで、1単位あたりの原子の数は塩化ビニルと同じです。</figcaption></figure>
 <p class="ref-p">付加重合の単量体は、エチレンの H を1個別の原子・原子団 X に置きかえた <b>CH₂=CH−X</b> の形（ビニル化合物）が大半です。X が −Cl なら「ポリ塩化ビニル」、−CH₃ なら「ポリプロピレン」のように、「ポリ<span class="ref-blank">○○</span>」の<span class="ref-blank">○○</span>に単量体の名前が入ります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">付加重合の入口 —— アルケンの付加反応とビニル基</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">付加重合でできる樹脂（ポリエチレン・ポリスチレン・PMMA など）を並べて見る</a></p>
@@ -954,7 +957,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">環状の構造をもつ単量体が、環を開きながらつながる重合を<b>開環重合</b>といいます。付加重合と同じく、<b>何も出ていきません。</b></p>
 <p class="ref-p">具体例は、ε-カプロラクタム C₆H₁₁NO からできる<b>ナイロン6</b>です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n C₆H₁₁NO（ε-カプロラクタム）</span><span class="ref-rx-arrow"><span class="ref-rx-over">少量の水</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">［NH−(CH₂)₅−CO］ₙ</span></div><p class="ref-note">環の中のアミド結合が1か所切れて鎖になり、次の分子とつながります。水はきっかけとして働くだけなので、反応式の両辺には出てきません。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-nylon6.png?h=f1b90da0" alt="ナイロン6の鎖の一部の構造式。NH、(CH₂)₅、C=O の順に並んだ単位が3つ一列につながり、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ナイロン6の鎖の一部（繰り返し単位3つぶん）。1単位は ε-カプロラクタムの<b>環をほどいて一直線に伸ばした形</b>です。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-nylon6.png?h=635397fe" alt="ナイロン6の鎖の一部の構造式。NH、(CH₂)₅、C=O の順に並んだ単位が3つ一列につながり、両端の価標の先の「…」で、鎖がさらに続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ナイロン6の鎖の一部（繰り返し単位3つぶん）。1単位は ε-カプロラクタムの<b>環をほどいて一直線に伸ばした形</b>です。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-compare"><h4 class="ref-sec-h">重合の型を並べる</h4><p class="ref-sec-lead">付加・縮合・開環の3つは「何が出ていくか」で見分けます。フェノール樹脂などの付加縮合は、付加と縮合をくり返す別の型です。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">重合の型</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">型</th><th style="text-align: left;">単量体に要るもの</th><th style="text-align: left;">出ていくもの</th><th style="text-align: left;">代表例</th></tr></thead><tbody><tr><td style="text-align: left;">付加重合</td><td style="text-align: left;">C=C（二重結合）</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ポリエチレン・ポリ塩化ビニル・ポリスチレン</td></tr><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">反応できる官能基が1分子に2つ</td><td style="text-align: left;"><b>水など</b></td><td style="text-align: left;">ポリエチレンテレフタラート・ナイロン66</td></tr><tr><td style="text-align: left;">開環重合</td><td style="text-align: left;">環状の構造</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ナイロン6</td></tr><tr><td style="text-align: left;">付加縮合</td><td style="text-align: left;">付加と縮合を交互にくり返せる組み合わせ</td><td style="text-align: left;"><b>水</b></td><td style="text-align: left;">フェノール樹脂・尿素樹脂・メラミン樹脂</td></tr></tbody></table></div>
 <p class="ref-p"><b>付加・縮合・開環の3つの名前と、「何が出ていくか」は必ず暗記してください。</b>「付加と開環は何も出ない、縮合は水が出る」と対にして覚えるのが確実です。</p>
