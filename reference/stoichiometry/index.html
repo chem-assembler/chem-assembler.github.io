@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -949,7 +951,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">⚠ ただし、<b>水のように反応後に液体になる物質の量を問われたら、L は使えません</b>。そのときは mol を経由します。</p>
 <p class="ref-p">同じ容器の中（温度と体積が共通）で反応させるときは、<b>圧力が mol に比例する</b>ので、3行の表を圧力〔Pa〕のまま書けます。容器に O₂ 1.0×10⁵Pa と H₂ 0.8×10⁵Pa ぶんを入れて燃やすなら、H₂ 0.8 ÷ 2 ＝ 0.4 と O₂ 1.0 ÷ 1 ＝ 1.0 を比べて x ＝ 0.4、反応後は O₂ 0.6×10⁵Pa、H₂O 0.8×10⁵Pa（すべて気体と仮定したとき）です。水蒸気がどこまで気体でいられるかは、水蒸気を含む気体のページで扱います。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/stoichiometry-pressure-table.png" alt="「単位は 10⁵Pa」と断った3行の表。反応式 2H₂ ＋ 1O₂ → 2H₂O の係数を四角で囲み、反応前は H₂ 0.8・O₂ 1.0、変化量は H₂ −0.8・O₂ −0.4・H₂O ＋0.8、反応後は H₂ 0・O₂ 0.6・H₂O 0.8" loading="lazy"><figcaption class="ref-figure-cap">同じ容器の中なら、mol の代わりに圧力のまま3行の表が書けます。変化量は係数の比 2 : 1 : 2 になっています。</figcaption></figure>
-<p class="ref-link-row"><a class="ref-link" href="/reference/gas-with-vapor/">反応でできた水が液体になるかどうかの判定は、水蒸気を含む気体のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/gas-with-vapor/">反応でできた水が液体になるかどうかの判定は、水蒸気を含む気体のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">「係数の比は mol の比」「変化量は係数 × 倍率」「過不足は mol ÷ 係数の小さい方」の3つを覚えれば、量的関係の問題はすべてこの3行の表で解けます。</p></section>
 <p class="ref-p"><b>「係数の比 ＝ mol の比（質量の比ではない）」と「過不足は mol ÷ 係数の小さい方で止まる」の2つは必ず覚えてください。</b></p>
 <p class="ref-p">3行の表は、化学のあとの単元でも同じ形で何度も使います。化学平衡（平衡に達したときの量）・電離平衡（電離度）・気体の反応（圧力で書く表）は、どれも「反応前・変化量・反応後」の3行です。<b>ここで3行の表を書く習慣をつけておくと、あとが楽になります。</b></p>

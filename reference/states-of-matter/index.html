@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -951,7 +953,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">水の状態変化のエンタルピー（1mol あたり）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">変化</th><th style="text-align: left;">条件</th><th style="text-align: right;">ΔH</th></tr></thead><tbody><tr><td style="text-align: left;">融解 H₂O（固）→ H₂O（液）</td><td style="text-align: left;">0℃</td><td style="text-align: right;">＋6.0kJ</td></tr><tr><td style="text-align: left;">蒸発 H₂O（液）→ H₂O（気）</td><td style="text-align: left;">25℃</td><td style="text-align: right;">＋44kJ</td></tr><tr><td style="text-align: left;">蒸発 H₂O（液）→ H₂O（気）</td><td style="text-align: left;">100℃</td><td style="text-align: right;">＋41kJ</td></tr><tr><td style="text-align: left;">昇華 H₂O（固）→ H₂O（気）</td><td style="text-align: left;">0℃</td><td style="text-align: right;">＋51kJ</td></tr></tbody></table></div>
 <p class="ref-p">蒸発エンタルピーが融解エンタルピーよりずっと大きいのは、液体では粒子がまだ集まったまま引き合っていて、気体にするにはその引き合いをほぼ全部断ち切る必要があるためです。<b>数値は問題文で与えられるので覚えなくて構いません。</b>「蒸発の方が融解よりずっと大きい」という大小だけは説明できるようにしておきましょう。</p>
 <p class="ref-p">逆向きの凝固・凝縮・凝華では、同じ大きさの熱が放出されます。汗が蒸発すると体が冷えるのは、蒸発エンタルピーの分の熱を体から奪うためです。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/reaction-enthalpy/">状態変化を ΔH つきの式で書く書き方は、反応エンタルピーのページで扱います</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/reaction-enthalpy/">状態変化を ΔH つきの式で書く書き方は、反応エンタルピーのページで扱います <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">沸騰している水をもっと強く加熱すれば、100℃ より高い温度になる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">1.013×10⁵Pa のもとでは、水が残っている間は何度強く加熱しても 100℃ のままです。強く加熱すると、沸騰が速く進むだけです。</span></p><p class="ref-mistake-why">加えた熱は温度を上げることではなく、液体の粒子を引き離して気体にすることに使われるためです。</p></div>
 <section class="ref-sec" id="ref-sec-phase-diagram"><h4 class="ref-sec-h">状態図 —— 温度と圧力で状態を読む</h4><p class="ref-sec-lead">温度（横軸）と圧力（縦軸）を決めると、物質が固体・液体・気体のどれになるかが決まります。それを地図のように塗り分けたのが状態図です。3つの領域を分ける曲線の上では、両側の状態が共存します。</p></section>
 <p class="ref-p">状態図は化学の範囲です。状態図には、3つの領域（固体・液体・気体）と、その境目の3本の曲線があります。液体と気体の境目を<b>蒸気圧曲線</b>、固体と液体の境目を<b>融解曲線</b>、固体と気体の境目を<b>昇華圧曲線</b>といいます。</p>
@@ -961,7 +963,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">ドライアイスが常温・常圧で液体にならずに昇華するのは、1.013×10⁵Pa が二酸化炭素の三重点の圧力 5.3×10⁵Pa より低く、この圧力の横線が液体の領域を通らないためです。三重点より高い圧力をかければ、二酸化炭素も液体になります。</p>
 <p class="ref-p">水の状態図には、ほかの多くの物質と違う特徴があります。融解曲線が左に傾いていて、<b>圧力を高くすると融点が下がります</b>。氷は同じ質量の水より体積が大きい（密度が小さい）ので、押しつぶすと体積の小さい液体の側に変化しやすいためです。</p>
 <p class="ref-p"><b>状態図の数値は覚えなくて構いません。</b>三重点・臨界点の名前と意味、「状態図の横線をたどれば、その圧力で温めたときの変化が読める」という読み方を身につけておきましょう。蒸気圧曲線の読み方は、次のページでくわしく扱います。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/vapor-pressure/">液体と気体の境目（蒸気圧曲線）と沸騰はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/vapor-pressure/">液体と気体の境目（蒸気圧曲線）と沸騰はこちら <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">状態変化の6つの名前と、T ＝ t ＋ 273 は必ず覚えます。エンタルピーの値と状態図の数値は、問題文で与えられます。</p></section>
 <p class="ref-p"><b>必ず覚えるのは、状態変化の6つの名前（融解・凝固・蒸発・凝縮・昇華・凝華）と、T〔K〕＝ t〔℃〕＋ 273 の2つです。</b>加熱曲線で温度が一定になる区間では、加えた熱が状態変化だけに使われる、という理由まで説明できるようにしておきましょう。</p>
 <p class="ref-p">融解エンタルピー・蒸発エンタルピーの値、三重点・臨界点の数値は覚えなくて構いません。「蒸発エンタルピーの方がずっと大きい」「水は圧力を上げると融点が下がる」の2つの向きだけは、よく登場するので押さえておきましょう。</p>

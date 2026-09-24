@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -932,7 +934,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2H₂O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O ＋ O₂</span></div><p class="ref-note">反応速度式は v ＝ k[H₂O₂]（1次反応）。係数の2から [H₂O₂]² としないこと。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2N₂O₅</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">4NO₂ ＋ O₂</span></div><p class="ref-note">反応速度式は v ＝ k[N₂O₅]（1次反応）。</p></div>
 <p class="ref-p">この2つは、律速段階が分子どうしの衝突ではないため、係数と次数が一致しません。<b>どちらの反応速度式も速度の単元ではよく登場するので、例外として丸暗記しましょう。</b>これ以外の例外は、ほとんど問われません。</p>
-<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">本当は、反応の次数は<b>実験しないとわからない</b>ものです。実際の反応のしくみは複雑で、例外はこの2つ以外にもたくさんあり、原則と例外を逆にしなければならないほどです。ただ、高校化学・大学受験の範囲では「H₂O₂ と N₂O₅ の分解だけが例外で、ほかは係数から次数が決まる」と考えた方が、反応を理解するのにも問題を解くのにも都合がよいので、この参考書ではこの考え方を採ります。</p></div>
+<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">本当は、反応の次数は<b>実験しないとわからない</b>ものです。実際の反応のしくみは複雑で、例外はこの2つ以外にもたくさんあり、原則と例外を逆にしなければならないほどです。ただ、高校化学・大学受験の範囲では「H₂O₂ と N₂O₅ の分解だけが例外で、ほかは係数から次数が決まる」と考えた方が、反応を理解するのにも問題を解くのにも都合がよいので、化学レンズではこの考え方を採ります。</p></div>
 <section class="ref-sec" id="ref-sec-experiment"><h4 class="ref-sec-h">実験から次数と k を決める</h4><p class="ref-sec-lead">速度を濃度で割った値 v／[A] が一定なら1次反応、v／[A]² が一定なら2次反応です。一定になった値が反応速度定数 k です。</p></section>
 <p class="ref-p">H₂O₂ の分解で、2分ごとに [H₂O₂] を測った結果から反応速度式を求めます。手順は次のとおりです。</p>
 <ol class="ref-list"><li>連続する測定値の差をとり、2分間に減った [H₂O₂] を求める。<div class="ref-li-hang">0〜2分なら 0.100 − 0.066 ＝ 0.034 mol/L</div></li><li>2で割って1分あたりにし、その区間の反応速度 v とする。<div class="ref-li-hang">0.034 ÷ 2 ＝ 0.017 mol/(L·min)</div></li><li>区間の最初と最後の濃度の平均を、その区間の [H₂O₂] とする。<div class="ref-li-hang">(0.100 ＋ 0.066) ÷ 2 ＝ 0.083 mol/L</div></li><li>v／[H₂O₂] と v／[H₂O₂]² を計算し、どちらが一定になるかを見る。</li></ol>

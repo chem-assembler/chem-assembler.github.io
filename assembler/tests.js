@@ -55783,6 +55783,8 @@
         const RM = window.ReferenceMd;
         assert(RM && typeof RM.parseToc === 'function', 'ReferenceMd.parseToc が居ない');
         const tocRows = RM.parseToc(await grab('../reference-src/TOC.txt', '参考書の目次（TOC.txt）'));
+        const tocHomeMap = RM.tocHome(tocRows);
+        const tocHomeOf = (id) => tocHomeMap[id];
         assert(RM.tocOrder(tocRows).join(',') === pages.map(p => p.id).join(','),
             '目次（TOC.txt）の本体の順と reference.json の順が違う（node tools/gen-reference.mjs）');
         const wantIndex = [];
@@ -55867,7 +55869,20 @@
                         + `    原稿から  : ${flat(live.innerHTML).slice(0, 80)}`);
                     return;
                 }
-                assert(flat(got[i].textContent) === flat(live.textContent),
+                /* ★ 「化学」の札（化学基礎 → 化学 のリンク・2026-09-24）は**生成器が目次から付ける**ので、アプリの組む中身には無い。
+                   札を除いて照らし、札そのものは「行き先が化学（科目）のページのときだけ」付いていることを確かめる */
+                let gotEl = got[i];
+                const tags = liveLink ? got[i].querySelectorAll('a.ref-link .ref-course-tag') : [];
+                if (tags.length) {
+                    gotEl = got[i].cloneNode(true);
+                    gotEl.querySelectorAll('a.ref-link .ref-course-tag').forEach(t => t.remove());
+                    const to = (got[i].querySelector('a.ref-link').getAttribute('href').match(/^\/reference\/([a-z0-9-]+)\/$/) || [])[1];
+                    assert(to && tocHomeOf(to) && tocHomeOf(to).course === 'adv',
+                        `${where} の ${i + 1} 番目: 化学（科目）でないページ（${to}）へのリンクに「化学」の札が付いている`);
+                    assert(tocHomeOf(p.id) && tocHomeOf(p.id).course === 'basic',
+                        `${where} の ${i + 1} 番目: 化学基礎でないページのリンクに「化学」の札が付いている`);
+                }
+                assert(flat(gotEl.textContent) === flat(live.textContent),
                     `${where} の ${i + 1} 番目（${live.tagName.toLowerCase()}.${live.className}）が、いまアプリが組む中身と違う\n`
                     + `    焼いたもの: ${flat(got[i].textContent).slice(0, 90)}\n`
                     + `    アプリから: ${flat(live.textContent).slice(0, 90)}\n`

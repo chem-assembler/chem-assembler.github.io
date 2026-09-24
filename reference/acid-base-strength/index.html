@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -929,7 +931,7 @@ a.ref-link::before { content: '→ '; }
 <ul class="ref-list"><li>電離度 α ＝（電離した酸・塩基の mol/L）÷（溶かした酸・塩基の mol/L）</li><li>強酸・強塩基は <b>α ＝ 1</b></li><li>弱酸・弱塩基は <b>α ＜ 1</b>（<b>0.01 くらい</b>）</li></ul>
 <p class="ref-p">具体例として、0.20 mol/L の酢酸の H⁺ 濃度が 0.0040 mol/L だったとすると、酢酸は1価なので電離した酢酸も 0.0040 mol/L で、α ＝ 0.0040 ÷ 0.20 ＝ <b>0.020</b> です。</p>
 <p class="ref-p"><b>「弱酸・弱塩基の電離度は 0.01 くらい」は覚えておきましょう。</b>電離度は同じ物質でも濃度や温度で変わり、薄いほど大きくなります。滴定の「おおよその pH」を出すときは 0.01 をそのまま使います。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/weak-acid-equilibrium/">電離度が濃度でどう変わるか（α ＝ √(Ka／c)・薄めると大きくなる）は、弱酸・弱塩基の電離平衡のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/weak-acid-equilibrium/">電離度が濃度でどう変わるか（α ＝ √(Ka／c)・薄めると大きくなる）は、弱酸・弱塩基の電離平衡のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-table"><h4 class="ref-sec-h">代表的な酸と塩基の分類</h4><p class="ref-sec-lead">酸・塩基は価数と強弱の表で覚えます。強酸は HCl・HNO₃・H₂SO₄ の3つだけで、その他の酸は弱酸です。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">代表的な酸と塩基（価数 × 強弱）</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">価数</th><th style="text-align: left;">強酸</th><th style="text-align: left;">弱酸</th><th style="text-align: left;">強塩基</th><th style="text-align: left;">弱塩基</th></tr></thead><tbody><tr><td style="text-align: center;">1価</td><td style="text-align: left;">塩化水素 HCl・硝酸 HNO₃</td><td style="text-align: left;">酢酸 CH₃COOH</td><td style="text-align: left;">水酸化ナトリウム NaOH・水酸化カリウム KOH</td><td style="text-align: left;">アンモニア NH₃</td></tr><tr><td style="text-align: center;">2価</td><td style="text-align: left;">硫酸 H₂SO₄</td><td style="text-align: left;">硫化水素 H₂S・シュウ酸 (COOH)₂・二酸化炭素 CO₂</td><td style="text-align: left;">水酸化カルシウム Ca(OH)₂・水酸化バリウム Ba(OH)₂</td><td style="text-align: left;">水酸化鉄(Ⅱ) Fe(OH)₂・水酸化マグネシウム Mg(OH)₂</td></tr><tr><td style="text-align: center;">3価</td><td style="text-align: left;">——</td><td style="text-align: left;">リン酸 H₃PO₄</td><td style="text-align: left;">——</td><td style="text-align: left;">——</td></tr></tbody></table></div>
 <p class="ref-p"><b>強酸は3つ覚えます</b>。「<b>塩酸 HCl、硝酸 HNO₃、硫酸 H₂SO₄、その他は弱酸</b>」と言えるようにしてください。</p>
@@ -948,7 +950,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NH₃ ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NH₄⁺ ＋ OH⁻</span></div><p class="ref-note">1価の弱塩基。NH₃ は OH を持たないので、水と反応して OH⁻ を生じる形で書きます。</p></div>
 <h5 class="ref-h5">酢酸とシュウ酸の書き方</h5>
 <p class="ref-p">酢酸は4つの H 原子のうち、<b>カルボキシ基 −COOH の H 1個だけ</b>が電離します。分子式 C₂H₄O₂ ではこの特徴が表せないので、酢酸は<b>示性式 CH₃COOH</b> で書きます。シュウ酸も −COOH を2個もつので <b>(COOH)₂</b>（H₂C₂O₄ とも）と書きます。−COOH が弱酸の性質を示すためです。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">カルボキシ基と、カルボン酸が弱酸であることはカルボン酸のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">カルボキシ基と、カルボン酸が弱酸であることはカルボン酸のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-concentration"><h4 class="ref-sec-h">H⁺ の濃度の求め方</h4><p class="ref-sec-lead">強酸は（価数）×（濃度）、弱酸は（濃度）×（電離度）で H⁺ の濃度を出します。2つを使い分けます。</p></section>
 <p class="ref-p">強酸・強塩基はすべて電離するので、電離の式の係数から次のように求めます。</p>
 <ul class="ref-list"><li>強酸：（価数）×（酸の mol/L）＝（H⁺ の mol/L）</li><li>強塩基：（価数）×（塩基の mol/L）＝（OH⁻ の mol/L）</li></ul>

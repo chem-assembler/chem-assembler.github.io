@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -931,7 +933,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/colligative/">沸点上昇・凝固点降下（質量モル濃度を使う）へ</a></p>
 <section class="ref-sec" id="ref-sec-proportion"><h4 class="ref-sec-h">準標準状態を基準に比例で解く</h4><p class="ref-sec-lead">気体と同じく、「300 K・1.0 × 10⁵ Pa で 1 mol が 24.9 L」を基準にすれば、浸透圧も公式に代入せずに比例・反比例で求められます。</p></section>
 <p class="ref-p">気体のページでは、状態方程式に代入するかわりに、<b>300 K・1.0 × 10⁵ Pa で 1 mol が 24.9 L</b>という基準から、比例と反比例で答えを出しました。浸透圧も同じ式なので、同じ基準が使えます。</p>
-<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">「準標準状態」（300 K・1.0 × 10⁵ Pa・24.9 L）は、この参考書での呼び名です。教科書の用語ではないので、答案には書かないでください。</p></div>
+<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">「準標準状態」（300 K・1.0 × 10⁵ Pa・24.9 L）は、化学レンズでの呼び名です。教科書の用語ではないので、答案には書かないでください。</p></div>
 <p class="ref-p">言いかえると、<b>溶質 1 mol を溶かして 24.9 L にした溶液の浸透圧は、300 K で 1.0 × 10⁵ Pa</b>です。ここから、ΠV ＝ nRT の「＝の逆側は比例、同じ側は反比例」で倍率をかけます。</p>
 <ul class="ref-list"><li>Π と n・T は＝の逆側 → <b>比例</b></li><li>Π と V は＝の同じ側 → <b>反比例</b></li></ul>
 <p class="ref-p">具体例として、グルコース 0.0050 mol を水に溶かして 250 mL にした溶液の 27 ℃（300 K）での浸透圧を求めます。</p>

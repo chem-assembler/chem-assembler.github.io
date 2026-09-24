@@ -384,6 +384,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -864,6 +866,17 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
         }
         blocks = blocks.replace(slot, appEmbedBox(b));
     });
+    /* ★★ 化学基礎のページから「化学」（科目）のページへ飛ぶリンクには、**必ず「化学」の札を付ける**
+       （2026-09-24 ユーザー「基礎のページからのリンクで、無機など化学のページから飛ばすときはかならず表示してください」）。
+       ★ 科目は目次（TOC.txt）が持つ ＝ 読めるのはこの生成器。資料ペイン（面B）は有機（化学）のページしか開かないので、
+         化学基礎 → 化学 のリンクが出るのは面Aだけ。⚠ 原稿に書かせない（書き忘れると黙って札が出ない）ので、ここで機械的に付ける */
+    if (home.course === 'basic') {
+        blocks = blocks.replace(/(<a class="ref-link" href="\/reference\/([a-z0-9-]+)\/"[^>]*>)([\s\S]*?)(<\/a>)/g, (m, open, id, text, close) => {
+            const to = TOC_HOME[id];
+            if (!to || to.course !== 'adv') return m;
+            return open + text + ' <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b>' + close;
+        });
+    }
 
     const body = `<h1>${esc(p.title)}</h1>
 <p class="lede">${esc(p.summary)}</p>

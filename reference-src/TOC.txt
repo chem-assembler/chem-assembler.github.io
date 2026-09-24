@@ -20,7 +20,7 @@
 #       主に扱う側を本体にし、もう一方に再掲する
 #
 # ── 化学基礎 ──
-basic	化学の入口	化学のものの見方	what-is-chemistry
+basic	化学の入口	化学ってどんな学問？	what-is-chemistry
 basic	物質の分類と三態	純物質と混合物・元素・成分元素の確認	substance-classification
 basic	物質の分類と三態	熱運動と物質の三態	states-of-matter
 basic	原子と化学結合	原子の構造	atom-structure

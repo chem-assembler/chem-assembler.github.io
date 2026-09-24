@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -936,7 +938,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-read"><h4 class="ref-sec-h">状態方程式は使わない —— ＝ の逆側は比例、同じ側は反比例</h4><p class="ref-sec-lead">PV ＝ nRT の「＝」の逆側にある変数どうしは比例、同じ側にある変数どうしは反比例します。関係は暗記せず、式から読みます。</p></section>
 <p class="ref-p">状態方程式は、数値を代入すれば知りたい変数が求められるので便利です。しかし、代入して解くやり方には次の3つの弱点があります。</p>
 <ol class="ref-list"><li>桁の計算が多く、計算が遅くなり、ミスが多くなる。</li><li>数値を入れるだけなので、答えがどのくらいの大きさになるか見当がつかない。</li><li>見当がないので、桁を間違えても気づけない。</li></ol>
-<p class="ref-p">そこでこの参考書では、状態方程式に数値を代入するのはできるだけ避け、<b>基準になる状態から、変数どうしの比例・反比例を考えて解きます。</b>計算が少ないので速く、状況を思い浮かべながら解くので間違いにも気づきやすくなります。</p>
+<p class="ref-p">そこで化学レンズでは、状態方程式に数値を代入するのはできるだけ避け、<b>基準になる状態から、変数どうしの比例・反比例を考えて解きます。</b>計算が少ないので速く、状況を思い浮かべながら解くので間違いにも気づきやすくなります。</p>
 <p class="ref-p">変数どうしの関係は、PV ＝ nRT の形から読みます。<b>「＝」の逆側にある変数どうしは比例、同じ側にある変数どうしは反比例</b>です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">PV ＝ nRT から読む、変数どうしの関係</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">変数</th><th style="text-align: left;">＝ の</th><th style="text-align: left;">関係</th><th style="text-align: left;">言語的解釈</th></tr></thead><tbody><tr><td style="text-align: left;">P と V</td><td style="text-align: left;">同じ側</td><td style="text-align: left;">反比例</td><td style="text-align: left;">体積を小さくすると、押し込められた分子が壁を強く押すので圧力が大きくなる</td></tr><tr><td style="text-align: left;">V と T</td><td style="text-align: left;">逆側</td><td style="text-align: left;">比例</td><td style="text-align: left;">温度を上げると気体がふくらむので体積が大きくなる</td></tr><tr><td style="text-align: left;">P と T</td><td style="text-align: left;">逆側</td><td style="text-align: left;">比例</td><td style="text-align: left;">体積一定のまま温度を上げると、ふくらもうとする気体が壁を強く押す</td></tr><tr><td style="text-align: left;">n と P</td><td style="text-align: left;">逆側</td><td style="text-align: left;">比例</td><td style="text-align: left;">圧力は分子が壁を押す力の合計なので、分子の数に比例する</td></tr><tr><td style="text-align: left;">n と V</td><td style="text-align: left;">逆側</td><td style="text-align: left;">比例</td><td style="text-align: left;">ほかの条件を変えずに体積を変えれば、中の分子の数も体積に比例する</td></tr><tr><td style="text-align: left;">n と T</td><td style="text-align: left;">同じ側</td><td style="text-align: left;">反比例</td><td style="text-align: left;">温度は分子1個あたりの運動エネルギーの平均値なので、エネルギーの総量が一定なら分子の数と反比例する</td></tr></tbody></table></div>
 <p class="ref-p">n と T の反比例は分かりにくいので、みかんで考えます。12個のみかんを2人で分ければ1人6個、3人で分ければ1人4個です。人数（n にあたる）と1人あたりの個数（T にあたる）が反比例するのと同じことです。</p>
@@ -945,8 +947,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">比例・反比例で解くには、基準になる状態が要ります。1つ目の基準は標準状態で、<b>0℃・1.013×10⁵Pa で 1mol の気体は 22.4L</b> です（1mol の気体の体積をモル体積といいます）。</p>
 <p class="ref-p">2つ目の基準として、<b>300K・1.0×10⁵Pa で 1mol の気体の体積</b>を使います。R ＝ 8.3×10³ Pa·L/(K·mol) として計算すると、次のように約分できて 24.9L になります。</p>
 <p class="ref-p">V ＝ nRT/P ＝ 1mol × 8.3×10³ × 300K ／ 1.0×10⁵Pa ＝ 8.3 × 3 ＝ 24.9L です。</p>
-<p class="ref-p">この参考書では、300K・1.0×10⁵Pa の状態を<b>準標準状態</b>と呼びます。</p>
-<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">「準標準状態」は、この参考書（と講義のスライド）での呼び名です。教科書や入試では使われていないので、答案には書かないでください。答案では「300K、1.0×10⁵Pa で 1mol の気体の体積は 24.9L」のように、条件を数値で書きます。</p></div>
+<p class="ref-p">化学レンズでは、300K・1.0×10⁵Pa の状態を<b>準標準状態</b>と呼びます。</p>
+<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">「準標準状態」は、化学レンズ（と講義のスライド）での呼び名です。教科書や入試では使われていないので、答案には書かないでください。答案では「300K、1.0×10⁵Pa で 1mol の気体の体積は 24.9L」のように、条件を数値で書きます。</p></div>
 <p class="ref-p">標準状態から温度だけを 273K → 300K に上げたのが準標準状態です。温度が 300/273 ≒ 1.1倍なので、体積も 22.4L の約 1.1倍で 24.9L になります。「標準状態を少し温めて、少しふくらませたのが準標準状態」と感覚的にとらえておきましょう。</p>
 <div class="ref-table-wrap"><div class="ref-cap">計算の基準にする2つの状態</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">基準</th><th style="text-align: left;">温度</th><th style="text-align: left;">圧力</th><th style="text-align: left;">1mol の体積</th><th style="text-align: left;">使う問題</th><th style="text-align: left;">覚え方</th></tr></thead><tbody><tr><td style="text-align: left;">標準状態</td><td style="text-align: left;">0℃（273K）</td><td style="text-align: left;">1.013×10⁵Pa</td><td style="text-align: left;">22.4L</td><td style="text-align: left;">0℃ の問題</td><td style="text-align: left;">224 ＝ 2⁵ × 7 なので「22.4 は7の倍数」</td></tr><tr><td style="text-align: left;">準標準状態</td><td style="text-align: left;">300K（27℃）</td><td style="text-align: left;">1.0×10⁵Pa</td><td style="text-align: left;">24.9L</td><td style="text-align: left;">0℃ 以外の問題</td><td style="text-align: left;">24.9 ＝ 8.3 × 3 なので R と約分できる</td></tr></tbody></table></div>
 <p class="ref-p"><b>22.4L と 24.9L の2つは必ず覚えてください。</b>24.9 は、忘れても 8.3 × 3 でその場で出せます。<b>24.9 ＝ 8.3 × 3 と知っていると、R ＝ 8.3×10³ と約分できる</b>ので、計算がとても楽になります。</p>

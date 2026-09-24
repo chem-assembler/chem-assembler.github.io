@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -929,14 +931,14 @@ a.ref-link::before { content: '→ '; }
 <ol class="ref-list"><li>中心の原子のまわりを電子式で書く。<div class="ref-li-hang">H₂O なら O のまわりに、H と共有する電子対 2組と、非共有電子対 2組</div></li><li>電子のまとまりを数える。二重結合・三重結合は1組と数える。<div class="ref-li-hang">CO₂ の C は O=C=O で、二重結合 2本 ＝ 2組</div></li><li>まとまりの数で、散る向きを決める。<div class="ref-li-hang">2組なら直線（180°）、3組なら正三角形（120°）、4組なら正四面体（109.5°）</div></li><li>原子が付いている方向だけを見て、形の名前を付ける。非共有電子対は形の名前に数えない。<div class="ref-li-hang">4組のうち非共有電子対が1組なら三角錐形、2組なら折れ線形</div></li></ol>
 <div class="ref-table-wrap"><div class="ref-cap">電子のまとまりの数と散る向き</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">まとまりの数</th><th style="text-align: left;">散る向き</th><th style="text-align: left;">角度</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">2組</td><td style="text-align: left;">直線</td><td style="text-align: left;">180°</td><td style="text-align: left;">CO₂、エチン（アセチレン）の C</td></tr><tr><td style="text-align: left;">3組</td><td style="text-align: left;">正三角形（平面）</td><td style="text-align: left;">120°</td><td style="text-align: left;">エテン（エチレン）の C、ベンゼンの C、ホルムアルデヒドの C</td></tr><tr><td style="text-align: left;">4組</td><td style="text-align: left;">正四面体</td><td style="text-align: left;">109.5°</td><td style="text-align: left;">CH₄、NH₃ の N、H₂O の O、ダイヤモンドの C</td></tr></tbody></table></div>
 <p class="ref-p">「まとまりが<span class="ref-blank">○○</span>組なら<span class="ref-blank">○○</span>の向き」の3行は、<b>丸暗記でよいので覚えてしまいましょう</b>。有機化合物の形（アルカンの炭素は正四面体、C=C のまわりは平面で 120°、C≡C のまわりは直線）は、この表をそのまま当てはめただけです。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">C=C のまわりが平面で 120° になる実例は、アルケンのページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">C=C のまわりが平面で 120° になる実例は、アルケンのページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">非共有電子対は場所を広く取る</h5>
 <p class="ref-p">NH₃ と H₂O は、CH₄ と同じく4組のまとまりをもっているので、電子対は正四面体の向きに散ります。ただし<b>非共有電子対は、共有電子対より空間を広く取ろうとする</b>ので、残りの共有電子対を押しのけ、結合角が 109.5° より少し狭くなります。非共有電子対が1組の NH₃ は 106.7°、2組の H₂O は 104.5° です。</p>
 <p class="ref-p">「非共有電子対が多いほど結合角は狭い」ので、結合角の大きい順は <b>CH₄ ＞ NH₃ ＞ H₂O</b> です。この順は、数値を覚えていなくても理由から出せます。</p>
 <p class="ref-p">電子対の反発で分子の形を説明するこの考え方は、VSEPR（原子価殻電子対反発）則と呼ばれます。名前を覚える必要はありません。</p>
 <h5 class="ref-h5 ref-h5-advanced">反発だけでは説明できない形<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">電子対の反発で説明できるのは「多くの分子」で、すべてではありません。テトラアンミン銅(Ⅱ)イオン [Cu(NH₃)₄]²⁺ がその例外で、配位子が4つあるのに正四面体ではなく<b>正方形</b>です。錯イオンの形は、反発から導くのではなく<b>イオンごとに覚えます</b>。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/complex-ion/">錯イオンの形（直線・正方形・正四面体・正八面体）は、錯イオンのページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/complex-ion/">錯イオンの形（直線・正方形・正四面体・正八面体）は、錯イオンのページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-polarity"><h4 class="ref-sec-h">形から極性を決める</h4><p class="ref-sec-lead">異なる原子の共有結合には電荷の偏り（結合の極性）があります。分子全体の極性は、結合の極性が形によって打ち消されるかどうかで決まります。</p></section>
 <p class="ref-p">結合している2つの原子は、あいだの共有電子対を自分の側へ引っぱり合っています。その引っぱる強さを原子ごとに数で表したのが<b>電気陰性度</b>です。フッ素 F が最大で、貴ガスを除くと周期表の右上の元素ほど大きくなります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/periodic-table/">電気陰性度が周期表の上でどう変わるかは、周期表のページへ</a></p>
@@ -949,7 +951,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">同じ四面体の形でも、CH₄ や CCl₄ は無極性、CH₃Cl や CH₂Cl₂ は極性分子です。形だけでなく「4つとも同じ原子か」を必ず見ます。</p></div>
 <p class="ref-p">極性分子どうしは、δ＋ と δ− の部分で引き合います。この引き合いが沸点の高さや、水への溶けやすさの違いになって現れます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/intermolecular-force/">極性が沸点にどう効くかは、分子間力のページへ</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/dissolution/">極性分子は水に溶けやすく、無極性分子は溶けにくいことは、溶解のしくみのページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/dissolution/">極性分子は水に溶けやすく、無極性分子は溶けにくいことは、溶解のしくみのページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の分子の形を答え、極性分子をすべて選べ。(1) H₂O　(2) CO₂　(3) NH₃　(4) CH₄　(5) HCl　(6) CCl₄</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 折れ線形 (2) 直線形 (3) 三角錐形 (4) 正四面体形 (5) 直線形 (6) 正四面体形。極性分子は <b>(1) H₂O・(3) NH₃・(5) HCl</b>。CO₂ は直線で、CH₄・CCl₄ は正四面体で、結合の極性が打ち消されるので無極性分子です。</p></div></details></div>

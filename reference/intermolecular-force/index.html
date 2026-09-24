@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -934,11 +936,11 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>数値は覚えなくて構いません。</b>「第2周期の NH₃・H₂O・HF の3つだけがとび抜けて高い」という形と、その理由（水素結合）を言えるようにしておきましょう。H₂O が 100℃ で液体の水として身近にあるのは、水素結合のおかげです。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">分子量が大きいほど沸点は高いので、H₂S（分子量 34）の方が H₂O（分子量 18）より沸点が高い</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body"><b>H₂O の方がはるかに高い</b>（H₂O は 100℃、H₂S は −60℃）。分子量の比べ合いは、水素結合の有無をそろえてから使います。</span></p><p class="ref-mistake-why">「分子量が大きいほど沸点が高い」は、構造が似ていて、水素結合がどちらにも無いときの規則です。手順の1段目（水素結合）を飛ばすと逆の答えになります。</p></div>
 <p class="ref-p">同じ手順は有機化合物にもそのまま使えます。エタノール C₂H₅OH とジメチルエーテル CH₃OCH₃ はどちらも分子量 46 ですが、−OH をもつエタノールは水素結合をつくるので沸点 78℃、−OH の無いジメチルエーテルは水素結合をつくらないので −25℃ です。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/alkane/">分子量が大きいほど沸点が高くなる実例（アルカンの状態と沸点）は、アルカンのページへ</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/clue-properties/">有機化合物の沸点と水素結合の関係を、構造決定の手がかりとして使う話へ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alkane/">分子量が大きいほど沸点が高くなる実例（アルカンの状態と沸点）は、アルカンのページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/clue-properties/">有機化合物の沸点と水素結合の関係を、構造決定の手がかりとして使う話へ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5 ref-h5-advanced">分子の形も沸点に効く<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">分子量が同じでも、枝分かれの多い分子は球に近くなり、分子どうしが触れ合う面積が減るので、ファンデルワールス力が弱くなって沸点が下がります。また、o- 体のベンゼン誘導体のように1つの分子の中で水素結合（分子内水素結合）をつくると、分子どうしの水素結合が減って沸点が下がります。どちらも問題文に結果が書いてあれば、理由として思い出せれば十分です。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-homologs/">分子内水素結合で o- 体の沸点が下がる例は、芳香族のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-homologs/">分子内水素結合で o- 体の沸点が下がる例は、芳香族のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-molecular-crystal"><h4 class="ref-sec-h">分子結晶と気体への影響</h4><p class="ref-sec-lead">分子が分子間力で規則正しく並んだ固体が分子結晶です。分子間力が弱いので、融点が低く、昇華しやすいものがあります。気体の中でも分子間力ははたらき、体積をわずかに小さくします。</p></section>
 <p class="ref-p">分子どうしが分子間力でゆるく引き合い、きちんと列をつくって積み重なった結晶が<b>分子結晶</b>です。ドライアイス（CO₂）・ヨウ素 I₂・ナフタレン・氷（H₂O）が代表です。分子間力は弱いので、分子結晶は<b>融点が低く、軟らかい</b>ものが多く、電気を通しません。</p>
 <p class="ref-p">とくに CO₂・I₂・ナフタレンのような無極性分子の結晶は、分子間力がとても弱いので、固体から直接気体になる<b>昇華</b>を起こしやすいのが特徴です。ドライアイスが溶けずに消えていくのはこのためです。</p>
@@ -948,7 +950,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">標準状態（0℃・1.013×10⁵Pa）での気体 1mol の体積</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">気体</th><th style="text-align: right;">分子量</th><th style="text-align: right;">1mol の体積（L）</th><th style="text-align: left;">分子間力</th></tr></thead><tbody><tr><td style="text-align: left;">H₂</td><td style="text-align: right;">2</td><td style="text-align: right;">22.42</td><td style="text-align: left;">小</td></tr><tr><td style="text-align: left;">CH₄</td><td style="text-align: right;">16</td><td style="text-align: right;">22.37</td><td style="text-align: left;">↓</td></tr><tr><td style="text-align: left;">CO₂</td><td style="text-align: right;">44</td><td style="text-align: right;">22.26</td><td style="text-align: left;">↓</td></tr><tr><td style="text-align: left;">NH₃</td><td style="text-align: right;">17</td><td style="text-align: right;">22.09</td><td style="text-align: left;">大（極性分子）</td></tr></tbody></table></div>
 <p class="ref-p">無極性の H₂・CH₄・CO₂ では分子量が大きいほど体積が小さく、分子量の小さい NH₃ が極性分子のためにいちばん小さくなっています。<b>沸点の比べ方とまったく同じ順序</b>で、分子間力が効いていることがわかります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/intermolecular-force-real-gas.png" alt="2つの容器を並べた図。左の理想気体の容器では分子が大きさのない点として散らばっている。右の実在気体の容器では、分子が大きさのある粒として描かれ、近くの分子に向かって引き寄せられる矢印が付いている" loading="lazy"><figcaption class="ref-figure-cap">実在気体では分子どうしが分子間力で引き合うので、そのぶん気体の体積が理想気体より小さくなります。</figcaption></figure>
-<p class="ref-link-row"><a class="ref-link" href="/reference/real-gas/">実在気体が理想気体からずれるしくみ（分子間力と分子の体積）は、実在気体のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/real-gas/">実在気体が理想気体からずれるしくみ（分子間力と分子の体積）は、実在気体のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の各組で、沸点が高いのはどちらか。理由も答えよ。(1) CH₄ と SiH₄　(2) H₂O と H₂S　(3) F₂ と HCl　(4) エタノール C₂H₅OH とジメチルエーテル CH₃OCH₃</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>SiH₄</b>。どちらも正四面体の無極性分子で、分子量の大きい SiH₄ の方がファンデルワールス力が強い。(2) <b>H₂O</b>。H₂O は分子間で水素結合をつくる。(3) <b>HCl</b>。分子量は同じくらいだが、HCl は極性分子で、無極性の F₂ よりファンデルワールス力が強い。(4) <b>エタノール</b>。分子量は同じ 46 だが、−OH をもつエタノールは水素結合をつくる。</p></div></details></div>

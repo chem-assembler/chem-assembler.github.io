@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -929,8 +931,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">炭素 C からできている単体には、黒鉛（グラファイト）とダイヤモンドがあります。どちらも炭素原子だけでできていますが、黒鉛は黒くて軟らかく電気を通し、ダイヤモンドは無色透明で非常に硬く電気を通しません。原子のつながり方が違うためです。このような単体どうしを<b>同素体</b>といいます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">同素体をもつ4元素</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">元素</th><th style="text-align: left;">同素体</th><th style="text-align: left;">見分けの一言</th></tr></thead><tbody><tr><td style="text-align: left;"><b>硫黄 S</b></td><td style="text-align: left;">斜方硫黄・単斜硫黄・ゴム状硫黄</td><td style="text-align: left;">常温で安定なのは斜方硫黄</td></tr><tr><td style="text-align: left;"><b>炭素 C</b></td><td style="text-align: left;">黒鉛・ダイヤモンド・フラーレン・カーボンナノチューブ</td><td style="text-align: left;">電気を通すのは黒鉛</td></tr><tr><td style="text-align: left;"><b>酸素 O</b></td><td style="text-align: left;">酸素 O₂・オゾン O₃</td><td style="text-align: left;">分子をつくる原子の数が違う</td></tr><tr><td style="text-align: left;"><b>リン P</b></td><td style="text-align: left;">黄リン（白リン）・赤リン</td><td style="text-align: left;">黄リンは空気中で自然発火する</td></tr></tbody></table></div>
 <p class="ref-p"><b>同素体をもつ元素は「SCOP（スコップ）」の4つと覚えましょう。</b>それぞれの同素体の性質の違いは、無機のページで元素ごとに扱います。ここでは「同じ元素の単体どうし」という関係を押さえれば十分です。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/sulfur/">硫黄の3つの同素体の違いへ</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">黒鉛・ダイヤモンド・フラーレンの構造の違いへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/sulfur/">硫黄の3つの同素体の違いへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">黒鉛・ダイヤモンド・フラーレンの構造の違いへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">水素 ¹H と重水素 ²H は互いに同素体である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">¹H と ²H は、同じ元素で質量数が違う<b>原子</b>どうしなので<b>同位体</b>です。同素体は、同じ元素からできた<b>単体（物質）</b>どうしを指します。</span></p><p class="ref-mistake-why">「同素体」と「同位体」は字が似ているうえ、どちらも「同じ元素」の話だからです。★ 比べているのが<b>物質</b>なら同素体、<b>原子</b>なら同位体です。同位体は次のページで扱います。</p></div>
 <section class="ref-sec" id="ref-sec-element-test"><h4 class="ref-sec-h">成分元素の確認 —— 炎の色・沈殿・石灰水</h4><p class="ref-sec-lead">物質にどの元素が含まれているかは、その元素に特有な変化を起こして確かめます。Na などは炎色反応、Cl は硝酸銀水溶液との白色沈殿、C は二酸化炭素にして石灰水の白濁、H は水にして硫酸銅(Ⅱ)無水物の青色で確かめます。</p></section>
 <p class="ref-p">物質をつくっている元素を、その物質の<b>成分元素</b>といいます。食塩の中のナトリウムや塩素は目には見えませんが、化学変化で別の物質に移っても元素そのものは無くならないので、<b>その元素だけが示す変化</b>を起こせば、含まれていることを確かめられます。</p>
@@ -941,8 +943,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">C と H は、物質を燃やして別の物質に変えてから確かめます。C は燃えると二酸化炭素 CO₂ に、H は燃えると水 H₂O になるので、<b>CO₂ ができたら C を、H₂O ができたら H を含んでいた</b>と言えます。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">食塩水に硝酸銀水溶液を加えると白色の沈殿ができたので、食塩水には塩素 Cl₂ が溶けている</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">分かるのは、食塩水に<b>元素</b>としての塩素 Cl が含まれている、ということです。食塩水の中の塩素は塩化物イオン Cl⁻ で、単体の塩素 Cl₂ ではありません。</span></p><p class="ref-mistake-why">元素と単体が同じ「塩素」という名前で呼ばれるためです。成分元素の確認で分かるのは、いつも「どの<b>元素</b>が含まれているか」です。</p></div>
 <p class="ref-p"><b>4つの元素の操作と見える変化（Na は黄色の炎・Cl は硝酸銀で白色沈殿・C は石灰水が白濁・H は硫酸銅(Ⅱ)無水物が青色）は、必ず覚えてください。</b>沈殿の名前（AgCl・CaCO₃）も書けるようにしましょう。沈殿ができる反応の式は、化学基礎のこの段階では覚えなくても構いません。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/flame-color/">炎色反応の7色と、なぜ色が出るのかはこちら</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/element-detection/">有機化合物の成分元素（C・H・N・Cl・S）の確認はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/flame-color/">炎色反応の7色と、なぜ色が出るのかはこちら <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/element-detection/">有機化合物の成分元素（C・H・N・Cl・S）の確認はこちら <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-separation"><h4 class="ref-sec-h">混合物の分離 —— 何が違うかで方法を選ぶ</h4><p class="ref-sec-lead">混合物から目的の物質を取り出す操作を分離、不純物を除いて純度を高める操作を精製といいます。方法は、成分どうしで「何が違うか」を見て選びます。</p></section>
 <p class="ref-p">分離の方法は7つありますが、名前から覚えるより「<b>成分どうしで何が違うか</b>」から選ぶと迷いません。</p>
 <div class="ref-table-wrap"><div class="ref-cap">成分の違いと分離の方法</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">成分の何が違うか</th><th style="text-align: left;">方法</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">粒の大きさ（溶けない固体と液体）</td><td style="text-align: left;"><b>ろ過</b></td><td style="text-align: left;">砂の混じった水から砂を除く</td></tr><tr><td style="text-align: left;">沸点（溶けている固体と液体）</td><td style="text-align: left;"><b>蒸留</b></td><td style="text-align: left;">海水から純水を得る</td></tr><tr><td style="text-align: left;">沸点（液体どうし）</td><td style="text-align: left;"><b>分留</b>（分別蒸留）</td><td style="text-align: left;">原油からガソリン・灯油などを分ける、液体空気から窒素と酸素を分ける</td></tr><tr><td style="text-align: left;">温度による溶けやすさの変化</td><td style="text-align: left;"><b>再結晶</b></td><td style="text-align: left;">不純物を少し含む硝酸カリウムを、純度の高い結晶にする</td></tr><tr><td style="text-align: left;">溶媒への溶けやすさ</td><td style="text-align: left;"><b>抽出</b></td><td style="text-align: left;">ヨウ素を含む水にヘキサンを加えて振り、ヨウ素をヘキサン側に移す</td></tr><tr><td style="text-align: left;">昇華のしやすさ</td><td style="text-align: left;"><b>昇華法</b></td><td style="text-align: left;">ヨウ素と砂の混合物を加熱し、ヨウ素だけを気体にして冷やした面で固体に戻す</td></tr><tr><td style="text-align: left;">吸着のされやすさ</td><td style="text-align: left;"><b>クロマトグラフィー</b></td><td style="text-align: left;">ろ紙に付けたインクの色素を、しみ上がる速さの違いで分ける</td></tr></tbody></table></div>
@@ -966,7 +968,7 @@ a.ref-link::before { content: '→ '; }
 <h2>解けるか試す</h2>
 <div class="embed"><b>▶ 一問一答で解く（11問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.structure.substance-class,theo.structure.element-vs-substance,theo.structure.allotrope,theo.structure.separation-method,theo.structure.distillation-setup,theo.structure.element-test,theo.structure.element-test-infer,theo.structure.pure-mixture-bp,theo.structure.compound-decompose,theo.structure.separation-example,theo.structure.distillation-reason&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（11問・測定モード）">▶ 一問一答で解く（11問・測定モード）</button><a class="alt" href="/qa/?codes=theo.structure.substance-class,theo.structure.element-vs-substance,theo.structure.allotrope,theo.structure.separation-method,theo.structure.distillation-setup,theo.structure.element-test,theo.structure.element-test-infer,theo.structure.pure-mixture-bp,theo.structure.compound-decompose,theo.structure.separation-example,theo.structure.distillation-reason&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/what-is-chemistry/">← 化学のものの見方</a>
+<nav class="seq"><a href="/reference/what-is-chemistry/">← 化学ってどんな学問？</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
 <a href="/reference/states-of-matter/">物質の三態と熱運動 →</a></nav>

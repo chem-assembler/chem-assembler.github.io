@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -927,7 +929,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>この表は、行も列も全部覚えてください。</b> 結晶の問題は、ほぼこの表の中から出ます。とくに「電気を通すか」の行は見分けの決め手になります。</p>
 <p class="ref-p">イオン結晶は、固体のままではイオンが動けないので電気を通しませんが、<b>融かすか水に溶かすとイオンが動けるようになって電気を通します</b>。また、強い力で結晶がずれると同じ符号のイオンどうしが向き合って反発し、特定の面に沿って割れます（へき開）。金属がずれても割れずに延びるのとは対照的です。</p>
 <p class="ref-p">共有結合の結晶は、<b>すべての原子が共有結合でつながった巨大な1つの分子</b>のようなものです。例は、ダイヤモンド・黒鉛（C）、ケイ素 Si、二酸化ケイ素 SiO₂、炭化ケイ素 SiC の数種類しかないので、<b>この5つを覚えれば十分</b>です。これら以外の非金属の物質は分子結晶と考えて構いません。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">ダイヤモンド・黒鉛・ケイ素・二酸化ケイ素のそれぞれの性質は、炭素とケイ素のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">ダイヤモンド・黒鉛・ケイ素・二酸化ケイ素のそれぞれの性質は、炭素とケイ素のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">化学式から型を決める</h5>
 <p class="ref-p">型は、化学式に入っている元素から決めます。</p>
 <ol class="ref-list"><li>金属元素だけでできていれば、金属結晶。<div class="ref-li-hang">Fe、Cu、Na</div></li><li>金属元素と非金属元素でできていれば、イオン結晶。<div class="ref-li-hang">NaCl、CaO、MgCl₂</div></li><li>非金属元素だけでできていれば、共有結合の結晶の5つ（ダイヤモンド・黒鉛・Si・SiO₂・SiC）かどうかを見る。そうなら共有結合の結晶、そうでなければ分子結晶。<div class="ref-li-hang">SiO₂ は共有結合の結晶、CO₂ は分子結晶</div></li></ol>
@@ -947,9 +949,9 @@ a.ref-link::before { content: '→ '; }
 <ul class="ref-list"><li><b>ガラス</b>：窓ガラスなどのソーダ石灰ガラスや、SiO₂ だけでできた石英ガラス。</li><li><b>アモルファスシリコン</b>：並びの乱れたケイ素。薄い膜にしやすく、太陽電池に使われる。</li><li><b>アモルファス合金</b>：融けた合金を急に冷やして固めたもの。強さや、さびにくさに優れたものがある。</li></ul>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">非晶質に決まった融点が無いのは、いろいろな物質が混ざった混合物だからである</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">SiO₂ だけからできた<b>石英ガラス</b>も、決まった融点を示しません。融点が決まらない原因は、成分ではなく<b>粒子の並び方に規則性が無いこと</b>です。</span></p><p class="ref-mistake-why">混合物も融点が決まらないので、原因を取り違えやすいためです。純物質の融点が決まるのは結晶のときの話で、同じ SiO₂ でも水晶には決まった融点があります。</p></div>
 <p class="ref-p"><b>「非晶質は粒子の並び方に規則性が無く、決まった融点を示さない」と、例のガラス・アモルファスシリコンの2つは覚えてください。</b>アモルファス合金の性質や使いみちは、覚えなくても構いません。プラスチックなどの高分子も、はっきりした融点を示さない固体で、同じ理由で説明できます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/polymer-basics/">高分子の結晶部分と非晶部分、軟化点はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/polymer-basics/">高分子の結晶部分と非晶部分、軟化点はこちら <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/life-metal/">アモルファス合金を含む、合金の種類と使いみちはこちら（暮らしの中の金属のページ）</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/unit-cell/">結晶の中で粒子がどう並んでいるか（単位格子）は、結晶格子のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/unit-cell/">結晶の中で粒子がどう並んでいるか（単位格子）は、結晶格子のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の物質の結晶の型（イオン結晶・共有結合の結晶・分子結晶・金属結晶）を答えよ。(1) KCl　(2) SiO₂　(3) I₂　(4) Cu　(5) NH₄Cl　(6) CO₂（ドライアイス）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>イオン結晶</b>（金属元素 K と非金属元素 Cl）　(2) <b>共有結合の結晶</b>（非金属だけで、共有結合の結晶の5つの1つ）　(3) <b>分子結晶</b>　(4) <b>金属結晶</b>　(5) <b>イオン結晶</b>（NH₄⁺ と Cl⁻。アンモニウム塩は例外）　(6) <b>分子結晶</b>（SiO₂ と違って CO₂ は分子）</p></div></details></div>

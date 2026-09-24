@@ -219,6 +219,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
 .ref-scope .ref-rx-level{font-size:14px}
 .ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+/* 「化学」（科目）の札。リンクの後ろにも付く（化学基礎 → 化学 のリンク）ので、読める大きさに */
+.ref-scope .ref-course-tag{font-size:12.5px}
 .ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
@@ -927,7 +929,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/chemical-laws/">アボガドロの法則が生まれた経緯は、化学の基本法則のページへ</a></p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">水 H₂O 1mol の体積は 22.4L である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">22.4L は<b>標準状態の気体</b>だけに使える値です。水は 0℃ では液体か固体なので、1mol（18g）はおよそ 18mL しかありません。</span></p><p class="ref-mistake-why">「1mol ＝ 22.4L」だけを覚えてしまい、「気体なら」という条件が抜け落ちるためです。★ 表の3行めの「気体だけ」を必ずセットで覚えましょう。</p></div>
 <p class="ref-p">温度が 0℃ でない気体（27℃ など）は、22.4L をそのまま使えません。そのときは気体の法則のページの方法で換算します。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/gas-laws/">0℃ 以外の気体の体積は、気体の法則のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/gas-laws/">0℃ 以外の気体の体積は、気体の法則のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <section class="ref-sec" id="ref-sec-proportion"><h4 class="ref-sec-h">主語をつけた比例式を、倍率で解く</h4><p class="ref-sec-lead">換算はすべて「1mol の顔 ＝ 既知と未知」の比例式にします。左辺に定義、右辺に問題の量を書き、両辺の主語（何の粒子か）をそろえ、倍率を掛けて □ を埋めます。</p></section>
 <p class="ref-p">物質量の換算は、公式を覚える代わりに、<b>比例式1つ</b>で解きます。形は毎回同じです。</p>
 <ol class="ref-list"><li>左辺に 1mol の顔（表の1行）を書く。★ 必ず主語（何の粒子か）をつける。<div class="ref-li-hang">「CH₄ 1mol : 16g」「H₂ 1mol : 6.0×10²³ 個」「O₂ 1mol : 22.4L」</div></li><li>右辺に、問題で与えられた量と、求める量 □ を、左辺と同じ並びで書く。<div class="ref-li-hang"><span class="ref-blank">○○</span> 1mol : <span class="ref-blank">○○</span>g ＝ <span class="ref-blank">○○</span> <span class="ref-blank">○○</span>mol : □g</div></li><li>与えられた量どうしを見比べて、倍率を見つける。<div class="ref-li-hang">1mol → 0.25mol なら「×1/4」。</div></li><li>同じ倍率を、もう一方に掛けて □ を埋める。</li></ol>
