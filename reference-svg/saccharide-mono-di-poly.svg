@@ -4,9 +4,9 @@
   <style>
     .beads { stroke: #1565c0; stroke-width: 18; stroke-linecap: round; stroke-dasharray: 0.1 19; fill: none; }
     .arw { stroke: #333; stroke-width: 2.5; fill: none; }
-    .lab { font-size: 19px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
-    .op { font-size: 15px; fill: #c62828; }
+    .lab { font-size: 22px; fill: #222; }
+    .small { font-size: 18px; fill: #444; }
+    .op { font-size: 18px; fill: #c62828; }
   </style>
 
   <!-- 単糖 -->
