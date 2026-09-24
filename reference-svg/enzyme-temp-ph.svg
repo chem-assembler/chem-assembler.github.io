@@ -7,8 +7,8 @@
     .grid { stroke: #bbb; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
     .c1 { stroke: #1565c0; stroke-width: 3; fill: none; }
     .c2 { stroke: #c62828; stroke-width: 3; fill: none; }
-    .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 22px; fill: #222; }
+    .small { font-size: 19px; fill: #444; }
     .blue { fill: #1565c0; }
     .red { fill: #c62828; }
   </style>
