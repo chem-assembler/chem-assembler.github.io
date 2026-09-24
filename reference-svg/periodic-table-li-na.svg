@@ -7,10 +7,10 @@
     .descText { font-size: 14px; }
     .boxMetal { fill: #fae5b6; stroke: #222; stroke-width: 1; }
     .boxNonmetal { fill: #ccecf7; stroke: #222; stroke-width: 1; }
-    .arrow { stroke: #1f618d; stroke-width: 8; fill: none; marker-end: url(#arrowhead); marker-start: url(#arrowhead-start); }
+    .arrow { stroke: #1f618d; stroke-width: 6; fill: none; marker-end: url(#arrowhead); marker-start: url(#arrowhead-start); }
     .arrowRed { stroke: #ff0000; stroke-width: 2; fill: none; marker-end: url(#arrowheadRed); }
-    .textOrange { fill: #e0762b; font-weight: bold; font-size: 20px; }
-    .textBlue { fill: #1f618d; font-weight: bold; font-size: 20px; }
+    .textOrange { fill: #e0762b; font-weight: bold; font-size: 18px; }
+    .textBlue { fill: #1f618d; font-weight: bold; font-size: 18px; }
     .shell { fill: none; stroke: #222; stroke-width: 1.5; }
     .nucleus { fill: #fff; stroke: #e0762b; stroke-width: 1.5; }
     .electron { fill: #ffff00; stroke: #222; stroke-width: 1.5; }
@@ -32,105 +32,104 @@
 
   <!-- 左側: 周期表と説明 -->
   <g transform="translate(10, 10)">
-    <!-- 周期表のグリッド描画 (18列 x 7行, セルサイズ12x12) -->
-    <!-- 1行目 -->
-    <rect class="boxNonmetal" x="0" y="0" width="12" height="12" />
-    <rect class="boxNonmetal" x="204" y="0" width="12" height="12" />
-    <!-- 2行目 -->
-    <rect class="boxMetal" x="0" y="12" width="12" height="12" />
-    <rect class="boxMetal" x="12" y="12" width="12" height="12" />
-    <rect class="boxMetal" x="144" y="12" width="12" height="12" />
-    <rect class="boxNonmetal" x="156" y="12" width="12" height="12" />
-    <rect class="boxNonmetal" x="168" y="12" width="12" height="12" />
-    <rect class="boxNonmetal" x="180" y="12" width="12" height="12" />
-    <rect class="boxNonmetal" x="192" y="12" width="12" height="12" />
-    <rect class="boxNonmetal" x="204" y="12" width="12" height="12" />
-    <!-- 3行目 -->
-    <rect class="boxMetal" x="0" y="24" width="12" height="12" />
-    <rect class="boxMetal" x="12" y="24" width="12" height="12" />
-    <rect class="boxMetal" x="144" y="24" width="12" height="12" />
-    <rect class="boxMetal" x="156" y="24" width="12" height="12" />
-    <rect class="boxNonmetal" x="168" y="24" width="12" height="12" />
-    <rect class="boxNonmetal" x="180" y="24" width="12" height="12" />
-    <rect class="boxNonmetal" x="192" y="24" width="12" height="12" />
-    <rect class="boxNonmetal" x="204" y="24" width="12" height="12" />
-    <!-- 4行目 -->
-    <rect class="boxMetal" x="0" y="36" width="24" height="12" />
-    <rect class="boxMetal" x="24" y="36" width="120" height="12" />
-    <rect class="boxMetal" x="144" y="36" width="36" height="12" />
-    <rect class="boxNonmetal" x="180" y="36" width="36" height="12" />
-    <!-- 5行目 -->
-    <rect class="boxMetal" x="0" y="48" width="192" height="12" />
-    <rect class="boxNonmetal" x="192" y="48" width="24" height="12" />
-    <!-- 6行目 -->
-    <rect class="boxMetal" x="0" y="60" width="204" height="12" />
-    <rect class="boxNonmetal" x="204" y="60" width="12" height="12" />
-    <!-- 7行目 -->
-    <rect class="boxMetal" x="0" y="72" width="216" height="12" fill="#fff" /> <!-- 背景白にしておく (実際の周期表っぽく) -->
+    <g transform="scale(1.2)">
+      <!-- 周期表のグリッド描画 (18列 x 7行, セルサイズ12x12) -->
+      <!-- 1行目 -->
+      <rect class="boxNonmetal" x="0" y="0" width="12" height="12" />
+      <rect class="boxNonmetal" x="204" y="0" width="12" height="12" />
+      <!-- 2行目 -->
+      <rect class="boxMetal" x="0" y="12" width="12" height="12" />
+      <rect class="boxMetal" x="12" y="12" width="12" height="12" />
+      <rect class="boxMetal" x="144" y="12" width="12" height="12" />
+      <rect class="boxNonmetal" x="156" y="12" width="12" height="12" />
+      <rect class="boxNonmetal" x="168" y="12" width="12" height="12" />
+      <rect class="boxNonmetal" x="180" y="12" width="12" height="12" />
+      <rect class="boxNonmetal" x="192" y="12" width="12" height="12" />
+      <rect class="boxNonmetal" x="204" y="12" width="12" height="12" />
+      <!-- 3行目 -->
+      <rect class="boxMetal" x="0" y="24" width="12" height="12" />
+      <rect class="boxMetal" x="12" y="24" width="12" height="12" />
+      <rect class="boxMetal" x="144" y="24" width="12" height="12" />
+      <rect class="boxMetal" x="156" y="24" width="12" height="12" />
+      <rect class="boxNonmetal" x="168" y="24" width="12" height="12" />
+      <rect class="boxNonmetal" x="180" y="24" width="12" height="12" />
+      <rect class="boxNonmetal" x="192" y="24" width="12" height="12" />
+      <rect class="boxNonmetal" x="204" y="24" width="12" height="12" />
+      <!-- 4行目 -->
+      <rect class="boxMetal" x="0" y="36" width="24" height="12" />
+      <rect class="boxMetal" x="24" y="36" width="120" height="12" />
+      <rect class="boxMetal" x="144" y="36" width="36" height="12" />
+      <rect class="boxNonmetal" x="180" y="36" width="36" height="12" />
+      <!-- 5行目 -->
+      <rect class="boxMetal" x="0" y="48" width="192" height="12" />
+      <rect class="boxNonmetal" x="192" y="48" width="24" height="12" />
+      <!-- 6行目 -->
+      <rect class="boxMetal" x="0" y="60" width="204" height="12" />
+      <rect class="boxNonmetal" x="204" y="60" width="12" height="12" />
+      <!-- 7行目 -->
+      <rect class="boxMetal" x="0" y="72" width="216" height="12" fill="#fff" />
 
-    <!-- 全体の枠線と内部の線 (簡略化) -->
-    <!-- 省略して外枠と矢印に集中する -->
+      <!-- 凡例 -->
+      <rect class="boxMetal" x="30" y="0" width="55" height="18" />
+      <text x="57" y="14" style="font-size: 14px;" text-anchor="middle">金属</text>
+      <rect class="boxNonmetal" x="30" y="18" width="55" height="18" />
+      <text x="57" y="32" style="font-size: 14px;" text-anchor="middle">非金属</text>
 
-    <!-- 凡例 -->
-    <rect class="boxMetal" x="35" y="0" width="35" height="15" />
-    <text x="52" y="12" font-size="12" text-anchor="middle">金属</text>
-    <rect class="boxNonmetal" x="35" y="15" width="35" height="15" />
-    <text x="52" y="27" font-size="12" text-anchor="middle">非金属</text>
-
-    <!-- 矢印と文字 -->
-    <path class="arrow" d="M 40 70 L 175 25" />
-    <text x="25" y="85" class="textOrange">陽性</text>
-    <text x="185" y="30" class="textBlue">陰性</text>
+      <!-- 矢印と文字 -->
+      <path class="arrow" d="M 40 70 L 175 25" />
+      <text x="15" y="95" class="textOrange" style="font-size: 18px;" text-anchor="start">陽性</text>
+      <text x="225" y="15" class="textBlue" style="font-size: 18px;" text-anchor="start">陰性</text>
+    </g>
 
     <!-- 説明文 -->
-    <text x="0" y="115" class="descText">周期表の同一<tspan font-weight="bold">族</tspan>の元素は有効</text>
-    <text x="0" y="135" class="descText">核電荷が同じで下側の元素ほ</text>
-    <text x="0" y="155" class="descText">ど<tspan font-weight="bold">原子半径</tspan>が大きくなり，最</text>
-    <text x="0" y="175" class="descText">外殻電子をひきつける力が弱</text>
-    <text x="0" y="195" class="descText">くなるので陽性が強い（クー</text>
-    <text x="0" y="215" class="descText">ロン力は距離の2乗に反比例）</text>
+    <text x="0" y="135" class="descText">周期表の同一<tspan font-weight="bold">族</tspan>の元素は有効</text>
+    <text x="0" y="155" class="descText">核電荷が同じで下側の元素ほ</text>
+    <text x="0" y="175" class="descText">ど<tspan font-weight="bold">原子半径</tspan>が大きくなり，最</text>
+    <text x="0" y="195" class="descText">外殻電子をひきつける力が弱</text>
+    <text x="0" y="215" class="descText">くなるので陽性が強い（クー</text>
+    <text x="0" y="235" class="descText">ロン力は距離の2乗に反比例）</text>
   </g>
 
   <!-- 右側: 原子モデル -->
-  <g transform="translate(260, 10)">
+  <g transform="translate(320, 10)">
     <!-- Li -->
-    <text x="100" y="20" class="titleText">Li</text>
-    <circle cx="100" cy="80" r="25" class="shell" />
-    <circle cx="100" cy="80" r="40" class="shell" />
-    <circle cx="100" cy="80" r="10" class="nucleus" />
-    <text x="100" y="85" font-size="12" text-anchor="middle">+3</text>
+    <text x="60" y="20" class="titleText">Li</text>
+    <circle cx="60" cy="80" r="25" class="shell" />
+    <circle cx="60" cy="80" r="40" class="shell" />
+    <circle cx="60" cy="80" r="10" class="nucleus" />
+    <text x="60" y="85" font-size="12" text-anchor="middle">+3</text>
     
-    <circle cx="140" cy="80" r="4" class="electron" />
-    <path class="arrowRed" d="M 136 80 L 115 80" stroke-width="3" />
+    <circle cx="100" cy="80" r="4" class="electron" />
+    <path class="arrowRed" d="M 96 80 L 75 80" stroke-width="3" />
     
     <!-- Li 強 -->
-    <rect class="strongBox" x="150" y="25" width="20" height="20" />
-    <text x="160" y="40" font-size="14" text-anchor="middle">強</text>
-    <path class="lead" d="M 150 45 L 125 75" />
+    <rect class="strongBox" x="110" y="25" width="20" height="20" />
+    <text x="120" y="40" font-size="14" text-anchor="middle">強</text>
+    <path class="lead" d="M 110 45 L 85 75" />
 
     <!-- Na -->
-    <text x="280" y="20" class="titleText">Na</text>
-    <circle cx="280" cy="80" r="20" class="shell" />
-    <circle cx="280" cy="80" r="35" class="shell" />
-    <circle cx="280" cy="80" r="50" class="shell" />
-    <circle cx="280" cy="80" r="12" class="nucleus" />
-    <text x="280" y="85" font-size="12" text-anchor="middle">+11</text>
+    <text x="240" y="20" class="titleText">Na</text>
+    <circle cx="240" cy="80" r="20" class="shell" />
+    <circle cx="240" cy="80" r="35" class="shell" />
+    <circle cx="240" cy="80" r="50" class="shell" />
+    <circle cx="240" cy="80" r="12" class="nucleus" />
+    <text x="240" y="85" font-size="12" text-anchor="middle">+11</text>
     
-    <circle cx="330" cy="80" r="4" class="electron" />
-    <path class="arrowRed" d="M 326 80 L 297 80" stroke-width="1.5" />
+    <circle cx="290" cy="80" r="4" class="electron" />
+    <path class="arrowRed" d="M 286 80 L 257 80" stroke-width="1.5" />
     
     <!-- Na 弱 -->
-    <rect class="strongBox" x="340" y="25" width="20" height="20" />
-    <text x="350" y="40" font-size="14" text-anchor="middle">弱</text>
-    <path class="lead" d="M 340 45 L 325 75" />
+    <rect class="strongBox" x="300" y="25" width="20" height="20" />
+    <text x="310" y="40" font-size="14" text-anchor="middle">弱</text>
+    <path class="lead" d="M 300 45 L 285 75" />
 
     <!-- 説明文 -->
-    <text x="0" y="165" class="descText">Liは最外殻がL殻， Naは最外殻がM殻であり，原子</text>
-    <text x="0" y="185" class="descText">核から最外殻電子までの距離は Li &lt; Na なので，Li</text>
-    <text x="0" y="205" class="descText">の方が最外殻電子を強く引きつけ自分の最外殻電</text>
-    <text x="0" y="225" class="descText">子をとられにくく（イオン化エネルギーが大き</text>
-    <text x="0" y="245" class="descText">く），他人の電子を奪う力が強い（電子親和力が</text>
-    <text x="0" y="265" class="descText">大きい）</text>
+    <text x="-30" y="165" class="descText">Liは最外殻がL殻， Naは最外殻がM殻であり，原子</text>
+    <text x="-30" y="185" class="descText">核から最外殻電子までの距離は Li &lt; Na なので，Li</text>
+    <text x="-30" y="205" class="descText">の方が最外殻電子を強く引きつけ自分の最外殻電</text>
+    <text x="-30" y="225" class="descText">子をとられにくく（イオン化エネルギーが大き</text>
+    <text x="-30" y="245" class="descText">く），他人の電子を奪う力が強い（電子親和力が</text>
+    <text x="-30" y="265" class="descText">大きい）</text>
   </g>
 
 </svg>
