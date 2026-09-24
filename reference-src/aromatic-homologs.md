@@ -213,7 +213,7 @@ left: C₆H₄(COOH)₂（フタル酸）
 over: 加熱
 right: C₆H₄(CO)₂O ＋ H₂O
 gen: フタル酸 → 無水フタル酸 ＋ 水
-app: dehydrate_phthalic_acid
+app: dehydration_anhydride
 level: ★★☆
 note: 無水フタル酸ができます。隣り合った o 体だけが起こすので、o 体かどうかを見分ける手がかりになります。
 :::
@@ -295,4 +295,5 @@ source: draft:reference-outline/aromatic.md の aromatic-homologs の「根も�
 prompt: エチルベンゼンを過マンガン酸カリウムで十分に酸化すると、何ができるか。
 answer: **安息香酸 C₆H₅COOH** です。側鎖の長さにかかわらず、環に付いた根もとの炭素1個だけが −COOH になるので、トルエンを酸化したときと同じものができます。
 :::
+
 
