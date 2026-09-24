@@ -1,11 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="380" viewBox="0 0 680 380" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="520" viewBox="0 0 680 520" role="img">
   <!-- 酸化還元反応式の作り方を示す図。
-       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。
+       2026-09-25: 右の説明の囲みが図の外へはみ出していたので、囲みを各手順の式の下に全幅で置き直した。
+       説明の字を 16px・下付きを 12px に上げ、式の項の間隔を広げて「＋」と項の重なりを解いた（高さ 380 → 520）。
+       ⚠ text 要素の font-size 属性は下の text { font-size } に負けるので、大きさは class か style で指定する -->
   <style>
     text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
     .eq { font-family: "Times New Roman", serif; font-size: 20px; }
     .titleText { font-family: "Times New Roman", serif; font-size: 20px; font-weight: bold; }
-    .boxOrange { fill: none; stroke: #e0762b; stroke-width: 1.5; }
+    .boxOrange { fill: #fff; stroke: #e0762b; stroke-width: 1.5; }
     .textOrange { fill: #e0762b; font-size: 14px; }
     .textRed { fill: #d32f2f; font-family: "Times New Roman", serif; font-size: 16px; }
     .crossLine { stroke: #d32f2f; stroke-width: 1.5; }
@@ -14,99 +17,89 @@
 
   <!-- タイトル -->
   <text x="10" y="30" class="titleText">【KMnO<tspan font-size="14" dy="5">4</tspan><tspan dy="-5">aqとH</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5">aqの反応（硫酸酸性条件）】</tspan></text>
-  <line class="underline" x1="260" y1="35" x2="385" y2="35" />
-  <text x="260" y="52" class="textOrange">硫酸を加えて酸性にした</text>
+  <line class="underline" x1="288" y1="36" x2="400" y2="36" />
+  <text x="288" y="54" class="textOrange">硫酸を加えて酸性にした</text>
 
   <!-- Step 1 -->
-  <text x="20" y="80">1． 酸化剤・還元剤の半反応式を書き，それぞれを整数倍してe<tspan font-size="12" dy="-8">-</tspan><tspan dy="8">の係数を揃えてか</tspan></text>
-  <text x="45" y="105">ら足し合わせる</text>
-  
-  <text x="80" y="140" class="eq"><tspan class="textRed">2</tspan>MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
-  <text x="155" y="140" class="eq">＋</text>
-  
-  <text x="180" y="140" class="eq">8H<tspan font-size="14" dy="-10">+</tspan></text>
-  <line class="crossLine" x1="175" y1="145" x2="185" y2="120" />
-  <text x="165" y="125" class="textRed">16</text>
+  <text x="20" y="84">1． 酸化剤・還元剤の半反応式を書き，それぞれを整数倍してe<tspan font-size="12" dy="-7">-</tspan><tspan dy="7">の係数を揃えてか</tspan></text>
+  <text x="45" y="106">ら足し合わせる</text>
 
-  <text x="215" y="140" class="eq">＋</text>
-  
-  <text x="245" y="140" class="eq">5e<tspan font-size="14" dy="-10">-</tspan></text>
-  <line class="crossLine" x1="240" y1="145" x2="250" y2="120" />
-  <text x="230" y="125" class="textRed">10</text>
+  <!-- 1行目: MnO4- の半反応式（×2） -->
+  <text x="80" y="150" class="eq"><tspan class="textRed">2</tspan>MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
+  <text x="168" y="150" class="eq">＋</text>
+  <text x="200" y="150" class="eq">8H<tspan font-size="14" dy="-10">+</tspan></text>
+  <line class="crossLine" x1="197" y1="154" x2="211" y2="132" />
+  <text x="184" y="131" class="textRed">16</text>
+  <text x="250" y="150" class="eq">＋</text>
+  <text x="285" y="150" class="eq">5e<tspan font-size="14" dy="-10">-</tspan></text>
+  <line class="crossLine" x1="282" y1="154" x2="296" y2="132" />
+  <text x="269" y="131" class="textRed">10</text>
+  <text x="333" y="150" class="eq">→</text>
+  <text x="375" y="150" class="eq"><tspan class="textRed">2</tspan>Mn<tspan font-size="14" dy="-10">2+</tspan></text>
+  <text x="450" y="150" class="eq">＋</text>
+  <text x="485" y="150" class="eq">4H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  <line class="crossLine" x1="482" y1="154" x2="496" y2="132" />
+  <text x="476" y="131" class="textRed">8</text>
 
-  <text x="285" y="140" class="eq">→</text>
-
-  <text x="320" y="140" class="eq"><tspan class="textRed">2</tspan>Mn<tspan font-size="14" dy="-10">2+</tspan></text>
-  
-  <text x="385" y="140" class="eq">＋</text>
-
-  <text x="415" y="140" class="eq">4H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
-  <line class="crossLine" x1="410" y1="145" x2="420" y2="120" />
-  <text x="405" y="125" class="textRed">8</text>
-
-  <!-- 2行目 -->
-  <text x="40" y="175" class="eq">＋ ）</text>
-  <text x="225" y="175" class="eq"><tspan class="textRed">5</tspan>H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5"></tspan></text>
-  <text x="285" y="175" class="eq">→</text>
-  <text x="320" y="175" class="eq"><tspan class="textRed">5</tspan>O<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
-  
-  <text x="375" y="175" class="eq">＋</text>
-  <text x="405" y="175" class="eq">2H<tspan font-size="14" dy="-10">+</tspan></text>
-  <line class="crossLine" x1="400" y1="180" x2="410" y2="155" />
-  <text x="390" y="160" class="textRed">10</text>
-
-  <text x="435" y="175" class="eq">＋</text>
-  <text x="465" y="175" class="eq">2e<tspan font-size="14" dy="-10">-</tspan></text>
-  <line class="crossLine" x1="460" y1="180" x2="470" y2="155" />
-  <text x="450" y="160" class="textRed">10</text>
+  <!-- 2行目: H2O2 の半反応式（×5） -->
+  <text x="40" y="192" class="eq">＋）</text>
+  <text x="258" y="192" class="eq"><tspan class="textRed">5</tspan>H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan><tspan font-size="14" dy="5">2</tspan></text>
+  <text x="333" y="192" class="eq">→</text>
+  <text x="375" y="192" class="eq"><tspan class="textRed">5</tspan>O<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
+  <text x="450" y="192" class="eq">＋</text>
+  <text x="485" y="192" class="eq">2H<tspan font-size="14" dy="-10">+</tspan></text>
+  <line class="crossLine" x1="482" y1="196" x2="496" y2="174" />
+  <text x="469" y="173" class="textRed">10</text>
+  <text x="535" y="192" class="eq">＋</text>
+  <text x="570" y="192" class="eq">2e<tspan font-size="14" dy="-10">-</tspan></text>
+  <line class="crossLine" x1="567" y1="196" x2="581" y2="174" />
+  <text x="554" y="173" class="textRed">10</text>
 
   <!-- 足し合わせる線 -->
-  <line x1="50" y1="185" x2="490" y2="185" stroke="#222" stroke-width="1.5" />
+  <line x1="40" y1="204" x2="640" y2="204" stroke="#222" stroke-width="1.5" />
 
-  <!-- 3行目 -->
-  <text x="80" y="210" class="eq">2MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
-  <text x="155" y="210" class="eq">＋</text>
-  <text x="175" y="210" class="eq">6H<tspan font-size="14" dy="-10">+</tspan></text>
-  <text x="215" y="210" class="eq">＋</text>
-  <text x="240" y="210" class="eq">5H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5"></tspan></text>
-  <text x="295" y="210" class="eq">→</text>
-  <text x="325" y="210" class="eq">2Mn<tspan font-size="14" dy="-10">2+</tspan></text>
-  <text x="385" y="210" class="eq">＋</text>
-  <text x="405" y="210" class="eq">5O<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
-  <text x="445" y="210" class="eq">＋</text>
-  <text x="465" y="210" class="eq">8H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  <!-- 3行目: 足し合わせた式 -->
+  <text x="80" y="234" class="eq">2MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
+  <text x="168" y="234" class="eq">＋</text>
+  <text x="200" y="234" class="eq">6H<tspan font-size="14" dy="-10">+</tspan></text>
+  <text x="243" y="234" class="eq">＋</text>
+  <text x="272" y="234" class="eq">5H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan><tspan font-size="14" dy="5">2</tspan></text>
+  <text x="340" y="234" class="eq">→</text>
+  <text x="375" y="234" class="eq">2Mn<tspan font-size="14" dy="-10">2+</tspan></text>
+  <text x="450" y="234" class="eq">＋</text>
+  <text x="480" y="234" class="eq">5O<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
+  <text x="535" y="234" class="eq">＋</text>
+  <text x="565" y="234" class="eq">8H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
 
-  <!-- Step 1 の注釈箱 -->
-  <rect class="boxOrange" x="500" y="95" width="170" height="110" />
-  <text x="505" y="115" font-size="14">KMnO<tspan font-size="10" dy="3">4</tspan><tspan dy="-3">の半反応式を2倍，</tspan></text>
-  <text x="505" y="135" font-size="14">H<tspan font-size="10" dy="3">2</tspan><tspan dy="-3">O</tspan><tspan font-size="10" dy="3">2</tspan><tspan dy="-3">の半反応式を5倍すると</tspan></text>
-  <text x="505" y="155" font-size="14">2つの半反応式のe<tspan font-size="10" dy="-3">-</tspan><tspan dy="3">の係数が</tspan></text>
-  <text x="505" y="175" font-size="14">揃い，足し合わせるとe<tspan font-size="10" dy="-3">-</tspan><tspan dy="3">が</tspan></text>
-  <text x="505" y="195" font-size="14">消える</text>
+  <!-- Step 1 の説明の囲み -->
+  <rect class="boxOrange" x="40" y="250" width="620" height="56" />
+  <text x="52" y="273">KMnO<tspan font-size="12" dy="4">4</tspan><tspan dy="-4">の半反応式を2倍，H</tspan><tspan font-size="12" dy="4">2</tspan><tspan dy="-4">O</tspan><tspan font-size="12" dy="4">2</tspan><tspan dy="-4">の半反応式を5倍すると，</tspan></text>
+  <text x="52" y="297">2つの半反応式のe<tspan font-size="12" dy="-7">-</tspan><tspan dy="7">の係数が揃い，足し合わせるとe</tspan><tspan font-size="12" dy="-7">-</tspan><tspan dy="7">が消える</tspan></text>
 
   <!-- Step 2 -->
-  <text x="20" y="250">2． 反応式の左辺のイオンと反応した物質を比較して省略されているイオンを両辺</text>
-  <text x="45" y="275">に加える</text>
-  
-  <text x="75" y="310" class="eq">2MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
-  <text x="155" y="310" class="eq">＋ 6H<tspan font-size="14" dy="-10">+</tspan></text>
-  <text x="215" y="310" class="eq">＋ 5H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5"></tspan></text>
-  <text x="285" y="310" class="eq">→</text>
-  <text x="325" y="310" class="eq">2Mn<tspan font-size="14" dy="-10">2+</tspan></text>
-  <text x="385" y="310" class="eq">＋ 5O<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
-  <text x="445" y="310" class="eq">＋ 8H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  <text x="20" y="342">2． 反応式の左辺のイオンと反応した物質を比較して省略されているイオンを両辺</text>
+  <text x="45" y="364">に加える</text>
 
-  <text x="90" y="340" class="eq">＋2K<tspan font-size="14" dy="-10">+</tspan></text>
-  <text x="150" y="340" class="eq">＋3SO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">2-</tspan></text>
+  <text x="80" y="402" class="eq">2MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
+  <text x="168" y="402" class="eq">＋</text>
+  <text x="200" y="402" class="eq">6H<tspan font-size="14" dy="-10">+</tspan></text>
+  <text x="243" y="402" class="eq">＋</text>
+  <text x="272" y="402" class="eq">5H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan><tspan font-size="14" dy="5">2</tspan></text>
+  <text x="340" y="402" class="eq">→</text>
+  <text x="375" y="402" class="eq">2Mn<tspan font-size="14" dy="-10">2+</tspan></text>
+  <text x="450" y="402" class="eq">＋</text>
+  <text x="480" y="402" class="eq">5O<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
+  <text x="535" y="402" class="eq">＋</text>
+  <text x="565" y="402" class="eq">8H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
 
-  <text x="325" y="340" class="eq">＋2K<tspan font-size="14" dy="-10">+</tspan></text>
-  <text x="390" y="340" class="eq">＋3SO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">2-</tspan></text>
+  <text x="80" y="438" class="eq">＋2K<tspan font-size="14" dy="-10">+</tspan></text>
+  <text x="168" y="438" class="eq">＋3SO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">2-</tspan></text>
+  <text x="375" y="438" class="eq">＋2K<tspan font-size="14" dy="-10">+</tspan></text>
+  <text x="450" y="438" class="eq">＋3SO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">2-</tspan></text>
 
-  <!-- Step 2 の注釈箱 -->
-  <rect class="boxOrange" x="500" y="250" width="170" height="95" />
-  <text x="505" y="270" font-size="14">左辺のMnO<tspan font-size="10" dy="3">4</tspan><tspan font-size="10" dy="-8">-</tspan><tspan dy="5">はもともとK</tspan><tspan font-size="10" dy="-3">+</tspan></text>
-  <text x="505" y="290" font-size="14">とくっついてKMnO<tspan font-size="10" dy="3">4</tspan><tspan dy="-3">，H</tspan><tspan font-size="10" dy="-3">+</tspan><tspan dy="3">は</tspan></text>
-  <text x="505" y="310" font-size="14">もともとSO<tspan font-size="10" dy="3">4</tspan><tspan font-size="10" dy="-8">2-</tspan><tspan dy="5">とくっついて</tspan></text>
-  <text x="505" y="330" font-size="14">いてH<tspan font-size="10" dy="3">2</tspan><tspan dy="-3">SO</tspan><tspan font-size="10" dy="3">4</tspan><tspan dy="-3">だった</tspan></text>
+  <!-- Step 2 の説明の囲み -->
+  <rect class="boxOrange" x="40" y="454" width="620" height="56" />
+  <text x="52" y="477">左辺のMnO<tspan font-size="12" dy="4">4</tspan><tspan font-size="12" dy="-11">-</tspan><tspan dy="7">はもともとK</tspan><tspan font-size="12" dy="-7">+</tspan><tspan dy="7">とくっついてKMnO</tspan><tspan font-size="12" dy="4">4</tspan><tspan dy="-4">，</tspan></text>
+  <text x="52" y="501">H<tspan font-size="12" dy="-7">+</tspan><tspan dy="7">はもともとSO</tspan><tspan font-size="12" dy="4">4</tspan><tspan font-size="12" dy="-11">2-</tspan><tspan dy="7">とくっついていてH</tspan><tspan font-size="12" dy="4">2</tspan><tspan dy="-4">SO</tspan><tspan font-size="12" dy="4">4</tspan><tspan dy="-4">だった</tspan></text>
 
 </svg>
