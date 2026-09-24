@@ -40,6 +40,10 @@ terms:
 - 酸化銅(II)
 - 塩化カルシウム管
 - ソーダ石灰管
+codes:
+- org.anal.quantitative-def
+- org.anal.apparatus-absorb
+- org.anal.apparatus-oxidant
 :::
 
 乾燥した酸素を送りながら試料を加熱して燃焼させ、生じた気体を2本の吸収管に順に通します。
@@ -91,6 +95,8 @@ title: 吸収管の順番 —— 水が先、二酸化炭素が後
 lead: 塩化カルシウム管を先、ソーダ石灰管を後につなぎます。逆にすると H₂O と CO₂ を別々に量れません。
 terms:
 - 乾燥剤
+codes:
+- org.anal.apparatus-order
 :::
 
 **「塩化カルシウム管が先、ソーダ石灰管が後」の順番は、理由ごと必ず覚えてください。**理由まで書かせる問題がよく登場します。
@@ -112,6 +118,10 @@ lead: CO₂ の質量から C、H₂O の質量から H を出し、O は全体�
 terms:
 - 原子量
 - 分子量
+codes:
+- org.anal.mass-c
+- org.anal.mass-h
+- org.anal.mass-o
 :::
 
 試料の質量、吸収された H₂O の質量、CO₂ の質量から、元素ごとの質量を次のように出します。
@@ -142,6 +152,8 @@ title: 組成式にする —— 酸素の数を1にそろえる
 lead: 質量を原子量で割って原子の数の比にし、O が1になるように全体を割ってから整数比にします。
 terms:
 - 組成式
+codes:
+- org.anal.composition-formula
 :::
 
 化合物をつくる原子の数を、最も簡単な整数比で表した式を**組成式**といいます。手順は次の3段です。
@@ -177,6 +189,9 @@ lead: 分子式は組成式の整数倍です。分子量を組成式の式量�
 terms:
 - 分子式
 - 式量
+codes:
+- org.anal.molecular-formula
+- org.anal.mw-from-solution
 :::
 
 組成式は「原子の**数の比**」を、分子式は「1分子中の原子の**数**」を表します。そのため分子式は組成式の整数倍になり、倍率は「分子量 ÷ 組成式の式量」で決まります。
