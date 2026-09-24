@@ -43,8 +43,15 @@ note: 触媒としてはたらくのは水素イオン H⁺ です。濃硫酸�
 
 :::figure
 src: esterification.png
-svg: esterification.svg
-alt: カルボン酸とアルコールが脱水縮合してエステルと水になる反応の構造式。上の段が反応物、下の段が生成物で、間に H⁺ を添えた平衡の矢印がある。カルボン酸の OH とアルコールの H が橙色の枠で囲まれ、そこから「脱水」の矢印が下の段の H₂O を指している
+gen: name=酢酸 plain paper
+gen: name=エタノール plain paper flip=h
+gen: name=酢酸エチル plain paper
+gen: name=水 plain paper
+mark: kind=囲む at=1:C1-OH
+between: kind=＋ at=1 to=2
+between: kind=平衡 at=2 to=3 label=H⁺
+between: kind=＋ at=3 to=4
+alt: 酢酸とエタノールが H⁺ を添えた平衡の矢印で酢酸エチルと水になる反応の構造式。酢酸の −OH が丸で囲まれている。エタノールは HO− を酢酸の側に向けて描いてある
 caption: とれるのは、**カルボン酸の −OH** と**アルコールの −H** です。向きを逆に覚えないでください。
 :::
 

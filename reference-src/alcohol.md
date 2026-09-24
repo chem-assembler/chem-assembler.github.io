@@ -42,8 +42,11 @@ terms:
 
 :::figure
 src: alcohol-from-alkane.png
-svg: alcohol-from-alkane.svg
-alt: アルカンの構造式から矢印が伸び、C−H 間に O 原子を入れるとアルコールになることを示した図。左がアルカン CnH2n+2、右がアルコール CnH2n+2O
+gen: name=プロパン plain paper expand=H
+gen: name=1-プロパノール plain paper expand=H
+mark: kind=囲む at=2:C1-OH
+between: kind=矢印 at=1 to=2 label=C−H 間に O 原子を入れる
+alt: プロパンの構造式から「C−H 間に O 原子を入れる」と書いた矢印が伸び、1-プロパノールになる図。入った O 原子が丸で囲まれている
 caption: アルカンの **C−H のあいだ**に O を1個入れると、末尾が −O−H ＝ ヒドロキシ基になります。
 :::
 
@@ -51,8 +54,11 @@ caption: アルカンの **C−H のあいだ**に O を1個入れると、末�
 
 :::figure
 src: ether-from-alkane.png
-svg: ether-from-alkane.svg
-alt: アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O
+gen: name=プロパン plain paper expand=H
+gen: name=エチルメチルエーテル plain paper expand=H
+mark: kind=囲む at=2:エーテル結合
+between: kind=矢印 at=1 to=2 label=C−C 間に O 原子を入れる
+alt: プロパンの構造式から「C−C 間に O 原子を入れる」と書いた矢印が伸び、エチルメチルエーテルになる図。C−O−C のエーテル結合が丸で囲まれている
 caption: 同じ O を **C−C のあいだ**に入れると、炭素にはさまれた −O− ＝ エーテル結合になります。
 :::
 

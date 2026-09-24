@@ -380,7 +380,9 @@
     }
 
     var BETWEEN_KEYS = ['kind', 'at', 'to', 'label', 'color'];
-    var BETWEEN_KINDS = ['両矢印', '矢印', '破線'];
+    /* ★ ＋・反応・平衡（2026-09-24）: 分子を反応式の形に並べる図（エステル化・マルコフニコフ則）。
+       描き方は反応式の構造式（:::reaction の gen:）と同じ composeFigureRow。分子と分子のすき間にだけ書ける（場所は指せない） */
+    var BETWEEN_KINDS = ['両矢印', '矢印', '破線', '＋', '反応', '平衡'];
     function parseBetween(text, where) {
         var out = cutKeyVals(text, BETWEEN_KEYS, 'between', where);
         if (BETWEEN_KINDS.indexOf(out.kind) < 0) {
