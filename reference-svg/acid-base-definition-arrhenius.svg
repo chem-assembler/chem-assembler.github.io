@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="300" viewBox="0 0 680 300" role="img">
+  <!-- アレニウスの定義による酸・塩基を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 24px; text-anchor: middle; }
+    .leftText { text-anchor: start; }
+    .wtext { fill: #fff; }
+    .eq { font-family: "Times New Roman", serif; font-size: 32px; }
+    .hPlus { fill: #d35400; stroke: #993d00; stroke-width: 1.5; }
+    .ohMinus { fill: #165b7c; stroke: #10425a; stroke-width: 1.5; }
+    .negIon { fill: #a5d4a1; stroke: #222; stroke-width: 1.5; }
+    .posIon { fill: #f0cbb5; stroke: #222; stroke-width: 1.5; }
+    .boxRed { fill: none; stroke: #ff0000; stroke-width: 3; rx: 8; }
+    .boxBlue { fill: none; stroke: #0070c0; stroke-width: 3; rx: 8; }
+    .braceRed { fill: none; stroke: #ff0000; stroke-width: 3; }
+    .braceBlue { fill: none; stroke: #0070c0; stroke-width: 3; }
+    .boxYellow { fill: #fff; stroke: #ffcc00; stroke-width: 2; }
+    .bottomText { font-size: 22px; text-anchor: start; }
+  </style>
+
+  <!-- 上段: 酸 -->
+  <g transform="translate(10, 10)">
+    <!-- 酸の分子 -->
+    <rect class="boxRed" x="20" y="10" width="180" height="60" />
+    <circle cx="55" cy="40" r="25" class="hPlus" />
+    <text x="55" y="48" class="wtext" font-size="20">H<tspan font-size="14" dy="-8">+</tspan></text>
+    
+    <ellipse cx="140" cy="40" rx="45" ry="25" class="negIon" />
+    <text x="140" y="47" font-size="20">－イオン</text>
+
+    <text x="110" y="95" font-size="22">酸</text>
+
+    <!-- 矢印 -->
+    <text x="250" y="55" class="eq">→</text>
+
+    <!-- 電離後 -->
+    <circle cx="340" cy="40" r="25" class="hPlus" />
+    <text x="340" y="48" class="wtext" font-size="20">H<tspan font-size="14" dy="-8">+</tspan></text>
+    
+    <text x="420" y="52" class="eq">＋</text>
+
+    <ellipse cx="510" cy="40" rx="45" ry="25" class="negIon" />
+    <text x="510" y="47" font-size="20">－イオン</text>
+
+    <path class="braceRed" d="M 295 70 L 295 80 L 565 80 L 565 70" />
+    <text x="430" y="105" font-size="22">水中で電離</text>
+  </g>
+
+  <!-- 下段: 塩基 -->
+  <g transform="translate(10, 120)">
+    <!-- 塩基の分子 -->
+    <rect class="boxBlue" x="20" y="10" width="200" height="60" />
+    <ellipse cx="85" cy="40" rx="55" ry="25" class="posIon" />
+    <text x="85" y="47" font-size="20">＋イオン</text>
+    
+    <circle cx="180" cy="40" r="25" class="ohMinus" />
+    <text x="180" y="48" class="wtext" font-size="20">OH<tspan font-size="14" dy="-8">-</tspan></text>
+
+    <text x="120" y="95" font-size="22">塩基</text>
+
+    <!-- 矢印 -->
+    <text x="260" y="55" class="eq">→</text>
+
+    <!-- 電離後 -->
+    <ellipse cx="365" cy="40" rx="55" ry="25" class="posIon" />
+    <text x="365" y="47" font-size="20">＋イオン</text>
+    
+    <text x="460" y="52" class="eq">＋</text>
+
+    <circle cx="530" cy="40" r="25" class="ohMinus" />
+    <text x="530" y="48" class="wtext" font-size="20">OH<tspan font-size="14" dy="-8">-</tspan></text>
+
+    <path class="braceBlue" d="M 300 70 L 300 80 L 565 80 L 565 70" />
+    <text x="435" y="105" font-size="22">水中で電離</text>
+  </g>
+
+  <!-- 下のテキスト枠 -->
+  <rect class="boxYellow" x="10" y="240" width="660" height="50" />
+  <text x="20" y="262" class="bottomText">酸は水素イオンH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">と陰イオンがくっついた構造</tspan></text>
+  <text x="20" y="285" class="bottomText">塩基は水酸化物イオンOH<tspan font-size="14" dy="-8">-</tspan><tspan dy="8">と陽イオンがくっついた構造</tspan></text>
+
+</svg>
