@@ -9,9 +9,9 @@
     .water { fill: #eaf3fb; stroke: none; }
     .surf { stroke: #90caf9; stroke-width: 2; fill: none; }
     .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
-    .note { font-size: 17px; fill: #333; text-anchor: middle; }
-    .key { font-size: 17px; fill: #6a1b9a; text-anchor: middle; }
-    .p { font-size: 13px; text-anchor: middle; fill: #222; }
+    .note { font-size: 19px; fill: #333; text-anchor: middle; }
+    .key { font-size: 19px; fill: #6a1b9a; text-anchor: middle; }
+    .p { font-size: 19px; text-anchor: middle; fill: #222; }
     .acid { fill: #fff; stroke: #c62828; stroke-width: 2; }
     .anion { fill: #e8f1fb; stroke: #1565c0; stroke-width: 2; }
     .far { stroke: #6a1b9a; stroke-width: 2; stroke-dasharray: 7 6; fill: none; }
