@@ -34,8 +34,11 @@ terms:
 
 :::figure
 src: ether-from-alkane.png
-svg: ether-from-alkane.svg
-alt: アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O
+gen: name=プロパン plain paper expand=H
+gen: name=エチルメチルエーテル plain paper expand=H
+mark: kind=囲む at=2:エーテル結合
+between: kind=矢印 at=1 to=2 label=C−C 間に O 原子を入れる
+alt: プロパンの構造式から「C−C 間に O 原子を入れる」と書いた矢印が伸び、エチルメチルエーテルになる図。C−O−C のエーテル結合が丸で囲まれている
 caption: 同じ O を **C−H のあいだ**に入れるとアルコールになります。入れる場所が違うだけで、分子式はどちらも同じです。
 :::
 
