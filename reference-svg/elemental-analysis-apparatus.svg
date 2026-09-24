@@ -1,23 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="694.737" height="268.421" viewBox="0 0 880 340" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="340" viewBox="0 0 880 340" role="img">
   <!-- 元素分析の装置。左から 乾燥した O2 → 燃焼管（試料＋CuO・加熱）→ 塩化カルシウム管（H2O）→ ソーダ石灰管（CO2）。
        ★ 順番が命の図: 水を先に取ってからでないと CO2 だけを量れない。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
     .glass { stroke: #333; stroke-width: 3; fill: #fff; }
     .pipe { stroke: #333; stroke-width: 3.5; fill: none; stroke-linecap: round; }
-    .name { font-size: 18px; fill: #222; text-anchor: middle; }
-    .role { font-size: 15px; fill: #555; text-anchor: middle; }
-    .in { font-size: 15px; fill: #444; text-anchor: middle; }
-    .gas { font-size: 15px; fill: #1565c0; text-anchor: middle; }
+    .name { font-size: 26px; fill: #222; text-anchor: middle; font-weight: bold; }
+    .role { font-size: 25px; fill: #555; text-anchor: middle; }
+    .in { font-size: 25px; fill: #444; text-anchor: middle; }
+    .gas { font-size: 25px; fill: #1565c0; text-anchor: middle; font-weight: bold; }
   </style>
 
   <!-- ===== 名前と役目 ===== -->
-  <text class="name" x="250" y="46">燃焼管</text>
-  <text class="role" x="250" y="68">試料を完全に酸化する</text>
-  <text class="name" x="535" y="46">塩化カルシウム管</text>
-  <text class="role" x="535" y="68">H₂O だけを吸収</text>
-  <text class="name" x="755" y="46">ソーダ石灰管</text>
-  <text class="role" x="755" y="68">CO₂ を吸収</text>
+  <text class="name" x="250" y="38">燃焼管</text>
+  <text class="role" x="250" y="70">試料を完全に酸化する</text>
+  <text class="name" x="535" y="38">塩化カルシウム管</text>
+  <text class="role" x="535" y="70">H₂O だけを吸収</text>
+  <text class="name" x="755" y="38">ソーダ石灰管</text>
+  <text class="role" x="755" y="70">CO₂ を吸収</text>
 
   <!-- ===== 入口 ===== -->
   <path class="pipe" d="M 30 175 L 96 175" />
