@@ -79,6 +79,8 @@ note: 試料中の C は全部 CO₂ に、H は全部 H₂O になります。�
 :::reaction
 left: C₂H₅OH ＋ 3O₂
 right: 2CO₂ ＋ 3H₂O
+gen: エタノール ＋ 3 酸素 → 2 二酸化炭素 ＋ 3 水
+app: combustion
 level: ★★☆
 note: エタノールの例です。右辺の O は、試料の O と燃焼に使った O₂ の O が混ざっています。だから O の質量だけは、吸収管の質量からは出せません。
 :::
