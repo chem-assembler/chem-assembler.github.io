@@ -74,6 +74,8 @@ terms:
 :::reaction
 left: C₆H₅NH₂ ＋ HCl
 right: C₆H₅NH₃Cl
+gen: アニリン ＋ 塩化水素 → アニリン塩酸塩
+app: amine_hcl
 level: ★★★
 note: アニリンが塩になって水層へ移ります。酸性の物質と中性の物質はエーテル層に残ります。
 :::
@@ -126,6 +128,8 @@ items:
 :::reaction
 left: C₆H₅COOH ＋ NaHCO₃
 right: C₆H₅COONa ＋ H₂O ＋ CO₂↑
+gen: 安息香酸 ＋ 炭酸水素ナトリウム → 安息香酸ナトリウム ＋ 水 ＋ 二酸化炭素
+app: neutralize_nahco3
 level: ★★★
 note: ①安息香酸は炭酸より強い酸なので、炭酸水素ナトリウムでも塩になります。
 :::
@@ -133,6 +137,8 @@ note: ①安息香酸は炭酸より強い酸なので、炭酸水素ナトリ�
 :::reaction
 left: C₆H₅OH ＋ NaOH
 right: C₆H₅ONa ＋ H₂O
+gen: フェノール ＋ 水酸化ナトリウム → ナトリウムフェノキシド ＋ 水
+app: neutralize_naoh
 level: ★★★
 note: ②フェノールは炭酸より弱いので ①では動かず、NaOH を加えて初めて塩になります。
 :::
