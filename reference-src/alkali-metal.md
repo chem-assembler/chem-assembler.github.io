@@ -230,6 +230,14 @@ level: ★☆☆
 note: 風解。式を書かせる問題はほとんど出ないので、「十水和物 → 一水和物」の名前だけで十分です。
 :::
 
+## 例題 —— ナトリウムの化合物
+
+:::exercise
+source: 自作（このページの ★★★ の式を物質名から書く）
+prompt: 次の変化を化学反応式で書け。**(1) ナトリウムを水に入れると気体が発生した　(2) 水酸化ナトリウムの固体を空気中に置くと、二酸化炭素を吸収した　(3) 炭酸水素ナトリウムを加熱した　(4) 炭酸ナトリウムに希塩酸を加えた**
+answer: (1) 2Na ＋ 2H₂O → 2NaOH ＋ H₂　(2) 2NaOH ＋ CO₂ → Na₂CO₃ ＋ H₂O　(3) 2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂　(4) Na₂CO₃ ＋ 2HCl → 2NaCl ＋ H₂O ＋ CO₂
+:::
+
 :::section
 anchor: solvay
 title: アンモニアソーダ法（ソルベー法）
@@ -278,6 +286,14 @@ alt: アンモニアソーダ法の流れ図。左の列は NaCl の飽和水溶
 caption: 実線をたどると、入っていくのは **NaCl と CaCO₃ だけ**、出てくるのは **Na₂CO₃ と CaCl₂ だけ**です。点線の分が両辺で消えるので、全体の式が 2NaCl ＋ CaCO₃ → Na₂CO₃ ＋ CaCl₂ になります。
 :::
 
+## 例題 —— アンモニアソーダ法（ソルベー法）
+
+:::exercise
+source: 自作（アンモニアソーダ法の5本を足し合わせて全体の式を導く）
+prompt: アンモニアソーダ法の5つの反応 ① NaCl ＋ H₂O ＋ NH₃ ＋ CO₂ → NaHCO₃ ＋ NH₄Cl　② 2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂　③ CaCO₃ → CaO ＋ CO₂　④ CaO ＋ H₂O → Ca(OH)₂　⑤ Ca(OH)₂ ＋ 2NH₄Cl → CaCl₂ ＋ 2H₂O ＋ 2NH₃ を1つの式にまとめよ。また、Na₂CO₃ を 1.06 kg つくるのに必要な NaCl は何 kg か（式量 NaCl ＝ 58.5、Na₂CO₃ ＝ 106）。
+answer: ① を2倍して ②〜⑤ を足すと、途中の物質が消えて **2NaCl ＋ CaCO₃ → Na₂CO₃ ＋ CaCl₂** が残ります。係数の比 ＝ mol の比なので NaCl : Na₂CO₃ ＝ 2 : 1 です。Na₂CO₃ 1.06 kg は 1.06×10³ ÷ 106 ＝ 10 mol なので、NaCl は 20 mol ＝ 20 × 58.5 ＝ 1170 g ＝ **1.17 kg** です。
+:::
+
 :::section
 anchor: range
 title: 覚える範囲
@@ -305,20 +321,6 @@ text: ほかの元素の炎色反応は炎色反応と水溶液の色のペー�
 :::link
 app: muki/separation
 text: 炎色反応の札で Na⁺・K⁺ を見分ける
-:::
-
-## 例題
-
-:::exercise
-source: 自作（このページの ★★★ の式を物質名から書く）
-prompt: 次の変化を化学反応式で書け。**(1) ナトリウムを水に入れると気体が発生した　(2) 水酸化ナトリウムの固体を空気中に置くと、二酸化炭素を吸収した　(3) 炭酸水素ナトリウムを加熱した　(4) 炭酸ナトリウムに希塩酸を加えた**
-answer: (1) 2Na ＋ 2H₂O → 2NaOH ＋ H₂　(2) 2NaOH ＋ CO₂ → Na₂CO₃ ＋ H₂O　(3) 2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂　(4) Na₂CO₃ ＋ 2HCl → 2NaCl ＋ H₂O ＋ CO₂
-:::
-
-:::exercise
-source: 自作（アンモニアソーダ法の5本を足し合わせて全体の式を導く）
-prompt: アンモニアソーダ法の5つの反応 ① NaCl ＋ H₂O ＋ NH₃ ＋ CO₂ → NaHCO₃ ＋ NH₄Cl　② 2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂　③ CaCO₃ → CaO ＋ CO₂　④ CaO ＋ H₂O → Ca(OH)₂　⑤ Ca(OH)₂ ＋ 2NH₄Cl → CaCl₂ ＋ 2H₂O ＋ 2NH₃ を1つの式にまとめよ。また、Na₂CO₃ を 1.06 kg つくるのに必要な NaCl は何 kg か（式量 NaCl ＝ 58.5、Na₂CO₃ ＝ 106）。
-answer: ① を2倍して ②〜⑤ を足すと、途中の物質が消えて **2NaCl ＋ CaCO₃ → Na₂CO₃ ＋ CaCl₂** が残ります。係数の比 ＝ mol の比なので NaCl : Na₂CO₃ ＝ 2 : 1 です。Na₂CO₃ 1.06 kg は 1.06×10³ ÷ 106 ＝ 10 mol なので、NaCl は 20 mol ＝ 20 × 58.5 ＝ 1170 g ＝ **1.17 kg** です。
 :::
 
 :::link
