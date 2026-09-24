@@ -40,6 +40,9 @@ terms:
 - 価数
 - 脂肪酸
 - ヒドロキシ酸
+codes:
+- org.carbonyl.carboxy
+- org.carbonyl.fatty-acid
 :::
 
 1つの分子内のカルボキシ基 −COOH の数を**カルボン酸の価数**といい、古代ギリシャ語由来の接頭辞を用いて、1価カルボン酸を**モノカルボン酸**、2価カルボン酸を**ジカルボン酸**といいます。酢酸 CH₃COOH は −COOH を1個もつのでモノカルボン酸、シュウ酸 (COOH)₂ は2個もつのでジカルボン酸です。
@@ -68,6 +71,9 @@ terms:
 - 構造異性体
 - 二量体
 - 弱酸
+codes:
+- org.carbonyl.acidity
+- org.carbonyl.dimer
 :::
 
 鎖式で不飽和結合をもたないカルボン酸の一般式は **C~n~H~2n~O~2~** です。n = 2 を代入すると C₂H₄O₂ ＝ 酢酸 CH₃COOH の分子式が得られます。
@@ -111,6 +117,13 @@ terms:
 - マレイン酸
 - フマル酸
 - 乳酸
+codes:
+- org.carbonyl.formic
+- org.carbonyl.formic-reducing
+- org.carbonyl.acetic
+- org.carbonyl.dicarboxylic
+- org.carbonyl.maleic-fumaric
+- org.carbonyl.lactic
 :::
 
 カルボン酸の名前は、対応するアルカンの語尾に「酸」を付け加えるのが IUPAC 命名法です。メタンからは「メタン酸」、エタンからは「エタン酸」となります。ただし高校化学でこの名前を見かけることはまずないので、**慣用名のほうを覚えます**。メタン酸がギ酸、エタン酸が酢酸、プロパン酸がプロピオン酸です。
@@ -212,6 +225,9 @@ lead: 「強酸 ＞ カルボン酸 ＞ 炭酸」の順番だけで、3本の反
 terms:
 - 弱酸の遊離
 - 炭酸水素ナトリウム
+codes:
+- org.carbonyl.vs-carbonic
+- org.carbonyl.salt-strong-acid
 :::
 
 弱酸の遊離は、**相対的に強い酸が塩から弱い酸を追い出す**反応です。だから覚えるのは酸の強さの順番だけで足ります。
@@ -262,6 +278,10 @@ terms:
 - 無水マレイン酸
 - 無水酢酸
 - 分子内脱水
+codes:
+- org.carbonyl.maleic-anhydride
+- org.carbonyl.acid-anhydride
+- org.carbonyl.acetic-anhydride-props
 :::
 
 カルボン酸のカルボキシ基2個から水1分子がとれて縮合したものを**酸無水物**といいます。とれかたは2通りあって、**1つの分子の中で起こる場合（分子内脱水）**と、**2つの分子の間で起こる場合（分子間の脱水縮合）**に分かれます。
