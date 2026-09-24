@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="600" viewBox="0 0 680 600" role="img">
+  <!-- 塩から元の酸と塩基を復元する手順。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 20px; }
+    .wtext { fill: #fff; text-anchor: middle; }
+    .ionPos { fill: #f0cbb5; stroke: #222; stroke-width: 1.5; }
+    .ionNeg { fill: #a5d4a1; stroke: #222; stroke-width: 1.5; }
+    .hPlus { fill: #d35400; stroke: #993d00; stroke-width: 1.5; }
+    .ohMinus { fill: #165b7c; stroke: #10425a; stroke-width: 1.5; }
+    .eq { font-family: "Times New Roman", serif; font-size: 24px; }
+    .brace { fill: none; stroke-width: 3; }
+    .braceAcid { stroke: #27ae60; }
+    .braceBase { stroke: #27ae60; }
+    .braceSalt { stroke: #f1c40f; }
+    .braceWater { stroke: #27ae60; }
+    .box { fill: #fff; stroke: #e0762b; stroke-width: 2; }
+    .lead { stroke: #e0762b; stroke-width: 2; fill: none; }
+    .orangeText { fill: #e0762b; font-size: 16px; }
+    .blueText { fill: #1f618d; font-size: 16px; }
+    .underline { stroke: #e0762b; stroke-width: 2; }
+  </style>
+
+  <text x="20" y="30" font-size="22">塩の化学式から， もとの酸と塩基を復元し，反応式が書ける</text>
+
+  <!-- 上段: 一般式 -->
+  <g transform="translate(10, 70)">
+    <!-- 酸 -->
+    <circle cx="40" cy="25" r="20" class="hPlus" />
+    <text x="40" y="32" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="90" cy="25" rx="30" ry="20" class="ionNeg" />
+    <text x="90" y="30" text-anchor="middle" font-size="14">－イオン</text>
+    <path class="brace braceAcid" d="M 20 50 L 20 55 L 120 55 L 120 50" />
+    <text x="70" y="75" text-anchor="middle">酸</text>
+
+    <text x="140" y="35" font-size="30">＋</text>
+
+    <!-- 塩基 -->
+    <ellipse cx="205" cy="25" rx="30" ry="20" class="ionPos" />
+    <text x="205" y="30" text-anchor="middle" font-size="14">＋イオン</text>
+    <circle cx="255" cy="25" r="20" class="ohMinus" />
+    <text x="255" y="32" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
+    <path class="brace braceBase" d="M 175 50 L 175 55 L 275 55 L 275 50" />
+    <text x="225" y="75" text-anchor="middle">塩基</text>
+
+    <text x="300" y="35" font-size="30">→</text>
+
+    <!-- 塩 -->
+    <ellipse cx="370" cy="25" rx="30" ry="20" class="ionPos" />
+    <text x="370" y="30" text-anchor="middle" font-size="14">＋イオン</text>
+    <ellipse cx="430" cy="25" rx="30" ry="20" class="ionNeg" />
+    <text x="430" y="30" text-anchor="middle" font-size="14">－イオン</text>
+    <path class="brace braceSalt" d="M 340 50 L 340 55 L 460 55 L 460 50" />
+    <text x="400" y="75" text-anchor="middle">塩</text>
+
+    <text x="480" y="35" font-size="30">＋</text>
+
+    <!-- 水 -->
+    <circle cx="530" cy="25" r="20" class="hPlus" />
+    <text x="530" y="32" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <circle cx="570" cy="25" r="20" class="ohMinus" />
+    <text x="570" y="32" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
+    <path class="brace braceWater" d="M 510 50 L 510 55 L 590 55 L 590 50" />
+    <text x="550" y="75" text-anchor="middle">水</text>
+  </g>
+
+  <!-- 中段: 例1 NaCl -->
+  <text class="eq" x="30" y="210">例 1 ： NaCl</text>
+  <text class="eq" x="160" y="210">→</text>
+  <text class="eq" x="190" y="210">Na<tspan font-size="16" dy="-10">+</tspan></text>
+  <line class="underline" x1="185" y1="215" x2="235" y2="215" />
+  <text class="orangeText" x="180" y="235">もとはNaOH</text>
+
+  <text class="eq" x="250" y="210">＋</text>
+  
+  <text class="eq" x="290" y="210">Cl<tspan font-size="16" dy="-10">-</tspan></text>
+  <line class="underline" x1="285" y1="215" x2="325" y2="215" />
+  <text class="orangeText" x="270" y="235">もとはHCl</text>
+
+  <rect class="box" x="370" y="160" width="300" height="90" />
+  <text x="375" y="185">塩をイオンに分解して陽イオンにOH<tspan font-size="14" dy="-8">-</tspan></text>
+  <text x="375" y="215">陰イオンにH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">を組み合わせて，もとの</tspan></text>
+  <text x="375" y="240">酸・塩基を復元する</text>
+  <path class="lead" d="M 370 205 L 340 215" />
+
+  <text x="90" y="280">よって， 中和によってNaClが生じる反応式は</text>
+  <text class="eq" x="90" y="315">HCl + NaOH → NaCl + H<tspan font-size="16" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+
+  <rect class="box" x="380" y="295" width="290" height="35" />
+  <text x="385" y="320">加えたH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">とOH</tspan><tspan font-size="14" dy="-8">-</tspan><tspan dy="8">の分だけH</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5">Oが生じる</tspan></text>
+  <path class="lead" d="M 380 310 L 320 320" />
+
+
+  <!-- 下段: 例2 NaHSO4 -->
+  <text class="eq" x="30" y="410">例 2 ： NaHSO<tspan font-size="16" dy="5">4</tspan></text>
+  <text class="eq" x="180" y="410">→</text>
+  <text class="eq" x="210" y="410">Na<tspan font-size="16" dy="-10">+</tspan></text>
+  <line class="underline" x1="205" y1="415" x2="255" y2="415" />
+  <text class="orangeText" x="200" y="435">もとはNaOH</text>
+
+  <text class="eq" x="270" y="410">＋</text>
+  
+  <text class="eq" x="310" y="410">H<tspan font-size="16" dy="-10">+</tspan></text>
+  <text class="eq" x="340" y="410">＋</text>
+  <text class="eq" x="370" y="410">SO<tspan font-size="16" dy="5">4</tspan><tspan font-size="16" dy="-15">2-</tspan></text>
+  <line class="underline" x1="305" y1="415" x2="415" y2="415" />
+  <text class="orangeText" x="320" y="435">もとはH<tspan font-size="12" dy="3">2</tspan><tspan dy="-3">SO</tspan><tspan font-size="12" dy="3">4</tspan></text>
+
+  <!-- まとめてHSO4- -->
+  <path class="lead" d="M 320 380 Q 355 360 395 380" stroke="#1f618d" />
+  <text class="blueText" x="305" y="360">まとめてHSO<tspan font-size="12" dy="5">4</tspan><tspan font-size="12" dy="-15">-</tspan></text>
+
+  <rect class="box" x="430" y="350" width="240" height="95" />
+  <text x="435" y="375">H<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">は酸由来なので陰イオンと，</tspan></text>
+  <text x="435" y="405">OH<tspan font-size="14" dy="-8">-</tspan><tspan dy="8">は塩基由来なので陽イオン</tspan></text>
+  <text x="435" y="435">とまとめる</text>
+  <path class="lead" d="M 430 380 L 400 390" />
+
+  <text x="90" y="480">よって， 中和によってNaHSO<tspan font-size="14" dy="5">4</tspan><tspan dy="-5">が生じる反応式は</tspan></text>
+  <text class="eq" x="90" y="525">H<tspan font-size="16" dy="5">2</tspan><tspan dy="-5">SO</tspan><tspan font-size="16" dy="5">4</tspan><tspan dy="-5"> + NaOH → NaHSO</tspan><tspan font-size="16" dy="5">4</tspan><tspan dy="-5"> + H</tspan><tspan font-size="16" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+
+</svg>
