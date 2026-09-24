@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="500" viewBox="0 0 680 500" role="img">
+  <!-- 温度一定で体積 V を小さくしたとき、ルシャトリエの原理を P に当てるか V に当てるかで結論が逆になる図。
+       左の道（P に当てる）が正しく、右の道（V に当てる）には赤い×。
+       元はスライド（速度平衡の基本３ s18）の横に流れる図。本文の幅では字が 12px まで縮むので、
+       2本の道を左右の列に分けて縦に流し直した（2026-09-24・図表の字の床 14px）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="hb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f6fc5" />
+    </marker>
+    <marker id="hg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1aa84b" />
+    </marker>
+  </defs>
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; }
+    .eq { font-family: "Times New Roman", serif; font-size: 26px; }
+    .s { font-size: 17px; }
+    .v { font-family: "Times New Roman", serif; font-style: italic; }
+    .cnt { font-size: 18px; fill: #e0762b; }
+    .brace { fill: none; stroke: #e0762b; stroke-width: 1.8; }
+    .cond { font-size: 19px; }
+    .box { fill: #fff; stroke: #1f3a7a; stroke-width: 2; }
+    .bt { font-size: 21px; }
+    .b { font-weight: 700; }
+    .ab { stroke: #1f6fc5; stroke-width: 5; fill: none; }
+    .ag { stroke: #1aa84b; stroke-width: 5; fill: none; }
+    .lb { font-size: 18px; fill: #1f6fc5; }
+    .lg { font-size: 17px; fill: #1aa84b; }
+    .x { stroke: #e31b1b; stroke-width: 4; }
+    .dir { font-weight: 700; fill: #e0762b; }
+    .ok { fill: none; stroke: #1f6fc5; stroke-width: 2.5; }
+  </style>
+
+  <!-- 式と、分子の数（左 4 個・右 2 個） -->
+  <path class="brace" d="M 118 44 L 118 36 L 214 36 L 214 44" />
+  <text class="cnt" x="166" y="28" text-anchor="middle">4個</text>
+  <path class="brace" d="M 252 44 L 252 36 L 312 36 L 312 44" />
+  <text class="cnt" x="282" y="28" text-anchor="middle">2個</text>
+  <text class="eq" x="118" y="72">N<tspan class="s" dy="6">2</tspan><tspan dy="-6"> + 3H</tspan><tspan class="s" dy="6">2</tspan><tspan dy="-6"> ⇄ 2NH</tspan><tspan class="s" dy="6">3</tspan><tspan dy="-6" dx="24">Δ</tspan><tspan class="v">H</tspan><tspan> = −92 kJ</tspan></text>
+  <text class="cond" x="340" y="110" text-anchor="middle">［温度一定で体積を小さくする］</text>
+
+  <!-- 出発 -->
+  <rect class="box" x="245" y="128" width="190" height="48" />
+  <text class="bt" x="340" y="160" text-anchor="middle"><tspan class="v">V</tspan> を<tspan class="b">小さく</tspan>する</text>
+
+  <!-- 左の道: P に当てる（正しい） -->
+  <path class="ab" d="M 290 178 L 196 236" marker-end="url(#hb)" />
+  <text class="lb" x="222" y="196" text-anchor="end"><tspan class="v">PV</tspan> = <tspan class="v">nRT</tspan></text>
+  <rect class="box" x="60" y="246" width="220" height="48" />
+  <text class="bt" x="170" y="278" text-anchor="middle"><tspan class="v">P</tspan> が<tspan class="b">大きく</tspan>なる</text>
+  <path class="ag" d="M 170 296 L 170 352" marker-end="url(#hg)" />
+  <text class="lg" x="184" y="330">ルシャトリエ</text>
+  <rect class="box" x="40" y="362" width="260" height="118" />
+  <text class="bt" x="58" y="394"><tspan class="v">n</tspan> を<tspan class="b">小さく</tspan>すると</text>
+  <text class="bt" x="58" y="429"><tspan class="v">P</tspan> が<tspan class="b">小さく</tspan>なる</text>
+  <text class="bt" x="58" y="464">平衡は <tspan class="dir">右</tspan> へ移動</text>
+  <circle class="ok" cx="134" cy="455" r="16" />
+
+  <!-- 右の道: V に当てる（誤り） -->
+  <path class="ag" d="M 390 178 L 484 236" marker-end="url(#hg)" />
+  <text class="lg" x="462" y="196">ルシャトリエ</text>
+  <path class="x" d="M 424 190 L 452 222 M 452 190 L 424 222" />
+  <rect class="box" x="400" y="246" width="220" height="48" />
+  <text class="bt" x="510" y="278" text-anchor="middle"><tspan class="v">V</tspan> を<tspan class="b">大きく</tspan>する</text>
+  <path class="ab" d="M 510 296 L 510 352" marker-end="url(#hb)" />
+  <text class="lb" x="524" y="330"><tspan class="v">PV</tspan> = <tspan class="v">nRT</tspan></text>
+  <rect class="box" x="380" y="362" width="260" height="118" />
+  <text class="bt" x="398" y="394"><tspan class="v">n</tspan> を<tspan class="b">大きく</tspan>すると</text>
+  <text class="bt" x="398" y="429"><tspan class="v">V</tspan> が<tspan class="b">大きく</tspan>なる</text>
+  <text class="bt" x="398" y="464">平衡は <tspan class="dir">左</tspan> へ移動</text>
+  <path class="x" d="M 463 443 L 485 467 M 485 443 L 463 467" />
+</svg>

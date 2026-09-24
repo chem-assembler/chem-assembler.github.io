@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="390" viewBox="0 0 680 390" role="img">
+  <!-- 接触法の3本の式を縦に並べ、中間の物質（SO₂・SO₃）の係数をそろえて足す図。
+       元はスライド（無機の基本６ s31）の横一列の図。横一列のままだと本文の幅で字が 11px まで縮むので、
+       縦に積んで描き直した（2026-09-24・図表の字の床 14px）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; }
+    .eq { font-family: "Times New Roman", serif; font-size: 28px; }
+    .eq tspan.s { font-size: 19px; }
+    .no { font-size: 26px; }
+    .hit { fill: none; stroke: #e0762b; stroke-width: 2; }
+    .lead { stroke: #e0762b; stroke-width: 1.8; fill: none; }
+    .note { font-size: 19px; }
+    .noteBox { fill: #fff; stroke: #e0762b; stroke-width: 2; }
+    .sumBox { fill: #fff; stroke: #1f3a7a; stroke-width: 2; }
+    .sum { font-size: 20px; }
+  </style>
+
+  <!-- ① S + O₂ → SO₂ -->
+  <text class="no" x="18" y="62">①</text>
+  <text class="eq" x="62" y="62">S + O<tspan class="s" dy="7">2</tspan><tspan dy="-7"> → </tspan></text>
+  <rect class="hit" x="178" y="33" width="57" height="40" rx="6" />
+  <text class="eq" x="183" y="62">SO<tspan class="s" dy="7">2</tspan></text>
+
+  <!-- ② 2SO₂ + O₂ → 2SO₃ -->
+  <text class="no" x="18" y="172">②</text>
+  <rect class="hit" x="57" y="143" width="70" height="40" rx="6" />
+  <text class="eq" x="62" y="172">2SO<tspan class="s" dy="7">2</tspan><tspan dy="-7" dx="10"> + O</tspan><tspan class="s" dy="7">2</tspan><tspan dy="-7"> → </tspan></text>
+  <rect class="hit" x="227" y="143" width="70" height="40" rx="6" />
+  <text class="eq" x="232" y="172">2SO<tspan class="s" dy="7">3</tspan></text>
+
+  <!-- ③ SO₃ + H₂O → H₂SO₄ -->
+  <text class="no" x="18" y="282">③</text>
+  <rect class="hit" x="57" y="253" width="57" height="40" rx="6" />
+  <text class="eq" x="62" y="282">SO<tspan class="s" dy="7">3</tspan><tspan dy="-7" dx="10"> + H</tspan><tspan class="s" dy="7">2</tspan><tspan dy="-7">O → H</tspan><tspan class="s" dy="7">2</tspan><tspan dy="-7">SO</tspan><tspan class="s" dy="7">4</tspan></text>
+
+  <!-- 吹き出し1: ①×2 で SO₂ がそろう（① の SO₂ と ② の 2SO₂ を結ぶ） -->
+  <path class="lead" d="M 430 109 L 235 53" />
+  <path class="lead" d="M 430 109 L 92 143" />
+  <rect class="noteBox" x="430" y="84" width="238" height="50" rx="4" />
+  <text class="note" x="444" y="116">①×2 で SO<tspan font-size="14" dy="5">2</tspan><tspan dy="-5"> の係数が揃う</tspan></text>
+
+  <!-- 吹き出し2: ③×2 で SO₃ がそろう（② の 2SO₃ と ③ の SO₃ を結ぶ） -->
+  <path class="lead" d="M 430 219 L 297 163" />
+  <path class="lead" d="M 430 219 L 85 253" />
+  <rect class="noteBox" x="430" y="194" width="238" height="50" rx="4" />
+  <text class="note" x="444" y="226">③×2 で SO<tspan font-size="14" dy="5">3</tspan><tspan dy="-5"> の係数が揃う</tspan></text>
+
+  <!-- まとめ -->
+  <rect class="sumBox" x="18" y="322" width="650" height="52" rx="4" />
+  <text class="sum" x="343" y="355" text-anchor="middle">①×2 ＋ ② ＋ ③×2 で全体の反応式がつくれる</text>
+</svg>
