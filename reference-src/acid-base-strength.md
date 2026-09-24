@@ -78,6 +78,7 @@ terms:
 
 :::figure
 src: acid-base-strength-ionization.png
+svg: acid-base-strength-ionization.svg
 alt: 強酸は5個すべてが H⁺ と陰イオンに分かれ、弱酸は5個のうち1個だけが分かれている模式図
 caption: **強酸はすべて電離、弱酸は一部が電離**。弱酸の水溶液には、電離していない分子がたくさん残っています。
 :::

@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="420" viewBox="0 0 680 420" role="img">
+  <!-- 強酸と弱酸の電離度を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 20px; text-anchor: middle; }
+    .wtext { fill: #fff; }
+    .hPlus { fill: #d35400; stroke: #993d00; stroke-width: 1.5; }
+    .negIon { fill: #a5d4a1; stroke: #222; stroke-width: 1.5; }
+    .arrow { fill: #ffff00; stroke: #000; stroke-width: 1.5; }
+    .brace { fill: none; stroke: #004466; stroke-width: 3; }
+    .labelBox { fill: #fff; stroke: #004466; stroke-width: 2; }
+    .descText { font-size: 24px; text-anchor: start; }
+    .bottomBox { fill: #fff; stroke: #001122; stroke-width: 2; }
+  </style>
+
+  <!-- 左: 強酸 -->
+  <g transform="translate(40, 20)">
+    <!-- 1行目 -->
+    <circle cx="25" cy="20" r="18" class="hPlus" />
+    <text x="25" y="26" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <polygon points="65,15 50,15 50,10 40,20 50,30 50,25 65,25" class="arrow" />
+    <circle cx="85" cy="20" r="18" class="hPlus" />
+    <text x="85" y="26" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="20" rx="25" ry="18" class="negIon" />
+    <text x="130" y="25" font-size="14">－イオン</text>
+
+    <!-- 2行目 -->
+    <circle cx="25" cy="70" r="18" class="hPlus" />
+    <text x="25" y="76" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <polygon points="65,65 50,65 50,60 40,70 50,80 50,75 65,75" class="arrow" />
+    <circle cx="85" cy="70" r="18" class="hPlus" />
+    <text x="85" y="76" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="70" rx="25" ry="18" class="negIon" />
+    <text x="130" y="75" font-size="14">－イオン</text>
+
+    <!-- 3行目 -->
+    <circle cx="25" cy="120" r="18" class="hPlus" />
+    <text x="25" y="126" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <polygon points="65,115 50,115 50,110 40,120 50,130 50,125 65,125" class="arrow" />
+    <circle cx="85" cy="120" r="18" class="hPlus" />
+    <text x="85" y="126" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="120" rx="25" ry="18" class="negIon" />
+    <text x="130" y="125" font-size="14">－イオン</text>
+
+    <!-- 4行目 -->
+    <circle cx="25" cy="170" r="18" class="hPlus" />
+    <text x="25" y="176" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <polygon points="65,165 50,165 50,160 40,170 50,180 50,175 65,175" class="arrow" />
+    <circle cx="85" cy="170" r="18" class="hPlus" />
+    <text x="85" y="176" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="170" rx="25" ry="18" class="negIon" />
+    <text x="130" y="175" font-size="14">－イオン</text>
+
+    <!-- 5行目 -->
+    <circle cx="25" cy="220" r="18" class="hPlus" />
+    <text x="25" y="226" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <polygon points="65,215 50,215 50,210 40,220 50,230 50,225 65,225" class="arrow" />
+    <circle cx="85" cy="220" r="18" class="hPlus" />
+    <text x="85" y="226" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="220" rx="25" ry="18" class="negIon" />
+    <text x="130" y="225" font-size="14">－イオン</text>
+
+    <path class="brace" d="M 165 0 L 175 0 L 175 240 L 165 240" />
+    <rect class="labelBox" x="180" y="10" width="60" height="35" />
+    <text x="210" y="36" font-size="22">強酸</text>
+    
+    <text x="210" y="80" font-size="24">す</text>
+    <text x="210" y="110" font-size="24">べ</text>
+    <text x="210" y="140" font-size="24">て</text>
+    <text x="210" y="170" font-size="24">電</text>
+    <text x="210" y="200" font-size="24">離</text>
+  </g>
+
+  <!-- 右: 弱酸 -->
+  <g transform="translate(360, 20)">
+    <!-- 1行目 -->
+    <circle cx="25" cy="20" r="18" class="hPlus" />
+    <text x="25" y="26" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <polygon points="65,15 50,15 50,10 40,20 50,30 50,25 65,25" class="arrow" />
+    <circle cx="85" cy="20" r="18" class="hPlus" />
+    <text x="85" y="26" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="20" rx="25" ry="18" class="negIon" />
+    <text x="130" y="25" font-size="14">－イオン</text>
+
+    <!-- 2行目 -->
+    <circle cx="85" cy="70" r="18" class="hPlus" />
+    <text x="85" y="76" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="70" rx="25" ry="18" class="negIon" />
+    <text x="130" y="75" font-size="14">－イオン</text>
+
+    <!-- 3行目 -->
+    <circle cx="85" cy="120" r="18" class="hPlus" />
+    <text x="85" y="126" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="120" rx="25" ry="18" class="negIon" />
+    <text x="130" y="125" font-size="14">－イオン</text>
+
+    <!-- 4行目 -->
+    <circle cx="85" cy="170" r="18" class="hPlus" />
+    <text x="85" y="176" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="170" rx="25" ry="18" class="negIon" />
+    <text x="130" y="175" font-size="14">－イオン</text>
+
+    <!-- 5行目 -->
+    <circle cx="85" cy="220" r="18" class="hPlus" />
+    <text x="85" y="226" class="wtext" font-size="16">H<tspan font-size="12" dy="-8">+</tspan></text>
+    <ellipse cx="130" cy="220" rx="25" ry="18" class="negIon" />
+    <text x="130" y="225" font-size="14">－イオン</text>
+
+    <path class="brace" d="M 165 0 L 175 0 L 175 240 L 165 240" />
+    <rect class="labelBox" x="180" y="10" width="60" height="35" />
+    <text x="210" y="36" font-size="22">弱酸</text>
+    
+    <text x="210" y="80" font-size="24">一</text>
+    <text x="210" y="110" font-size="24">部</text>
+    <text x="210" y="140" font-size="24">が</text>
+    <text x="210" y="170" font-size="24">電</text>
+    <text x="210" y="200" font-size="24">離</text>
+  </g>
+
+  <!-- 下段テキスト -->
+  <rect class="bottomBox" x="10" y="280" width="660" height="110" />
+  <text x="20" y="310" class="descText">水に溶けたとき</text>
+  <text x="40" y="345" class="descText"><tspan font-weight="bold">すべて電離</tspan>してH<tspan font-size="16" dy="-10">+</tspan><tspan dy="10">/OH</tspan><tspan font-size="16" dy="-10">-</tspan><tspan dy="10">を</tspan><tspan font-weight="bold">すべて放出</tspan>するのが<tspan font-weight="bold">強酸/強塩基</tspan></text>
+  <text x="40" y="380" class="descText"><tspan font-weight="bold">一部だけが電離</tspan>してH<tspan font-size="16" dy="-10">+</tspan><tspan dy="10">/OH</tspan><tspan font-size="16" dy="-10">-</tspan><tspan dy="10">を</tspan><tspan font-weight="bold">ほとんど放出しない</tspan>のが<tspan font-weight="bold">弱酸/弱塩基</tspan></text>
+
+</svg>
