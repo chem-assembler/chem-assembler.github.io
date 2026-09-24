@@ -161,6 +161,7 @@ Li と F はどちらも最外殻が L殻です。原子核の電荷は Li が +
 
 :::figure
 src: periodic-table-li-na.png
+svg: periodic-table-li-na.svg
 alt: 周期表の左下が陽性、右上が陰性であることを示す矢印と、Li と Na の電子殻の図。Na のほうが最外殻電子が原子核から遠く、引きつける力が弱い
 caption: Li（最外殻は L殻）と Na（最外殻は M殻）。原子核から最外殻電子までの距離が遠い Na のほうが、電子を引きつける力が弱くなります。
 :::
