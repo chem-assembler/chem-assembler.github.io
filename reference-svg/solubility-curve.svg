@@ -9,9 +9,9 @@
     .c2 { stroke: #c62828; stroke-width: 3; fill: none; }
     .c3 { stroke: #2e7d32; stroke-width: 3; fill: none; }
     .c4 { stroke: #6a1b9a; stroke-width: 3; stroke-dasharray: 9 5; fill: none; }
-    .lab { font-size: 19px; fill: #222; }
-    .small { font-size: 16px; fill: #444; }
-    .tick { font-size: 15px; fill: #555; }
+    .lab { font-size: 22px; fill: #222; }
+    .small { font-size: 19px; fill: #444; }
+    .tick { font-size: 18px; fill: #555; }
   </style>
 
   <!-- 軸 -->
