@@ -245,6 +245,15 @@
       "part": "化学と人間生活"
     },
     {
+      "id": "sec-temperature-pressure",
+      "name": "物質の三態と状態変化・気体の圧力",
+      "category_l": "理論化学",
+      "category_m": "物質の三態と状態変化・気体の圧力",
+      "summary": "絶対温度と熱運動、気体の圧力と水銀柱、状態変化の熱、状態図の読み方をおさえよう。",
+      "course": "adv",
+      "part": "状態変化と気体"
+    },
+    {
       "id": "sec-vapor-pressure",
       "name": "蒸気圧と沸騰",
       "category_l": "理論化学",
@@ -35066,8 +35075,8 @@
     },
     {
       "code": "theo.state.absolute-temperature",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 1,
       "tags": [
         "計算"
@@ -35199,8 +35208,8 @@
     },
     {
       "code": "theo.state.heating-curve",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "性質"
@@ -35245,8 +35254,8 @@
     },
     {
       "code": "theo.state.phase-diagram",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "性質"
@@ -36132,8 +36141,8 @@
     },
     {
       "code": "theo.state.gas-pressure",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "性質"
@@ -36176,8 +36185,8 @@
     },
     {
       "code": "theo.state.pressure-units",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "計算"
@@ -36265,8 +36274,8 @@
     },
     {
       "code": "theo.state.speed-distribution",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "性質"
@@ -36310,8 +36319,8 @@
     },
     {
       "code": "theo.state.pressure-conversion",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "計算"
@@ -36356,8 +36365,8 @@
     },
     {
       "code": "theo.state.mercury-density",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "性質",
@@ -36533,8 +36542,8 @@
     },
     {
       "code": "theo.state.phase-enthalpy-def",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "性質"
@@ -36577,8 +36586,8 @@
     },
     {
       "code": "theo.state.vaporization-larger",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "性質"
@@ -36620,8 +36629,8 @@
     },
     {
       "code": "theo.state.heating-calc",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "計算"
@@ -36664,8 +36673,8 @@
     },
     {
       "code": "theo.state.phase-diagram-curves",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "性質"
@@ -36710,8 +36719,8 @@
     },
     {
       "code": "theo.state.ice-pressure-mp",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-temperature-pressure",
+      "group": "温度と圧力・状態図",
       "difficulty": 2,
       "tags": [
         "性質"
@@ -36754,8 +36763,8 @@
     },
     {
       "code": "theo.state.piston-balance",
-      "unit": "sec-states-of-matter",
-      "group": "三態と状態変化",
+      "unit": "sec-gas-laws",
+      "group": "気体の法則",
       "difficulty": 2,
       "tags": [
         "性質"

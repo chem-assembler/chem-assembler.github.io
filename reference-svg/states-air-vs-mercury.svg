@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="470" viewBox="0 0 680 470" role="img">
+  <!-- 大気圧と水銀柱のつり合いを「1cm² の上に載っているものの重さ」で比べる図（2026-09-25・ユーザーの校正
+       「1cm² の液面の上に載っている空気柱の重さが、76cm の水銀柱と同じ重さ、これを図も使って説明する」）。
+       左: 水銀だめの液面 1cm² の上に、大気の上端まで積み上がった空気の柱。右: 管の中の 1cm² の水銀の柱（高さ 76cm）。
+       管の上は真空なので、水銀の柱の上に空気は載っていない。図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <linearGradient id="air" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e3f2fd" stop-opacity="0.15" />
+      <stop offset="1" stop-color="#90caf9" stop-opacity="0.9" />
+    </linearGradient>
+    <marker id="dm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333" />
+    </marker>
+  </defs>
+  <style>
+    .glass { fill: none; stroke: #333; stroke-width: 2.5; }
+    .hg { fill: #b0b8bf; }
+    .hgcol { fill: #8a939b; }
+    .aircol { fill: url(#air); stroke: #1e88e5; stroke-width: 1.5; stroke-dasharray: 5 3; }
+    .vac { fill: #ffffff; }
+    .dim { stroke: #333; stroke-width: 1.5; fill: none; }
+    .lead { stroke: #555; stroke-width: 1.2; fill: none; }
+    .t { font-family: system-ui, sans-serif; font-size: 17px; fill: #222; }
+    .s { font-family: system-ui, sans-serif; font-size: 15px; fill: #444; }
+    .b { font-family: system-ui, sans-serif; font-size: 17px; fill: #1565c0; font-weight: 700; }
+    .k { font-family: system-ui, sans-serif; font-size: 17px; fill: #222; font-weight: 700; }
+    .box { fill: #fffde7; stroke: #f9a825; stroke-width: 1.5; }
+  </style>
+
+  <!-- 水銀だめ -->
+  <rect class="hg" x="40" y="360" width="420" height="52" />
+  <path class="glass" d="M 38 320 L 38 414 L 462 414 L 462 320" />
+
+  <!-- 左: 空気の柱（液面 1cm² の上・大気の上端まで） -->
+  <rect class="aircol" x="92" y="30" width="56" height="330" />
+  <text class="b" x="120" y="24" text-anchor="middle">大気の上端まで</text>
+  <text class="t" x="120" y="190" text-anchor="middle" transform="rotate(-90 120 190)">空気の柱</text>
+  <text class="s" x="120" y="440" text-anchor="middle">液面の 1cm²</text>
+
+  <!-- 右: 管の中の水銀の柱（1cm²・76cm） -->
+  <rect class="vac" x="301" y="48" width="38" height="70" />
+  <rect class="hgcol" x="301" y="118" width="38" height="276" />
+  <path class="glass" d="M 300 394 L 300 64 A 20 20 0 0 1 340 64 L 340 394" />
+  <text class="s" x="350" y="80">真空（空気は載っていない）</text>
+  <path class="dim" marker-start="url(#dm)" marker-end="url(#dm)" d="M 272 122 L 272 356" />
+  <text class="t" x="266" y="244" text-anchor="end">76cm</text>
+  <text class="s" x="320" y="440" text-anchor="middle">管の中の 1cm²</text>
+
+  <!-- くらべる -->
+  <rect class="box" x="478" y="150" width="192" height="176" rx="8" />
+  <text class="k" x="574" y="180" text-anchor="middle">どちらも 1cm² に</text>
+  <text class="k" x="574" y="204" text-anchor="middle">載っている重さ</text>
+  <text class="t" x="574" y="236" text-anchor="middle">空気の柱</text>
+  <text class="t" x="574" y="262" text-anchor="middle">＝ 水銀の柱</text>
+  <text class="t" x="574" y="292" text-anchor="middle">（約 1kg ぶん）</text>
+  <text class="s" x="574" y="318" text-anchor="middle">→ 同じ圧力で押す</text>
+</svg>

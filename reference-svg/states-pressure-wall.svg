@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="330" viewBox="0 0 680 330" role="img">
+  <!-- 気体の圧力のしくみ（2026-09-25・ユーザーの校正「図・アニメーション」）。容器の中を飛び回る分子が壁にぶつかって
+       跳ね返り、そのたびに壁を外へ押す。押す力を合わせたものが気体の圧力。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="mv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e65100" />
+    </marker>
+    <marker id="pu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1565c0" />
+    </marker>
+  </defs>
+  <style>
+    .wall { fill: none; stroke: #333; stroke-width: 3; }
+    .mol { fill: #ffffff; stroke: #333; stroke-width: 2; }
+    .path { stroke: #e65100; stroke-width: 2; fill: none; }
+    .push { stroke: #1565c0; stroke-width: 3; fill: none; }
+    .hit { fill: #1565c0; }
+    .t { font-family: system-ui, sans-serif; font-size: 17px; fill: #222; }
+    .b { font-family: system-ui, sans-serif; font-size: 17px; fill: #1565c0; font-weight: 700; }
+    .s { font-family: system-ui, sans-serif; font-size: 15px; fill: #444; }
+  </style>
+
+  <!-- 容器 -->
+  <rect class="wall" x="30" y="40" width="400" height="250" />
+
+  <!-- 飛び回る分子（矢印は動く向き） -->
+  <circle class="mol" cx="90" cy="100" r="10" /><path class="path" marker-end="url(#mv)" d="M 100 106 L 150 136" />
+  <circle class="mol" cx="170" cy="230" r="10" /><path class="path" marker-end="url(#mv)" d="M 162 222 L 128 186" />
+  <circle class="mol" cx="250" cy="120" r="10" /><path class="path" marker-end="url(#mv)" d="M 260 124 L 318 148" />
+  <circle class="mol" cx="120" cy="260" r="10" /><path class="path" marker-end="url(#mv)" d="M 110 256 L 66 238" />
+  <circle class="mol" cx="300" cy="250" r="10" /><path class="path" marker-end="url(#mv)" d="M 294 242 L 262 196" />
+
+  <!-- 右の壁にぶつかって跳ね返る分子（3つ） -->
+  <path class="path" d="M 330 70 L 418 100" /><path class="path" marker-end="url(#mv)" d="M 418 100 L 350 132" />
+  <circle class="mol" cx="418" cy="100" r="10" />
+  <path class="path" d="M 344 176 L 418 176" /><path class="path" marker-end="url(#mv)" d="M 418 176 L 350 186" />
+  <circle class="mol" cx="418" cy="176" r="10" />
+  <path class="path" d="M 340 272 L 418 246" /><path class="path" marker-end="url(#mv)" d="M 418 246 L 354 222" />
+  <circle class="mol" cx="418" cy="246" r="10" />
+
+  <!-- 壁を外へ押す力 -->
+  <path class="push" marker-end="url(#pu)" d="M 436 100 L 484 100" />
+  <path class="push" marker-end="url(#pu)" d="M 436 176 L 484 176" />
+  <path class="push" marker-end="url(#pu)" d="M 436 246 L 484 246" />
+
+  <text class="b" x="496" y="150">ぶつかるたびに</text>
+  <text class="b" x="496" y="174">壁を外へ押す</text>
+  <text class="t" x="496" y="214">押す力を合わせた</text>
+  <text class="t" x="496" y="238">もの ＝ 気体の圧力</text>
+  <text class="s" x="230" y="318" text-anchor="middle">分子は飛び回って、壁にぶつかっては跳ね返る</text>
+</svg>

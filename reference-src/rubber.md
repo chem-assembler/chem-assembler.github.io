@@ -233,6 +233,7 @@ note: 1,3-ブタジエンの2番の炭素の H が Cl に変わっただけで�
 :::reaction
 left: n CH₂=CH−C₆H₅ ＋ m CH₂=CH−CH=CH₂
 right: ［CH₂−CH(C₆H₅)］ₙ［CH₂−CH=CH−CH₂］ₘ
+app: copolymerization summon=スチレン
 level: ★★☆
 note: スチレンの単位は付加重合、ブタジエンの単位は 1,4-付加重合の形で、1本の鎖に混ざって入ります。
 :::
@@ -250,6 +251,7 @@ text: 2種類以上の単量体をまぜて重合させる共重合
 :::reaction
 left: n CH₂=CH−CH=CH₂ ＋ m CH₂=CH−CN
 right: ［CH₂−CH=CH−CH₂］ₙ［CH₂−CH(CN)］ₘ
+app: copolymerization summon=アクリロニトリル
 level: ★☆☆
 note: SBR のスチレンがアクリロニトリルに変わった形です。極性の大きい −C≡N を含むので、極性の小さい油になじみにくくなります。
 :::

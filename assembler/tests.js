@@ -33799,6 +33799,30 @@
         }
     });
 
+    /* ★ RXS3（v1654・I-0135）: 付加の共重合の入口。スチレン（SBR）・アクリロニトリル（NBR）を呼んだところから、
+     *   相手の 1,3-ブタジエンを呼んで共重合まで届く札が出る（参考書の rubber の「アプリで試す」がこれを使う） */
+    test('RXS3: スチレン・アクリロニトリルから「＋ 1,3-ブタジエン → 共重合」の札が出る（★否定対照: エチレンでは出ない・もう2種類並べてあれば出ない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        const hintsFor = (names) => {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            names.forEach(n => assert(g.summonMolecule(n), `「${n}」が呼び出せない`));
+            return W.findPartnerHints(g, null, ['copolymerization']);
+        };
+        try {
+            ['スチレン', 'アクリロニトリル'].forEach(n => {
+                const h = hintsFor([n]).find(x => x.ruleId === 'copolymerization');
+                assert(h && h.name === '1,3-ブタジエン', `${n} から共重合の札が出ない（${JSON.stringify(hintsFor([n]))}）`);
+            });
+            assert(!hintsFor(['エテン']).some(x => x.ruleId === 'copolymerization'), '★ 否定対照: エチレン（組に無い単量体）でも共重合の札が出た');
+            assert(!hintsFor(['スチレン', '1,3-ブタジエン']).some(x => x.ruleId === 'copolymerization'), '★ 否定対照: もう2種類並べてあるのに札が出た（押せば済む状態）');
+        } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            c.reset();
+        }
+    });
+
     test('RXS2: 反応を実行すると、最初の再生が見直しの行（🔄 ⏮ ▶ ⏭ やめる）で自動で流れ、途中で止めて戻せる（I-0129）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, rx = W.reactor;

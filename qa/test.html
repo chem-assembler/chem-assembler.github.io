@@ -22,16 +22,16 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 </style>
 </head>
 <body>
-<h1>一問一答（qa）回帰テスト <span class="version">v158</span></h1>
+<h1>一問一答（qa）回帰テスト <span class="version">v159</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="index.html?v=158"></iframe>
+<iframe id="app" src="index.html?v=159"></iframe>
 
 <!-- Lv の規則と関所（道具と共有・2026-09-17）。tests.js の runLevelMatrixTests が使う -->
-<script src="tools/level_rules.js?v=158"></script>
-<script src="tests.js?v=158"></script>
+<script src="tools/level_rules.js?v=159"></script>
+<script src="tests.js?v=159"></script>
 <script>
 (function () {
   var out = document.getElementById('results');
@@ -80,14 +80,14 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 
   // データと版のテスト → アプリの読み込みを待って UI テスト
   Promise.all([
-    fetch('questions.json?v=158').then(function (r) { return r.json(); }),
-    fetch('index.html?v=158').then(function (r) { return r.text(); }),
-    fetch('app.js?v=158').then(function (r) { return r.text(); }),
+    fetch('questions.json?v=159').then(function (r) { return r.json(); }),
+    fetch('index.html?v=159').then(function (r) { return r.text(); }),
+    fetch('app.js?v=159').then(function (r) { return r.text(); }),
     // 隣のアプリのデータ（飛び道具の指す先が実在するかを実データで検査するため）
     fetch('../assembler/compounds.json' + FRESH).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
     fetch('../assembler/stages.json' + FRESH).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
     // 棚卸し表（283項目に「何を見せるか」を決めた正の表。JSONL なので1行ずつ読む）
-    fetch('data/assembler_links.jsonl?v=158').then(function (r) { return r.ok ? r.text() : ''; })
+    fetch('data/assembler_links.jsonl?v=159').then(function (r) { return r.ok ? r.text() : ''; })
       .then(function (txt) {
         return txt.split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); });
       }).catch(function () { return []; }),
@@ -116,7 +116,7 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
     fetch('../assembler/reference.json' + FRESH).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
     // Lv の根拠の表（2026-09-17）。正の jsonl と、人が読む生成物の md。
     // Lv を書き換える道具の本体も読む（上書きの関所を通っているかを見る）。⚠ **末尾に足す**
-    fetch('data/level_matrix.jsonl?v=158').then(function (r) { return r.ok ? r.text() : ''; })
+    fetch('data/level_matrix.jsonl?v=159').then(function (r) { return r.ok ? r.text() : ''; })
       .then(function (txt) {
         return txt.split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); });
       }).catch(function () { return []; }),

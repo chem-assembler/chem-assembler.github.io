@@ -82,6 +82,7 @@ theo.electro	電池と電気分解	電気分解の反応式	electrolysis-equatio
 theo.electro	電池と電気分解	電気分解の量的関係	faraday	154	adv
 theo.electro	電池と電気分解	電気分解の工業的利用	electrolysis-industry	155	adv
 theo.state	物質の状態	三態と状態変化	states-of-matter	97	basic
+theo.state	物質の状態	温度と圧力・状態図	temperature-pressure	131	adv
 theo.state	物質の状態	蒸気圧と沸騰	vapor-pressure	132	adv
 theo.state	物質の状態	気体の法則	gas-laws	133	adv
 theo.state	物質の状態	混合気体	gas-mixture	134	adv

@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>薬品を安全に扱う —— 混ぜるな危険・薄め方・保存・乾燥剤 ｜ 化学の参考書</title>
-<meta name="description" content="塩素系の漂白剤と酸性の洗浄剤を混ぜてはいけない理由、アルミニウムの容器とドライアイスの注意、濃硫酸の薄め方を、反応と性質から説明します。化学の範囲として、薬品の保存のしかたと、乾燥剤と気体の組み合わせを後半に置きます。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/life-safety/">
+<title>温度と圧力 —— 絶対温度・気体の圧力・状態図 ｜ 化学の参考書</title>
+<meta name="description" content="温度は粒子の熱運動の激しさの平均で、下限の絶対零度から測った温度が絶対温度です。気体の圧力のしくみと単位、水銀柱で大気圧を測るわけ、加熱曲線で加えた熱の行き先（融解・蒸発のエンタルピー）、温度と圧力から状態を読む状態図をまとめます。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/temperature-pressure/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="薬品を安全に扱う —— 混ぜるな危険・薄め方・保存・乾燥剤 ｜ 化学の参考書">
-<meta property="og:description" content="塩素系の漂白剤と酸性の洗浄剤を混ぜてはいけない理由、アルミニウムの容器とドライアイスの注意、濃硫酸の薄め方を、反応と性質から説明します。化学の範囲として、薬品の保存のしかたと、乾燥剤と気体の組み合わせを後半に置きます。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/life-safety/">
+<meta property="og:title" content="温度と圧力 —— 絶対温度・気体の圧力・状態図 ｜ 化学の参考書">
+<meta property="og:description" content="温度は粒子の熱運動の激しさの平均で、下限の絶対零度から測った温度が絶対温度です。気体の圧力のしくみと単位、水銀柱で大気圧を測るわけ、加熱曲線で加えた熱の行き先（融解・蒸発のエンタルピー）、温度と圧力から状態を読む状態図をまとめます。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/temperature-pressure/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -920,60 +920,86 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#basic">化学基礎</a> ／ <a href="/reference/#basic-7">化学と人間生活</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-1">状態変化と気体</a></div></header>
 <main class="wrap">
-<h1>薬品を安全に扱う —— 混ぜるな危険・薄め方・保存・乾燥剤</h1>
-<p class="lede">塩素系の漂白剤と酸性の洗浄剤を混ぜてはいけない理由、アルミニウムの容器とドライアイスの注意、濃硫酸の薄め方を、反応と性質から説明します。化学の範囲として、薬品の保存のしかたと、乾燥剤と気体の組み合わせを後半に置きます。</p>
-<div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">化学と人間生活</span><span class="unit-label">薬品を安全に扱う</span></div>
+<h1>温度と圧力 —— 絶対温度・気体の圧力・状態図</h1>
+<p class="lede">温度は粒子の熱運動の激しさの平均で、下限の絶対零度から測った温度が絶対温度です。気体の圧力のしくみと単位、水銀柱で大気圧を測るわけ、加熱曲線で加えた熱の行き先（融解・蒸発のエンタルピー）、温度と圧力から状態を読む状態図をまとめます。</p>
+<div><span class="unit-label course-adv">化学</span><span class="unit-label">状態変化と気体</span><span class="unit-label">物質の三態と状態変化・気体の圧力</span></div>
 
 <div class="ref-layout">
-<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-mixing" data-ref-anchor="mixing">混ぜるな危険 —— 塩素系の漂白剤と酸性の洗浄剤</a></li><li><a href="#ref-sec-containers" data-ref-anchor="containers">容器と保管の注意 —— アルミニウムの容器とドライアイス</a></li><li><a href="#ref-sec-dilution" data-ref-anchor="dilution">濃硫酸の薄め方</a></li><li><a href="#ref-sec-storage" data-ref-anchor="storage">薬品の保存のしかた</a><b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></li><li><a href="#ref-sec-drying" data-ref-anchor="drying">乾燥剤と気体の組み合わせ</a><b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></li><li><a href="#ref-sec-boundary" data-ref-anchor="boundary">共通テストの線引き</a></li></ul></details></nav>
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-motion" data-ref-anchor="motion">温度と熱運動 —— 絶対温度</a></li><li><a href="#ref-sec-pressure" data-ref-anchor="pressure">気体の圧力</a></li><li><a href="#ref-sec-mercury" data-ref-anchor="mercury">水銀柱で大気圧を測る</a></li><li><a href="#ref-sec-heating-curve" data-ref-anchor="heating-curve">加熱曲線と状態変化の熱</a></li><li><a href="#ref-sec-phase-diagram" data-ref-anchor="phase-diagram">状態図 —— 温度と圧力で状態を読む</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">薬品は、正しく使えば便利ですが、使い方を誤ると有毒な気体が出たり、容器が壊れたりします。このページでは、家庭と実験室でしてはいけないことを、<b>なぜ危ないのか</b>の理由と一緒にまとめます。</p>
-<section class="ref-sec" id="ref-sec-mixing"><h4 class="ref-sec-h">混ぜるな危険 —— 塩素系の漂白剤と酸性の洗浄剤</h4><p class="ref-sec-lead">塩素系の漂白剤（次亜塩素酸ナトリウム）に、塩酸を含む酸性の洗浄剤を混ぜると、有毒な塩素が発生します。そのため、どちらの容器にも「混ぜるな危険」と書かれています。</p></section>
-<p class="ref-p">家庭用の塩素系の漂白剤やカビ取り剤には、<b>次亜塩素酸ナトリウム</b> NaClO が含まれています。トイレ用などの酸性の洗浄剤には、<b>塩酸</b> HCl が含まれているものがあります。この2つを混ぜると、次の反応で<b>塩素</b> Cl₂ が発生します。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">NaClO ＋ 2HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O ＋ Cl₂</span></div><p class="ref-note">ClO⁻ の Cl（酸化数 ＋1）と、HCl の Cl（−1）が、どちらも 0 の Cl₂ になります。塩素は黄緑色で刺激臭のある有毒な気体です。</p></div>
-<p class="ref-p"><b>「塩素系の漂白剤と酸性の洗浄剤を混ぜると塩素が出る」は必ず覚えてください。</b>反応式は、酸化数の変化から組み立てられれば、丸暗記しなくても構いません。塩素系の漂白剤の水溶液は塩基性なので、酸性のものと混ぜないことが大切です。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/chlorine/">塩素の性質と、次亜塩素酸の仲間は塩素のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<section class="ref-sec" id="ref-sec-containers"><h4 class="ref-sec-h">容器と保管の注意 —— アルミニウムの容器とドライアイス</h4><p class="ref-sec-lead">アルミニウムは酸にも強い塩基にも溶けるので、アルミニウムの容器に酸性や塩基性の洗浄剤を入れてはいけません。ドライアイスは昇華して体積が大きく増えるので、密閉した容器に入れてはいけません。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">家庭でしてはいけないことと、その理由</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">してはいけないこと</th><th style="text-align: left;">理由</th><th style="text-align: left;">関係する単元</th></tr></thead><tbody><tr><td style="text-align: left;"><b>アルミニウムの容器</b>に、酸性や塩基性の洗浄剤を入れる</td><td style="text-align: left;">アルミニウムは酸にも強い塩基にも溶けて水素を出すので、容器に穴があき、気体がたまる</td><td style="text-align: left;">両性金属</td></tr><tr><td style="text-align: left;"><b>ドライアイス</b>を、ふたを閉めたびんやペットボトルに入れる</td><td style="text-align: left;">昇華して気体の二酸化炭素になると、体積が数百倍に増えて容器が破裂する</td><td style="text-align: left;">状態変化・気体の体積</td></tr><tr><td style="text-align: left;">生石灰（食品の乾燥剤）を濡らす</td><td style="text-align: left;">水と反応して大きく発熱し、やけどや火事の原因になる</td><td style="text-align: left;">生石灰と水の反応</td></tr><tr><td style="text-align: left;">ドライアイスを、狭くて閉め切った部屋で大量に使う</td><td style="text-align: left;">出てきた二酸化炭素が部屋にたまり、酸素が足りなくなる</td><td style="text-align: left;">気体の性質</td></tr></tbody></table></div>
-<p class="ref-p"><b>アルミニウムの容器とドライアイスの2つは、理由と一緒に覚えましょう。</b>アルミニウムが酸にも塩基にも溶けるのは、両性金属だからです。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2Al ＋ 6HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2AlCl₃ ＋ 3H₂</span></div><p class="ref-note">酸との反応。強い塩基の水溶液とも反応して水素を出します（両性金属のページ）。</p></div>
-<p class="ref-link-row"><a class="ref-link" href="/reference/amphoteric-metal/">アルミニウムが酸にも塩基にも溶ける反応は、両性金属のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<section class="ref-sec" id="ref-sec-dilution"><h4 class="ref-sec-h">濃硫酸の薄め方</h4><p class="ref-sec-lead">濃硫酸を薄めるときは、多量の水に濃硫酸を少しずつ加えます。濃硫酸に水を加えると、水が一気に沸騰して濃硫酸ごと飛び散るので危険です。</p></section>
-<p class="ref-p">濃硫酸は、水に溶けるときに大量の熱を出します（溶解熱が大きい）。そのため、薄めるときの向きが決まっています。</p>
-<ol class="ref-list"><li><b>多量の水に、濃硫酸を少しずつ加えて、よくかき混ぜる。</b><div class="ref-li-hang">濃硫酸は水より重いので下へ沈みながら混ざり、出た熱は多量の水が受け止める。</div></li><li><b>濃硫酸に水を加えてはいけない。</b><div class="ref-li-hang">軽い水が濃硫酸の上に浮いたまま、ふれた所で急に発熱して沸騰し、濃硫酸ごと飛び散る。</div></li></ol>
-<p class="ref-p"><b>「濃硫酸は、水に加えて薄める（水を加えない）」は必ず覚えてください。</b>濃硫酸でなくても、水に溶けて大きく発熱する物質（水酸化ナトリウムの固体など）は、同じように少しずつ水に溶かします。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/sulfuric-acid/">濃硫酸の性質（吸湿性・脱水作用・酸化作用）は、硫酸のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<section class="ref-sec" id="ref-sec-storage"><h4 class="ref-sec-h">薬品の保存のしかた<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">薬品は、空気・水・光・ガラスのどれと反応するかで、保存のしかたが決まります。ナトリウムは灯油の中、黄リンは水の中、濃硝酸と硝酸銀は褐色のびん、フッ化水素酸はポリエチレンの容器に入れます。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">薬品の保存のしかたと、その理由</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">薬品</th><th style="text-align: left;">保存のしかた</th><th style="text-align: left;">避けたいもの</th><th style="text-align: left;">理由</th></tr></thead><tbody><tr><td style="text-align: left;"><b>ナトリウム・カリウム</b></td><td style="text-align: left;"><b>灯油（石油）の中</b></td><td style="text-align: left;">水・空気</td><td style="text-align: left;">水や酸素とすぐに反応する</td></tr><tr><td style="text-align: left;"><b>黄リン</b></td><td style="text-align: left;"><b>水の中</b></td><td style="text-align: left;">空気</td><td style="text-align: left;">空気中で自然発火する（水とは反応しない）</td></tr><tr><td style="text-align: left;"><b>濃硝酸</b>・硝酸銀の水溶液</td><td style="text-align: left;"><b>褐色のびん</b>（冷暗所）</td><td style="text-align: left;">光</td><td style="text-align: left;">光で分解する</td></tr><tr><td style="text-align: left;"><b>フッ化水素酸</b></td><td style="text-align: left;"><b>ポリエチレンの容器</b></td><td style="text-align: left;">ガラス</td><td style="text-align: left;">ガラスの成分 SiO₂ を溶かす</td></tr><tr><td style="text-align: left;">水酸化ナトリウム</td><td style="text-align: left;">ふたをしっかり閉める</td><td style="text-align: left;">空気中の水・二酸化炭素</td><td style="text-align: left;">水を吸って溶ける（潮解）・CO₂ を吸って炭酸ナトリウムになる</td></tr></tbody></table></div>
-<p class="ref-p"><b>上の4つ（ナトリウムは灯油・黄リンは水・濃硝酸は褐色びん・フッ化水素酸はポリエチレン）は、理由と組にして必ず覚えてください。</b>「何と反応してしまうか」を考えれば、保存のしかたは自然に決まります。ナトリウムは水と反応するので水には入れられず、黄リンは水とは反応しないので水の中に沈めて空気を遮ります。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/alkali-metal/">ナトリウムと水の反応は、アルカリ金属のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/phosphorus/">黄リンと赤リンの違いは、リンのページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">フッ化水素酸がガラスを溶かす反応は、14族（炭素・ケイ素）のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<section class="ref-sec" id="ref-sec-drying"><h4 class="ref-sec-h">乾燥剤と気体の組み合わせ<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">乾燥剤は、乾かしたい気体と反応しないものを選びます。酸性の乾燥剤は塩基性の気体（NH₃）に、塩基性の乾燥剤は酸性の気体（CO₂・HCl など）に使えません。例外は、濃硫酸が H₂S に、塩化カルシウムが NH₃ に使えないことの2つです。</p></section>
-<p class="ref-p">気体を乾かすとき、乾燥剤と気体が中和してしまうと、気体そのものが吸われてしまいます。だから<b>乾燥剤と気体の液性が「酸と塩基」の組にならないように</b>選びます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">乾燥剤の性質と、使えない気体</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">乾燥剤</th><th style="text-align: center;">乾燥剤の性質</th><th style="text-align: left;">使えない気体</th></tr></thead><tbody><tr><td style="text-align: left;">濃硫酸・十酸化四リン P₄O₁₀</td><td style="text-align: center;">酸性</td><td style="text-align: left;">塩基性の NH₃。濃硫酸は H₂S にも使えない（酸化還元反応が起こる）</td></tr><tr><td style="text-align: left;">塩化カルシウム CaCl₂</td><td style="text-align: center;">中性</td><td style="text-align: left;"><b>NH₃</b>（CaCl₂ と結びつく）</td></tr><tr><td style="text-align: left;">ソーダ石灰（NaOH ＋ CaO）・酸化カルシウム CaO</td><td style="text-align: center;">塩基性</td><td style="text-align: left;">酸性の CO₂・SO₂・HCl・Cl₂・H₂S など</td></tr></tbody></table></div>
-<p class="ref-p"><b>「酸性と塩基性は組にしない」と、例外の2つ（濃硫酸と H₂S・塩化カルシウムと NH₃）を覚えておけば、乾燥剤の問題は解けます。</b>NH₃ を乾かせるのは、塩基性のソーダ石灰か酸化カルシウムです。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/gas-preparation/">乾燥剤の表と、気体の製法・捕集のしかたは気体の製法と性質のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<section class="ref-sec" id="ref-sec-boundary"><h4 class="ref-sec-h">共通テストの線引き</h4><p class="ref-sec-lead">安全の小問で知識が要るのは、混ぜるな危険・アルミニウムの容器・ドライアイス・濃硫酸の薄め方と、化学の範囲の薬品の保存と乾燥剤の組です。有毒な気体の量や反応式の係数は問題文が教えてくれます。</p></section>
-<p class="ref-p">左の列は、問題文に説明が無くても答えられるようにしておくものです。右の列は、出てきたときに問題文が教えてくれるので、覚えておく必要はありません。（化学）と書いた行は、化学（科目）の範囲です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">薬品を安全に扱う —— 覚えておくことと、問題文が教えてくれること</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">覚えておく</th><th style="text-align: left;">問題文が教えてくれる</th></tr></thead><tbody><tr><td style="text-align: left;"><b>塩素系の漂白剤と酸性の洗浄剤を混ぜると塩素が出る</b></td><td style="text-align: left;">発生する塩素の量の計算に使う反応式と数値</td></tr><tr><td style="text-align: left;"><b>アルミニウムの容器</b>に酸性・塩基性の洗浄剤を入れない（両性金属）</td><td style="text-align: left;">アルミニウムが溶ける反応式の係数</td></tr><tr><td style="text-align: left;"><b>ドライアイスを密閉した容器に入れない</b>（昇華で体積が大きく増える）</td><td style="text-align: left;">体積が何倍になるかの数値</td></tr><tr><td style="text-align: left;"><b>濃硫酸は、多量の水に少しずつ加えて薄める</b></td><td style="text-align: left;">希釈したあとの濃度の計算に使う数値</td></tr><tr><td style="text-align: left;">（化学）Na・K は灯油の中・黄リンは水の中・濃硝酸は褐色びん・フッ化水素酸はポリエチレン</td><td style="text-align: left;">それぞれの反応式</td></tr><tr><td style="text-align: left;">（化学）酸性の乾燥剤は NH₃ に、塩基性の乾燥剤は酸性の気体に使えない。例外は濃硫酸と H₂S・CaCl₂ と NH₃</td><td style="text-align: left;">表にない乾燥剤の性質</td></tr></tbody></table></div>
-<h5 class="ref-h5">例題</h5>
-<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の (ア)〜(オ) のうち、正しいものをすべて選べ。(ア) 塩素系の漂白剤と、塩酸を含む洗浄剤を混ぜて使うと、汚れがよく落ちて安全である　(イ) アルミニウムのやかんに、酸性の洗浄剤を入れたまま置いておくのは避ける　(ウ) ドライアイスは、ふたを固く閉めたペットボトルに入れて持ち運ぶのがよい　(エ) 濃硫酸を薄めるときは、多量の水に濃硫酸を少しずつ加える　(オ) 食品の乾燥剤の生石灰は、水をかけると発熱するので、濡らさないようにする</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(イ)・(エ)・(オ)</b>。(ア) 次亜塩素酸ナトリウムと塩酸が反応して有毒な塩素が出るので、混ぜてはいけない。(ウ) ドライアイスは昇華して体積が大きく増えるので、密閉すると容器が破裂する。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次亜塩素酸ナトリウム NaClO を 1.49 g 含む漂白剤に、十分な量の塩酸を加えた（NaClO ＋ 2HCl → NaCl ＋ H₂O ＋ Cl₂）。発生する塩素は、0℃・1.013 × 10⁵ Pa で何 L か。NaClO の式量は 74.5、気体 1 mol の体積は 22.4 L とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>NaClO 1.49 g は 1.49 ／ 74.5 ＝ 0.0200 mol。反応式の係数から Cl₂ も 0.0200 mol 発生するので、22.4 × 0.0200 ＝ <b>0.448 L</b>。★ 数値は問題文が与えます。覚えておくのは「混ぜると塩素が出る」ことです。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">（化学）次の薬品 (1)〜(4) の保存のしかたを、下の (ア)〜(エ) から選べ。(1) ナトリウム　(2) 黄リン　(3) 濃硝酸　(4) フッ化水素酸　(ア) 水の中に沈める　(イ) 褐色のびんに入れて冷暗所に置く　(ウ) ポリエチレンの容器に入れる　(エ) 灯油の中に入れる</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>(エ)</b>（水や酸素とすぐに反応する）　(2) <b>(ア)</b>（空気中で自然発火する。水とは反応しない）　(3) <b>(イ)</b>（光で分解する）　(4) <b>(ウ)</b>（ガラスの SiO₂ を溶かす）</p></div></details></div>
+<p class="ref-p">物質の状態は、温度と圧力で決まります。このページでは、化学基礎で学んだ熱運動をもとに、温度の意味（絶対温度）と気体の圧力のしくみをおさえ、加熱曲線で加えた熱がどこへ行くのか、温度と圧力から状態を読む状態図までをまとめます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/states-of-matter/">熱運動・拡散・三態・状態変化の名前（化学基礎）はこちら</a></p>
+<section class="ref-sec" id="ref-sec-motion"><h4 class="ref-sec-h">温度と熱運動 —— 絶対温度</h4><p class="ref-sec-lead">温度は、粒子の熱運動の激しさの平均を表します。温度に上限はありませんが、下限（−273℃）があり、そこを 0K とした温度が絶対温度です。</p></section>
+<p class="ref-p">温度が高いほど、粒子の熱運動は激しくなります。熱運動の激しさは、物理で学ぶ運動エネルギー（½mv²）で表されますが、高校の化学では<b>粒子の動く速さ</b>と考えて構いません。</p>
+<p class="ref-p">ただし、同じ温度でも、すべての粒子が同じ速さで動いているわけではありません。遅い粒子から速い粒子までばらばらで、速さごとの粒子の割合をグラフにすると山形になります。温度を上げると速い粒子の割合が増えて、山は速い側へ低く広がります。<b>温度が表しているのは、熱運動の激しさの平均</b>です。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-speed-distribution.png?h=39ae4b4c" alt="横軸が熱運動の速度、縦軸が粒子の割合のグラフ。低温の曲線は遅い側に高く鋭い山、高温の曲線は速い側へ低く広がった山。吹き出しに「同じ温度でも、速い粒子と遅い粒子がいる！」とある" loading="lazy"><figcaption class="ref-figure-cap">低温の山は遅い側に高く、高温の山は速い側へ低く広がります。<b>同じ温度でも、速い粒子と遅い粒子がいます</b>。このグラフの読み取りは共通テストでも問われます。</figcaption></figure>
+<p class="ref-p">温度は熱運動の激しさを表すものなので、<b>温度に上限はありませんが、下限はあります</b>。温度を下げると熱運動はおだやかになり、−273℃ ですべての粒子の熱運動が止まります。これより低い温度はありません。この下限の温度を<b>絶対零度</b>といい、絶対零度を 0 として、セルシウス温度（℃）と同じ間隔で目盛りを振った温度を<b>絶対温度</b>といいます。単位はケルビン（記号 K）です。</p>
+<p class="ref-p">絶対温度 T と、セルシウス温度 t の関係は <b>T〔K〕＝ t〔℃〕＋ 273</b> です。例えば 27℃ は 27＋273 ＝ 300K、0℃ は 273K です。</p>
+<p class="ref-p">絶対温度が便利なのは、<b>絶対温度が熱運動の激しさ（粒子の運動エネルギーの平均）に比例する</b>からです。℃ の目盛りは 0 の位置を水の凝固点に決めただけなので、20℃ の粒子が 10℃ の粒子の2倍激しく動いているわけではありません。絶対温度なら、600K の粒子は 300K の粒子の2倍の運動エネルギーをもちます。<b>気体の体積や圧力は熱運動の激しさで決まるので、気体の計算は必ず絶対温度で行います。</b>℃ で与えられたら、最初に K に直しましょう。</p>
+<div class="ref-callout ref-callout-skip"><b class="ref-callout-tag">覚えなくてよい</b><p class="ref-callout-text">余談：絶対零度は理論上の下限で、実際にはまだ到達できていません（ごく近い温度までは冷やせています）。正確な値は −273.15℃ ですが、高校の化学では −273℃ を使います。</p></div>
+<h5 class="ref-h5">例題 —— 絶対温度</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) 127℃ と −73℃ を絶対温度で表せ。(2) 気体の温度を上げたとき、速さの分布のグラフはどう変わるか。「山の高さ」「速い分子の割合」の2つの語を使って答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 127＋273 ＝ 400K、−73＋273 ＝ 200K。★ 400K の粒子の運動エネルギーの平均は 200K の2倍です（℃ の 127 と −73 では比べられません）。(2) 速い分子の割合が増え、山の高さは低くなって速い側へ広がる。</p></div></details></div>
+<section class="ref-sec" id="ref-sec-pressure"><h4 class="ref-sec-h">気体の圧力</h4><p class="ref-sec-lead">飛び回る気体分子が容器の壁に次々と当たり、壁を押す。その押す力の合計が気体の圧力です。圧力は単位面積あたりの力で、単位は Pa。海面上の大気圧の平均 1.013×10⁵Pa を 1atm（1気圧）といい、760mmHg に等しくなります。</p></section>
+<p class="ref-p">気体分子は熱運動で飛び回り、容器の壁にぶつかっては跳ね返ります。1回1回の衝突で壁は外向きに押されるので、たくさんの分子の衝突を合わせたものが<b>気体の圧力</b>になります。<b>1個1個が速くぶつかるほど、また決まった時間に壁へ当たる回数が多いほど、壁を押す力は強くなり、圧力が大きくなります。</b></p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-pressure-wall.png?h=36b0e3dc" alt="箱の中を分子が飛び回り、右の壁にぶつかった3つの分子が跳ね返っている。ぶつかったところから、壁を外へ押す青い矢印が出ている。右に「ぶつかるたびに壁を外へ押す」「押す力を合わせたもの ＝ 気体の圧力」とある" loading="lazy"><figcaption class="ref-figure-cap">分子は壁にぶつかるたびに壁を外へ押します。その力を合わせたものが気体の圧力です。</figcaption></figure>
+<p class="ref-p"><b>圧力</b>は、単位面積あたりにはたらく力です。単位は<b>パスカル</b>（記号 Pa）で、1m² の面に 1N（ニュートン）の力がはたらくときの圧力を 1Pa といいます。100Pa を 1hPa（<b>ヘクトパスカル</b>）といい、天気予報の気圧はこの単位で言っています。</p>
+<p class="ref-p">地球をおおう空気の重さによる圧力を<b>大気圧</b>といいます。海面上の大気圧の平均値は 1.013×10⁵Pa で、これを<b>1気圧</b>（記号 atm）とします。1.013×10⁵Pa ＝ 1013hPa なので、天気予報の「1013hPa」はちょうど 1atm です。</p>
+<div class="ref-table-wrap"><div class="ref-cap">圧力の単位</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">単位</th><th style="text-align: left;">読み</th><th style="text-align: left;">Pa との関係</th><th style="text-align: left;">どこで使うか</th></tr></thead><tbody><tr><td style="text-align: left;">Pa</td><td style="text-align: left;">パスカル</td><td style="text-align: left;">1Pa ＝ 1N/m²</td><td style="text-align: left;">計算の基本の単位</td></tr><tr><td style="text-align: left;">hPa</td><td style="text-align: left;">ヘクトパスカル</td><td style="text-align: left;">1hPa ＝ 100Pa</td><td style="text-align: left;">天気予報の気圧</td></tr><tr><td style="text-align: left;">atm</td><td style="text-align: left;">気圧</td><td style="text-align: left;">1atm ＝ 1.013×10⁵Pa</td><td style="text-align: left;">大気圧を基準にした言い方</td></tr><tr><td style="text-align: left;">mmHg</td><td style="text-align: left;">ミリメートル水銀柱</td><td style="text-align: left;">760mmHg ＝ 1atm ＝ 1.013×10⁵Pa</td><td style="text-align: left;">水銀柱の高さ・血圧</td></tr></tbody></table></div>
+<p class="ref-p"><b>1atm ＝ 760mmHg ＝ 1.013×10⁵Pa は必ず覚えてください。</b>単位の換算は、この等式を基準にした比例で解きます。例えば 380mmHg は 760mmHg の 1/2倍なので、1.013×10⁵Pa × 1/2 ≒ 5.1×10⁴Pa です。1Pa ＝ 1N/m² の組み立ては、覚えていなくて困ることはほとんどありません。</p>
+<h5 class="ref-h5">例題 —— 圧力の単位の換算</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1.0×10⁵Pa ＝ 760mmHg として、次の圧力を〔 〕内の単位で表せ。(1) 228mmHg〔Pa〕　(2) 7.5×10⁴Pa〔mmHg〕　(3) 天気予報の 990hPa〔Pa〕</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 3.0×10⁴Pa。228mmHg は 760mmHg の 228/760 ＝ 0.30倍なので、1.0×10⁵Pa × 0.30 ＝ 3.0×10⁴Pa。(2) 570mmHg。7.5×10⁴Pa は 1.0×10⁵Pa の 0.75倍なので、760mmHg × 0.75 ＝ 570mmHg。(3) 9.9×10⁴Pa。1hPa ＝ 100Pa なので、990 × 100 ＝ 99000Pa ＝ 9.9×10⁴Pa。</p></div></details></div>
+<section class="ref-sec" id="ref-sec-mercury"><h4 class="ref-sec-h">水銀柱で大気圧を測る</h4><p class="ref-sec-lead">水銀だめの液面 1cm² の上に載っている空気の柱の重さと、管の中の高さ 76cm の水銀の柱の重さが等しいので、水銀は 760mm の高さで止まります。</p></section>
+<p class="ref-p">大気圧は、水銀の柱の高さで測ることができます。</p>
+<ol class="ref-list"><li>一端を閉じた長さ約 1m のガラス管に、水銀をいっぱいに満たす。</li><li>口を押さえて逆さにし、水銀を入れた容器（水銀だめ）の中に立てる。</li><li>管の中の水銀は少し下がり、水銀だめの水銀面から<b>約 760mm の高さ</b>で止まる。<div class="ref-li-hang">管の上の、水銀が下がってできたすき間は、ほぼ真空（<b>トリチェリーの真空</b>）</div></li></ol>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-mercury-column.png?h=30f767a2" alt="水銀だめの中に、上端を閉じたガラス管を立てた図。管の中の水銀は水銀だめの水銀面から 760 mm の高さで止まり、その上は真空（トリチェリーの真空）になっている。水銀だめの水銀面を、大気圧 1.013×10⁵ Pa（1 atm）が上から押す矢印がある" loading="lazy"><figcaption class="ref-figure-cap">大気圧が水銀面を押す圧力と、水銀柱の重さによる圧力がつり合って、<b>760mm</b> で止まります。</figcaption></figure>
+<p class="ref-p">なぜ 760mm で止まるのかは、<b>同じ面積（1cm²）の上に載っているものの重さ</b>で比べるとわかります。</p>
+<p class="ref-p">水銀だめの液面 1cm² の上には、大気の上端まで続く<b>空気の柱</b>が載っていて、その重さで液面を押しています。一方、管の中の水銀 1cm² の上には、高さ 76cm の<b>水銀の柱</b>が載っています。管の上は真空なので、水銀の柱の上には空気は載っていません。<b>空気の柱の重さと、水銀の柱の重さ（76cm³ ぶん、約 1kg）が等しいところで、つり合って止まる</b>のです。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-air-vs-mercury.png?h=2f22e706" alt="水銀だめの左側の液面 1cm² の上に、大気の上端まで続く空気の柱が描かれ、右側には上が真空のガラス管の中に高さ 76cm の水銀の柱がある。右の囲みに「どちらも 1cm² に載っている重さ　空気の柱 ＝ 水銀の柱（約 1kg ぶん）→ 同じ圧力で押す」とある" loading="lazy"><figcaption class="ref-figure-cap">液面 1cm² の上の<b>空気の柱</b>と、管の中 1cm² の上の<b>水銀の柱（76cm）</b>は同じ重さです。管の上は真空なので、水銀の柱の上に空気は載っていません。</figcaption></figure>
+<p class="ref-p">大気圧が変われば、水銀柱の高さも変わります。逆にいえば、水銀柱が何 mm まで上がるかで圧力の大きさを言い表せます。この物差しの1目もり、つまり水銀柱 1mm ぶんの圧力が <b>1mmHg</b>（ミリメートル水銀柱）です。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">太いガラス管を使うと、中の水銀が重くなるので、水銀柱は 760mm より低くなる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">ガラス管の太さを変えても、水銀柱の高さは <b>760mm のまま</b>です。</span></p><p class="ref-mistake-why">圧力は単位面積あたりの力だからです。管を太くすると水銀の重さは増えますが、その重さを受ける面積も同じ割合で増えるので、圧力は変わりません。</p></div>
+<p class="ref-p">水銀が使われるのは、<b>密度が水の約 13.6倍と大きく、柱が短くて済む</b>ためです。同じ大気圧とつり合う柱の重さは同じなので、密度が 13.6 分の 1 の水では、柱の高さは 13.6倍の約 10m にもなります。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-water-vs-mercury.png?h=ade3cb4d" alt="左に高さ 76cm の水銀の柱（密度 13.6g/cm³）、右に途中を波線で省いた高さ約 10m の水の柱（密度 1.0g/cm³）。中央に「同じ大気圧でも重い液体ほど柱は短い」とある" loading="lazy"><figcaption class="ref-figure-cap">同じ大気圧とつり合う柱の高さは、<b>密度に反比例</b>します。水銀 76cm に対して、水は約 10m です。</figcaption></figure>
+<h5 class="ref-h5">水銀柱の高さを計算で確かめる（参考）</h5>
+<p class="ref-p">1cm² の面で考える（化学でよく使う単位）と、76cm の水銀の柱の体積は 1cm² × 76cm ＝ 76cm³、質量は 13.6g/cm³ × 76cm³ ≒ 1.03×10³g ＝ 1.03kg です。これにはたらく重力は 1.03kg × 9.8m/s² ≒ 10.1N で、これが 1cm² ＝ 1.0×10⁻⁴m² にかかるので、圧力は 10.1N ÷ 1.0×10⁻⁴m² ≒ 1.01×10⁵Pa。大気圧 1.013×10⁵Pa と一致します。</p>
+<p class="ref-p">1m² の面で考える（物理でよく使う単位）と、水銀の密度 13.6×10³kg/m³、柱の高さ 0.76m より、柱の質量は 13.6×10³kg/m³ × 0.76m × 1m² ≒ 1.03×10⁴kg、重力は 1.03×10⁴kg × 9.8m/s² ≒ 1.01×10⁵N で、1m² にかかるので 1.01×10⁵Pa。面積の取り方を変えても、同じ圧力になります。</p>
+<h5 class="ref-h5">例題 —— 水銀柱</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">水銀（密度 13.6g/cm³）の代わりに、密度 0.80g/cm³ の液体を使って大気圧（760mmHg）を測ると、柱の高さは約何 m になるか。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>約 13m。同じ大気圧とつり合う柱の重さは同じなので、柱の高さは密度に反比例します。76cm × 13.6 ÷ 0.80 ≒ 1.29×10³cm ≒ 13m。</p></div></details></div>
+<section class="ref-sec" id="ref-sec-heating-curve"><h4 class="ref-sec-h">加熱曲線と状態変化の熱</h4><p class="ref-sec-lead">融解や沸騰が起きている間は、加えた熱が粒子どうしを引き離すことだけに使われるので、温度が上がりません。1mol あたりに要る熱が、融解エンタルピー・蒸発エンタルピーです。</p></section>
+<p class="ref-p">氷に一定の割合で熱を加え続けると、0℃ と 100℃ で温度が上がらない区間があります（加熱曲線の読み方は化学基礎のページ）。この区間では、<b>加えた熱が温度を上げることには使われず、粒子どうしを引き離すことだけに使われています</b>。0℃ の区間では粒子を決まった位置から外すことに、100℃ の区間では粒子どうしを引き離して気体にすることに使われます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/states-of-matter/">加熱曲線の読み方（温度が止まる区間）は化学基礎のページへ</a></p>
+<p class="ref-p">1mol の固体が融解するときに吸収する熱量を<b>融解エンタルピー</b>、1mol の液体が蒸発するときに吸収する熱量を<b>蒸発エンタルピー</b>、1mol の固体が昇華するときに吸収する熱量を<b>昇華エンタルピー</b>といいます。どれも熱を吸収する変化なので、ΔH は正の値になります。</p>
+<div class="ref-table-wrap"><div class="ref-cap">水の状態変化のエンタルピー（1mol あたり）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">変化</th><th style="text-align: left;">条件</th><th style="text-align: right;">ΔH</th></tr></thead><tbody><tr><td style="text-align: left;">融解 H₂O（固）→ H₂O（液）</td><td style="text-align: left;">0℃</td><td style="text-align: right;">＋6.0kJ</td></tr><tr><td style="text-align: left;">蒸発 H₂O（液）→ H₂O（気）</td><td style="text-align: left;">25℃</td><td style="text-align: right;">＋44kJ</td></tr><tr><td style="text-align: left;">蒸発 H₂O（液）→ H₂O（気）</td><td style="text-align: left;">100℃</td><td style="text-align: right;">＋41kJ</td></tr><tr><td style="text-align: left;">昇華 H₂O（固）→ H₂O（気）</td><td style="text-align: left;">0℃</td><td style="text-align: right;">＋51kJ</td></tr></tbody></table></div>
+<p class="ref-p">蒸発エンタルピーが融解エンタルピーよりずっと大きいのは、液体では粒子がまだ集まったまま引き合っていて、気体にするにはその引き合いをほぼ全部断ち切る必要があるためです。<b>数値は問題文で与えられるので覚えなくて構いません。</b>「蒸発の方が融解よりずっと大きい」という大小だけは説明できるようにしておきましょう。</p>
+<p class="ref-p">逆向きの凝固・凝縮・凝華では、同じ大きさの熱が放出されます。汗が蒸発すると体が冷えるのは、蒸発エンタルピーの分の熱を体から奪うためです。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/reaction-enthalpy/">状態変化を ΔH つきの式で書く書き方は、反応エンタルピーのページで扱います</a></p>
+<h5 class="ref-h5">例題 —— 状態変化の熱</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">100℃ の水蒸気 54g を、1.013×10⁵Pa のもとで冷やしていき、すべて 0℃ の氷にした。この間に外へ出ていった熱量は何 kJ か。有効数字2桁で答えよ。使う値は H₂O ＝ 18、水の蒸発エンタルピー（100℃）41kJ/mol、氷の融解エンタルピー 6.0kJ/mol、水 1g を 1K 冷やすと出る熱量 4.2J。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>1.6×10² kJ。H₂O 1mol : 18g ＝ H₂O □mol : 54g より 3.0mol。① 凝縮（蒸発の逆向き）：H₂O 1mol : 41kJ ＝ 3.0mol : 123kJ。② 水の温度低下：54g × 4.2J/(g·K) × 100K ＝ 22680J ≒ 23kJ。③ 凝固（融解の逆向き）：H₂O 1mol : 6.0kJ ＝ 3.0mol : 18kJ。合計 123 ＋ 23 ＋ 18 ＝ 164kJ ≒ 1.6×10² kJ。★ 加熱曲線を逆にたどるだけなので、区間ごとの熱の大きさは加熱のときと同じです。3つのうち凝縮がいちばん大きく、全体の4分の3ほどを占めます。</p></div></details></div>
+<section class="ref-sec" id="ref-sec-phase-diagram"><h4 class="ref-sec-h">状態図 —— 温度と圧力で状態を読む</h4><p class="ref-sec-lead">温度（横軸）と圧力（縦軸）を決めると、物質が固体・液体・気体のどれになるかが決まります。それを地図のように塗り分けたのが状態図です。3つの領域を分ける曲線の上では、両側の状態が共存します。</p></section>
+<p class="ref-p">状態図には、3つの領域（固体・液体・気体）と、その境目の3本の曲線があります。液体と気体の境目を<b>蒸気圧曲線</b>、固体と液体の境目を<b>融解曲線</b>、固体と気体の境目を<b>昇華圧曲線</b>といいます。</p>
+<p class="ref-p">3本の曲線が1点で交わる点を<b>三重点</b>といい、この温度と圧力では固体・液体・気体が共存します。蒸気圧曲線の高温側の端を<b>臨界点</b>といい、これを超えると気体と液体の区別がつかない状態（超臨界状態）になります。超臨界状態の物質を<b>超臨界流体</b>といいます。</p>
+<div class="ref-table-wrap"><div class="ref-cap">水と二酸化炭素の状態図の数値</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">物質</th><th style="text-align: left;">三重点</th><th style="text-align: left;">臨界点</th><th style="text-align: left;">1.013×10⁵Pa で温めると</th></tr></thead><tbody><tr><td style="text-align: left;">水 H₂O</td><td style="text-align: left;">0.01℃・6.1×10²Pa</td><td style="text-align: left;">374℃・2.2×10⁷Pa</td><td style="text-align: left;">0℃ で融解、100℃ で沸騰</td></tr><tr><td style="text-align: left;">二酸化炭素 CO₂</td><td style="text-align: left;">−57℃・5.3×10⁵Pa</td><td style="text-align: left;">31℃・7.4×10⁶Pa</td><td style="text-align: left;">−78℃ で昇華（液体にならない）</td></tr></tbody></table></div>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-phase-diagram.png?h=5b3a875b" alt="水と二酸化炭素の状態図を並べた図。どちらも固体・液体・気体の3つの領域を3本の曲線が仕切り、三重点と臨界点に印がある。水は融解曲線が左に傾き、1.013×10⁵ Pa の横線が 0℃ と 100℃ で境界と交わる。二酸化炭素は三重点がこの横線より上にあり、横線は液体の領域を通らずに −78℃ で固体と気体の境界だけと交わる" loading="lazy"><figcaption class="ref-figure-cap">横線をたどって<b>どの領域を横切るか</b>を見ます。二酸化炭素の横線は液体の領域を通らないので、ドライアイスは液体にならずに昇華します。</figcaption></figure>
+<p class="ref-p">ドライアイスが常温・常圧で液体にならずに昇華するのは、1.013×10⁵Pa が二酸化炭素の三重点の圧力 5.3×10⁵Pa より低く、この圧力の横線が液体の領域を通らないためです。三重点より高い圧力をかければ、二酸化炭素も液体になります。</p>
+<p class="ref-p">水の状態図には、ほかの多くの物質と違う特徴があります。融解曲線が左に傾いていて、<b>圧力を高くすると融点が下がります</b>。氷は同じ質量の水より体積が大きい（密度が小さい）ので、押しつぶすと体積の小さい液体の側に変化しやすいためです。</p>
+<p class="ref-p"><b>状態図の数値は覚えなくて構いません。</b>三重点・臨界点の名前と意味、「状態図の横線をたどれば、その圧力で温めたときの変化が読める」という読み方を身につけておきましょう。蒸気圧曲線の読み方は、蒸気圧のページでくわしく扱います。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/vapor-pressure/">液体と気体の境目（蒸気圧曲線）と沸騰はこちら</a></p>
+<h5 class="ref-h5">例題 —— 状態図</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">二酸化炭素の三重点は −57℃・5.3×10⁵Pa である。(1) 1.013×10⁵Pa のもとでドライアイスを温めると、どのように状態が変化するか。(2) ドライアイスを液体にするには、圧力をどのようにすればよいか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 液体を経ずに、固体から直接気体になる（昇華する。約 −78℃）。1.013×10⁵Pa は三重点の圧力より低いので、この圧力の横線は液体の領域を通らないためです。(2) 三重点の圧力 5.3×10⁵Pa より高い圧力にしてから温める。そうすると、固体 → 液体 → 気体と変化します。</p></div></details></div>
+<section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">T ＝ t ＋ 273 と、1atm ＝ 760mmHg ＝ 1.013×10⁵Pa は必ず覚えます。エンタルピーの値と状態図の数値は、問題文で与えられます。</p></section>
+<p class="ref-p"><b>必ず覚えるのは、T〔K〕＝ t〔℃〕＋ 273 と、1atm ＝ 760mmHg ＝ 1.013×10⁵Pa の2つです。</b>加熱曲線で温度が一定になる区間では、加えた熱が粒子を引き離すことだけに使われる、という理由まで説明できるようにしておきましょう。</p>
+<p class="ref-p">融解エンタルピー・蒸発エンタルピーの値、三重点・臨界点の数値は覚えなくて構いません。「蒸発エンタルピーの方がずっと大きい」「水は圧力を上げると融点が下がる」「同じ温度でも分子の速さはばらばら」の3つの向きだけは、よく登場するので押さえておきましょう。</p>
 </div>
 </div>
 
 <h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（4問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.life.chlorine-bleach-acid,theo.life.home-hazard,theo.life.sulfuric-dilution,theo.life.reagent-storage&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（4問・測定モード）">▶ 一問一答で解く（4問・測定モード）</button><a class="alt" href="/qa/?codes=theo.life.chlorine-bleach-acid,theo.life.home-hazard,theo.life.sulfuric-dilution,theo.life.reagent-storage&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ 一問一答で解く（13問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.state.absolute-temperature,theo.state.speed-distribution,theo.state.gas-pressure,theo.state.pressure-units,theo.state.pressure-conversion,theo.state.mercury-density,theo.state.heating-curve,theo.state.phase-enthalpy-def,theo.state.vaporization-larger,theo.state.heating-calc,theo.state.phase-diagram,theo.state.phase-diagram-curves,theo.state.ice-pressure-mp&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（13問・測定モード）">▶ 一問一答で解く（13問・測定モード）</button><a class="alt" href="/qa/?codes=theo.state.absolute-temperature,theo.state.speed-distribution,theo.state.gas-pressure,theo.state.pressure-units,theo.state.pressure-conversion,theo.state.mercury-density,theo.state.heating-curve,theo.state.phase-enthalpy-def,theo.state.vaporization-larger,theo.state.heating-calc,theo.state.phase-diagram,theo.state.phase-diagram-curves,theo.state.ice-pressure-mp&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/life-energy/">← 燃料・電池・光 —— 暮らしのエネルギーと環境の話題</a>
+<nav class="seq"><a href="/reference/life-safety/">← 薬品を安全に扱う —— 混ぜるな危険・薄め方・保存・乾燥剤</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/temperature-pressure/">温度と圧力 —— 絶対温度・気体の圧力・状態図 →</a></nav>
+<a href="/reference/vapor-pressure/">液体の蒸気圧と沸騰 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -1037,7 +1063,36 @@ document.addEventListener('click', function (e) {
   window.addEventListener('resize', onScroll, { passive: true });
 })();
 </script>
-
+<script>
+(function () {
+  var box = null;
+  var close = function () { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } };
+  document.addEventListener('click', function (e) {
+    var img = e.target.closest && e.target.closest('img.ref-figure-img');
+    if (!img) return;
+    e.preventDefault();
+    box = document.createElement('div');
+    box.className = 'ref-zoom';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', '図の拡大（押すと閉じる）');
+    var big = document.createElement('img');
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var w = img.naturalWidth || 1150;
+    var room = window.innerWidth * 0.96;
+    big.style.width = (window.innerWidth < 700 ? Math.max(w * 0.8, room) : Math.min(w, room)) + 'px';
+    var hint = document.createElement('p');
+    hint.className = 'ref-zoom-hint';
+    hint.textContent = window.innerWidth < 700 ? '横にスクロールできます。押すと閉じます' : '押すと閉じます（Esc でも閉じます）';
+    box.appendChild(hint);
+    box.appendChild(big);
+    box.addEventListener('click', close);
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+})();
+</script>
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

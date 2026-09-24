@@ -48,7 +48,7 @@ basic	化学と人間生活	台所と薬箱の物質	life-household
 basic	化学と人間生活	燃料・電池・光	life-energy
 basic	化学と人間生活	薬品を安全に扱う	life-safety
 # ── 化学 ──
-adv	状態変化と気体	物質の三態と状態変化・気体の圧力	+states-of-matter +intermolecular-force
+adv	状態変化と気体	物質の三態と状態変化・気体の圧力	temperature-pressure +states-of-matter +intermolecular-force
 adv	状態変化と気体	蒸気圧と沸騰	vapor-pressure
 adv	状態変化と気体	気体の状態方程式	gas-laws
 adv	状態変化と気体	混合気体と分圧	gas-mixture gas-with-vapor

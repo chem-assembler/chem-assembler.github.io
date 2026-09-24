@@ -930,12 +930,13 @@ a.ref-link::before { content: '→ '; }
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（7節）</summary><ul><li><a href="#ref-sec-laws" data-ref-anchor="laws">ボイルの法則・シャルルの法則</a></li><li><a href="#ref-sec-equation" data-ref-anchor="equation">気体の状態方程式 PV ＝ nRT</a></li><li><a href="#ref-sec-read" data-ref-anchor="read">状態方程式は使わない —— ＝ の逆側は比例、同じ側は反比例</a></li><li><a href="#ref-sec-standard" data-ref-anchor="standard">基準は2つ —— 22.4L と 24.9L</a></li><li><a href="#ref-sec-steps" data-ref-anchor="steps">比の図式で解く手順</a></li><li><a href="#ref-sec-molar-mass" data-ref-anchor="molar-mass">気体の分子量</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
 <p class="ref-p">気体は、圧力・体積・温度を変えると、それに応じて形を変えます。このページでは、気体の圧力 P・体積 V・物質量 n・絶対温度 T の関係をまとめ、気体の計算を「比例・反比例」だけで解けるようにします。温度はすべて絶対温度（T ＝ t ＋ 273）で扱うので、先に三態のページの絶対温度を確かめておきましょう。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/states-of-matter/">熱運動と絶対温度（T ＝ t ＋ 273）はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/temperature-pressure/">熱運動と絶対温度（T ＝ t ＋ 273）・気体の圧力はこちら</a></p>
 <section class="ref-sec" id="ref-sec-laws"><h4 class="ref-sec-h">ボイルの法則・シャルルの法則</h4><p class="ref-sec-lead">温度が一定なら、気体の体積は圧力に反比例します（ボイルの法則）。圧力が一定なら、気体の体積は絶対温度に比例します（シャルルの法則）。</p></section>
 <p class="ref-p">気体は、圧力 P を2倍にすると体積 V が 1/2倍に、3倍にすると 1/3倍になります。言葉で言うと「気体の圧力 P と体積 V は反比例する」、式で書くと「PV ＝ k（一定）」です。これを<b>ボイルの法則</b>といいます。ゴムボールを強く握ると小さくなる、飛行機の中ではお菓子の袋がパンパンにふくらむ、といった経験と結びつけておきましょう。</p>
 <p class="ref-p">気体は、絶対温度 T を2倍にすると体積 V が2倍になります。言葉で言うと「気体の絶対温度 T と体積 V は比例する」、式で書くと「V ＝ kT」です。これを<b>シャルルの法則</b>といいます。熱気球は、中の空気を温めてふくらませる（密度を小さくする）ことで浮かび上がります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-laws-boyle.png?h=c4e52f22" alt="ピストンつきの容器を2つ並べた図。左は圧力 P で押されて体積 V、右は圧力 2P で押されてピストンが下がり、体積が 2分の1 V になっている" loading="lazy"><figcaption class="ref-figure-cap">ボイルの法則。圧力を2倍にすると、体積は 1/2倍になります。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-laws-charles.png?h=a0061b15" alt="ピストンつきの容器を2つ並べた図。左は温度 T で体積 V、右は温度 2T でピストンが上がり、体積が 2V になっている" loading="lazy"><figcaption class="ref-figure-cap">シャルルの法則。絶対温度を2倍にすると、体積も2倍になります。</figcaption></figure>
+<p class="ref-p">図のピストンは、なめらかに動くものとします。<b>ピストンが止まっているときは、中の気体がピストンを押す圧力と、外からピストンを押す圧力がつり合っています。</b>外が大気だけなら、中の気体の圧力は大気圧に等しくなります。</p>
 <p class="ref-p">2つの法則を、体積 V を主語にして組み合わせます。V は T に比例し、P の逆数 1/P に比例するので、V ＝ k × T/P と書けます。変数を左辺に集めると次の式になり、これを<b>ボイル・シャルルの法則</b>といいます。</p>
 <p class="ref-p">ボイル・シャルルの法則は <b>PV/T ＝ k（一定）</b> です。</p>
 <p class="ref-p">圧力 P と温度 T の関係も、この式から出てきます。体積を一定にしたまま温度を2倍にすると、圧力は2倍になります。これは次の4段階で考えると納得できます。</p>
@@ -1001,7 +1002,7 @@ a.ref-link::before { content: '→ '; }
 </div>
 
 <h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（4問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.state.boyle-charles,theo.state.ideal-gas-law,theo.state.molar-volume,theo.state.gas-molar-mass&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（4問・測定モード）">▶ 一問一答で解く（4問・測定モード）</button><a class="alt" href="/qa/?codes=theo.state.boyle-charles,theo.state.ideal-gas-law,theo.state.molar-volume,theo.state.gas-molar-mass&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ 一問一答で解く（5問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.state.boyle-charles,theo.state.ideal-gas-law,theo.state.molar-volume,theo.state.gas-molar-mass,theo.state.piston-balance&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（5問・測定モード）">▶ 一問一答で解く（5問・測定モード）</button><a class="alt" href="/qa/?codes=theo.state.boyle-charles,theo.state.ideal-gas-law,theo.state.molar-volume,theo.state.gas-molar-mass,theo.state.piston-balance&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
 <nav class="seq"><a href="/reference/vapor-pressure/">← 液体の蒸気圧と沸騰</a>
 <a href="/reference/">参考書の目次</a>

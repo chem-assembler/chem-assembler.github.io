@@ -9250,6 +9250,7 @@ function findPartnerHints(game, baseIds, ruleIds) {
     });
     findSelfPartnerHints(game, baseIds, ruleIds, seenRules, hits);
     findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits);
+    findAddCoPolymerHints(game, baseIds, ruleIds, seenRules, hits);
     findVulcanizePartnerHints(game, baseIds, ruleIds, seenRules, hits);
     return hits;
 }
@@ -9266,6 +9267,52 @@ function findPartnerHints(game, baseIds, ruleIds) {
  *   一致しなければ Cl を含むならポリクロロプレン、それ以外はポリイソプレン（天然ゴム）。
  * ⚠ 出るかどうかを決めるのは `vulcanization.detect`（化学の判定）で、名前ではない。
  * ========================================================================== */
+/* ★ 付加の共重合（SBR・NBR）の入口（I-0135・2026-09-25）。参考書の「アプリで試す」がスチレン（またはアクリロニトリル）を
+ *   呼んだところから、相手の 1,3-ブタジエンを呼んで共重合まで届くようにする。
+ *   ⚠ 形は縮合重合の入口（findCoPolymerHints）と同じ: **組の表は探す範囲だけ**で、出すかどうかは
+ *   `copolymerization.detect`（2種類以上の単量体が並んでいるか）が決める。相手は1つ呼ぶだけ（1：1 で2種類がそろう）。
+ *   ⚠ 組にしてあるのは順番のため。1,3-ブタジエンから見ると相手が2つあり、表の先の組（スチレン ＝ SBR）が出る。
+ *   NBR の入口はアクリロニトリルから（参考書の app: は summon=アクリロニトリル）。 */
+const ADD_COPOLYMER_RULE = 'copolymerization';
+const ADD_COPOLYMER_PAIRS = [
+    ['スチレン', '1,3-ブタジエン'],        // スチレン-ブタジエンゴム（SBR）
+    ['アクリロニトリル', '1,3-ブタジエン']  // アクリロニトリル-ブタジエンゴム（NBR）
+];
+
+function findAddCoPolymerHints(game, baseIds, ruleIds, seenRules, hits) {
+    if (seenRules.has(ADD_COPOLYMER_RULE)) return;
+    if (ruleIds && !ruleIds.includes(ADD_COPOLYMER_RULE)) return;
+    const rule = REACTION_RULES.find(r => r.id === ADD_COPOLYMER_RULE);
+    if (!rule || rule.info) return;
+    const mol = game.userMolecule;
+    const base = new Molecule();
+    copyMoleculeInto(base, mol, baseIds, 0);
+    const selfName = game.lookupCompoundName ? game.lookupCompoundName(base) : null;
+    if (!selfName) return;
+    // ⚠ もう2種類並べてある人には出さない（押せる状態なのに「呼びなさい」は案内ではない）
+    try { if (rule.detect(mol).length > 0) return; } catch (e) { return; }
+    const library = game.getCompoundLibrary() || [];
+    const names = ADD_COPOLYMER_PAIRS.filter(p => p.includes(selfName)).map(p => p.find(n => n !== selfName));
+    for (const name of names) {
+        const entry = library.find(e => e.name === name);
+        if (!entry) continue;
+        // 試算は実際に呼び出されるもの（ライブラリの分子）を、summonMolecule と同じ「右へ2マス」に置いて組む
+        const trial = new Molecule();
+        const mine = copyMoleculeInto(trial, mol, baseIds, 0);
+        const theirs = new Set();
+        const maxX = Math.max(...trial.atoms.map(a => a.x), 0);
+        const minX = Math.min(...entry.mol.atoms.map(a => a.x), 0);
+        copyMoleculeInto(trial, entry.mol, null, maxX - minX + 84).forEach(id => theirs.add(id));
+        let sites = [];
+        try { sites = rule.detect(trial) || []; } catch (e) { continue; }
+        const crossing = sites.filter(st => Array.isArray(st) && st.some(x => mine.has(x)) && st.some(x => theirs.has(x)));
+        if (!crossing.length) continue;
+        seenRules.add(ADD_COPOLYMER_RULE);
+        hits.push({ name, label: rule.label, ruleId: ADD_COPOLYMER_RULE, siteCount: crossing.length });
+        return; // 1つの反応につき候補は1つまで（findPartnerHints の約束）
+    }
+}
+
 const VULCANIZE_RULE = 'vulcanization';
 const VULCANIZE_PARTNERS = ['ポリイソプレン', 'ポリブタジエン', 'ポリクロロプレン'];
 
