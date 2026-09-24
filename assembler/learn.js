@@ -6755,21 +6755,49 @@ class ReferenceBook {
         const els = [];
         const unknown = [];
         let fold = null;   // いま開いている `<details>` の中身（無ければ null）
+        /* ★ いま読んでいる節（`codes` を持つもの）。**次の節が始まる手前（＝ 例題のあと）**に「この節の一問一答」の口を置く
+           （2026-09-25・I-0143）。⚠ 発展の節なら口も畳みの中（節の中身と一緒に隠れる） */
+        let open = null;
+        const put = (el) => { if (fold) fold.appendChild(el); else els.push(el); };
+        const closeSec = () => { if (open) { put(this.renderSectionQa(open)); open = null; } };
         const closes = (b) => b.kind === 'section' || (b.kind === 'heading' && !b.advanced);
         (page.blocks || []).forEach(b => {
+            if (b.kind === 'section') closeSec();
             if (fold && closes(b)) fold = null;
             const starts = b.kind === 'section' && b.advanced;
             if (starts) {
                 const det = this.renderAdvancedFold(b);
                 els.push(det.wrap);
                 fold = det.body;
+                if (b.codes && b.codes.length) open = b;
                 return;
             }
             const el = this.renderBlock(b);
             if (!el) { unknown.push(b.kind); return; }
-            if (fold) fold.appendChild(el); else els.push(el);
+            put(el);
+            if (b.kind === 'section' && b.codes && b.codes.length) open = b;
         });
+        closeSec();
         return { els, unknown };
+    }
+
+    /* ★ この節の一問一答（I-0143）。行き先は qa の範囲の回（`?codes=`・ページの箱と同じ受け口）。
+       ⚠ 面B（アプリの中）は別のタブで開く（同じタブで移ると組みかけの分子が消える ＝ `:::link app:` と同じ）。
+         面Aは href のまま同じタブで移る（焼くと listener は消える） */
+    renderSectionQa(block) {
+        const box = document.createElement('p');
+        box.className = 'ref-link-row ref-sec-qa';
+        const a = document.createElement('a');
+        a.className = 'ref-link ref-sec-qa-link';
+        a.href = '/qa/?codes=' + block.codes.map(encodeURIComponent).join(',') + '&mode=choice&from=reference&scope=section';
+        a.textContent = '✏️ この節の一問一答（' + block.codes.length + '問）';
+        a.addEventListener('click', (e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+            e.preventDefault();
+            window.open(a.href, '_blank', 'noopener');
+        });
+        box.appendChild(a);
+        return box;
     }
 
     /* 発展のかたまりの器。★ **閉じていても「発展の札・題・この節で分かること1行」は見える** ——

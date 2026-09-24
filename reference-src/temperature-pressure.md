@@ -43,6 +43,9 @@ terms:
 - 絶対零度
 - 絶対温度
 - ケルビン
+codes:
+- theo.state.absolute-temperature
+- theo.state.speed-distribution
 :::
 
 温度が高いほど、粒子の熱運動は激しくなります。熱運動の激しさは、物理で学ぶ運動エネルギー（½mv²）で表されますが、高校の化学では**粒子の動く速さ**と考えて構いません。
@@ -85,6 +88,10 @@ terms:
 - ヘクトパスカル
 - 大気圧
 - 気圧
+codes:
+- theo.state.gas-pressure
+- theo.state.pressure-units
+- theo.state.pressure-conversion
 :::
 
 気体分子は熱運動で飛び回り、容器の壁にぶつかっては跳ね返ります。1回1回の衝突で壁は外向きに押されるので、たくさんの分子の衝突を合わせたものが**気体の圧力**になります。**1個1個が速くぶつかるほど、また決まった時間に壁へ当たる回数が多いほど、壁を押す力は強くなり、圧力が大きくなります。**
@@ -134,6 +141,8 @@ terms:
 - 水銀柱
 - ミリメートル水銀柱
 - トリチェリーの真空
+codes:
+- theo.state.mercury-density
 :::
 
 大気圧は、水銀の柱の高さで測ることができます。
@@ -204,6 +213,11 @@ terms:
 - 融解エンタルピー
 - 蒸発エンタルピー
 - 昇華エンタルピー
+codes:
+- theo.state.heating-curve
+- theo.state.phase-enthalpy-def
+- theo.state.vaporization-larger
+- theo.state.heating-calc
 :::
 
 氷に一定の割合で熱を加え続けると、0℃ と 100℃ で温度が上がらない区間があります（加熱曲線の読み方は化学基礎のページ）。この区間では、**加えた熱が温度を上げることには使われず、粒子どうしを引き離すことだけに使われています**。0℃ の区間では粒子を決まった位置から外すことに、100℃ の区間では粒子どうしを引き離して気体にすることに使われます。
@@ -259,6 +273,10 @@ terms:
 - 蒸気圧曲線
 - 融解曲線
 - 昇華圧曲線
+codes:
+- theo.state.phase-diagram
+- theo.state.phase-diagram-curves
+- theo.state.ice-pressure-mp
 :::
 
 状態図には、3つの領域（固体・液体・気体）と、その境目の3本の曲線があります。液体と気体の境目を**蒸気圧曲線**、固体と液体の境目を**融解曲線**、固体と気体の境目を**昇華圧曲線**といいます。

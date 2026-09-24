@@ -491,7 +491,10 @@
               「見出しだけ在って何の節か分からない」を作らない（設計書 §19-1） */
         /* ★ `course: adv`（v1622・2026-09-23 ユーザー「化学」の札を新設）＝ **化学（科目）の範囲**の節。化学基礎だけの人は読み飛ばせる。
            ⚠ `advanced`（高校の範囲の外）とは別の印。⛔ 混ぜない（化学の範囲は高校の範囲の中） */
-        section: { order: ['anchor', 'title', 'advanced', 'course', 'lead', 'terms'], req: ['anchor', 'title', 'lead'], list: ['terms'], prose: ['lead'], bool: ['advanced'], enum: { course: ['adv'] } },
+        /* ★ `codes`（2026-09-25・I-0143）＝ **この節の一問一答**の知識項目。節の終わり（例題のあと）に「この節の一問一答」の口が出る。
+           ⚠ ページの前書きの `codes:` にあるものだけ・1つの code は1つの節だけ（parsePage が赤にする）。
+           ★ ユーザー「例題は節ごとに（検索で節に着地するので節で完結させる）」→「qa も節ごとに」の、節の側の口 */
+        section: { order: ['anchor', 'title', 'advanced', 'course', 'lead', 'terms', 'codes'], req: ['anchor', 'title', 'lead'], list: ['terms', 'codes'], prose: ['lead'], bool: ['advanced'], enum: { course: ['adv'] } },
         /* ★ 節の下の小見出し（§20-5）。**本文では `## タイトル` と書ける**（`:::heading` と同じもの）。
            ⚠ **アンカーは持たない** —— 綴りは `#ref-sec-<anchor>` の1つだけ、という §19-2 の決めを
               増やさないため。★ だから**目次（`renderToc`）にも出さない**（目次の行き先は節だけ）。 */
@@ -921,6 +924,20 @@
         CTX_PAGE = page.id;
         page.blocks = parseBody(lines.slice(end + 1), where, end + 1);
         CTX_PAGE = null;
+        /* ★ 節の codes は、ページの codes の中から・重ならずに（I-0143）。
+           ⚠ ページに無い code を書くと、口は出るのに qa がその項目を持たない（または別ページの項目を出す） */
+        (function () {
+            var own = page.codes || [], seen = {};
+            page.blocks.forEach(function (b) {
+                if (b.kind !== 'section' || !b.codes) return;
+                b.codes.forEach(function (c) {
+                    if (own.indexOf(c) < 0) fail(where, ':::section（' + b.anchor + '）の codes の「' + c + '」が、前書きの codes: にありません'
+                        + '\n    ★ 直し方: 綴りを前書きの codes: に合わせます（節の codes はページの codes の中から選びます）');
+                    if (seen[c]) fail(where, 'codes の「' + c + '」が2つの節（' + seen[c] + ' と ' + b.anchor + '）にあります。1つの項目は1つの節だけに置きます');
+                    seen[c] = b.anchor;
+                });
+            });
+        })();
         /* ⚠ **JSON には出さない**（`serialize` は PAGE_KEYS ＋ why ＋ blocks しか書かない）。
            ★ 生成器と `REF20` が「書いたメモが消えていないこと」をここから数える */
         page.memos = memos;

@@ -1107,6 +1107,8 @@ function slTrack(name, params) {
       var mode = (params.get('mode') || '').trim().toLowerCase();
       return {
         app: app, code: many[0], codes: many, found: false,
+        // ★ 参考書の節の口（I-0143・2026-09-25）は scope=section を添える ＝ 帯で「この節の」と言う。知らない値は「このページの」
+        scope: (params.get('scope') || '').trim().toLowerCase() === 'section' ? 'section' : 'page',
         // ⚠ 知らない mode は既定へ落とす（綴りを間違えたリンクで白紙にしない）
         mode: STUDY_MODES[mode] ? mode : 'choice'
       };
@@ -1151,7 +1153,7 @@ function slTrack(name, params) {
         backFrom.resumed.of + ' の続きから）</span>' + back
       // ★ 範囲で来たときは**何件を出しているか**を言う（送られた件数と食い違っても黙らない）
       : (backFrom.found && backFrom.codes)
-      ? '<span class="bb-where">' + lead + '（このページの ' + backFrom.picked +
+      ? '<span class="bb-where">' + lead + '（' + (backFrom.scope === 'section' ? 'この節の ' : 'このページの ') + backFrom.picked +
         ' / ' + backFrom.codes.length + ' 項目）</span>' + back
       : backFrom.found
       ? '<span class="bb-where">' + lead + '</span>' + back
@@ -1340,7 +1342,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=160')
+  fetch('data/exam_usage.jsonl?v=161')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -1355,7 +1357,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=160')
+  fetch('questions.json?v=161')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {

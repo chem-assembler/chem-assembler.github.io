@@ -57278,6 +57278,57 @@
      *   ⑦ ⚠⚠ **発展の「小見出し」は畳まない** —— 小見出しには「どこまでが発展か」が
      *     器で言えないので、畳むと ★★★（必ず覚える）の反応式まで隠れる（`alkane` の実例）
      */
+    /* ★ REF29（v1657・I-0143）: 節の `codes:` → 節の終わり（次の節の手前 ＝ 例題のあと）に「この節の一問一答」の口。
+     *   ユーザー「例題は節ごとに」→「qa も節ごとに」の、参考書の側の口。qa は ?codes=…&scope=section を受けて「この節の」と言う */
+    test('REF29: 節の codes から「この節の一問一答」の口が節の終わりに出る（★否定対照: ページに無い code・2つの節に同じ code は赤）', async (c) => {
+        const W = c.W, RM = window.ReferenceMd, book = W.referenceBook;
+        assert(RM && book, 'ReferenceMd / referenceBook が居ない');
+        const pages = book.pages && book.pages.length ? book.pages : (await book.load(), book.pages);
+        let n = 0;
+        for (const pg of pages) {
+            const secs = (pg.blocks || []).filter(b => b.kind === 'section');
+            if (!secs.some(b => b.codes && b.codes.length)) continue;
+            const built = book.renderBlocks(pg);
+            // 描いた順に平らに並べる（畳みの中も順に）
+            const flat = [];
+            built.els.forEach(el => {
+                if (el.tagName === 'DETAILS') { flat.push(el); [...el.querySelector('.ref-adv-body').children].forEach(x => flat.push(x)); }
+                else flat.push(el);
+            });
+            const own = new Set(pg.codes || []);
+            secs.forEach((b, i) => {
+                if (!b.codes || !b.codes.length) return;
+                b.codes.forEach(code => assert(own.has(code), `${pg.id}#${b.anchor}: 節の code 「${code}」がページの codes に無い`));
+                const at = flat.findIndex(el => el.id === W.REF_ANCHOR_PREFIX + b.anchor);
+                assert(at >= 0, `${pg.id}#${b.anchor}: 節が描けていない`);
+                const next = secs[i + 1] ? flat.findIndex(el => el.id === W.REF_ANCHOR_PREFIX + secs[i + 1].anchor) : flat.length;
+                const qa = flat.slice(at + 1, next).filter(el => el.classList && el.classList.contains('ref-sec-qa'));
+                assert(qa.length === 1, `${pg.id}#${b.anchor}: 節の終わりの口が ${qa.length} 個（1個のはず）`);
+                assert(qa[0] === flat[next - 1], `${pg.id}#${b.anchor}: 口が節の最後（次の節の手前）に無い`);
+                const href = qa[0].querySelector('a').getAttribute('href');
+                const got = decodeURIComponent((href.match(/codes=([^&]*)/) || [])[1] || '').split(',');
+                assert(got.join(',') === b.codes.join(','), `${pg.id}#${b.anchor}: 口の codes が節の codes と違う（${got.join(',')}）`);
+                assert(/[?&]scope=section(&|$)/.test(href) && /[?&]from=reference(&|$)/.test(href), `${pg.id}#${b.anchor}: 口に scope=section・from=reference が無い`);
+                assert(qa[0].textContent.includes(b.codes.length + '問'), `${pg.id}#${b.anchor}: 口に問題の数が出ていない`);
+                n++;
+            });
+            // codes を持たない節には口が出ない
+            const qaAll = flat.filter(el => el.classList && el.classList.contains('ref-sec-qa')).length;
+            assert(qaAll === secs.filter(b => b.codes && b.codes.length).length, `${pg.id}: codes の無い節にも口が出ている`);
+        }
+        assert(n >= 5, '節の codes を持つ節が実データに5つも無い（口を確かめられない）');
+        // ★ 否定対照: ページに無い code・2つの節に同じ code は赤
+        const FM = ['---', 'id: t', 'unit: aliphatic', 'unitLabel: 脂肪族炭化水素', 'group: アルカン', 'title: 見本',
+            'summary: 節の codes の決まりを確かめるためだけの見本のページです。中身に意味はありません。',
+            'codes:', '  - org.ali.alkane-shape', '  - org.ali.alkane-bp', 'source:', '  - slides:見本', 'singleSource: true',
+            'why: 節の codes の決まりを機械で見るための見本で、画面には出さない。', '---', ''].join('\n');
+        const sec = (a, codes) => ':::section\nanchor: ' + a + '\ntitle: 題\nlead: この節で分かること。\ncodes:\n' + codes.map(x => '- ' + x).join('\n') + '\n:::\n\n本文です。\n\n';
+        const threw = (fn) => { try { fn(); return ''; } catch (e) { return String(e.message || e); } };
+        assert(!threw(() => RM.parsePage(FM + sec('a', ['org.ali.alkane-shape']) + sec('b', ['org.ali.alkane-bp']), '(REF29)')), '正しい書き方が赤になった');
+        assert(/前書きの codes: にありません/.test(threw(() => RM.parsePage(FM + sec('a', ['org.ali.nope']), '(REF29)'))), '★ ページに無い code が赤にならない');
+        assert(/2つの節/.test(threw(() => RM.parsePage(FM + sec('a', ['org.ali.alkane-shape']) + sec('b', ['org.ali.alkane-shape']), '(REF29)'))), '★ 2つの節に同じ code が赤にならない');
+    });
+
     test('REF25: 発展は閉じた <details> で出し、畳んだ中身は1ブロックも落ちない', async (c) => {
         const W = c.W;
         const book = W.referenceBook;
@@ -57298,9 +57349,12 @@
             /* ── ③ 中身が落ちていない ── */
             const flat = (pg.blocks || []).filter(b => book.renderBlock(b)).length;
             const dets = built.els.filter(el => el.tagName === 'DETAILS');
-            const packed = dets.reduce((n, d) => n + d.querySelector('.ref-adv-body').children.length, 0);
-            assert(built.els.length + packed === flat,
-                `${pg.id}: 畳む前 ${flat} ブロックが、畳んだあと 外 ${built.els.length} ＋ 中 ${packed} になっている`
+            // ⚠ 節の一問一答の口（.ref-sec-qa・I-0143）はブロックではない（節の codes から足したもの）ので数えない
+            const notQa = (el) => !el.classList.contains('ref-sec-qa');
+            const packed = dets.reduce((n, d) => n + [...d.querySelector('.ref-adv-body').children].filter(notQa).length, 0);
+            const outside = built.els.filter(notQa).length;
+            assert(outside + packed === flat,
+                `${pg.id}: 畳む前 ${flat} ブロックが、畳んだあと 外 ${outside} ＋ 中 ${packed} になっている`
                 + '（＝ 折りたたみで本文が落ちている／増えている）');
             assert(dets.length === advOf(pg).length,
                 `${pg.id}: 発展 ${advOf(pg).length} 件に対して折りたたみが ${dets.length} 個`);
