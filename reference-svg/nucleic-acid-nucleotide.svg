@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="300" viewBox="0 0 800 300" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="705.882" height="264.706" viewBox="0 0 800 300" role="img">
   <!-- ヌクレオチド1個の部品の並び（リン酸 — 五炭糖 — 塩基）。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
