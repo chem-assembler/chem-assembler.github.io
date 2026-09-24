@@ -47,6 +47,8 @@ terms:
 - 塩基性酸化物
 - 両性酸化物
 - 両性元素
+codes:
+- inorg.basis.oxide-class
 :::
 
 :::figure
@@ -91,6 +93,8 @@ answer: (a) CO₂・Cl₂O₇・NO₂・P₄O₁₀・SO₂・SO₃・SiO₂　(
 anchor: periodic
 title: 酸性・塩基性の強さと周期表
 lead: 周期表の左の元素ほど水酸化物の塩基性が強く、右の元素ほどオキソ酸の酸性が強くなります。
+codes:
+- inorg.basis.period3-acidity
 :::
 
 :::table
@@ -126,6 +130,8 @@ title: 最高酸化数と酸化物の化学式
 lead: 典型元素の最高酸化数は、族番号の一の位（価電子の数）と一致します。O²⁻ と組み合わせれば酸化物の化学式がつくれます。
 terms:
 - 最高酸化数
+codes:
+- inorg.basis.max-oxidation
 :::
 
 酸化数は「原子が失った電子の数」なので、価電子をすべて失ったときが最高酸化数です。16族の S は価電子が6個なので、最高酸化数は +6 です。
@@ -149,6 +155,9 @@ items:
 anchor: acidic-water
 title: 酸性酸化物と水の反応
 lead: 酸性酸化物は水と反応してオキソ酸になります。酸化数は変わりません。
+codes:
+- inorg.basis.oxide-water
+- inorg.basis.oxide-ion-equation
 :::
 
 酸性酸化物と水の反応は酸化還元反応ではないので、**中心の原子の酸化数は変わりません**。同じ酸化数をもつ酸化物とオキソ酸の組が分かれば、あとは原子の数を合わせるだけで反応式が書けます。
@@ -237,6 +246,8 @@ answer: (1) CO₂ ＋ H₂O ⇄ H⁺ ＋ HCO₃⁻　(2) SO₂ ＋ H₂O ⇄ H�
 anchor: acidic-base
 title: 酸性酸化物と塩基の反応
 lead: 酸性酸化物は、対応するオキソ酸と同じように塩基と中和します。オキソ酸の中和の式から H₂O を引けば書けます。
+codes:
+- inorg.basis.oxide-neutralization
 :::
 
 ## 具体例：SO₃ と NaOH
@@ -329,6 +340,8 @@ answer: (1) P₄O₁₀ ＋ 6H₂O → 4H₃PO₄　(2) Cl₂O₇ ＋ H₂O → 
 anchor: amphoteric
 title: 両性酸化物
 lead: 両性酸化物は水には溶けませんが、酸とも強塩基とも反応して塩になります。
+codes:
+- inorg.basis.amphoteric-oxide
 :::
 
 酸との反応は、塩基性酸化物と同じ書き方です。強塩基との反応では、錯イオン（ヒドロキシド錯イオン）をもつ塩ができます。
@@ -363,6 +376,9 @@ terms:
 - 過塩素酸
 - 亜塩素酸
 - 次亜塩素酸
+codes:
+- inorg.basis.oxoacid-naming
+- inorg.basis.oxoacid-def
 :::
 
 分子の中に酸素原子を含む酸を**オキソ酸**といいます。オキソ酸は、中心の原子の酸化数（結合している O 原子の数）で名前が変わります。
@@ -385,6 +401,8 @@ title: オキソ酸の構造と配位結合
 lead: 硝酸や硫酸の構造には、中心の原子から O 原子への配位結合が含まれます。
 terms:
 - 配位結合
+codes:
+- inorg.basis.oxoacid-structure
 :::
 
 一方の原子の非共有電子対を、ほかの原子と共有してできる結合を**配位結合**といいます。できた結合は、ふつうの共有結合と区別がつきません。
