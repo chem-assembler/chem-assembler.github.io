@@ -136,6 +136,16 @@ alt: チミンの構造式を直交で描いた図。窒素原子2個をふく�
 caption: DNA だけにふくまれる塩基の**チミン**。RNA では、このメチル基が無いウラシルに置きかわります。
 :::
 
+## 例題 —— DNA と RNA の違い
+
+紙に書いて解いてみてください。答え合わせは「解答を見る」から。
+
+:::exercise
+source: reference-outline/bio.md 第1部 nucleic-acid の節3（DNA と RNA の違い）をもとに、①ドラフトのために起こした問い
+prompt: DNA と RNA の違いを、構成する五炭糖と塩基の2点について答えよ。
+answer: 五炭糖は、DNA が**デオキシリボース**、RNA が**リボース**。塩基は、DNA が A・G・C・**T（チミン）**、RNA が A・G・C・**U（ウラシル）**です。
+:::
+
 :::section
 anchor: base-pair
 title: 塩基の対と二重らせん
@@ -174,6 +184,20 @@ right: DNA で等しくなるのは、**A と T どうし、G と C どうし**�
 why: 「対になるものが同じ数」を「4種類がすべて同じ数」と広げてしまうためです。
 :::
 
+## 例題 —— 塩基の対と二重らせん
+
+:::exercise
+source: reference-outline/bio.md 第2部 nucleic-acid の例題1（①ドラフトのために起こした問い）
+prompt: ある DNA の一方の鎖の塩基の並び順が A−T−G−C−C−A であるとき、これと対をつくるもう一方の鎖の塩基の並び順を、向かい合う順に書け。
+answer: **T−A−C−G−G−T**。A の相手は T、G の相手は C です。
+:::
+
+:::exercise
+source: reference-outline/bio.md 第2部 nucleic-acid の例題2（①ドラフトのために起こした計算問題）
+prompt: 2本鎖の DNA にふくまれるアデニンの数が、全塩基の数の30%であった。グアニンは全塩基の何%か。
+answer: A ＝ T なので、A と T を合わせて 60%。残りの 40% を G と C が半分ずつ分けるので、グアニンは **20%** です。
+:::
+
 :::section
 anchor: flow
 title: 遺伝情報の流れ
@@ -190,26 +214,4 @@ DNA の**塩基の並び順**が遺伝情報です。この並び順が、塩基
 :::link
 to: protein
 text: タンパク質の一次構造（アミノ酸の並び順）はタンパク質のページへ
-:::
-
-## 例題
-
-紙に書いて解いてみてください。答え合わせは「解答を見る」から。
-
-:::exercise
-source: reference-outline/bio.md 第2部 nucleic-acid の例題1（①ドラフトのために起こした問い）
-prompt: ある DNA の一方の鎖の塩基の並び順が A−T−G−C−C−A であるとき、これと対をつくるもう一方の鎖の塩基の並び順を、向かい合う順に書け。
-answer: **T−A−C−G−G−T**。A の相手は T、G の相手は C です。
-:::
-
-:::exercise
-source: reference-outline/bio.md 第2部 nucleic-acid の例題2（①ドラフトのために起こした計算問題）
-prompt: 2本鎖の DNA にふくまれるアデニンの数が、全塩基の数の30%であった。グアニンは全塩基の何%か。
-answer: A ＝ T なので、A と T を合わせて 60%。残りの 40% を G と C が半分ずつ分けるので、グアニンは **20%** です。
-:::
-
-:::exercise
-source: reference-outline/bio.md 第1部 nucleic-acid の節3（DNA と RNA の違い）をもとに、①ドラフトのために起こした問い
-prompt: DNA と RNA の違いを、構成する五炭糖と塩基の2点について答えよ。
-answer: 五炭糖は、DNA が**デオキシリボース**、RNA が**リボース**。塩基は、DNA が A・G・C・**T（チミン）**、RNA が A・G・C・**U（ウラシル）**です。
 :::
