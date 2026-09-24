@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="860" height="360" viewBox="0 0 860 360" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="716.667" height="300" viewBox="0 0 860 360" role="img">
   <!-- 左: 三次構造（1本の鎖が折りたたまれ、離れた場所どうしがジスルフィド結合で留まる）
        右: 四次構造（三次構造のかたまりがいくつか集まる）
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
