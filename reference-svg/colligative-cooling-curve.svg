@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="820" height="440" viewBox="0 0 820 440" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="771.765" height="414.118" viewBox="0 0 820 440" role="img">
   <!-- 冷却曲線（純溶媒と溶液）。凝固点降下 Δtf は「右下がりの直線を左へ延長した高さ」で読む。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ★ 文字は枠の中に収める（右の凡例は目盛り線の上・グラフの外に出さない）。 -->
