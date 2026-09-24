@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="740" height="460" viewBox="0 0 740 460" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="693.75" height="431.25" viewBox="0 0 740 460" role="img">
   <!-- イオン交換樹脂を詰めたカラム。上から水溶液を流し、下から出てくる液を受ける。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 陽イオン交換樹脂の例。入った Na⁺ のぶんだけ H⁺ が出てくる。 -->
