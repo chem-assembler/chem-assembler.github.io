@@ -39,7 +39,6 @@ terms:
 left: 2C₆H₁₂O₆
 right: C₁₂H₂₂O₁₁ ＋ H₂O
 gen: 2 α-グルコース → マルトース ＋ 水
-app: condensation_glycoside
 level: ★★☆
 note: 二糖ができる縮合。逆向きに水を加えて切るのが加水分解です。
 :::

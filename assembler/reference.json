@@ -6699,7 +6699,7 @@
 {"kind":"section","anchor":"definition","title":"二糖とは","lead":"単糖2分子が脱水縮合してできます。六炭糖2分子からできる二糖の分子式は、どれも C₁₂H₂₂O₁₁ です。","terms":["二糖","グリコシド結合","縮合"]},
 {"kind":"text","text":"二糖は、単糖2分子から<b>水1分子がとれて</b>つながったものです。このつながりを<b>グリコシド結合</b>といいます。"},
 {"kind":"text","text":"分子式をその場で引き算してみます。C₆H₁₂O₆ が2分子で C₁₂H₂₄O₁₂、ここから H₂O を1つ引くと <b>C₁₂H₂₂O₁₁</b> です。分子量も 180 × 2 − 18 ＝ <b>342</b> になります。"},
-{"kind":"reaction","left":"2C₆H₁₂O₆","right":"C₁₂H₂₂O₁₁ ＋ H₂O","gen":"2 α-グルコース → マルトース ＋ 水","app":"condensation_glycoside","level":"★★☆","note":"二糖ができる縮合。逆向きに水を加えて切るのが加水分解です。","img":"rx-ba5521c3.png","appHref":"/assembler/?summon=%CE%B1-%E3%82%B0%E3%83%AB%E3%82%B3%E3%83%BC%E3%82%B9&reagent=condensation_glycoside&from=reference","appRule":"condensation_glycoside","appSummon":"α-グルコース"},
+{"kind":"reaction","left":"2C₆H₁₂O₆","right":"C₁₂H₂₂O₁₁ ＋ H₂O","gen":"2 α-グルコース → マルトース ＋ 水","level":"★★☆","note":"二糖ができる縮合。逆向きに水を加えて切るのが加水分解です。","img":"rx-ba5521c3.png"},
 {"kind":"text","text":"<b>「二糖の分子式は C₁₂H₂₂O₁₁、分子量は342」は覚えておきましょう。</b>忘れても、上の引き算で毎回出せます。"},
 {"kind":"figure","src":"disaccharide-maltose.png","gen":"name=マルトース（麦芽糖） plain","alt":"マルトースの構造式を直交で描いた図。六員環2つが、1個の酸素原子を間にはさんでつながっている","caption":"<b>マルトース</b>。グルコースの六員環2つが、酸素原子1個をはさんでつながっています（グリコシド結合）。"},
 {"kind":"figure","src":"disaccharide-glycosidic-bond.png","gen":"name=マルトース（麦芽糖） haworth","mark":["kind=囲む at=グリコシド結合 label=グリコシド結合 count=1"],"alt":"マルトースのハース式で、2つの六員環をつないでいる酸素1個だけが破線の楕円で囲まれ、その下にグリコシド結合と書かれている図","caption":"環をつないでいるのは、囲んだ<b>酸素原子1個</b>だけです。ここが切れると単糖2つに戻ります。"},
