@@ -84,7 +84,7 @@ why: どちらも臭素水を使うので混ざりやすいところです。ア
 left: C₆H₅OH ＋ 3HNO₃
 over: 濃硫酸
 right: C₆H₂(NO₂)₃OH ＋ 3H₂O
-gen: フェノール ＋ 3 硝酸 → ピクリン酸 ＋ 3 水
+gen: フェノール ＋ 3 硝酸 formula=HNO3 → ピクリン酸 ＋ 3 水
 app: substitution_no2
 level: ★★☆
 note: ピクリン酸ができます。3か所が 2,4,6 になるのは、臭素化と同じ理由です。
