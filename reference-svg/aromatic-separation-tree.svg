@@ -6,30 +6,30 @@
     .eth { fill: #fff3e0; stroke: #e65100; stroke-width: 2; }
     .aq { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2; }
     .arw { stroke: #333; stroke-width: 2; fill: none; }
-    .ttl { font-size: 17px; fill: #222; }
-    .name { font-size: 16px; fill: #222; }
-    .small { font-size: 14px; fill: #444; }
-    .step { font-size: 16px; fill: #c62828; }
+    .ttl { font-size: 22px; fill: #222; }
+    .name { font-size: 21px; fill: #222; }
+    .small { font-size: 19px; fill: #444; }
+    .step { font-size: 21px; fill: #c62828; }
   </style>
 
   <!-- 縦の流れ（エーテル層） -->
-  <rect class="eth" x="40" y="20" width="380" height="56" rx="8" />
+  <rect class="eth" x="40" y="20" width="395" height="61" rx="8" />
   <text class="ttl" x="230" y="43" text-anchor="middle">はじめのエーテル溶液</text>
   <text class="small" x="230" y="66" text-anchor="middle">安息香酸・フェノール・アニリン・ニトロベンゼン</text>
 
   <path class="arw" d="M 230 76 L 230 110" />
   <polygon points="230,118 224,104 236,104" fill="#333" />
-  <rect class="eth" x="40" y="118" width="380" height="40" rx="8" />
+  <rect class="eth" x="40" y="118" width="395" height="45" rx="8" />
   <text class="name" x="230" y="144" text-anchor="middle">安息香酸・フェノール・ニトロベンゼン</text>
 
   <path class="arw" d="M 230 158 L 230 192" />
   <polygon points="230,200 224,186 236,186" fill="#333" />
-  <rect class="eth" x="40" y="200" width="380" height="40" rx="8" />
+  <rect class="eth" x="40" y="200" width="395" height="45" rx="8" />
   <text class="name" x="230" y="226" text-anchor="middle">フェノール・ニトロベンゼン</text>
 
   <path class="arw" d="M 230 240 L 230 274" />
   <polygon points="230,282 224,268 236,268" fill="#333" />
-  <rect class="eth" x="40" y="282" width="380" height="56" rx="8" />
+  <rect class="eth" x="40" y="282" width="395" height="61" rx="8" />
   <text class="ttl" x="230" y="305" text-anchor="middle">ニトロベンゼン</text>
   <text class="small" x="230" y="328" text-anchor="middle">中性なので塩にならず、最後までエーテル層に残る</text>
 
@@ -37,21 +37,21 @@
   <path class="arw" d="M 230 97 L 512 97" />
   <polygon points="520,97 506,91 506,103" fill="#333" />
   <text class="step" x="376" y="88" text-anchor="middle">① 塩酸を加える</text>
-  <rect class="aq" x="520" y="69" width="360" height="56" rx="8" />
+  <rect class="aq" x="520" y="69" width="375" height="61" rx="8" />
   <text class="ttl" x="540" y="92">水層へ　アニリン塩酸塩</text>
   <text class="small" x="540" y="115">NaOH を加えるとアニリンが遊離する</text>
 
   <path class="arw" d="M 230 179 L 512 179" />
   <polygon points="520,179 506,173 506,185" fill="#333" />
   <text class="step" x="376" y="170" text-anchor="middle">② NaHCO₃ 水溶液を加える</text>
-  <rect class="aq" x="520" y="151" width="360" height="56" rx="8" />
+  <rect class="aq" x="520" y="151" width="375" height="61" rx="8" />
   <text class="ttl" x="540" y="174">水層へ　安息香酸ナトリウム</text>
   <text class="small" x="540" y="197">塩酸を加えると安息香酸が遊離する</text>
 
   <path class="arw" d="M 230 261 L 512 261" />
   <polygon points="520,261 506,255 506,267" fill="#333" />
   <text class="step" x="376" y="252" text-anchor="middle">③ NaOH 水溶液を加える</text>
-  <rect class="aq" x="520" y="233" width="360" height="56" rx="8" />
+  <rect class="aq" x="520" y="233" width="375" height="61" rx="8" />
   <text class="ttl" x="540" y="256">水層へ　ナトリウムフェノキシド</text>
   <text class="small" x="540" y="279">塩酸を加えるとフェノールが遊離する</text>
 </svg>
