@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="675.294" height="288.235" viewBox="0 0 820 350" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="675.294" height="312.941" viewBox="0 0 820 380" role="img">
   <!-- 金属の3つの結晶格子。球は位置を見せるための小さい球で、実際は接している。
        ⚠ 数え方の色分け: 青＝頂点（1／8 個）・橙＝面の中心（1／2 個）・紫＝内部（1 個）。
        ⚠ 六方最密構造は六角柱で描いてある（六角柱では 6 個・単位格子では 2 個。本文の表と同じ）。
@@ -63,5 +63,6 @@
   <circle class="v" cx="646" cy="273" r="11" /><circle class="v" cx="607" cy="240" r="11" />
   <circle class="v" cx="646" cy="207" r="11" /><circle class="v" cx="724" cy="207" r="11" />
   <text class="name" x="685" y="302" text-anchor="middle">六方最密構造</text>
-  <text class="cnt" x="685" y="328" text-anchor="middle">六角柱で 6 個（単位格子は 2 個）</text>
+  <text class="cnt" x="685" y="328" text-anchor="middle">六角柱で 6 個</text>
+  <text class="cnt" x="685" y="354" text-anchor="middle">（単位格子は 2 個）</text>
 </svg>
