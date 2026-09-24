@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="400" viewBox="0 0 760 400" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="617.5" height="325" viewBox="0 0 760 400" role="img">
   <!-- 物質の分類の木。2回の問いで4つに分かれる（本文の「2回の問い」と同じ順）。
        ⚠ ①は「物質が何種類か」、②は「元素が何種類か」。ここを取り違えないよう箱の中に書いた。
        図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
