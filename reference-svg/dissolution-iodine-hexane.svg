@@ -10,9 +10,9 @@
   <style>
     .glass { fill: none; stroke: #333; stroke-width: 2.5; }
     .face { stroke: #999; stroke-width: 1.5; fill: none; }
-    .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
-    .tiny { font-size: 13px; fill: #777; }
+    .lab { font-size: 20px; fill: #222; }
+    .small { font-size: 18px; fill: #444; }
+    .tiny { font-size: 17px; fill: #777; }
   </style>
 
   <!-- 振る前 -->
