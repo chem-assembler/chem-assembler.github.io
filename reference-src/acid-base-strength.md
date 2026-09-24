@@ -38,6 +38,8 @@ terms:
 - 価数
 - 1価の酸
 - 2価の酸
+codes:
+- theo.acid-base.valence
 :::
 
 「**1個の酸が出す H⁺ の数**」を**酸の価数**、「**1個の塩基が出す OH⁻ の数**」を**塩基の価数**といいます。
@@ -72,6 +74,8 @@ terms:
 - 強塩基
 - 弱塩基
 - 電離度
+codes:
+- theo.acid-base.ionization-degree
 :::
 
 水に溶けたとき、**すべて電離**して H⁺（OH⁻）をすべて放出するものを**強酸（強塩基）**、**一部だけが電離**して H⁺（OH⁻）をほとんど放出しないものを**弱酸（弱塩基）**といいます。
@@ -112,6 +116,10 @@ terms:
 - 酢酸
 - シュウ酸
 - アンモニア
+codes:
+- theo.acid-base.strong-weak
+- theo.acid-base.hcl-vs-hydrochloric
+- theo.acid-base.co2-acid
 :::
 
 :::table
@@ -159,6 +167,9 @@ lead: 酸・塩基の化学式はイオンとセットで暗記し、電離の�
 terms:
 - 電離の式
 - カルボキシ基
+codes:
+- theo.acid-base.ionization-equation
+- theo.acid-base.acetic-carboxy
 :::
 
 **表の酸・塩基は、電離の式まで書けるようにしてください。**式を書くと価数がそのまま見えます。
@@ -236,6 +247,9 @@ title: H⁺ の濃度の求め方
 lead: 強酸は（価数）×（濃度）、弱酸は（濃度）×（電離度）で H⁺ の濃度を出します。2つを使い分けます。
 terms:
 - 水素イオン濃度
+codes:
+- theo.acid-base.h-concentration
+- theo.acid-base.valence-from-h
 :::
 
 強酸・強塩基はすべて電離するので、電離の式の係数から次のように求めます。
