@@ -44,6 +44,9 @@ terms:
 - 黒鉛
 - フラーレン
 - 無定形炭素
+codes:
+- inorg.nonmetal.carbon-allotrope
+- inorg.nonmetal.amorphous-carbon
 :::
 
 炭素には、ダイヤモンド・黒鉛（グラファイト）・フラーレンなどの同素体があります。
@@ -95,6 +98,9 @@ terms:
 - 一酸化炭素
 - 水性ガス
 - 還元性
+codes:
+- inorg.nonmetal.co
+- inorg.nonmetal.co-toxicity
 :::
 
 一酸化炭素は、炭素や炭素化合物の**不完全燃焼**で生じます。実験室でほしいときは、ギ酸 HCOOH に濃硫酸を加えて熱し、発生させます。濃硫酸が HCOOH から H と O を 2：1 で奪う**脱水作用**の例です。
@@ -153,6 +159,8 @@ terms:
 - 石灰水
 - ドライアイス
 - 炭酸水素カルシウム
+codes:
+- inorg.nonmetal.co2
 :::
 
 :::table
@@ -274,6 +282,8 @@ lead: 地殻中で酸素の次に多い元素です。単体は自然界に無�
 terms:
 - ケイ素
 - 半導体
+codes:
+- inorg.nonmetal.silicon-element
 :::
 
 ケイ素は岩石や鉱物の成分として、地殻中で酸素の次に多く存在します。単体は自然界に存在しないので、二酸化ケイ素を電気炉で融解し、炭素で還元してつくります。
@@ -300,6 +310,10 @@ terms:
 - 水ガラス
 - ケイ酸
 - シリカゲル
+codes:
+- inorg.nonmetal.sio2
+- inorg.nonmetal.silica-gel
+- inorg.nonmetal.sio2-na2co3
 :::
 
 二酸化ケイ素 SiO₂ は、Si 原子のまわりに O 原子が4個結合した四面体がつながった、**共有結合の結晶**です。水晶・石英・けい砂はほぼ純粋な SiO₂ で、光ファイバーにも使われます。
