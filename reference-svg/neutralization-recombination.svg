@@ -73,8 +73,8 @@
 
   <!-- 右側の箱 -->
   <rect class="sideBox" x="520" y="90" width="150" height="60" />
-  <text x="595" y="115" font-size="14">酸と塩基の反応は</text>
-  <text x="595" y="140" font-size="14">イオンの組み換え</text>
+  <text x="595" y="115" style="font-size: 16px;">酸と塩基の反応は</text>
+  <text x="595" y="140" style="font-size: 16px;">イオンの組み換え</text>
 
   <!-- 一番下の枠 -->
   <rect x="20" y="270" width="640" height="70" class="textBox" />
