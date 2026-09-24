@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="420" viewBox="0 0 680 420" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="320" viewBox="0 0 680 320" role="img">
   <!-- 周期表の陽性・陰性と、Li・Naの原子モデルの比較を示す図。
        元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
   <style>
@@ -30,9 +30,10 @@
     </marker>
   </defs>
 
-  <!-- 左側: 周期表と説明 -->
-  <g transform="translate(10, 10)">
-    <g transform="scale(1.2)">
+  <!-- 左側: 周期表と説明（周期表を大きくし、凡例と「陽性」「陰性」は表の外に出した） -->
+  <g transform="translate(10, 0)">
+    <text x="275" y="24" class="textBlue" style="font-size: 18px;" text-anchor="end">陰性</text>
+    <g transform="translate(0, 34) scale(1.27)">
       <!-- 周期表のグリッド描画 (18列 x 7行, セルサイズ12x12) -->
       <!-- 1行目 -->
       <rect class="boxNonmetal" x="0" y="0" width="12" height="12" />
@@ -67,27 +68,25 @@
       <rect class="boxMetal" x="0" y="60" width="204" height="12" />
       <rect class="boxNonmetal" x="204" y="60" width="12" height="12" />
       <!-- 7行目 -->
-      <rect class="boxMetal" x="0" y="72" width="216" height="12" fill="#fff" />
-
-      <!-- 凡例 -->
-      <rect class="boxMetal" x="30" y="0" width="55" height="18" />
-      <text x="57" y="14" style="font-size: 14px;" text-anchor="middle">金属</text>
-      <rect class="boxNonmetal" x="30" y="18" width="55" height="18" />
-      <text x="57" y="32" style="font-size: 14px;" text-anchor="middle">非金属</text>
-
-      <!-- 矢印と文字 -->
-      <path class="arrow" d="M 40 70 L 175 25" />
-      <text x="15" y="95" class="textOrange" style="font-size: 18px;" text-anchor="start">陽性</text>
-      <text x="225" y="15" class="textBlue" style="font-size: 18px;" text-anchor="start">陰性</text>
+      <rect class="boxMetal" x="0" y="72" width="216" height="12" />
     </g>
+    <!-- 矢印（左下＝陽性が強い ⇔ 右上＝陰性が強い） -->
+    <path class="arrow" d="M 40 128 L 235 48" />
+    <text x="0" y="164" class="textOrange" style="font-size: 18px;" text-anchor="start">陽性</text>
+
+    <!-- 凡例（表の外） -->
+    <rect class="boxMetal" x="120" y="150" width="16" height="16" />
+    <text x="142" y="164" style="font-size: 14px;">金属</text>
+    <rect class="boxNonmetal" x="190" y="150" width="16" height="16" />
+    <text x="212" y="164" style="font-size: 14px;">非金属</text>
 
     <!-- 説明文 -->
-    <text x="0" y="135" class="descText">周期表の同一<tspan font-weight="bold">族</tspan>の元素は有効</text>
-    <text x="0" y="155" class="descText">核電荷が同じで下側の元素ほ</text>
-    <text x="0" y="175" class="descText">ど<tspan font-weight="bold">原子半径</tspan>が大きくなり，最</text>
-    <text x="0" y="195" class="descText">外殻電子をひきつける力が弱</text>
-    <text x="0" y="215" class="descText">くなるので陽性が強い（クー</text>
-    <text x="0" y="235" class="descText">ロン力は距離の2乗に反比例）</text>
+    <text x="0" y="196" class="descText">周期表の同一<tspan font-weight="bold">族</tspan>の元素は有効</text>
+    <text x="0" y="216" class="descText">核電荷が同じで下側の元素ほ</text>
+    <text x="0" y="236" class="descText">ど<tspan font-weight="bold">原子半径</tspan>が大きくなり，最</text>
+    <text x="0" y="256" class="descText">外殻電子をひきつける力が弱</text>
+    <text x="0" y="276" class="descText">くなるので陽性が強い（クー</text>
+    <text x="0" y="296" class="descText">ロン力は距離の2乗に反比例）</text>
   </g>
 
   <!-- 右側: 原子モデル -->
@@ -96,8 +95,8 @@
     <text x="60" y="20" class="titleText">Li</text>
     <circle cx="60" cy="80" r="25" class="shell" />
     <circle cx="60" cy="80" r="40" class="shell" />
-    <circle cx="60" cy="80" r="10" class="nucleus" />
-    <text x="60" y="85" font-size="12" text-anchor="middle">+3</text>
+    <circle cx="60" cy="80" r="13" class="nucleus" />
+    <text x="60" y="85" style="font-size: 14px;" text-anchor="middle">+3</text>
     
     <circle cx="100" cy="80" r="4" class="electron" />
     <path class="arrowRed" d="M 96 80 L 75 80" stroke-width="3" />
@@ -112,8 +111,8 @@
     <circle cx="240" cy="80" r="20" class="shell" />
     <circle cx="240" cy="80" r="35" class="shell" />
     <circle cx="240" cy="80" r="50" class="shell" />
-    <circle cx="240" cy="80" r="12" class="nucleus" />
-    <text x="240" y="85" font-size="12" text-anchor="middle">+11</text>
+    <circle cx="240" cy="80" r="15" class="nucleus" />
+    <text x="240" y="85" style="font-size: 14px;" text-anchor="middle">+11</text>
     
     <circle cx="290" cy="80" r="4" class="electron" />
     <path class="arrowRed" d="M 286 80 L 257 80" stroke-width="1.5" />
