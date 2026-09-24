@@ -27,6 +27,9 @@ lead: 炭素の数だけで名前が決まります。ヘキサンまでは確�
 terms:
 - 直鎖
 - 語幹
+codes:
+- org.ali.alkane-names
+- org.ali.formula-alkane
 :::
 
 C1〜C4 の語幹（メタ・エタ・プロパ・ブタ）は数と関係のない古い呼び名ですが、C5 からは数を表す接頭辞（ペンタ=5・ヘキサ=6・ヘプタ=7・オクタ=8・ノナ=9・デカ=10）がそのまま名前になります。語尾はどれも **-ane（〜アン）**で、これが「飽和」の印です。
@@ -89,6 +92,10 @@ terms:
 - 側鎖
 - 置換基
 - 接頭辞
+codes:
+- org.ali.name-mainchain
+- org.ali.name-numbering
+- org.ali.name-substituent-order
 :::
 
 
