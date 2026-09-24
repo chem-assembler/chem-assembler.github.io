@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="450" viewBox="0 0 680 450" role="img">
+  <!-- 強酸と強塩基の滴定曲線を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。
+       2026-09-25: 見出しの字が二重に描かれ囲みからはみ出していたので、重複を消して見出しを図の上に横長で置いた。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .eq { font-family: "Times New Roman", serif; font-size: 18px; }
+    .titleBox { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .titleText { font-size: 18px; }
+    .axis { stroke: #222; stroke-width: 1.5; }
+    .curve { fill: none; stroke: #5b9bd5; stroke-width: 3; }
+    .markerTriangle { fill: #5b9bd5; stroke: #222; stroke-width: 1; }
+    .markerYellow { fill: #f3c271; stroke: #222; stroke-width: 1; }
+    .point { fill: #5b9bd5; stroke: #222; stroke-width: 1; }
+    .smallText { font-size: 14px; }
+  </style>
+
+  <!-- 見出し（図の上に横長の囲みで置く。以前は同じ字が二重に描かれ、囲みからはみ出していた） -->
+  <rect class="titleBox" x="10" y="10" width="660" height="64" fill="#fff" />
+  <text x="22" y="36" class="titleText">コニカルビーカーに塩酸を入れ，ビュレットで水酸化ナトリウム水溶液を</text>
+  <text x="22" y="62" class="titleText">滴下していったときのpH変化のグラフ</text>
+
+  <!-- 左側: グラフ -->
+  <g transform="translate(110, 90)">
+    <!-- 軸 -->
+    <line class="axis" x1="0" y1="300" x2="250" y2="300" />
+    <line class="axis" x1="0" y1="0" x2="0" y2="300" />
+    
+    <text x="140" y="325" class="smallText">滴下した水酸化ナトリ</text>
+    <text x="140" y="345" class="smallText">ウム水溶液の体積mL</text>
+
+    <!-- y軸マーカー -->
+    <!-- 強塩基pH=13 -->
+    <polygon points="-20,10 0,20 -20,30" class="markerTriangle" />
+    <text x="-25" y="25" text-anchor="end" class="smallText">強塩基pH=13</text>
+    
+    <!-- 弱塩基pH=11 -->
+    <polygon points="-20,50 0,60 -20,70" class="markerTriangle" />
+    <text x="-25" y="65" text-anchor="end" class="smallText">弱塩基pH=11</text>
+
+    <!-- 弱酸pH=3 -->
+    <polygon points="-20,230 0,240 -20,250" class="markerTriangle" />
+    <text x="-25" y="245" text-anchor="end" class="smallText">弱酸pH=3</text>
+
+    <!-- 強酸pH=1 -->
+    <polygon points="-20,270 0,280 -20,290" class="markerTriangle" />
+    <text x="-25" y="285" text-anchor="end" class="smallText">強酸pH=1</text>
+
+    <!-- 滴定曲線 (pH1 -> pH13) -->
+    <!-- (0,280) -> (120, 260) -> (120, 150) -> (120, 60) -> (240, 20) -->
+    <path class="curve" d="M 0 280 C 100 280, 120 260, 120 150 C 120 40, 140 20, 240 20" />
+
+    <!-- 中和点 -->
+    <circle cx="120" cy="150" r="3" class="point" />
+    <polygon points="145,140 125,150 145,160" class="markerYellow" />
+    <text x="150" y="145" class="smallText">中和点は塩化ナ</text>
+    <text x="150" y="165" class="smallText">トリウム水溶液</text>
+  </g>
+
+  <!-- 右側: テキスト -->
+  <g transform="translate(380, 90)">
+    <!-- 反応式 -->
+    <text x="0" y="20">【反応式】 HCl + NaOH → NaCl + H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+
+    <!-- 箇条書き -->
+    <circle cx="10" cy="50" r="3" fill="#222" />
+    <text x="25" y="55">塩酸は強酸なのでおおよそpH=1か</text>
+    <text x="25" y="75">らスタート</text>
+
+    <circle cx="10" cy="100" r="3" fill="#222" />
+    <text x="25" y="105">水酸化ナトリウム水溶液を少しずつ</text>
+    <text x="25" y="125">加えていくとpHが徐々に上昇する</text>
+
+    <circle cx="10" cy="150" r="3" fill="#222" />
+    <text x="25" y="155">中和点付近ではpHは一気に変化する</text>
+
+    <circle cx="10" cy="180" r="3" fill="#222" />
+    <text x="25" y="185">中和点はNaCl水溶液になっているの</text>
+    <text x="25" y="205">でpH=7</text>
+
+    <circle cx="10" cy="230" r="3" fill="#222" />
+    <text x="25" y="235">中和点を過ぎると，滴下している水</text>
+    <text x="25" y="255">酸化ナトリウム水溶液のpH=13に近</text>
+    <text x="25" y="275">づいていく</text>
+  </g>
+
+</svg>

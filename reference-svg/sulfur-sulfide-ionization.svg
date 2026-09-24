@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="246" viewBox="0 0 680 246" role="img">
+  <!-- イオン化傾向と硫化物の沈殿の関係を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。
+       2026-09-25: イオン化列が左右の図の外へはみ出していたので、元素を1つずつ等間隔（38.5px）に置き直した（字 20px）。
+       Al の注釈は3行に改行して囲みに収め、下付きを 10px → 12px に上げた。
+       ⚠ text 要素の font-size 属性は下の text { font-size } に負けるので、大きさは class か style で指定する -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; text-anchor: middle; }
+    .titleText { font-size: 18px; font-weight: bold; fill: #00b050; text-anchor: start; }
+    .eq { font-family: "Times New Roman", serif; font-size: 20px; }
+    .note { font-size: 14px; text-anchor: start; }
+    .arrowBlue { stroke: #1f618d; stroke-width: 4; fill: none; marker-end: url(#arrowheadBlue); marker-start: url(#arrowheadBlue-start); }
+    .arrowPurple { stroke: #6a1b9a; stroke-width: 4; fill: none; marker-end: url(#arrowheadPurple); marker-start: url(#arrowheadPurple-start); }
+    .arrowOrange { stroke: #e0762b; stroke-width: 4; fill: none; marker-end: url(#arrowheadOrange); }
+    .boxGreen { fill: none; stroke: #4caf50; stroke-width: 2; rx: 4; }
+    .boxYellow { fill: none; stroke: #ffb300; stroke-width: 2; rx: 4; }
+    .boxOrangeLabel { fill: none; stroke: #e0762b; stroke-width: 1.5; }
+    .lead { stroke: #e0762b; stroke-width: 1.5; fill: none; }
+    .textGreen { fill: #4caf50; font-size: 14px; }
+    .textYellow { fill: #ffb300; font-size: 14px; }
+    .textPurple { fill: #6a1b9a; font-size: 14px; }
+    .textOrange { fill: #e0762b; font-size: 14px; }
+  </style>
+
+  <defs>
+    <marker id="arrowheadBlue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#1f618d" />
+    </marker>
+    <marker id="arrowheadBlue-start" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse">
+      <polygon points="0,0 6,3 0,6" fill="#1f618d" />
+    </marker>
+    <marker id="arrowheadPurple" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#6a1b9a" />
+    </marker>
+    <marker id="arrowheadPurple-start" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse">
+      <polygon points="0,0 6,3 0,6" fill="#6a1b9a" />
+    </marker>
+    <marker id="arrowheadOrange" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#e0762b" />
+    </marker>
+  </defs>
+
+  <!-- 上部の注釈: Al -->
+  <rect class="boxOrangeLabel" x="10" y="6" width="222" height="70" />
+  <text x="20" y="26" class="note">Al<tspan font-size="12" dy="3">2</tspan><tspan dy="-3">S</tspan><tspan font-size="12" dy="3">3</tspan><tspan dy="-3"> + 6H</tspan><tspan font-size="12" dy="3">2</tspan><tspan dy="-3">O →</tspan></text>
+  <text x="20" y="46" class="note">2Al(OH)<tspan font-size="12" dy="3">3</tspan><tspan dy="-3"> + 3H</tspan><tspan font-size="12" dy="3">2</tspan><tspan dy="-3">S と加水分解して</tspan></text>
+  <text x="20" y="66" class="note">Al(OH)<tspan font-size="12" dy="3">3</tspan><tspan dy="-3">が沈殿する</tspan></text>
+  <path class="lead" d="M 200 76 L 221 118" /> <!-- Alへ指す -->
+
+  <!-- 沈殿条件のテキスト（それぞれの枠の上） -->
+  <text x="288" y="92" class="textGreen">中・塩基性で沈殿</text>
+  <text x="288" y="110" class="textGreen">（酸性では沈殿しない）</text>
+
+  <text x="473" y="92" class="textYellow">酸性溶液中で<tspan font-weight="bold" font-size="16">も</tspan>沈殿</text>
+  <text x="473" y="110" class="textYellow">（中塩基性は当然沈殿）</text>
+
+  <!-- イオン化列（元素の中心 x = 31 + 38.5 × 番号・不等号はその中間） -->
+  <g class="eq">
+    <text x="31" y="141" class="eq">Li</text>
+    <text x="69.5" y="141" class="eq">K</text>
+    <text x="108" y="141" class="eq">Ca</text>
+    <text x="146.5" y="141" class="eq">Na</text>
+    <text x="185" y="141" class="eq">Mg</text>
+    <text x="223.5" y="141" class="eq">Al</text>
+    <text x="262" y="141" class="eq">Zn</text>
+    <text x="300.5" y="141" class="eq">Fe</text>
+    <text x="339" y="141" class="eq">Ni</text>
+    <text x="377.5" y="141" class="eq">Sn</text>
+    <text x="416" y="141" class="eq">Pb</text>
+    <text x="454.5" y="141" class="eq">H<tspan font-size="14" dy="4">2</tspan></text>
+    <text x="493" y="141" class="eq">Cu</text>
+    <text x="531.5" y="141" class="eq">Hg</text>
+    <text x="570" y="141" class="eq">Ag</text>
+    <text x="608.5" y="141" class="eq">Pt</text>
+    <text x="647" y="141" class="eq">Au</text>
+    <text x="50.25" y="141" class="eq">&gt;</text>
+    <text x="88.75" y="141" class="eq">&gt;</text>
+    <text x="127.25" y="141" class="eq">&gt;</text>
+    <text x="165.75" y="141" class="eq">&gt;</text>
+    <text x="204.25" y="141" class="eq">&gt;</text>
+    <text x="242.75" y="141" class="eq">&gt;</text>
+    <text x="281.25" y="141" class="eq">&gt;</text>
+    <text x="319.75" y="141" class="eq">&gt;</text>
+    <text x="358.25" y="141" class="eq">&gt;</text>
+    <text x="396.75" y="141" class="eq">&gt;</text>
+    <text x="435.25" y="141" class="eq">&gt;</text>
+    <text x="473.75" y="141" class="eq">&gt;</text>
+    <text x="512.25" y="141" class="eq">&gt;</text>
+    <text x="550.75" y="141" class="eq">&gt;</text>
+    <text x="589.25" y="141" class="eq">&gt;</text>
+    <text x="627.75" y="141" class="eq">&gt;</text>
+  </g>
+
+  <!-- 枠線: Al〜Ni（緑）・Sn〜Ag（黄） -->
+  <rect class="boxGreen" x="210" y="119" width="142" height="30" />
+  <rect class="boxYellow" x="364" y="119" width="219" height="30" />
+
+  <!-- イオン化傾向の矢印 -->
+  <rect class="boxGreen" x="10" y="158" width="118" height="30" />
+  <text x="19" y="180" class="titleText">イオン化傾向</text>
+  <text x="134" y="182" class="titleText" style="font-size: 22px;">大</text>
+  <text x="646" y="182" class="titleText" style="font-size: 22px;">小</text>
+  <path class="arrowBlue" d="M 176 174 L 632 174" />
+
+  <!-- 下部の矢印とテキスト -->
+  <path class="arrowPurple" d="M 16 208 L 204 208" />
+  <text x="110" y="232" class="textPurple">S<tspan font-size="12" dy="-5">2-</tspan><tspan dy="5">で沈殿しない</tspan></text>
+
+  <path class="arrowOrange" d="M 212 208 L 583 208" />
+  <text x="398" y="232" class="textOrange">陽イオンがS<tspan font-size="12" dy="-5">2-</tspan><tspan dy="5">と沈殿をつくりやすい</tspan></text>
+
+</svg>

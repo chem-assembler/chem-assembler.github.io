@@ -151,6 +151,7 @@ note: 化学反応式では Zn ＋ 2HCl → ZnCl₂ ＋ H₂（希塩酸）、Zn
 
 :::figure
 src: ionization-tendency-tree.png
+svg: ionization-tendency-tree.svg
 alt: 左は硫酸銅(Ⅱ)水溶液に亜鉛板を入れ、亜鉛が e⁻ を渡して Zn²⁺ になり、Cu²⁺ が受け取って銅樹になる図。右は希酸に亜鉛板を入れ、H⁺ が e⁻ を受け取って H₂ が発生する図。それぞれに2本の半反応式と、足し合わせた式を添えている
 caption: 金属樹の生成（左）と、金属が希酸に溶解する反応（右）は**同じしくみ**です。生じた単体が「金属の固体」か「非金属の気体」かの違いしかありません。
 :::
@@ -172,6 +173,7 @@ terms:
 
 :::figure
 src: ionization-tendency-table.png
+svg: ionization-tendency-table.svg
 alt: イオン化列を Li K Ca Na／Mg／Al Zn Fe／Ni Sn Pb／H₂／Cu Hg Ag／Pt Au に区切った表。水との反応は、常温の水と反応・熱水と反応・高温の水蒸気と反応・反応しない。酸との反応は、希酸と反応・酸化力のある酸と反応・王水と反応
 caption: イオン化列の区切りと、水・酸との反応。**区切りの位置まで含めて暗記**します。
 :::

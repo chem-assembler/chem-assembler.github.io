@@ -81,6 +81,7 @@ items:
 
 :::figure
 src: salt-restore.png
+svg: salt-restore.svg
 alt: 酸（H⁺ と陰イオン）と塩基（陽イオンと OH⁻）から塩と水ができる図の下に、NaCl を Na⁺ と Cl⁻ に分けて NaOH と HCl に戻す例1と、NaHSO₄ を Na⁺・H⁺・SO₄²⁻ に分けて NaOH と H₂SO₄ に戻す例2を示した図
 caption: 塩をイオンに分け、**陽イオンに OH⁻、陰イオンに H⁺** を組み合わせてもとの酸・塩基に戻します。加えた H⁺ と OH⁻ の分だけ H₂O ができます。
 :::

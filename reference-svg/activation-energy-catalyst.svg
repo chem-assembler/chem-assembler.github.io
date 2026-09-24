@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="800" viewBox="0 0 680 800" role="img">
+  <!-- 活性化エネルギーと触媒を示す図。
+       元はスライドの図。文字サイズを確保するため縦に並べて SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 20px; }
+    .wtext { fill: #fff; font-size: 20px; text-anchor: middle; }
+    .atomH { fill: #d35400; stroke: #873600; stroke-width: 2; }
+    .atomI { fill: #4a9e3a; stroke: #235919; stroke-width: 2; }
+    .axis { stroke: #000; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+    .curve { fill: none; stroke: #004466; stroke-width: 3; }
+    .level { stroke: #004466; stroke-width: 2; }
+    .arrowRed { stroke: #ff0000; stroke-width: 4; fill: none; marker-end: url(#arrowRedEnd); marker-start: url(#arrowRedStart); }
+    .arrowPurp { stroke: #660099; stroke-width: 4; fill: none; marker-end: url(#arrowPurpEnd); marker-start: url(#arrowPurpStart); }
+    .arrowYel { stroke: #ffaa00; stroke-width: 4; fill: none; marker-end: url(#arrowYelEnd); marker-start: url(#arrowYelStart); }
+    .lead { stroke: #ff0000; stroke-width: 1.5; fill: none; }
+    .leadYel { stroke: #ffaa00; stroke-width: 1.5; fill: none; }
+    .leadPurp { stroke: #660099; stroke-width: 1.5; fill: none; }
+    .boxRed { fill: #fff; stroke: #ff0000; stroke-width: 2; }
+    .boxYel { fill: #fff; stroke: #ffaa00; stroke-width: 2; }
+    .boxPurp { fill: #fff; stroke: #660099; stroke-width: 2; }
+    .catBox { fill: none; stroke: #ff0000; stroke-width: 4; rx: 8; }
+  </style>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#000" />
+    </marker>
+    <marker id="arrowRedEnd" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#ff0000" />
+    </marker>
+    <marker id="arrowRedStart" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse">
+      <polygon points="0,0 6,3 0,6" fill="#ff0000" />
+    </marker>
+    <marker id="arrowPurpEnd" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#660099" />
+    </marker>
+    <marker id="arrowPurpStart" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse">
+      <polygon points="0,0 6,3 0,6" fill="#660099" />
+    </marker>
+    <marker id="arrowYelEnd" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#ffaa00" />
+    </marker>
+    <marker id="arrowYelStart" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse">
+      <polygon points="0,0 6,3 0,6" fill="#ffaa00" />
+    </marker>
+  </defs>
+
+  <!-- 上の図: 触媒なし -->
+  <g transform="translate(50, 40)">
+    <!-- 軸 -->
+    <path class="axis" d="M 40 300 L 40 10" />
+    <path class="axis" d="M 40 300 L 450 300" />
+    <text x="15" y="60">エ</text>
+    <text x="15" y="90">ネ</text>
+    <text x="15" y="120">ル</text>
+    <text x="15" y="150">ギ</text>
+    <text x="15" y="180">|</text>
+
+    <!-- 曲線と水平線 -->
+    <path class="curve" d="M 40 240 Q 180 240 200 100 Q 220 280 400 280" />
+    <line class="level" x1="40" y1="240" x2="240" y2="240" />
+    <line class="level" x1="160" y1="100" x2="300" y2="100" />
+    <line class="level" x1="180" y1="280" x2="420" y2="280" />
+
+    <!-- 矢印 -->
+    <line class="arrowRed" x1="200" y1="100" x2="200" y2="240" />
+    <line class="arrowPurp" x1="220" y1="100" x2="220" y2="280" />
+    <line class="arrowYel" x1="200" y1="240" x2="200" y2="280" />
+
+    <!-- 分子モデル -->
+    <!-- 反応物 -->
+    <circle cx="80" cy="90" r="18" class="atomH" />
+    <text x="80" y="97" class="wtext">H</text>
+    <circle cx="115" cy="90" r="18" class="atomH" />
+    <text x="115" y="97" class="wtext">H</text>
+    
+    <circle cx="80" cy="170" r="18" class="atomI" />
+    <text x="80" y="177" class="wtext">I</text>
+    <circle cx="115" cy="170" r="18" class="atomI" />
+    <text x="115" y="177" class="wtext">I</text>
+    <text x="98" y="220" text-anchor="middle">反応物</text>
+
+    <!-- 遷移状態 -->
+    <circle cx="180" cy="10" r="18" class="atomH" />
+    <text x="180" y="17" class="wtext">H</text>
+    <circle cx="215" cy="10" r="18" class="atomH" />
+    <text x="215" y="17" class="wtext">H</text>
+    <circle cx="180" cy="45" r="18" class="atomI" />
+    <text x="180" y="52" class="wtext">I</text>
+    <circle cx="215" cy="45" r="18" class="atomI" />
+    <text x="215" y="52" class="wtext">I</text>
+    <text x="198" y="85" text-anchor="middle">遷移状態</text>
+
+    <!-- 生成物 -->
+    <circle cx="310" cy="170" r="18" class="atomH" />
+    <text x="310" y="177" class="wtext">H</text>
+    <circle cx="310" cy="205" r="18" class="atomI" />
+    <text x="310" y="212" class="wtext">I</text>
+    
+    <circle cx="370" cy="170" r="18" class="atomH" />
+    <text x="370" y="177" class="wtext">H</text>
+    <circle cx="370" cy="205" r="18" class="atomI" />
+    <text x="370" y="212" class="wtext">I</text>
+    <text x="340" y="250" text-anchor="middle">生成物</text>
+
+    <!-- ラベル箱 -->
+    <rect class="boxRed" x="270" y="60" width="200" height="60" />
+    <text x="280" y="85">正反応の活性化</text>
+    <text x="280" y="110">エネルギー</text>
+    <path class="lead" d="M 270 90 L 205 170" />
+
+    <rect class="boxYel" x="10" y="315" width="180" height="30" />
+    <text x="15" y="337">反応エンタルピー</text>
+    <path class="leadYel" d="M 120 315 L 195 260" />
+
+    <rect class="boxPurp" x="220" y="315" width="250" height="30" />
+    <text x="225" y="337">逆反応の活性化エネルギー</text>
+    <path class="leadPurp" d="M 250 315 L 225 190" />
+  </g>
+
+  <!-- 中央の矢印 -->
+  <polygon points="320,410 350,410 350,400 380,420 350,440 350,430 320,430" fill="#004466" stroke="#002233" stroke-width="2" />
+
+  <!-- 下の図: 触媒あり -->
+  <g transform="translate(50, 440)">
+    <!-- 軸 -->
+    <path class="axis" d="M 40 300 L 40 10" />
+    <path class="axis" d="M 40 300 L 450 300" />
+    <text x="15" y="60">エ</text>
+    <text x="15" y="90">ネ</text>
+    <text x="15" y="120">ル</text>
+    <text x="15" y="150">ギ</text>
+    <text x="15" y="180">|</text>
+
+    <!-- 曲線と水平線 -->
+    <path class="curve" d="M 40 240 Q 180 240 200 180 Q 220 280 400 280" />
+    <line class="level" x1="40" y1="240" x2="240" y2="240" />
+    <line class="level" x1="160" y1="180" x2="300" y2="180" />
+    <line class="level" x1="180" y1="280" x2="420" y2="280" />
+
+    <!-- 矢印 -->
+    <line class="arrowRed" x1="200" y1="180" x2="200" y2="240" />
+    <line class="arrowPurp" x1="220" y1="180" x2="220" y2="280" />
+    <line class="arrowYel" x1="200" y1="240" x2="200" y2="280" />
+
+    <!-- 分子モデル -->
+    <!-- 反応物 -->
+    <circle cx="80" cy="90" r="18" class="atomH" />
+    <text x="80" y="97" class="wtext">H</text>
+    <circle cx="115" cy="90" r="18" class="atomH" />
+    <text x="115" y="97" class="wtext">H</text>
+    
+    <circle cx="80" cy="170" r="18" class="atomI" />
+    <text x="80" y="177" class="wtext">I</text>
+    <circle cx="115" cy="170" r="18" class="atomI" />
+    <text x="115" y="177" class="wtext">I</text>
+    <text x="98" y="220" text-anchor="middle">反応物</text>
+
+    <!-- 遷移状態 -->
+    <rect class="catBox" x="155" y="45" width="85" height="80" />
+    <rect class="boxRed" x="180" y="-15" width="50" height="30" />
+    <text x="205" y="7" text-anchor="middle">触媒</text>
+    <path class="lead" d="M 205 15 L 205 45" />
+
+    <circle cx="180" cy="65" r="18" class="atomH" />
+    <text x="180" y="72" class="wtext">H</text>
+    <circle cx="215" cy="65" r="18" class="atomH" />
+    <text x="215" y="72" class="wtext">H</text>
+    <circle cx="180" cy="100" r="18" class="atomI" />
+    <text x="180" y="107" class="wtext">I</text>
+    <circle cx="215" cy="100" r="18" class="atomI" />
+    <text x="215" y="107" class="wtext">I</text>
+    <text x="198" y="145" text-anchor="middle">遷移状態</text>
+
+    <!-- 生成物 -->
+    <circle cx="310" cy="170" r="18" class="atomH" />
+    <text x="310" y="177" class="wtext">H</text>
+    <circle cx="310" cy="205" r="18" class="atomI" />
+    <text x="310" y="212" class="wtext">I</text>
+    
+    <circle cx="370" cy="170" r="18" class="atomH" />
+    <text x="370" y="177" class="wtext">H</text>
+    <circle cx="370" cy="205" r="18" class="atomI" />
+    <text x="370" y="212" class="wtext">I</text>
+    <text x="340" y="250" text-anchor="middle">生成物</text>
+
+    <!-- ラベル箱 -->
+    <rect class="boxRed" x="270" y="60" width="200" height="60" />
+    <text x="280" y="85">正反応の活性化</text>
+    <text x="280" y="110">エネルギー</text>
+    <path class="lead" d="M 270 90 L 205 210" />
+
+    <rect class="boxYel" x="10" y="315" width="180" height="30" />
+    <text x="15" y="337">反応エンタルピー</text>
+    <path class="leadYel" d="M 120 315 L 195 260" />
+
+    <rect class="boxPurp" x="220" y="315" width="250" height="30" />
+    <text x="225" y="337">逆反応の活性化エネルギー</text>
+    <path class="leadPurp" d="M 250 315 L 225 230" />
+  </g>
+
+</svg>

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="340" viewBox="0 0 680 340" role="img">
+  <!-- 半反応式の作り方（KMnO4）を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .eq { font-family: "Times New Roman", serif; font-size: 20px; }
+    .titleText { font-family: "Times New Roman", serif; font-size: 22px; font-weight: bold; }
+    .boxOrange { fill: none; stroke: #e0762b; stroke-width: 1.5; rx: 3; }
+    .textOrange { fill: #e0762b; font-size: 14px; }
+    .textOxi { fill: #1f618d; font-size: 14px; }
+    .underline { stroke: #1f618d; stroke-width: 1.5; }
+    .arrowOxi { stroke: #e0762b; stroke-width: 1.5; fill: none; marker-end: url(#arrowheadOxi); }
+    .boxRight { fill: none; stroke: #e0762b; stroke-width: 1.5; }
+  </style>
+
+  <defs>
+    <marker id="arrowheadOxi" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#e0762b" />
+    </marker>
+  </defs>
+
+  <text x="10" y="30" class="titleText">【KMnO<tspan font-size="14" dy="5">4</tspan><tspan dy="-5">】</tspan></text>
+
+  <!-- Step 1 -->
+  <text x="30" y="60">1． 酸化剤・還元剤の反応前後の物質（暗記）を書く</text>
+  <text x="100" y="90" class="eq">MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
+  <text x="270" y="90" class="eq">→</text>
+  <text x="315" y="90" class="eq">Mn<tspan font-size="14" dy="-10">2+</tspan></text>
+
+  <rect class="boxRight" x="470" y="45" width="200" height="40" />
+  <text x="475" y="62" font-size="14">左辺にO原子が4個あるので</text>
+  <text x="475" y="80" font-size="14">右辺に4H<tspan font-size="12" dy="3">2</tspan><tspan dy="-3">Oを加える</tspan></text>
+
+  <!-- Step 2 -->
+  <text x="30" y="120">2． H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">Oで両辺のO原子の数を合わせる</tspan></text>
+  <text x="100" y="150" class="eq">MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
+  <text x="270" y="150" class="eq">→</text>
+  <text x="315" y="150" class="eq">Mn<tspan font-size="14" dy="-10">2+</tspan></text>
+  <text x="370" y="150" class="eq">＋</text>
+  <rect class="boxOrange" x="385" y="122" width="75" height="35" />
+  <text x="395" y="150" class="eq">4H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+
+  <rect class="boxRight" x="470" y="105" width="200" height="40" />
+  <text x="475" y="122" font-size="14">右辺にH原子が8個あるので</text>
+  <text x="475" y="140" font-size="14">左辺に8H<tspan font-size="12" dy="-3">+</tspan><tspan dy="3">を加える</tspan></text>
+
+  <!-- Step 3 -->
+  <text x="30" y="180">3． H<tspan font-size="12" dy="-8">+</tspan><tspan dy="8">で両辺のH原子の数を合わせる</tspan></text>
+  <text x="100" y="210" class="eq">MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
+  <text x="165" y="210" class="eq">＋</text>
+  <rect class="boxOrange" x="180" y="182" width="60" height="35" />
+  <text x="185" y="210" class="eq">8H<tspan font-size="14" dy="-10">+</tspan></text>
+  <text x="270" y="210" class="eq">→</text>
+  <text x="315" y="210" class="eq">Mn<tspan font-size="14" dy="-10">2+</tspan></text>
+  <text x="370" y="210" class="eq">＋</text>
+  <text x="395" y="210" class="eq">4H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+
+  <rect class="boxRight" x="470" y="165" width="200" height="60" />
+  <text x="475" y="182" font-size="14">左辺の電荷は合計+7，右辺</text>
+  <text x="475" y="200" font-size="14">の電荷は合計+2なので左辺</text>
+  <text x="475" y="218" font-size="14">に5e<tspan font-size="12" dy="-3">-</tspan><tspan dy="3">を加える</tspan></text>
+
+  <!-- Step 4 -->
+  <text x="30" y="250">4． e<tspan font-size="12" dy="-8">-</tspan><tspan dy="8">で両辺の電荷を合わせる</tspan></text>
+  <text x="100" y="280" class="eq">MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
+  <line class="underline" x1="95" y1="285" x2="125" y2="285" />
+  <text x="110" y="300" class="textOxi" text-anchor="middle">+7</text>
+  
+  <text x="155" y="280" class="eq">＋</text>
+  <text x="175" y="280" class="eq">8H<tspan font-size="14" dy="-10">+</tspan></text>
+  <text x="215" y="280" class="eq">＋</text>
+
+  <rect class="boxOrange" x="230" y="252" width="60" height="35" />
+  <text x="235" y="280" class="eq">5e<tspan font-size="14" dy="-10">-</tspan></text>
+
+  <text x="280" y="280" class="eq">→</text>
+  
+  <text x="315" y="280" class="eq">Mn<tspan font-size="14" dy="-10">2+</tspan></text>
+  <line class="underline" x1="310" y1="285" x2="345" y2="285" />
+  <text x="328" y="300" class="textOxi" text-anchor="middle">+2</text>
+  
+  <text x="365" y="280" class="eq">＋</text>
+  <text x="385" y="280" class="eq">4H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+
+  <!-- 酸化数の変化の矢印 -->
+  <path class="arrowOxi" d="M 125 295 L 310 295" />
+  <rect x="130" y="300" width="200" height="20" fill="#fff" />
+  <text x="230" y="315" class="textOrange eq" font-size="16" text-anchor="middle">Mn<tspan font-size="12" dy="-5">7+</tspan><tspan dy="5"> ＋ 5e</tspan><tspan font-size="12" dy="-5">-</tspan><tspan dy="5"> → Mn</tspan><tspan font-size="12" dy="-5">2+</tspan></text>
+
+  <rect class="boxRight" x="470" y="245" width="200" height="60" />
+  <text x="475" y="262" font-size="14">酸化数が変化している原子</text>
+  <text x="475" y="280" font-size="14">に着目すると酸化数の変化</text>
+  <text x="475" y="298" font-size="14">とe<tspan font-size="12" dy="-3">-</tspan><tspan dy="3">の数が対応している</tspan></text>
+
+</svg>

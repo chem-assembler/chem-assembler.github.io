@@ -153,6 +153,7 @@ terms:
 
 :::figure
 src: titration-curve-hcl-naoh.png
+svg: titration-curve-hcl-naoh.svg
 alt: 横軸に滴下した水酸化ナトリウム水溶液の体積、縦軸に pH をとった滴定曲線。pH 1 付近から始まり、中和点付近で pH が一気に上がって pH 7 を通り、pH 13 に近づいていく
 caption: 塩酸（強酸）に水酸化ナトリウム水溶液（強塩基）を滴下したときの滴定曲線。**pH 1 から始まり、中和点（NaCl 水溶液・pH 7）で一気に変わり、pH 13 に近づきます**。
 :::
@@ -189,6 +190,7 @@ terms:
 
 :::figure
 src: titration-curve-indicators.png
+svg: titration-curve-indicators.svg
 alt: 強酸＋強塩基、弱酸＋強塩基、強酸＋弱塩基の3本の滴定曲線に、フェノールフタレイン（pH 8.0〜9.8）とメチルオレンジ（pH 3.1〜4.4）の変色域を帯で重ねた図
 caption: 酸に塩基を滴下した3本の滴定曲線と、**PP（pH 8.0〜9.8）・MO（pH 3.1〜4.4）の変色域**。pH ジャンプが帯を貫いていれば、その指示薬が使えます。
 :::

@@ -40,6 +40,7 @@ terms:
 
 :::figure
 src: neutralization-recombination.png
+svg: neutralization-recombination.svg
 alt: 反応前の酸（H⁺ と陰イオン）と塩基（陽イオンと OH⁻）から、反応後は陽イオンと陰イオンが組んだ塩と、H⁺ と OH⁻ が組んだ水ができることを矢印で示した図
 caption: 中和は**イオンの組み換え**。H⁺ と OH⁻ は水に、塩基の陽イオンと酸の陰イオンは塩になります。
 :::

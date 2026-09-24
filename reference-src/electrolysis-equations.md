@@ -58,6 +58,7 @@ lead: 金属の単体と陽イオンは可逆で、陽極では単体が溶け�
 
 :::figure
 src: electrolysis-equations-metal.png
+svg: electrolysis-equations-metal.svg
 alt: 金属の反応の表。Cu ⇄ Cu²⁺ ＋ 2e⁻（Cu⁺ も存在するが Cu²⁺ になる）、Ag ⇄ Ag⁺ ＋ e⁻（Ag⁺ のみ）、Fe ⇄ Fe²⁺ ＋ 2e⁻（Fe³⁺ も存在するが Fe²⁺ になる）、Zn ⇄ Zn²⁺ ＋ 2e⁻、Al ⇄ Al³⁺ ＋ 3e⁻、H₂ ⇄ 2H⁺ ＋ 2e⁻。上に、還元剤の Cu が陽極で、酸化剤の Cu²⁺ が陰極で反応することを示す矢印
 caption: 右向きが陽極での反応、左向きが陰極での反応です。**Cu は Cu²⁺、Fe は Fe²⁺** になる、というイオンの電荷だけは覚えておきます。
 :::

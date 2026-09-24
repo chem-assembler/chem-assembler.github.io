@@ -175,6 +175,7 @@ note: 1段目。硫酸酸性で H₂O₂ が酸化剤、KI が還元剤。H₂O�
 
 :::figure
 src: redox-titration-iodine-two-steps.png
+svg: redox-titration-iodine-two-steps.svg
 alt: ヨウ素滴定の2段の反応の組み立て。(1) H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O と 2I⁻ → I₂ ＋ 2e⁻ を足し、SO₄²⁻ と 2K⁺ を加えて H₂O₂ ＋ H₂SO₄ ＋ 2KI → 2H₂O ＋ I₂ ＋ K₂SO₄。(2) I₂ ＋ 2e⁻ → 2I⁻ と 2S₂O₃²⁻ → S₄O₆²⁻ ＋ 2e⁻ を足して I₂ ＋ 2S₂O₃²⁻ → 2I⁻ ＋ S₄O₆²⁻
 caption: 1段目は H₂O₂ が酸化剤・KI が還元剤、2段目は1段目で生じた I₂ が酸化剤・Na₂S₂O₃ が還元剤です。**どちらも半反応式を足して組み立てます**。
 :::

@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="220" viewBox="0 0 680 220" role="img">
+  <!-- シャルルの法則とボイルの法則の組み合わせ（温度と圧力の関係）を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .eq { font-family: "Times New Roman", serif; font-size: 20px; font-style: italic; text-anchor: middle; }
+    .boxP { fill: #fff; stroke: #f39c12; stroke-width: 1.5; rx: 3; }
+    .boxV { fill: #fff; stroke: #27ae60; stroke-width: 1.5; rx: 3; }
+    .boxT { fill: #fff; stroke: #d35400; stroke-width: 1.5; rx: 3; }
+    .pArrow { fill: #ffff00; stroke: #222; stroke-width: 1.5; }
+    .arrowT { stroke: #d35400; stroke-width: 3; fill: none; marker-end: url(#arrowheadT); }
+    .arrowV { stroke: #27ae60; stroke-width: 3; fill: none; marker-end: url(#arrowheadV); }
+    .arrowP { stroke: #f39c12; stroke-width: 3; fill: none; marker-end: url(#arrowheadP); }
+    .cylinder { fill: none; stroke: #003366; stroke-width: 2; }
+    .piston { fill: #1a5276; stroke: #003366; stroke-width: 2; }
+    .textBox { fill: #fff; stroke: #1f618d; stroke-width: 1.5; }
+    .lineBlue { stroke: #1f618d; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="arrowheadT" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+      <polygon points="0,0 5,2.5 0,5" fill="#d35400" />
+    </marker>
+    <marker id="arrowheadV" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+      <polygon points="0,0 5,2.5 0,5" fill="#27ae60" />
+    </marker>
+    <marker id="arrowheadP" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+      <polygon points="0,0 5,2.5 0,5" fill="#f39c12" />
+    </marker>
+  </defs>
+
+  <g transform="translate(0, 20)">
+    <!-- 状態 1 (左) -->
+    <g transform="translate(10, 60)">
+      <path class="cylinder" d="M 0 0 L 0 80 L 60 80 L 60 0" />
+      <rect class="piston" x="0" y="40" width="60" height="15" />
+      
+      <polygon points="30,35 20,20 25,20 25,0 35,0 35,20 40,20" class="pArrow" />
+      <text class="eq" x="30" y="-5">P</text>
+
+      <rect class="boxV" x="15" y="58" width="30" height="20" />
+      <text class="eq" x="30" y="74">V</text>
+
+      <rect class="boxT" x="15" y="83" width="30" height="20" />
+      <text class="eq" x="30" y="99">T</text>
+    </g>
+
+    <!-- 状態 2 (中央) -->
+    <g transform="translate(240, 50)">
+      <path class="cylinder" d="M 0 -20 L 0 70 L 60 70 L 60 -20" />
+      <rect class="piston" x="0" y="0" width="60" height="15" />
+      
+      <polygon points="30,-5 20,-20 25,-20 25,-40 35,-40 35,-20 40,-20" class="pArrow" />
+      <rect class="boxP" x="15" y="-62" width="30" height="20" />
+      <text class="eq" x="30" y="-46">P</text>
+
+      <rect class="boxV" x="12" y="28" width="36" height="20" />
+      <text class="eq" x="30" y="45">2V</text>
+
+      <rect class="boxT" x="12" y="73" width="36" height="20" />
+      <text class="eq" x="30" y="90">2T</text>
+    </g>
+
+    <!-- 状態 3 (右) -->
+    <g transform="translate(480, 50)">
+      <path class="cylinder" d="M 0 -20 L 0 70 L 60 70 L 60 -20" />
+      <rect class="piston" x="0" y="30" width="60" height="15" />
+      
+      <polygon points="30,25 15,0 22,0 22,-20 38,-20 38,0 45,0" class="pArrow" />
+      <rect class="boxP" x="12" y="-42" width="36" height="20" />
+      <text class="eq" x="30" y="-25">2P</text>
+
+      <rect class="boxV" x="15" y="48" width="30" height="20" />
+      <text class="eq" x="30" y="64">V</text>
+
+      <rect class="boxT" x="12" y="73" width="36" height="20" />
+      <text class="eq" x="30" y="90">2T</text>
+    </g>
+
+    <!-- 矢印と説明テキスト -->
+    
+    <!-- 1 -> 2 (温度) -->
+    <path class="arrowT" d="M 60 155 L 240 155" />
+    <text x="80" y="150" fill="#d35400">1. 温度<tspan font-family="Times New Roman, serif" font-style="italic">T</tspan>を2倍にする</text>
+
+    <!-- 1 -> 2 (体積) -->
+    <path class="arrowV" d="M 50 130 L 245 100" />
+    <text x="80" y="90" fill="#27ae60">2. 体積<tspan font-family="Times New Roman, serif" font-style="italic">V</tspan>も2倍になる</text>
+
+    <!-- 2 -> 3 (体積戻す) -->
+    <path class="arrowV" d="M 290 100 L 485 130" />
+    <text x="310" y="140" fill="#27ae60">3. 体積<tspan font-family="Times New Roman, serif" font-style="italic">V</tspan>を1/2倍に</text>
+    <text x="310" y="160" fill="#27ae60">する（もとに戻す）</text>
+
+    <!-- 2 -> 3 (圧力変化) -->
+    <path class="arrowP" d="M 285 20 L 480 40" />
+    <text x="310" y="50" fill="#f39c12">4. 圧力<tspan font-family="Times New Roman, serif" font-style="italic">P</tspan>が2倍になる</text>
+
+    <!-- 右側の結論ボックス -->
+    <rect class="textBox" x="520" y="85" width="150" height="40" />
+    <text x="525" y="102" font-size="14">温度Tを2倍にしたら</text>
+    <text x="525" y="118" font-size="14">圧力Pが2倍になった</text>
+
+    <path class="lineBlue" d="M 500 20 L 555 85" />
+    <path class="lineBlue" d="M 515 140 L 555 125" />
+  </g>
+</svg>

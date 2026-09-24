@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="420" viewBox="0 0 680 420" role="img">
+  <!-- 酸化剤と還元剤の反応量の比（価数の逆の比）を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。
+       2026-09-25: 上2行の式が囲みから左右にはみ出していたので、字を 18px にして囲みを広げた。
+       還元剤の箱を高くして「2価の」「還元剤」の重なりを解き、e⁻ の札を矢印の上に置き直した（高さ 380 → 420）。
+       ⚠ text 要素の font-size 属性は下の text { font-size } に負けるので、大きさは style で指定する -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 20px; text-anchor: middle; }
+    .wtext { fill: #fff; }
+    .formula { font-size: 18px; }
+    .boxYellow { fill: #fff; stroke: #ffcc00; stroke-width: 2; }
+    .boxOrange { fill: #e0762b; stroke: #873600; stroke-width: 2; rx: 8; }
+    .boxGreen { fill: #00b050; stroke: #005020; stroke-width: 2; rx: 8; }
+    .pool { fill: #ffff00; stroke: #000; stroke-width: 2; }
+    .arrow { fill: #ffff00; stroke: #000; stroke-width: 2; }
+    .eLabel { font-size: 20px; }
+  </style>
+
+  <!-- 上の式 -->
+  <rect class="boxYellow" x="80" y="10" width="520" height="40" />
+  <text x="340" y="36" class="formula">（酸化剤の受け取るe<tspan font-size="13" dy="-7">-</tspan><tspan dy="7">の数）＝（還元剤の放出するe</tspan><tspan font-size="13" dy="-7">-</tspan><tspan dy="7">の数）</tspan></text>
+
+  <rect class="boxYellow" x="20" y="60" width="640" height="40" />
+  <text x="340" y="86" class="formula">（酸化剤の価数）×（酸化剤の数）＝（還元剤の価数）×（還元剤の数）</text>
+
+  <!-- 中央の図解 -->
+  <!-- 左: 酸化剤（中心 y=170・250） -->
+  <rect class="boxOrange" x="150" y="140" width="100" height="60" />
+  <text x="200" y="165" class="wtext">3価の</text>
+  <text x="200" y="190" class="wtext">酸化剤</text>
+
+  <rect class="boxOrange" x="150" y="220" width="100" height="60" />
+  <text x="200" y="245" class="wtext">3価の</text>
+  <text x="200" y="270" class="wtext">酸化剤</text>
+
+  <!-- 電子プール -->
+  <ellipse cx="340" cy="210" rx="34" ry="82" class="pool" />
+  <text x="340" y="218" style="font-size: 24px;">6e<tspan font-size="16" dy="-10">-</tspan></text>
+
+  <!-- 右: 還元剤（中心 y=157・215・273） -->
+  <rect class="boxGreen" x="450" y="130" width="100" height="54" />
+  <text x="500" y="153" class="wtext">2価の</text>
+  <text x="500" y="177" class="wtext">還元剤</text>
+
+  <rect class="boxGreen" x="450" y="188" width="100" height="54" />
+  <text x="500" y="211" class="wtext">2価の</text>
+  <text x="500" y="235" class="wtext">還元剤</text>
+
+  <rect class="boxGreen" x="450" y="246" width="100" height="54" />
+  <text x="500" y="269" class="wtext">2価の</text>
+  <text x="500" y="293" class="wtext">還元剤</text>
+
+  <!-- 矢印（還元剤からプールへ・左向き） -->
+  <polygon points="376,157 388,145 388,152 444,152 444,162 388,162 388,169" class="arrow" />
+  <text x="418" y="140" class="eLabel">2e<tspan font-size="13" dy="-7">-</tspan></text>
+
+  <polygon points="378,215 390,203 390,210 444,210 444,220 390,220 390,227" class="arrow" />
+  <text x="418" y="198" class="eLabel">2e<tspan font-size="13" dy="-7">-</tspan></text>
+
+  <polygon points="372,273 384,261 384,268 444,268 444,278 384,278 384,285" class="arrow" />
+  <text x="418" y="256" class="eLabel">2e<tspan font-size="13" dy="-7">-</tspan></text>
+
+  <!-- 矢印（プールから酸化剤へ・左向き） -->
+  <polygon points="256,170 268,158 268,165 314,165 314,175 268,175 268,182" class="arrow" />
+  <text x="284" y="153" class="eLabel">3e<tspan font-size="13" dy="-7">-</tspan></text>
+
+  <polygon points="256,250 268,238 268,245 314,245 314,255 268,255 268,262" class="arrow" />
+  <text x="284" y="233" class="eLabel">3e<tspan font-size="13" dy="-7">-</tspan></text>
+
+  <!-- 下のテキスト -->
+  <text x="340" y="340">3価の酸化剤2個と2価の還元剤3個で完全に反応する</text>
+
+  <rect class="boxYellow" x="100" y="358" width="480" height="48" />
+  <text x="340" y="390">酸化剤と還元剤は<tspan font-weight="bold" font-size="26">価数の逆の比</tspan>で反応する</text>
+
+</svg>

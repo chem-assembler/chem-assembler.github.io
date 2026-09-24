@@ -150,6 +150,7 @@ terms:
 
 :::figure
 src: acid-displacement-hydrolysis.png
+svg: acid-displacement-hydrolysis.svg
 alt: 左は CH₃COONa の水溶液に HCl を加えると、HCl がすべて電離して H⁺ を渡し CH₃COOH が遊離する様子。右は CH₃COONa の水溶液で、CH₃COO⁻ が水を分解して H⁺ を受け取り、OH⁻ が余って塩基性になる様子。下に両方の反応式
 caption: **弱酸の遊離も加水分解も、CH₃COO⁻ が H⁺ とくっつく反応**。H⁺ をくれるのが HCl なら遊離（ほぼ 100 ％進む）、H₂O なら加水分解（ごく一部しか起こらない可逆反応）です。
 :::

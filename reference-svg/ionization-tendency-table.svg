@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="340" viewBox="0 0 680 340" role="img">
+  <!-- イオン化傾向の表。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; text-anchor: middle; }
+    .colText { font-family: "Times New Roman", serif; font-size: 18px; }
+    .leftText { text-anchor: start; font-size: 16px; }
+    .titleText { font-size: 18px; font-weight: bold; fill: #00b050; }
+    .lineTable { stroke: #222; stroke-width: 1.5; fill: none; }
+    .arrow { stroke: #1f618d; stroke-width: 3; fill: none; marker-end: url(#arrowhead); marker-start: url(#arrowhead-start); }
+    .boxGreen { fill: none; stroke: #a5d4a1; stroke-width: 2; }
+    .boxOrange { fill: none; stroke: #e0762b; stroke-width: 2; rx: 4; }
+  </style>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#1f618d" />
+    </marker>
+    <marker id="arrowhead-start" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse">
+      <polygon points="0,0 6,3 0,6" fill="#1f618d" />
+    </marker>
+  </defs>
+
+  <!-- 上部タイトル -->
+  <rect class="boxGreen" x="10" y="10" width="100" height="30" />
+  <text x="60" y="31" class="titleText" font-weight="normal">イオン化傾向</text>
+  <text x="135" y="32" class="titleText" font-size="22">大</text>
+  <text x="655" y="32" class="titleText" font-size="22">小</text>
+  <path class="arrow" d="M 160 25 L 630 25" />
+
+  <!-- テーブル描画 -->
+  <!-- 横線 -->
+  <line class="lineTable" x1="10" y1="50" x2="670" y2="50" />
+  <line class="lineTable" x1="10" y1="85" x2="670" y2="85" />
+  <line class="lineTable" x1="10" y1="135" x2="670" y2="135" />
+  <line class="lineTable" x1="10" y1="185" x2="670" y2="185" />
+
+  <!-- 縦線 -->
+  <line class="lineTable" x1="10" y1="50" x2="10" y2="185" />
+  <line class="lineTable" x1="105" y1="50" x2="105" y2="185" />
+  <line class="lineTable" x1="185" y1="50" x2="185" y2="185" />
+  <line class="lineTable" x1="265" y1="50" x2="265" y2="185" />
+  <line class="lineTable" x1="365" y1="50" x2="365" y2="185" />
+  <line class="lineTable" x1="435" y1="50" x2="435" y2="185" />
+  <line class="lineTable" x1="465" y1="50" x2="465" y2="185" />
+  <line class="lineTable" x1="585" y1="50" x2="585" y2="185" />
+  <line class="lineTable" x1="670" y1="50" x2="670" y2="185" />
+
+  <!-- 見出し行 -->
+  <text x="57" y="73">イオン化列</text>
+  <text x="145" y="73" class="colText">Li K Ca Na</text>
+  <text x="225" y="73" class="colText">Mg</text>
+  <text x="315" y="73" class="colText">Al Zn Fe</text>
+  <text x="400" y="73" class="colText">Ni Sn Pb</text>
+  <text x="450" y="73" class="colText">H<tspan font-size="12" dy="5">2</tspan></text>
+  <text x="525" y="73" class="colText">Cu Hg Ag</text>
+  <text x="627" y="73" class="colText">Pt Au</text>
+
+  <!-- 2行目 (水との反応) -->
+  <text x="57" y="115">水との反応</text>
+  <text x="145" y="105">水と</text>
+  <text x="145" y="125">反応</text>
+  <text x="225" y="105">熱水</text>
+  <text x="225" y="125">と反応</text>
+  <text x="315" y="105">高温の水蒸気</text>
+  <text x="315" y="125">と反応</text>
+  <text x="567" y="115">反応しない</text>
+
+  <!-- 3行目 (酸との反応) -->
+  <text x="57" y="165">酸との反応</text>
+  <text x="270" y="165">希酸（希塩酸，希硫酸）と反応</text>
+  <text x="525" y="155">酸化力のある酸</text>
+  <text x="525" y="175">と反応</text>
+  <text x="627" y="165">王水と反応</text>
+
+  <!-- オレンジの枠 -->
+  <rect class="boxOrange" x="190" y="55" width="70" height="75" />
+  <rect class="boxOrange" x="440" y="55" width="20" height="125" />
+
+  <!-- 下部矢印 -->
+  <text x="120" y="215" class="titleText" font-size="20">反応しやすい</text>
+  <text x="600" y="215" class="titleText" font-size="20">反応しにくい</text>
+  <path class="arrow" d="M 215 208 L 525 208" />
+
+  <text x="120" y="245" class="titleText" font-size="20">酸化されやすい</text>
+  <text x="600" y="245" class="titleText" font-size="20">酸化されにくい</text>
+  <path class="arrow" d="M 230 238 L 510 238" />
+
+  <!-- 注釈 -->
+  <text class="leftText" x="10" y="285">「<tspan font-weight="bold">酸化力のある酸</tspan>」は<tspan font-weight="bold">希硝酸</tspan>（→NO↑），<tspan font-weight="bold">濃硝酸</tspan>（→NO<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">↑），</tspan><tspan font-weight="bold">熱濃硫酸</tspan>（→SO<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">↑）の</tspan></text>
+  <text class="leftText" x="10" y="315">3つで「H<tspan font-size="12" dy="-8">+</tspan><tspan dy="8">よりも強い酸化力をもつ陰イオンをもつ酸」のこと</tspan></text>
+
+</svg>

@@ -46,6 +46,7 @@ H⁺ と OH⁻ は同じ数（mol）どうしで反応して H₂O になりま�
 
 :::figure
 src: acid-base-strength-valence.png
+svg: acid-base-strength-valence.svg
 alt: 塩基の OH⁻ と酸の H⁺ が結びついて H₂O ができる模式図。左は1価の酸2個がそれぞれ H⁺ を1個ずつ出す場合、右は2価の酸1個が H⁺ を2個出す場合
 caption: **2個の H⁺ を出すのに、1価の酸なら2個、2価の酸なら1個**。価数は「1個が出す H⁺（OH⁻）の数」です。
 :::
@@ -77,6 +78,7 @@ terms:
 
 :::figure
 src: acid-base-strength-ionization.png
+svg: acid-base-strength-ionization.svg
 alt: 強酸は5個すべてが H⁺ と陰イオンに分かれ、弱酸は5個のうち1個だけが分かれている模式図
 caption: **強酸はすべて電離、弱酸は一部が電離**。弱酸の水溶液には、電離していない分子がたくさん残っています。
 :::

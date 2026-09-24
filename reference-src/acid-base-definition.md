@@ -82,6 +82,7 @@ note: 水酸化ナトリウムは OH⁻ と陽イオン Na⁺ がくっついた
 
 :::figure
 src: acid-base-definition-arrhenius.png
+svg: acid-base-definition-arrhenius.svg
 alt: 酸は H⁺ と陰イオンがくっついたもの、塩基は陽イオンと OH⁻ がくっついたもので、どちらも水中で電離して2つのイオンに分かれることを示した模式図
 caption: アレニウスの定義。**酸は「H⁺＋陰イオン」、塩基は「陽イオン＋OH⁻」**の組み合わせで、水中で電離して分かれます。
 :::

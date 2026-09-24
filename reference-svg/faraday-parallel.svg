@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="850" viewBox="0 0 680 850" role="img">
+  <!-- ファラデーの法則・並列回路を示す図。
+       元はスライドの図。文字サイズを確保するため縦横を組み替えて SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 18px; }
+    .wtext { fill: #fff; text-anchor: middle; }
+    .ctext { text-anchor: middle; }
+    .eq { font-family: "Times New Roman", serif; font-size: 24px; font-style: italic; }
+    .wire { fill: none; stroke: #000; stroke-width: 2; }
+    .flowY { fill: #ffff00; stroke: #000; stroke-width: 2; }
+    .flowG { fill: #a5d4a1; stroke: #000; stroke-width: 2; }
+    .flowB { fill: #5dade2; stroke: #000; stroke-width: 2; }
+    .boxY { fill: #fff; stroke: #ffff00; stroke-width: 5; }
+    .boxG { fill: #fff; stroke: #27ae60; stroke-width: 5; }
+    .boxB { fill: #fff; stroke: #0088cc; stroke-width: 5; }
+    .boxOrange { fill: #e0762b; stroke: #222; stroke-width: 1; rx: 4; }
+    .anodeBox { fill: #fff; stroke: #e74c3c; stroke-width: 2; }
+    .cathodeBox { fill: #fff; stroke: #3498db; stroke-width: 2; }
+    .solution { fill: #d4e6f1; stroke: #2c3e50; stroke-width: 2; }
+    .electrode { fill: #95a5a6; stroke: #34495e; stroke-width: 2; }
+    .textOrange { fill: #e0762b; }
+    .descBox { fill: #fff; stroke: #f1c40f; stroke-width: 2; }
+  </style>
+
+  <!-- 上部: 回路図 -->
+  <g transform="translate(100, 20)">
+    <!-- 電源 (電池記号) -->
+    <line class="wire" x1="220" y1="30" x2="220" y2="70" />
+    <line class="wire" x1="240" y1="10" x2="240" y2="90" />
+    <line class="wire" x1="160" y1="50" x2="220" y2="50" />
+    <line class="wire" x1="240" y1="50" x2="310" y2="50" />
+    <text x="180" y="45" font-size="24">e<tspan font-size="16" dy="-8">-</tspan></text>
+    <text x="275" y="45" font-size="24">e<tspan font-size="16" dy="-8">-</tspan></text>
+
+    <!-- 電解槽 I -->
+    <rect x="50" y="150" width="200" height="90" class="solution" />
+    <rect x="90" y="110" width="40" height="80" class="electrode" />
+    <rect x="170" y="110" width="40" height="80" class="electrode" />
+    <text x="150" y="230" class="ctext">電解液中はイオンが移動</text>
+    <text x="150" y="255" class="ctext" font-weight="bold">電解槽I</text>
+
+    <!-- 陽極・陰極ラベル I -->
+    <rect class="anodeBox" x="80" y="120" width="60" height="25" />
+    <text x="110" y="138" class="ctext">陽極</text>
+    <rect class="cathodeBox" x="160" y="120" width="60" height="25" />
+    <text x="190" y="138" class="ctext">陰極</text>
+
+    <!-- 電解槽 II -->
+    <rect x="50" y="320" width="200" height="90" class="solution" />
+    <rect x="90" y="280" width="40" height="80" class="electrode" />
+    <rect x="170" y="280" width="40" height="80" class="electrode" />
+    <text x="150" y="400" class="ctext">電解液中はイオンが移動</text>
+    <text x="150" y="425" class="ctext" font-weight="bold">電解槽II</text>
+
+    <!-- 陽極・陰極ラベル II -->
+    <rect class="anodeBox" x="80" y="290" width="60" height="25" />
+    <text x="110" y="308" class="ctext">陽極</text>
+    <rect class="cathodeBox" x="160" y="290" width="60" height="25" />
+    <text x="190" y="308" class="ctext">陰極</text>
+
+    <!-- 配線と電子の移動矢印 -->
+    <!-- I (黄色) -->
+    <path class="flowY" d="M 330 35 L 360 35 L 360 80 L 345 80 L 365 100 L 385 80 L 370 80 L 370 25 L 330 25 Z" />
+    <rect class="boxY" x="300" y="20" width="30" height="30" />
+    <text x="315" y="43" class="eq ctext">I</text>
+
+    <path class="flowY" d="M 20 25 L 140 25 L 140 35 L 30 35 L 30 80 L 15 80 L 25 100 L 35 80 L 20 80 Z" />
+    <rect class="boxY" x="60" y="20" width="30" height="30" />
+    <text x="75" y="43" class="eq ctext">I</text>
+
+    <!-- 分岐・合流 -->
+    <rect class="boxOrange" x="350" y="100" width="50" height="30" />
+    <text x="375" y="121" class="ctext">分岐</text>
+
+    <rect class="boxOrange" x="0" y="100" width="50" height="30" />
+    <text x="25" y="121" class="ctext">合流</text>
+
+    <!-- I1 (緑) -->
+    <path class="flowG" d="M 350 110 L 250 110 L 250 120 L 350 120 Z" />
+    <path class="flowG" d="M 240 105 L 210 105 L 210 120 L 190 120 L 190 110 L 190 105 L 190 95 L 240 95 Z" />
+    <polygon points="180,120 200,120 190,140" fill="#a5d4a1" stroke="#000" stroke-width="2" />
+    <rect class="boxG" x="260" y="95" width="30" height="30" />
+    <text x="275" y="118" class="eq ctext">I<tspan font-size="14" dy="5">1</tspan></text>
+    <text x="175" y="115" font-size="20">e<tspan font-size="12" dy="-8">-</tspan></text>
+
+    <path class="flowG" d="M 50 110 L 110 110 L 110 95 L 140 95 L 140 105 L 140 120 L 120 120 L 120 120 L 120 105 Z" />
+    <polygon points="50,105 50,125 30,115" fill="#a5d4a1" stroke="#000" stroke-width="2" />
+    <rect class="boxG" x="70" y="95" width="30" height="30" />
+    <text x="85" y="118" class="eq ctext">I<tspan font-size="14" dy="5">1</tspan></text>
+    <text x="155" y="115" font-size="20">e<tspan font-size="12" dy="-8">-</tspan></text>
+
+    <!-- I2 (青) -->
+    <path class="flowB" d="M 390 120 L 390 280 L 230 280 L 230 290 L 380 290 L 380 130 L 400 130 Z" />
+    <polygon points="230,275 230,295 210,285" fill="#5dade2" stroke="#000" stroke-width="2" />
+    <rect class="boxB" x="375" y="190" width="30" height="30" />
+    <text x="390" y="213" class="eq ctext">I<tspan font-size="14" dy="5">2</tspan></text>
+    <text x="320" y="275" font-size="20">e<tspan font-size="12" dy="-8">-</tspan></text>
+
+    <path class="flowB" d="M 10 130 L 10 280 L 110 280 L 110 290 L 20 290 L 20 120 L 0 120 Z" />
+    <polygon points="0,130 20,130 10,110" fill="#5dade2" stroke="#000" stroke-width="2" />
+    <rect class="boxB" x="-5" y="190" width="30" height="30" />
+    <text x="10" y="213" class="eq ctext">I<tspan font-size="14" dy="5">2</tspan></text>
+    <text x="40" y="275" font-size="20">e<tspan font-size="12" dy="-8">-</tspan></text>
+
+    <text x="150" y="460" class="ctext" font-size="16">※<tspan font-weight="bold">→</tspan>は電子の移動の向きで電流は逆向きです</text>
+  </g>
+
+  <!-- 下部: テキスト解説 -->
+  <g transform="translate(20, 500)">
+    <text x="0" y="0">電流が枝分かれしている回路を並列回路という</text>
+    
+    <text x="0" y="30" font-weight="bold">【陽極・陰極の見分け方１】</text>
+    <text x="20" y="55">電極にe<tspan font-size="14" dy="-8">-</tspan><tspan dy="8">が</tspan><tspan font-weight="bold">流れ込む</tspan>（還元される）のが<tspan font-weight="bold" font-size="22">陰極</tspan></text>
+    <text x="20" y="85">電極からe<tspan font-size="14" dy="-8">-</tspan><tspan dy="8">が</tspan><tspan font-weight="bold">出ていく</tspan>（酸化される）のが<tspan font-weight="bold" font-size="22">陽極</tspan></text>
+
+    <text x="0" y="125" font-weight="bold">【陽極・陰極の見分け方２】</text>
+    <text x="20" y="150">着目していない電解槽を隠して判断する</text>
+    <text x="20" y="175">（電解槽が１つの電気分解に見える）</text>
+
+    <!-- 式のボックス -->
+    <rect class="descBox" x="0" y="210" width="640" height="110" />
+    <rect class="boxY" x="190" y="225" width="30" height="30" />
+    <text x="205" y="248" class="eq ctext">I</text>
+
+    <text x="250" y="248" class="eq ctext">＝</text>
+
+    <rect class="boxG" x="290" y="225" width="30" height="30" />
+    <text x="305" y="248" class="eq ctext">I<tspan font-size="14" dy="5">1</tspan></text>
+
+    <text x="350" y="248" class="eq ctext">＋</text>
+
+    <rect class="boxB" x="390" y="225" width="30" height="30" />
+    <text x="405" y="248" class="eq ctext">I<tspan font-size="14" dy="5">2</tspan></text>
+
+    <text x="320" y="285" class="textOrange ctext" font-size="16">（<tspan font-family="Times New Roman, serif" font-style="italic">I</tspan>のe<tspan font-size="12" dy="-5">-</tspan><tspan dy="5">[mol]） ＝ （</tspan><tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">1</tspan></tspan><tspan dy="-5">のe</tspan><tspan font-size="12" dy="-5">-</tspan><tspan dy="5">[mol]） ＋ （</tspan><tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">2</tspan></tspan><tspan dy="-5">のe</tspan><tspan font-size="12" dy="-5">-</tspan><tspan dy="5">[mol]）</tspan></text>
+    <text x="320" y="315" class="textOrange ctext" font-size="16">（<tspan font-family="Times New Roman, serif" font-style="italic">I</tspan>の電気量C） ＝ （<tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">1</tspan></tspan><tspan dy="-5">の電気量C） ＋ （</tspan><tspan font-family="Times New Roman, serif" font-style="italic">I<tspan font-size="12" dy="5">2</tspan></tspan><tspan dy="-5">の電気量C）</tspan></text>
+
+  </g>
+</svg>

@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="612" viewBox="0 0 680 612" role="img">
+  <!-- 指示薬の変色域と滴定曲線を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。
+       2026-09-25: 字を 16px に上げ、左の pH の札が図の外に出ないようグラフを右へ寄せた。
+       箇条書きはグラフの下に全幅で置き直した（高さ 340 → 612）。
+       縦軸は pH 0〜14 を 300px（1 あたり約 21.4px）で描く -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .axis { stroke: #222; stroke-width: 1.5; }
+    .markerTriangle { fill: #5b9bd5; stroke: #222; stroke-width: 1; }
+    .curveBlue { fill: none; stroke: #4472c4; stroke-width: 2.5; }
+    .curveGreen { fill: none; stroke: #70ad47; stroke-width: 2.5; stroke-dasharray: 5 3; }
+    .curveOrange { fill: none; stroke: #ed7d31; stroke-width: 2.5; stroke-dasharray: 8 3 2 3; }
+    .legendBox { fill: #fff; stroke: #222; stroke-width: 1; }
+    .ppArea { fill: #f8cbad; opacity: 0.8; }
+    .moArea { fill: #ffe699; opacity: 0.8; }
+    .textRed { fill: #c00000; }
+    .indicatorText { fill: #fff; font-weight: bold; text-anchor: middle; }
+    .ppLabel { fill: #c55a11; font-weight: bold; }
+    .moLabel { fill: #b58900; font-weight: bold; }
+  </style>
+
+  <!-- 凡例（グラフの右上） -->
+  <rect class="legendBox" x="440" y="12" width="200" height="84" />
+  <line class="curveBlue" x1="452" y1="31" x2="492" y2="31" />
+  <text x="502" y="37">強酸＋強塩基</text>
+  <line class="curveGreen" x1="452" y1="55" x2="492" y2="55" />
+  <text x="502" y="61">弱酸＋強塩基</text>
+  <line class="curveOrange" x1="452" y1="79" x2="492" y2="79" />
+  <text x="502" y="85">強酸＋弱塩基</text>
+
+  <!-- 左側: グラフ（原点は translate の位置。x 0〜280・y 0〜300） -->
+  <g transform="translate(130, 40)">
+    <!-- PP（pH 8.0〜9.8）/ MO（pH 3.1〜4.4）の帯 -->
+    <rect class="ppArea" x="0" y="90" width="280" height="39" />
+    <rect class="moArea" x="0" y="206" width="280" height="28" />
+    <text x="252" y="115" class="ppLabel" text-anchor="middle">PP</text>
+    <text x="252" y="226" class="moLabel" text-anchor="middle">MO</text>
+
+    <!-- 変色域の札（グラフの右） -->
+    <text x="292" y="98" class="textRed">↑赤　pH=9.8〜</text>
+    <text x="292" y="134">↓無色　〜pH=8.0</text>
+    <text x="292" y="210">↑黄　pH=4.4〜</text>
+    <text x="292" y="244" class="textRed">↓赤　〜pH=3.1</text>
+
+    <!-- 軸 -->
+    <line class="axis" x1="0" y1="300" x2="280" y2="300" />
+    <line class="axis" x1="0" y1="0" x2="0" y2="300" />
+
+    <text x="140" y="326" text-anchor="middle">滴下した塩基の体積</text>
+
+    <!-- y軸マーカー -->
+    <polygon points="-16,13 0,21 -16,29" class="markerTriangle" />
+    <text x="-21" y="27" text-anchor="end">強塩基pH=13</text>
+
+    <polygon points="-16,56 0,64 -16,72" class="markerTriangle" />
+    <text x="-21" y="70" text-anchor="end">弱塩基pH=11</text>
+
+    <polygon points="-16,228 0,236 -16,244" class="markerTriangle" />
+    <text x="-21" y="242" text-anchor="end">弱酸pH=3</text>
+
+    <polygon points="-16,271 0,279 -16,287" class="markerTriangle" />
+    <text x="-21" y="285" text-anchor="end">強酸pH=1</text>
+
+    <!-- 滴定曲線 -->
+    <!-- 青: 強酸+強塩基（pH 1 → 中和点 pH 7 → pH 13 に近づく） -->
+    <path class="curveBlue" d="M 0 279 C 93 279, 117 259, 117 150 C 117 42, 140 22, 280 14" />
+    <!-- 緑: 弱酸+強塩基（pH 3 → 中和点は塩基性側 → pH 13 に近づく） -->
+    <path class="curveGreen" d="M 0 240 C 93 192, 111 214, 111 113 C 111 40, 128 22, 280 12" />
+    <!-- オレンジ: 強酸+弱塩基（pH 1 → 中和点は酸性側 → pH 11 に近づく） -->
+    <path class="curveOrange" d="M 0 277 C 99 277, 122 254, 122 176 C 122 87, 163 60, 280 60" />
+  </g>
+
+  <!-- 下側: 箇条書き -->
+  <g transform="translate(30, 400)">
+    <circle cx="10" cy="-5" r="3" fill="#222" />
+    <text x="25" y="0">酸塩基のpHのおおよその値を覚えておき，滴定開始時はコニカルビーカーの</text>
+    <text x="25" y="22">水溶液，滴定終了時はビュレットで滴下した水溶液のpHに近い（判別法）</text>
+
+    <circle cx="10" cy="47" r="3" fill="#222" />
+    <text x="25" y="52">中和点のpHは塩の水溶液の性質を考える（強い方が勝つ）</text>
+
+    <circle cx="10" cy="77" r="3" fill="#222" />
+    <text x="25" y="82">中和点付近はpHが１滴で一気に変わり，pHジャンプという</text>
+
+    <circle cx="10" cy="107" r="3" fill="#222" />
+    <text x="25" y="112">指示薬は中和点の判別に用い，変色域を1滴で飛び越える必要がある</text>
+
+    <circle cx="10" cy="137" r="3" fill="#222" />
+    <text x="25" y="142">フェノールフタレインPPは<tspan font-weight="bold">弱塩基に使えない</tspan>，</text>
+    <text x="25" y="164">メチルオレンジMOは<tspan font-weight="bold">弱酸に使えない</tspan></text>
+
+    <circle cx="10" cy="189" r="3" fill="#222" />
+    <text x="25" y="194">指示薬の色はPP，MOともに「外側が赤」と覚える</text>
+  </g>
+
+</svg>

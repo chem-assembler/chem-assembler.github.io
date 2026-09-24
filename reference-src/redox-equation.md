@@ -60,6 +60,7 @@ note: 1個の H₂O₂ が 2e⁻ を放出しているので、H₂O₂ は **2�
 
 :::figure
 src: redox-equation-valence.png
+svg: redox-equation-valence.svg
 alt: 3価の酸化剤2個と2価の還元剤3個の図。還元剤3個がそれぞれ 2e⁻ を出して合計 6e⁻ になり、それを酸化剤2個が 3e⁻ ずつ受け取る。下に「酸化剤と還元剤は価数の逆の比で反応する」
 caption: 3価の酸化剤2個と2価の還元剤3個で、ちょうど 6e⁻ がやりとりされます。**価数の逆の比**（3：2 の逆 → 2：3）で反応します。
 :::
@@ -118,6 +119,7 @@ items:
 
 :::figure
 src: redox-equation-assemble.png
+svg: redox-equation-assemble.svg
 alt: 過マンガン酸イオンの半反応式を2倍、過酸化水素の半反応式を5倍して足し、2MnO₄⁻ ＋ 6H⁺ ＋ 5H₂O₂ → 2Mn²⁺ ＋ 5O₂ ＋ 8H₂O を得る図と、その両辺に 2K⁺ と 3SO₄²⁻ を加える段
 caption: 1段目で 8H⁺ の2倍の 16H⁺ と、右辺の 10H⁺ が打ち消し合って 6H⁺ が残ります。2段目で、**省略されていた K⁺ と SO₄²⁻** を両辺に戻します。
 :::

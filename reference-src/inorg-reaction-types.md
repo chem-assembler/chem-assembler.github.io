@@ -135,6 +135,7 @@ terms:
 
 :::figure
 src: inorg-reaction-types-neutralization.png
+svg: inorg-reaction-types-neutralization.svg
 alt: 酸（H⁺ と陰イオン）と塩基（陽イオンと OH⁻）が反応して、陽イオンと陰イオンが塩に、H⁺ と OH⁻ が水になる組み換えの図
 caption: 中和は**イオンの組み換え**です。酸の H⁺ と塩基の OH⁻ が水に、残りの陽イオンと陰イオンが塩になります。
 :::
