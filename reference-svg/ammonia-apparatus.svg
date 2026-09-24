@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="440" viewBox="0 0 880 440" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="741.053" height="370.526" viewBox="0 0 880 440" role="img">
   <!-- アンモニアの発生装置。NH4Cl と Ca(OH)2 の固体を加熱 → ソーダ石灰で乾燥 → 上方置換。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ★ 化学の要点: 試験管の口を下げる（生じた水が加熱部へ戻らない）／捕集びんは口を下に向け、
