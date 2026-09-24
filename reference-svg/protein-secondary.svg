@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="340" viewBox="0 0 880 340" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="694.737" height="268.421" viewBox="0 0 880 340" role="img">
   <!-- 二次構造。左: α-ヘリックス（らせん・ひと巻きごとに水素結合）／右: β-シート（鎖が並び、あいだを水素結合）。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
