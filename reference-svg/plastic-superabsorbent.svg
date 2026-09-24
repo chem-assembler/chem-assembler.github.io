@@ -5,9 +5,9 @@
     .net { stroke: #6a1b9a; stroke-width: 2.5; fill: none; }
     .arw { stroke: #333; stroke-width: 2.5; fill: none; }
     .rep { stroke: #c62828; stroke-width: 2; fill: none; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 14px; fill: #444; }
-    .ion { font-size: 13px; fill: #c62828; }
+    .lab { font-size: 23px; fill: #222; }
+    .small { font-size: 20px; fill: #444; }
+    .ion { font-size: 19px; fill: #c62828; }
     .w { fill: #1565c0; }
   </style>
 
