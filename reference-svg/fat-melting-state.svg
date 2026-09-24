@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="420" viewBox="0 0 680 420" role="img">
+  <!-- 融点による状態の違い（常温での固体・液体）を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #d35400; font-size: 32px; }
+    .colBox1 { fill: #009ce0; stroke: #004d66; stroke-width: 4; }
+    .colBox2 { fill: #165b7c; stroke: #004d66; stroke-width: 4; }
+    .wtext { fill: #fff; font-size: 36px; }
+    .btext { fill: #000; font-size: 36px; }
+    .line-mp { stroke: #ff0000; stroke-width: 6; }
+    .line-rt { stroke: #e0762b; stroke-width: 6; stroke-dasharray: 10,10; }
+    .box { fill: #fff; stroke: #00a040; stroke-width: 3; }
+    .line-g { stroke: #00a040; stroke-width: 3; }
+    .tri { fill: #ff0000; }
+    .tri-rt { fill: #e0762b; }
+  </style>
+
+  <!-- 常温の線 -->
+  <text x="50" y="240" font-size="32">常温</text>
+  <polygon points="140,220 155,230 140,240" class="tri-rt" />
+  <line x1="160" y1="230" x2="660" y2="230" class="line-rt" />
+
+  <!-- 融点高（左） -->
+  <text x="280" y="50">融点高</text>
+  <rect x="290" y="70" width="90" height="340" fill="#165b7c" stroke="#000" stroke-width="4" />
+  <rect x="290" y="70" width="90" height="120" fill="#009ce0" stroke="#000" stroke-width="4" />
+  <text x="315" y="125" class="wtext">液</text>
+  <text x="315" y="175" class="wtext">体</text>
+  <text x="315" y="275" class="wtext">固</text>
+  <text x="315" y="325" class="wtext">体</text>
+  
+  <text x="175" y="195" fill="#ff0000">融点</text>
+  <polygon points="265,175 280,185 265,195" class="tri" />
+  <line x1="290" y1="185" x2="380" y2="185" class="line-mp" />
+
+  <rect x="135" y="260" width="105" height="55" class="box" />
+  <text x="150" y="300" class="btext">固体</text>
+  <line x1="240" y1="287" x2="290" y2="230" class="line-g" />
+
+  <!-- 融点低（右） -->
+  <text x="520" y="50">融点低</text>
+  <rect x="525" y="70" width="90" height="340" fill="#165b7c" stroke="#000" stroke-width="4" />
+  <rect x="525" y="70" width="90" height="225" fill="#009ce0" stroke="#000" stroke-width="4" />
+  <text x="550" y="150" class="wtext">液</text>
+  <text x="550" y="200" class="wtext">体</text>
+  <text x="550" y="350" class="wtext">固</text>
+  <text x="550" y="400" class="wtext">体</text>
+
+  <text x="415" y="305" fill="#ff0000">融点</text>
+  <polygon points="505,285 520,295 505,305" class="tri" />
+  <line x1="525" y1="295" x2="615" y2="295" class="line-mp" />
+
+  <rect x="400" y="155" width="105" height="55" class="box" />
+  <text x="415" y="195" class="btext">液体</text>
+  <line x1="505" y1="182" x2="525" y2="230" class="line-g" />
+
+</svg>
