@@ -6,12 +6,12 @@
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
     .ax { stroke: #333; stroke-width: 2.5; fill: none; }
-    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
-    .axlab { font-size: 19px; fill: #222; text-anchor: end; }
-    .end { font-size: 18px; fill: #666; }
-    .bar { font-size: 18px; }
-    .region { font-size: 18px; fill: #222; text-anchor: middle; }
-    .note { font-size: 18px; fill: #333; text-anchor: middle; }
+    .ttl { font-size: 23px; fill: #222; text-anchor: middle; }
+    .axlab { font-size: 22px; fill: #222; text-anchor: end; }
+    .end { font-size: 21px; fill: #666; }
+    .bar { font-size: 21px; }
+    .region { font-size: 21px; fill: #222; text-anchor: middle; }
+    .note { font-size: 21px; fill: #333; text-anchor: middle; }
     .div { stroke: #333; stroke-width: 2; stroke-dasharray: 7 5; fill: none; }
   </style>
 
@@ -27,14 +27,14 @@
   <!-- [S2-] は右へ行くほど大きい -->
   <polygon points="80 168, 790 152, 790 188, 80 172" fill="#ede7f6" stroke="#6a1b9a" stroke-width="2" />
   <text class="axlab" x="62" y="177">[S²⁻]</text>
-  <text x="690" y="177" font-size="18" fill="#4a148c" text-anchor="middle">大きくなる</text>
+  <text x="690" y="177" font-size="21" fill="#4a148c" text-anchor="middle">大きくなる</text>
 
   <!-- CuS は全域で沈殿 -->
-  <rect x="80" y="228" width="710" height="30" rx="6" fill="#fdecea" stroke="#c62828" stroke-width="2" />
+  <rect x="80" y="228" width="725" height="35" rx="6" fill="#fdecea" stroke="#c62828" stroke-width="2" />
   <text class="bar" x="98" y="249" fill="#c62828">CuS —— どこでも沈殿する</text>
 
   <!-- ZnS は境目から右だけ -->
-  <rect x="440" y="272" width="350" height="30" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" />
+  <rect x="440" y="272" width="365" height="35" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" />
   <text class="bar" x="458" y="293" fill="#2e7d32">ZnS —— ここから沈殿する</text>
 
   <!-- 境目 -->
