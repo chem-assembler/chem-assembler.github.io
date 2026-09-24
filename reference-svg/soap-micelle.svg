@@ -6,8 +6,8 @@
     .tail { stroke: #e65100; stroke-width: 7; stroke-linecap: round; fill: none; }
     .head { fill: #1565c0; }
     .core { fill: #fff3e0; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
     .lead { stroke: #666; stroke-width: 1.5; fill: none; }
   </style>
 
