@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="340" viewBox="0 0 680 340" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="440" viewBox="0 0 680 440" role="img">
   <!-- 金属樹の生成と酸への溶解を示す図。
        元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
   <style>
     text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
     .titleText { font-family: "Times New Roman", serif; font-size: 20px; font-weight: bold; }
-    .eq { font-family: "Times New Roman", serif; font-size: 18px; }
+    .eq { font-family: "Times New Roman", serif; font-size: 20px; }
     .water { fill: #d4e6f1; }
     .beaker { fill: none; stroke: #222; stroke-width: 1.5; }
     .electrode { fill: #b0bec5; stroke: #222; stroke-width: 1.5; }
@@ -51,31 +51,31 @@
     <path class="lead" d="M 60 50 L 45 65" />
 
     <!-- イオン -->
-    <circle cx="85" cy="155" r="18" class="circleCu" />
-    <text x="85" y="160" class="wtext eq">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
+    <circle cx="85" cy="155" r="22" class="circleCu" />
+    <text x="85" y="161" class="wtext eq">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
     <path class="arrowBlue" d="M 70 145 L 55 135" />
 
-    <circle cx="95" cy="100" r="18" class="circleZn" />
-    <text x="95" y="105" class="eq ctext">Zn<tspan font-size="12" dy="-8">2+</tspan></text>
+    <circle cx="95" cy="100" r="22" class="circleZn" />
+    <text x="95" y="106" class="eq ctext">Zn<tspan font-size="12" dy="-8">2+</tspan></text>
     <path class="arrowBlue" d="M 55 120 L 75 105" />
 
     <!-- テキスト -->
-    <text x="125" y="45">イオン化傾向は Zn ＞ Cu</text>
-    <text x="125" y="65">なのでZnの方が陽イオ</text>
-    <text x="125" y="85">ンになりやすい</text>
+    <text x="125" y="65">イオン化傾向は Zn ＞ Cu</text>
+    <text x="125" y="90">なのでZnの方が陽イオ</text>
+    <text x="125" y="115">ンになりやすい</text>
 
-    <!-- 反応式 -->
-    <text x="135" y="125" class="eq">Zn</text>
-    <text x="240" y="125" class="eq">→ Zn<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
+    <!-- 反応式 (下に移動) -->
+    <text x="40" y="215" class="eq">Zn</text>
+    <text x="115" y="215" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
     
-    <text x="115" y="150" class="eq">＋）</text>
-    <text x="135" y="150" class="eq">Cu<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
-    <text x="240" y="150" class="eq">→ Cu</text>
+    <text x="10" y="245" class="eq">＋）</text>
+    <text x="40" y="245" class="eq">Cu<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
+    <text x="115" y="245" class="eq">→ Cu</text>
 
-    <line class="lineEq" x1="120" y1="155" x2="310" y2="155" />
+    <line class="lineEq" x1="15" y1="255" x2="250" y2="255" />
 
-    <text x="140" y="175" class="eq">Zn ＋ Cu<tspan font-size="12" dy="-8">2+</tspan></text>
-    <text x="240" y="175" class="eq">→ Zn<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ Cu</tspan></text>
+    <text x="40" y="280" class="eq">Zn ＋ Cu<tspan font-size="14" dy="-8">2+</tspan></text>
+    <text x="115" y="280" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ Cu</tspan></text>
   </g>
 
   <!-- 右側: 金属が希酸に溶解する反応 -->
@@ -96,44 +96,44 @@
     <text x="40" y="105" class="eq">e<tspan font-size="12" dy="-8">-</tspan></text>
 
     <!-- イオン -->
-    <circle cx="85" cy="155" r="14" class="circleH" />
-    <text x="85" y="160" class="wtext eq">H<tspan font-size="10" dy="-5">+</tspan></text>
-    <path class="arrowBlue" d="M 75 145 L 55 130" />
+    <circle cx="85" cy="155" r="18" class="circleH" />
+    <text x="85" y="161" class="wtext eq">H<tspan font-size="12" dy="-5">+</tspan></text>
+    <path class="arrowBlue" d="M 70 145 L 55 130" />
 
-    <circle cx="95" cy="110" r="18" class="circleZn" />
-    <text x="95" y="115" class="eq ctext">Zn<tspan font-size="12" dy="-8">2+</tspan></text>
+    <circle cx="95" cy="110" r="22" class="circleZn" />
+    <text x="95" y="116" class="eq ctext">Zn<tspan font-size="12" dy="-8">2+</tspan></text>
     <path class="arrowBlue" d="M 55 125 L 75 115" />
 
-    <circle cx="80" cy="50" r="14" class="circleH" />
-    <text x="80" y="55" class="wtext eq">H<tspan font-size="10" dy="5">2</tspan></text>
+    <circle cx="80" cy="50" r="18" class="circleH" />
+    <text x="80" y="56" class="wtext eq">H<tspan font-size="12" dy="5">2</tspan></text>
     <path class="arrowBlue" d="M 55 120 L 75 65" />
 
     <!-- テキスト -->
-    <text x="125" y="45">イオン化傾向は Zn ＞ H<tspan font-size="12" dy="5">2</tspan></text>
-    <text x="125" y="65">なのでZnの方が陽イオ</text>
-    <text x="125" y="85">ンになりやすい</text>
+    <text x="125" y="65">イオン化傾向は Zn ＞ H<tspan font-size="12" dy="5">2</tspan></text>
+    <text x="125" y="90">なのでZnの方が陽イオ</text>
+    <text x="125" y="115">ンになりやすい</text>
 
-    <!-- 反応式 -->
-    <text x="135" y="125" class="eq">Zn</text>
-    <text x="240" y="125" class="eq">→ Zn<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
+    <!-- 反応式 (下に移動) -->
+    <text x="40" y="215" class="eq">Zn</text>
+    <text x="115" y="215" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
     
-    <text x="115" y="150" class="eq">＋）</text>
-    <text x="135" y="150" class="eq">2H<tspan font-size="12" dy="-8">+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
-    <text x="240" y="150" class="eq">→ H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
+    <text x="10" y="245" class="eq">＋）</text>
+    <text x="40" y="245" class="eq">2H<tspan font-size="14" dy="-8">+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
+    <text x="115" y="245" class="eq">→ H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
 
-    <line class="lineEq" x1="120" y1="155" x2="310" y2="155" />
+    <line class="lineEq" x1="15" y1="255" x2="250" y2="255" />
 
-    <text x="140" y="175" class="eq">Zn ＋ 2H<tspan font-size="12" dy="-8">+</tspan></text>
-    <text x="240" y="175" class="eq">→ Zn<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ H</tspan><tspan font-size="12" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
+    <text x="40" y="280" class="eq">Zn ＋ 2H<tspan font-size="14" dy="-8">+</tspan></text>
+    <text x="115" y="280" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ H</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
   </g>
 
   <!-- 下部テキスト -->
-  <circle cx="20" cy="225" r="3" fill="#222" />
-  <text x="35" y="230">Hは非金属元素だが例外的に陽イオンになるので，他の金属と同じようにイオン</text>
-  <text x="35" y="250">化列の位置から性質を考えることができる</text>
+  <circle cx="20" cy="355" r="4" fill="#222" />
+  <text x="35" y="360">Hは非金属元素だが例外的に陽イオンになるので，他の金属と同じようにイオン</text>
+  <text x="35" y="380">化列の位置から性質を考えることができる</text>
 
-  <circle cx="20" cy="275" r="3" fill="#222" />
-  <text x="35" y="280">「金属樹の生成」と「金属が希酸に溶解する反応」は同じ仕組みであり，生じた</text>
-  <text x="35" y="300">単体が「金属の固体」か「非金属の気体」かの違いしかない</text>
+  <circle cx="20" cy="405" r="4" fill="#222" />
+  <text x="35" y="410">「金属樹の生成」と「金属が希酸に溶解する反応」は同じ仕組みであり，生じた</text>
+  <text x="35" y="430">単体が「金属の固体」か「非金属の気体」かの違いしかない</text>
 
 </svg>
