@@ -6,14 +6,14 @@
     .head { fill: #1565c0; }
     .water { fill: #eaf3fb; }
     .inner { fill: #fff8f0; }
-    .lab { font-size: 16px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
     .lead { stroke: #666; stroke-width: 1.5; fill: none; }
   </style>
 
-  <rect class="water" x="20" y="26" width="590" height="104" rx="8" />
-  <rect class="inner" x="20" y="130" width="590" height="140" />
-  <rect class="water" x="20" y="270" width="590" height="104" rx="8" />
+  <rect class="water" x="20" y="26" width="605" height="109" rx="8" />
+  <rect class="inner" x="20" y="130" width="605" height="145" />
+  <rect class="water" x="20" y="270" width="605" height="109" rx="8" />
   <text class="small" x="34" y="52">水</text>
   <text class="small" x="34" y="364">水</text>
 
