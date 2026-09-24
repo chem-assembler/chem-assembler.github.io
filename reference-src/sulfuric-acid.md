@@ -65,6 +65,8 @@ terms:
 - 希硫酸
 - 硫酸塩の沈殿
 - セッコウ
+codes:
+- inorg.nonmetal.dilute-sulfuric
 :::
 
 ## ① 2価の強酸 —— 中和
@@ -234,6 +236,10 @@ terms:
 - 吸湿作用
 - 脱水作用
 - 乾燥剤
+codes:
+- inorg.nonmetal.hot-conc-sulfuric
+- inorg.nonmetal.conc-sulfuric
+- inorg.nonmetal.hygroscopic-dehydrating
 :::
 
 ## ① 不揮発性 —— 揮発性の酸を遊離する
@@ -410,6 +416,8 @@ title: 希硫酸と濃硫酸のまとめ
 lead: 希硫酸は H⁺ と SO₄²⁻ のはたらき、濃硫酸は水と強く結びつくことと熱濃硫酸の酸化力のはたらきです。「濃硫酸は弱酸」という言い方は誤りです。
 terms:
 - 希硫酸と濃硫酸
+codes:
+- inorg.nonmetal.conc-not-weak
 :::
 
 :::table
@@ -443,6 +451,8 @@ terms:
 - 接触法
 - 発煙硫酸
 - 酸化バナジウム(Ⅴ)
+codes:
+- inorg.nonmetal.contact-process
 :::
 
 硫酸は工業的には**接触法**でつくります。原料の硫黄は、原油に不純物として含まれているものを取り除いて（脱硫して）得ます。
