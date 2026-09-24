@@ -72,9 +72,9 @@
   <text x="500" y="255" font-weight="bold">水</text>
 
   <!-- 右側の箱 -->
-  <rect class="sideBox" x="550" y="90" width="120" height="60" />
-  <text x="610" y="115" font-size="16">酸と塩基の反応は</text>
-  <text x="610" y="140" font-size="16">イオンの組み換え</text>
+  <rect class="sideBox" x="520" y="90" width="150" height="60" />
+  <text x="595" y="115" font-size="14">酸と塩基の反応は</text>
+  <text x="595" y="140" font-size="14">イオンの組み換え</text>
 
   <!-- 一番下の枠 -->
   <rect x="20" y="270" width="640" height="70" class="textBox" />
