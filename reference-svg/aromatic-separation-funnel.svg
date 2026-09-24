@@ -7,8 +7,8 @@
     .water { fill: #e3f0fb; }
     .face { fill: #ddd; stroke: #333; stroke-width: 2; }
     .lead { stroke: #666; stroke-width: 1.5; fill: none; }
-    .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 20px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
   </style>
 
   <clipPath id="pear">
@@ -17,13 +17,13 @@
   </clipPath>
 
   <!-- 中身（上: エーテル層 / 下: 水層） -->
-  <rect class="ether" x="140" y="120" width="220" height="112" clip-path="url(#pear)" />
-  <rect class="water" x="140" y="232" width="220" height="130" clip-path="url(#pear)" />
+  <rect class="ether" x="140" y="120" width="235" height="117" clip-path="url(#pear)" />
+  <rect class="water" x="140" y="232" width="235" height="135" clip-path="url(#pear)" />
 
   <!-- ガラス -->
   <path class="glass" d="M 218 70 L 218 110 C 218 130, 150 150, 150 220 C 150 290, 200 320, 250 345
                          C 300 320, 350 290, 350 220 C 350 150, 282 130, 282 110 L 282 70" />
-  <rect class="face" x="208" y="50" width="84" height="22" rx="6" />
+  <rect class="face" x="208" y="50" width="99" height="27" rx="6" />
   <text class="small" x="250" y="40" text-anchor="middle">栓</text>
 
   <!-- 界面 -->
