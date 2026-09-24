@@ -31,6 +31,8 @@ terms:
 - 価標
 - 示性式
 - 組成式
+codes:
+- org.ali.formula-kinds
 :::
 
 酢酸とギ酸メチルで比べてみましょう。この2つの化合物は、**分子式ではどちらも C₂H₄O₂** です。
@@ -88,6 +90,8 @@ title: 構造式は原子価を確かめながら書く
 lead: C は4本、H は1本、O は2本、N は3本、Cl は1本。構造式を書いたら、どの原子からも決まった数の価標が出ているかを確かめます。
 terms:
 - 原子価
+codes:
+- org.ali.structural-formula-valence
 :::
 
 構造式を書くときは、**必ず原子の結合の手の数（原子価）を確かめながら**書きます。
@@ -128,6 +132,10 @@ lead: 炭素骨格の部分はまとめて書き、官能基はそのまま見�
 terms:
 - 示性式
 - 官能基
+codes:
+- org.ali.rational-formula
+- org.ali.formula-same-molecular
+- org.ali.rational-to-molecular
 :::
 
 示性式は、次の2つを守って書きます。
@@ -200,6 +208,8 @@ title: どれをいつ使うか
 lead: 分子式は「原子の数」、示性式は「文中・反応式」、構造式は「つながり方を説明するとき」。場面で使い分けます。
 terms:
 - 異性体
+codes:
+- org.ali.formula-use
 :::
 
 4つの表し方は、場面によって使い分けます。
