@@ -223,6 +223,8 @@ left: C₂H₅OH
 over: 濃硫酸
 under: 160〜170℃
 right: CH₂=CH₂ ＋ H₂O
+gen: エタノール → エチレン ＋ 水
+app: dehydration_intra
 level: ★★★
 note: エタノールの分子内脱水。エテン（エチレン）ができます。
 :::
@@ -234,6 +236,8 @@ left: 2C₂H₅OH
 over: 濃硫酸
 under: 130〜140℃
 right: C₂H₅OC₂H₅ ＋ H₂O
+gen: 2 エタノール → ジエチルエーテル ＋ 水
+app: dehydration_inter
 level: ★★★
 note: エタノール2分子から水1分子がとれて、ジエチルエーテルができます。
 :::
@@ -300,6 +304,8 @@ note: グルコース1分子からエタノール2分子と二酸化炭素2分�
 left: CH₂=CH₂ ＋ H₂O
 over: リン酸
 right: C₂H₅OH
+gen: エチレン ＋ 水 → エタノール
+app: add_water
 level: ★★☆
 note: 上の分子内脱水のちょうど逆向きです。温度と触媒で向きが変わる、と見ておくと2つまとめて覚えられます。
 :::
