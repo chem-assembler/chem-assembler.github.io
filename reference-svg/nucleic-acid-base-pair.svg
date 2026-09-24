@@ -10,7 +10,7 @@
     .link { stroke: #333; stroke-width: 2; fill: none; }
     .hb { stroke: #c62828; stroke-width: 2.5; stroke-dasharray: 4 5; fill: none; }
     .sym { font-size: 26px; }
-    .small { font-size: 15px; fill: #444; }
+    .small { font-size: 18px; fill: #444; }
     .red { fill: #c62828; }
   </style>
 
