@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="240" viewBox="0 0 680 240" role="img">
+  <!-- 密度から分子量を求める計算を示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 20px; }
+    .eq { font-family: "Times New Roman", serif; font-size: 28px; }
+    .textOrange { fill: #e0762b; font-size: 16px; }
+    .textRed { fill: #ff0000; font-size: 22px; font-family: "Times New Roman", serif; }
+    .scaleLine { fill: none; stroke: #004466; stroke-width: 2; }
+    .crossLine { stroke: #ff0000; stroke-width: 2; }
+    .underline { stroke: #222; stroke-width: 1.5; }
+    .boxFill { fill: #fff; stroke: #222; stroke-width: 2; }
+  </style>
+
+  <!-- 左のテキストと式 -->
+  <text x="20" y="40">準標準状態なので24.9L(1mol)の質量が分子量に等しい</text>
+  
+  <text class="eq" x="80" y="120">1L : 1.6g = 24.9L : 39.84 g</text>
+  <text class="textOrange" x="245" y="150">1mol</text>
+  
+  <!-- 打消し線と訂正 -->
+  <line class="crossLine" x1="330" y1="125" x2="400" y2="105" />
+  <text class="textRed" x="350" y="95">40</text>
+  
+  <!-- 下線とラベル -->
+  <line class="underline" x1="325" y1="130" x2="405" y2="130" />
+  <text class="textOrange" x="330" y="150">分子量g</text>
+
+  <!-- 右の図解 (はかり) -->
+  <g transform="translate(530, 30)">
+    <text class="eq" x="-60" y="50">1.6g/L</text>
+    <text class="textOrange" x="-60" y="80">1Lで1.6g</text>
+
+    <!-- 箱 (1L) -->
+    <rect class="boxFill" x="40" y="10" width="50" height="50" />
+    <polygon points="40,10 55,-5 105,-5 90,10" class="boxFill" />
+    <polygon points="90,10 105,-5 105,45 90,60" class="boxFill" />
+    <text class="eq" x="50" y="45" font-size="20">1L</text>
+
+    <!-- はかりの皿 -->
+    <path class="scaleLine" d="M 20 60 L 20 70 L 110 70 L 110 60" />
+    <line class="scaleLine" x1="65" y1="70" x2="65" y2="90" />
+    
+    <!-- はかりの本体 -->
+    <rect class="scaleLine" x="30" y="90" width="70" height="40" rx="5" />
+    <path class="scaleLine" d="M 35 120 Q 65 95 95 120 Z" />
+    <text class="eq" x="42" y="117" font-size="20">1.6g</text>
+  </g>
+
+</svg>
