@@ -6,8 +6,8 @@
     .s { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2.5; }
     .b { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2.5; }
     .bond { stroke: #333; stroke-width: 2.5; fill: none; }
-    .lab { font-size: 19px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 21px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
     .brace { stroke: #666; stroke-width: 1.5; fill: none; }
   </style>
 
@@ -21,7 +21,7 @@
   <text class="lab" x="400" y="128" text-anchor="middle" fill="#1565c0">五炭糖</text>
   <text class="small" x="400" y="200" text-anchor="middle">デオキシリボース（DNA）・リボース（RNA）</text>
 
-  <rect class="b" x="600" y="69" width="128" height="64" rx="8" />
+  <rect class="b" x="600" y="69" width="143" height="69" rx="8" />
   <text class="lab" x="664" y="108" text-anchor="middle" fill="#2e7d32">塩基</text>
   <text class="small" x="664" y="158" text-anchor="middle">A・T・G・C</text>
 
