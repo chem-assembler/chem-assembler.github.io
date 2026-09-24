@@ -2483,6 +2483,8 @@ function drawFigureMarks(plan, ctx) {
                 el.setAttribute('stroke-dasharray', dash);
                 group.appendChild(el);
                 grow(cx - rx - stroke, cy - ry - stroke, cx + rx + stroke, cy + ry + stroke);
+                /* ★ 印の輪そのものも「文字を置かない所」にする（2026-09-24・枠の添え字「カルボキシ基」が枠の線に乗っていた） */
+                taken.push({ what: '印の輪', x1: cx - rx, y1: cy - ry, x2: cx + rx, y2: cy + ry });
                 half = [rx, ry];
             } else if (m.kind === '枠') {
                 const pad = capH * 0.40;
@@ -2498,6 +2500,7 @@ function drawFigureMarks(plan, ctx) {
                 r.setAttribute('stroke-dasharray', dash);
                 group.appendChild(r);
                 grow(x1 - stroke, y1 - stroke, x2 + stroke, y2 + stroke);
+                taken.push({ what: '印の枠', x1, y1, x2, y2 });   // ★ 枠そのものにも文字を置かない（上の輪と同じ）
                 half = [(x2 - x1) / 2, (y2 - y1) / 2];
             } else {                                    // 文字（印そのものが文字）
                 const reach = Math.abs(ux) * ((hb.x2 - hb.x1) / 2) + Math.abs(uy) * ((hb.y2 - hb.y1) / 2);
