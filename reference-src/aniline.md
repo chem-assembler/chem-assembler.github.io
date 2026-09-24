@@ -207,6 +207,16 @@ to: reaction-mechanisms
 text: ジアゾ化とカップリングで電子対がどう動くかを、巻矢印のアニメで見る
 :::
 
+## 例題 —— ジアゾ化
+
+紙に書いて解いてみてください。答え合わせは「解答を見る」から。
+
+:::exercise
+source: draft:reference-outline/aromatic.md の aniline の例題2（ジアゾニウム塩の分解の反応式から作った問い）
+prompt: ジアゾ化を 5℃以下に冷やして行うのはなぜか。冷やさずに温めると何ができるか、反応式で答えよ。
+answer: 塩化ベンゼンジアゾニウムは不安定で、温めると分解してしまうためです。C₆H₅N₂Cl ＋ H₂O → C₆H₅OH ＋ N₂ ＋ HCl となり、**フェノールと窒素**ができて、カップリングの相手が無くなります。
+:::
+
 :::section
 anchor: coupling
 title: カップリングとアゾ染料
@@ -264,19 +274,11 @@ to: functional-groups
 text: アミノ基・アゾ基・アミド結合を官能基の一覧で見る
 :::
 
-## 例題
-
-紙に書いて解いてみてください。答え合わせは「解答を見る」から。
+## 例題 —— カップリングとアゾ染料
 
 :::exercise
 source: draft:reference-outline/aromatic.md の aniline の例題1（ニトロベンゼンからアゾ染料までの4段の反応式から作った問い。どの本の問題も見ていない）
 prompt: ニトロベンゼンから p-ヒドロキシアゾベンゼンをつくる。途中の4段の反応式を順に書け。
 answer: ① 2C₆H₅NO₂ ＋ 3Sn ＋ 14HCl → 2C₆H₅NH₃Cl ＋ 3SnCl₄ ＋ 4H₂O　② C₆H₅NH₃Cl ＋ NaOH → C₆H₅NH₂ ＋ NaCl ＋ H₂O　③ C₆H₅NH₂ ＋ 2HCl ＋ NaNO₂ → C₆H₅N₂Cl ＋ NaCl ＋ 2H₂O（5℃以下）　④ C₆H₅N₂Cl ＋ C₆H₅ONa → C₆H₅−N=N−C₆H₄−OH ＋ NaCl
-:::
-
-:::exercise
-source: draft:reference-outline/aromatic.md の aniline の例題2（ジアゾニウム塩の分解の反応式から作った問い）
-prompt: ジアゾ化を 5℃以下に冷やして行うのはなぜか。冷やさずに温めると何ができるか、反応式で答えよ。
-answer: 塩化ベンゼンジアゾニウムは不安定で、温めると分解してしまうためです。C₆H₅N₂Cl ＋ H₂O → C₆H₅OH ＋ N₂ ＋ HCl となり、**フェノールと窒素**ができて、カップリングの相手が無くなります。
 :::
 
