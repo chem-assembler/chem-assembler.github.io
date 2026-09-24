@@ -261,9 +261,22 @@ terms:
 
 :::figure
 src: alkene-markovnikov.png
-svg: alkene-markovnikov.svg
-alt: プロペンに H−X が付加する2通りの反応を上下に並べた図。二重結合の左の炭素には H が2個、右の炭素には H が1個ついており、H が多い左の炭素に H−X の H が結合したものが主生成物、逆が副生成物と書かれている
-caption: 緑の炭素には H が**2個**、紫の炭素には H が**1個**。H−X の H は**多いほうの緑**に付くので、上が**主生成物**、下が**副生成物**です。
+gen: name=プロペン（プロピレン） plain paper expand=H
+gen: name=臭化水素 plain paper
+gen: name=2-ブロモプロパン（臭化イソプロピル） plain paper expand=H
+gen: name=プロペン（プロピレン） plain paper expand=H newrow
+gen: name=臭化水素 plain paper
+gen: name=1-ブロモプロパン（臭化プロピル） plain paper expand=H
+mark: kind=文字 at=1:C1 label=H 2個
+mark: kind=文字 at=1:C2 label=H 1個
+mark: kind=文字 at=4:C1 label=H 2個
+mark: kind=文字 at=4:C2 label=H 1個
+between: kind=＋ at=1 to=2
+between: kind=反応 at=2 to=3 label=主生成物
+between: kind=＋ at=4 to=5
+between: kind=反応 at=5 to=6 label=副生成物
+alt: プロペンに臭化水素 HBr が付加する2通りの反応を上下に並べた図。二重結合の端の炭素に「H 2個」、真ん中の炭素に「H 1個」と添えてある。上は H が端の炭素に付いた 2-ブロモプロパン（矢印の上に「主生成物」）、下は Br が端の炭素に付いた 1-ブロモプロパン（「副生成物」）
+caption: 二重結合の端の炭素には H が**2個**、真ん中の炭素には H が**1個**。H−Br の H は **H の多いほう（端の炭素）**に付くので、上の 2-ブロモプロパンが**主生成物**、下の 1-ブロモプロパンが**副生成物**です。
 :::
 
 マルコフニコフ則で分かるのは**どちらが主に生じるか**だけで、**どの程度の割合で偏るかまでは分かりません。**

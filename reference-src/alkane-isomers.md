@@ -165,7 +165,16 @@ items:
 
 :::figure
 src: alkene-butene-writeout.png
-svg: alkene-butene-writeout.svg
+gen: name=ブタン plain paper
+gen: name=2-メチルプロパン plain paper
+gen: name=1-ブテン plain paper newrow
+gen: name=2-ブテン plain paper
+gen: name=2-メチルプロペン（イソブテン） plain paper
+mark: kind=文字 at=1:C−C結合の種類 label=①,②
+mark: kind=文字 at=2:C−C結合の種類 label=③
+mark: kind=文字 at=3:C=C二重結合 label=①
+mark: kind=文字 at=4:C=C二重結合 label=②
+mark: kind=文字 at=5:C=C二重結合 label=③
 alt: 上の段にブタンと2-メチルプロパンの構造式、下の段に1-ブテン・2-ブテン・2-メチル-1-プロペンの構造式を並べた書き出しの図。ブタンの炭素間結合に1・2・1の番号、2-メチルプロパンの結合に3の番号が振ってある
 caption: 上のアルカンの**炭素間結合に番号を振り**、同じ番号の場所を二重結合にしたものが下のアルケンです。2-ブテンだけがシス－トランス異性体をもちます。
 :::

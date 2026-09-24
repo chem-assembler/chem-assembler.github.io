@@ -275,7 +275,7 @@
         if (!out.at) fail(where, ':::figure の mark に at=（どこに付けるか）がありません'
             + '\n    ★ 化学の言葉で指します（at=不斉炭素 / at=グリコシド結合 / at=カルボキシ基）。位置番号（at=C1-OH / at=環C2）は補助です');
         // ⚠ at=環の水素の種類 は当たりごとに文字（a・b・c）を作図器が付けるので、label= は要らない（2026-09-24）
-        if (out.kind === '文字' && !out.label && !/(^|:)環の水素の種類$/.test(String(out.at || '').trim())) {
+        if (out.kind === '文字' && !out.label && !/(^|:)(環の水素の種類|C[−-]C結合の種類)$/.test(String(out.at || '').trim())) {
             fail(where, ':::figure の mark に kind=文字 と書いたら label=（置く文字）が要ります');
         }
         /* ★ 段2: `破線`・`矢印` は2か所を結ぶので `to=` が要る（設計 §6）。⚠ 他の印に `to=` は書けない（黙って捨てない） */

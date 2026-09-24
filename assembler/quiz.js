@@ -1854,7 +1854,11 @@ function _figMarkAromaticRing(mol) {
  * `at=` の1つを当てる。戻り値は**当たった所の並び**（1つ ＝ 印1つぶん）。
  * ⚠ 0個のときは空配列を返し、**赤にするのは呼び手**（`planFigureMarks`）。
  */
-function figureMarkHits(mol, at) {
+/* ⚠ `opts.freeDirection`（2026-09-24）: 向きの決まらない鎖でも番号を使う。**2か所を結ぶ印の両端が番号**のときだけ
+ *   planFigureMarks が渡す —— 数える向きを逆にすると両端がそろって鏡の位置へ移るので、描ける図は同じ
+ *   （マレイン酸の C1−OH と C4=O の分子内の水素結合）。1か所だけの印では渡さない（黙って片側に当たるので、I-0098 の赤のまま） */
+function figureMarkHits(mol, at, opts) {
+    const freeDir = !!(opts && opts.freeDirection);
     const spec = String(at == null ? '' : at).trim();
     const atomIds = (ids) => ({ ids: ids.filter(id => mol.atoms.some(a => a.id === id)) });
 
@@ -1967,6 +1971,26 @@ function figureMarkHits(mol, at) {
         }
         return [{ ids: [...ids] }];
     }
+    /* ⑤-4 C−C結合の種類（`at=C−C結合の種類`・2026-09-24・C₄ の書き出しの図「同じ番号の場所を二重結合にする」）。
+     * 炭素どうしの結合1本ずつに当たり、**分子の中で同じ位置の結合は同じ組**（両端の原子の順位 `_heavyAtomRanks` の組で見る
+     * ＝ 環の水素の種類と同じ考え）。組の順は主鎖の番号の若い結合から（ブタンなら C1−C2 の組が1番目）。
+     * ★ 文字は印の label= に「①,②」のように組の順で並べる（書かなければ a・b・c…） */
+    if (spec === 'C−C結合の種類' || spec === 'C-C結合の種類') {
+        if (typeof _heavyAtomRanks !== 'function') return [];
+        const rank = _heavyAtomRanks(mol);
+        const num = _figMarkNumbers(mol);
+        const pos = new Map();
+        (num.chain || []).forEach((id, i) => pos.set(id, i));
+        const bonds = mol.bonds.filter(b => {
+            const a = mol.atoms.find(x => x.id === b.atomId1), c = mol.atoms.find(x => x.id === b.atomId2);
+            return a && c && a.element === 'C' && c.element === 'C';
+        });
+        const key = b => [rank.get(b.atomId1), rank.get(b.atomId2)].sort((p, q) => p - q).join('-') + ':' + b.type;
+        const firstPos = b => Math.min(pos.has(b.atomId1) ? pos.get(b.atomId1) : 99, pos.has(b.atomId2) ? pos.get(b.atomId2) : 99);
+        const order = [];
+        bonds.slice().sort((p, q) => firstPos(p) - firstPos(q)).forEach(b => { if (order.indexOf(key(b)) < 0) order.push(key(b)); });
+        return bonds.map(b => ({ ids: [b.atomId1, b.atomId2], cls: order.indexOf(key(b)), label: 'abcdefghij'[order.indexOf(key(b))] }));
+    }
     // ⑥ 芳香環の位置番号（`at=環C2`）
     const ar = /^環C(\d+)$/.exec(spec);
     if (ar) {
@@ -1988,18 +2012,32 @@ function figureMarkHits(mol, at) {
         const n = parseInt(rg[1], 10), m = parseInt(rg[2], 10);
         if (!(n >= 1 && m > n && m <= num.chain.length)) return [];
         // ⚠ 向きが決まっていない鎖では、両端から同じ範囲になる指し方だけを通す（I-0098）
-        if (!num.directionKnown && !_figChainDirectionFree(n, m, num.chain.length)) {
+        if (!num.directionKnown && !freeDir && !_figChainDirectionFree(n, m, num.chain.length)) {
             throw new Error(`印の at=${spec} は、この分子では主鎖のどちらの端から数えるか決まらないので指せません`
                 + `（命名の番号が無い分子です。両端から同じ範囲になる C${num.chain.length + 1 - m}-C${num.chain.length + 1 - n} のような対称な書き方か、意味で指してください）`);
         }
         return [{ ids: num.chain.slice(n - 1, m) }];
+    }
+    /* ⑦-2 二重結合の O（`at=C4=O`・2026-09-24・マレイン酸の分子内の水素結合を C1−OH と C4=O の間に引く）。
+     * その番号の炭素に**二重結合で**付いた O（カルボニル基の O）。⚠ 向きの決まらない鎖では、番号の約束は ⑧ と同じ */
+    const co = /^C(\d+)(′?)=O$/.exec(spec);
+    if (co) {
+        const num = _figMarkNumbers(mol);
+        const carbons = num.byLabel.get(co[1] + co[2]) || [];
+        const hits = [];
+        carbons.forEach(id => {
+            mol.getNeighbors(id).forEach(nb => {
+                if (nb.atom.element === 'O' && nb.type === 2) hits.push({ ids: [nb.atom.id] });
+            });
+        });
+        return hits;
     }
     // ⑧ 位置番号（`at=C1` / `at=C4′` / `at=C1-OH`）
     const cm = /^C(\d+)(′?)(-OH)?$/.exec(spec);
     if (cm) {
         const num = _figMarkNumbers(mol);
         // ⚠ 向きが決まっていない鎖では、真ん中の炭素しか指せない（I-0098。1個に当たって黙って外れるのを止める）
-        if (num.kind === 'chain' && !num.directionKnown) {
+        if (num.kind === 'chain' && !num.directionKnown && !freeDir) {
             const k = parseInt(cm[1], 10);
             if (!_figChainDirectionFree(k, k, num.chain.length)) {
                 throw new Error(`印の at=${spec} は、この分子では主鎖のどちらの端から数えるか決まらないので指せません`
@@ -2023,7 +2061,7 @@ function figureMarkHits(mol, at) {
     }
     throw new Error(`印の at=「${spec}」を知りません`
         + `（書けるのは ${Object.keys(FIGURE_MARK_GROUPS).join(' / ')} / 不斉炭素 / ベンゼン環 / グリコシド結合 / 環の酸素 / 環 / 環の水素の種類 / 繰り返し単位`
-        + ' / 環C<番号> / C<番号> / C<番号>-OH / C<番号>-C<番号>）');
+        + ' / C−C結合の種類 / 環C<番号> / C<番号> / C<番号>-OH / C<番号>=O / C<番号>-C<番号>）');
 }
 
 /**
@@ -2037,19 +2075,32 @@ function planFigureMarks(mol, marks) {
         if (FIGURE_MARK_KINDS.indexOf(kind) < 0) {
             throw new Error(`印の kind=「${kind}」を知りません（書けるのは ${FIGURE_MARK_KINDS.join(' / ')}）`);
         }
-        const hitsLabeled = /^環の水素の種類$/.test(String(m.at || '').trim());
+        const hitsLabeled = /^(環の水素の種類|C[−-]C結合の種類)$/.test(String(m.at || '').trim());
         if (kind === '文字' && !m.label && !hitsLabeled) throw new Error('印の kind=文字 には label=（置く文字）が要ります');
         const link = FIGURE_LINK_KINDS.indexOf(kind) >= 0;
         // ★ 段2: 破線・矢印は2か所を結ぶ ＝ `to=` が要る（設計 §6 の赤）
         if (link && !m.to) throw new Error(`印の kind=${kind} には to=（もう一方の端）が要ります`);
-        const hits = figureMarkHits(mol, m.at);
+        // 2か所を結ぶ印で両端とも番号（C1-OH・C4=O など）なら、向きの決まらない鎖でも番号で当てる（figureMarkHits の注記）
+        const numbered = x => /^C\d/.test(String(x || '').trim());
+        const freeDirection = FIGURE_LINK_KINDS.indexOf(kind) >= 0 && numbered(m.at) && numbered(m.to);
+        const hits = figureMarkHits(mol, m.at, { freeDirection });
+        /* ★ 組ごとの文字を label= に「①,②」と並べたとき（C−C結合の種類）: 組の順に当てる。足りなければ赤 */
+        if (hits.some(h => h.cls !== undefined) && m.label && /[,，]/.test(m.label)) {
+            const labels = String(m.label).split(/[,，]/).map(x => x.trim());
+            const need = Math.max(...hits.map(h => h.cls)) + 1;
+            if (labels.length !== need) throw new Error(`印の at=「${m.at}」は ${need} 組に分かれました（label= に ${labels.length} 個の文字を並べています）`);
+            hits.forEach(h => { h.label = labels[h.cls]; });
+            m = Object.assign({}, m, { label: '' });
+        } else if (hits.some(h => h.cls !== undefined) && m.label) {
+            hits.forEach(h => { h.label = m.label; });   // 文字が1つなら全部の組に同じ文字（2-メチルプロパンの ③）
+        }
         if (!hits.length) {
             throw new Error(`印の at=「${m.at}」がこの分子で1つも当たりません`
                 + '（当たらない印を黙って捨てると、印の無い図がそのまま焼けます）');
         }
         let toHits = null;
         if (link) {
-            toHits = figureMarkHits(mol, m.to);
+            toHits = figureMarkHits(mol, m.to, { freeDirection });
             if (!toHits.length) {
                 throw new Error(`印の to=「${m.to}」がこの分子で1つも当たりません`
                     + '（当たらない印を黙って捨てると、印の無い図がそのまま焼けます）');
@@ -2503,6 +2554,20 @@ function drawFigureMarks(plan, ctx) {
                 taken.push({ what: '印の枠', x1, y1, x2, y2 });   // ★ 枠そのものにも文字を置かない（上の輪と同じ）
                 half = [(x2 - x1) / 2, (y2 - y1) / 2];
             } else {                                    // 文字（印そのものが文字）
+                /* ★ 結合1本に当たった文字（C−C結合の種類・C=C二重結合）は、**結合の中点の横**（結合に垂直な向き）に置く
+                   （2026-09-24。分子の外向きに置くと、鎖の端の結合の番号が分子の外の遠くへ出た）。横向きの結合は下側 */
+                if (hit.ids.length === 2 && mol.getBond && mol.getBond(hit.ids[0], hit.ids[1])) {
+                    const A = byId.get(hit.ids[0]), B = byId.get(hit.ids[1]);
+                    if (A && B) {
+                        const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1;
+                        let px = -dy / L, py = dx / L;
+                        if (Math.abs(dx) >= Math.abs(dy) ? py < 0 : (px * ux + py * uy) < 0) { px = -px; py = -py; }
+                        const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
+                        const d = capH * 1.15;
+                        putText(hit.label || m.label, mx + px * d, my + py * d, px, py, m.color, [mx, my, capH * 0.3, capH * 0.3]);
+                        return;
+                    }
+                }
                 const reach = Math.abs(ux) * ((hb.x2 - hb.x1) / 2) + Math.abs(uy) * ((hb.y2 - hb.y1) / 2);
                 const d = reach + gap + capH * 0.55;
                 putText(hit.label || m.label, hc[0] + ux * d, hc[1] + uy * d, ux, uy, m.color,

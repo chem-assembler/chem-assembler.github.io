@@ -971,11 +971,21 @@ async function bake(jobs) {
                     if (rowsIdx.length === 1) {
                         composeFigureRow(svg, subs, between);
                     } else {
-                        if ((between || []).length) return { error: 'newrow で段に分けた図には between: を書けません（線は段をまたげない）' };
+                        /* ★ 段の中の between（＋・矢印・反応）は書ける（2026-09-24・マルコフニコフ則の2段の反応）。
+                           ⚠ 段をまたぐ線だけは引けない（赤）。番号は段の中の番号に読み替えて渡す */
+                        const rowOf = new Map();
+                        rowsIdx.forEach((idxs, r) => idxs.forEach(i => rowOf.set(i + 1, r)));
+                        for (const l of (between || [])) {
+                            const a = l.from && l.from.n, b = l.dest && l.dest.n;
+                            if (rowOf.get(a) !== rowOf.get(b)) return { error: `between の ${a} と ${b} は別の段です（newrow で段に分けた図では、線は段をまたげない）` };
+                        }
                         const rowSvgs = rowsIdx.map((idxs, r) => {
+                            const off = idxs[0];
+                            const links = (between || []).filter(l => rowOf.get(l.from.n) === r).map(l => Object.assign({}, l,
+                                { from: Object.assign({}, l.from, { n: l.from.n - off }), dest: Object.assign({}, l.dest, { n: l.dest.n - off }) }));
                             if (idxs.length === 1) return subs[idxs[0]];
                             const rs = makeSvg('figbake-row-' + (r + 1));
-                            composeFigureRow(rs, idxs.map(i => subs[i]), []);
+                            composeFigureRow(rs, idxs.map(i => subs[i]), links);
                             return rs;
                         });
                         const vbs = rowSvgs.map(rs => (rs.getAttribute('viewBox') || '').split(/\s+/).map(Number));

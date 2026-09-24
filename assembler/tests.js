@@ -61787,6 +61787,36 @@
         c.reset();
     });
 
+    /* ★ FGT10（v1649・I-0133）: 手描きの SVG を作図器へ戻すために足した当て先。
+     *   C−C結合の種類（同じ位置の結合に同じ文字）・C<n>=O（二重結合の O）・2か所を結ぶ印の両端が番号なら向きの決まらない鎖でも当てる */
+    test('FGT10: C−C結合の種類・C<番号>=O・番号どうしを結ぶ破線（★否定対照: 1か所の番号の印は向きの決まらない鎖で赤のまま／文字の数違いで赤）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const molOf = (name) => {
+            const e = fgtEntry(W, name);
+            assert(e, `テスト前提: 登録に「${name}」が無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        const threw = (fn) => { try { fn(); return false; } catch (e) { return true; } };
+        // ① ブタンは C−C 結合3本・2組（両端の2本が同じ組）。label=①,② で組の順に文字が付く
+        const bu = molOf('ブタン');
+        const h = W.planFigureMarks(bu, [{ kind: '文字', at: 'C−C結合の種類', label: '①,②' }])[0].hits;
+        assert(h.length === 3, `ブタンの C−C 結合に ${h.length} 本当たった（3本のはず）`);
+        assert(h.map(x => x.label).sort().join('') === '①①②', `ブタンの文字が ${h.map(x => x.label).join('')}（①①② のはず）`);
+        // 2-メチルプロパンは3本とも同じ組（文字1つで全部）
+        const ib = W.planFigureMarks(molOf('2-メチルプロパン'), [{ kind: '文字', at: 'C−C結合の種類', label: '③' }])[0].hits;
+        assert(ib.length === 3 && ib.every(x => x.label === '③'), '2-メチルプロパンの3本が同じ文字にならない');
+        assert(threw(() => W.planFigureMarks(bu, [{ kind: '文字', at: 'C−C結合の種類', label: '①,②,③' }])), '★ 組の数（2）と文字の数（3）が違うのに赤にならない');
+        // ② C4=O: マレイン酸の二重結合の O が1つ
+        const ma = molOf('マレイン酸');
+        const co = W.figureMarkHits(ma, 'C4=O', { freeDirection: true });
+        assert(co.length === 1 && ma.atoms.find(a => a.id === co[0].ids[0]).element === 'O', 'マレイン酸の C4=O に当たらない');
+        // ③ 破線の両端が番号なら、向きの決まらないマレイン酸でも引ける。1か所だけの印は赤のまま（I-0098）
+        assert(!threw(() => W.planFigureMarks(ma, [{ kind: '破線', at: 'C1-OH', to: 'C4=O' }])), 'マレイン酸の分子内の水素結合（C1-OH と C4=O）が引けない');
+        assert(threw(() => W.planFigureMarks(ma, [{ kind: '文字', at: 'C1-OH', label: 'x' }])), '★ 向きの決まらない鎖で、1か所だけの番号の印が赤にならない');
+        c.reset();
+    });
+
     test('FGT9: 印の文字は原子の文字に重ならない（I-0108。最初の向きで重なるときは、まわりの別の向きへ逃がす）', async (c) => {
         c.reset();
         const W = c.W, g = c.game, ip = W.isomerPractice;
