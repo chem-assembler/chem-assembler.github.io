@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="705.882" height="370.588" viewBox="0 0 800 420" role="img">
   <!-- ミセルの断面。疎水基（棒）が内側、親水基（頭）が外側。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 向きを逆に描かないこと（内側が疎水基）。 -->
