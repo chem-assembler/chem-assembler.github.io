@@ -32,6 +32,9 @@ terms:
 - 酸化力のある酸
 - 緑青
 - 電解精錬
+codes:
+- inorg.metal.copper-oxidizing-acid
+- inorg.metal.silver-tree
 :::
 
 塩酸や希硫酸の酸化剤は H⁺ です。銅や銀は**イオン化傾向が H₂ より小さい**ので、H⁺ に e⁻ を渡すことができず、溶けません。
@@ -149,6 +152,9 @@ lead: Cu²⁺ は青色。少量の塩基で青白色の Cu(OH)₂、過剰の�
 terms:
 - 硫酸銅(Ⅱ)五水和物
 - テトラアンミン銅(Ⅱ)イオン
+codes:
+- inorg.metal.copper-ion
+- inorg.metal.copper-sulfate-hydrate
 :::
 
 硫酸銅(Ⅱ)五水和物 CuSO₄・5H₂O は青色の結晶で、加熱すると水和水を失って白色の無水物 CuSO₄ になります。無水物は水を吸うと青色にもどるので、水の検出に使われます。
@@ -213,6 +219,9 @@ terms:
 - ジアンミン銀(Ⅰ)イオン
 - ハロゲン化銀
 - 感光性
+codes:
+- inorg.metal.silver-ion
+- inorg.metal.silver-halide
 :::
 
 銀イオンは OH⁻ と結びつくと、水酸化物ではなく**酸化銀 Ag₂O** の褐色沈殿になります。AgOH は不安定で、すぐに水がとれるためです。
