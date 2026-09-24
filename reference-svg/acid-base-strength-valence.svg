@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="500" viewBox="0 0 680 500" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="670" viewBox="0 0 680 670" role="img">
   <!-- 酸・塩基の価数を示す図。
        元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
   <style>
-    text { font-family: system-ui, sans-serif; fill: #222; font-size: 20px; text-anchor: middle; }
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 18px; text-anchor: middle; }
     .wtext { fill: #fff; }
     .baseBox { fill: #0070c0; stroke: #003366; stroke-width: 2; rx: 8; }
     .acidBox { fill: #ff0000; stroke: #990000; stroke-width: 2; rx: 8; }
@@ -38,88 +38,96 @@
   <text x="400" y="35" font-size="22">H<tspan font-size="14" dy="-8">+</tspan></text>
 
   <!-- 中段タイトル -->
-  <text x="340" y="145" font-size="24">H<tspan font-size="16" dy="-10">+</tspan><tspan dy="10">とOH</tspan><tspan font-size="16" dy="-10">-</tspan><tspan dy="10"> 2個ずつで中和反応してH</tspan><tspan font-size="16" dy="5">2</tspan><tspan dy="-5">Oを2個つくる場合</tspan></text>
+  <text x="340" y="145" font-size="20">H<tspan font-size="14" dy="-10">+</tspan><tspan dy="10">とOH</tspan><tspan font-size="14" dy="-10">-</tspan><tspan dy="10"> 2個ずつで中和反応してH</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5">Oを2個つくる場合</tspan></text>
 
-  <!-- 左: 1価の酸2個 -->
-  <!-- 1行目 -->
-  <ellipse cx="60" cy="220" rx="30" ry="22" class="posIon" />
-  <text x="60" y="226" font-size="16">＋イオン</text>
-  <circle cx="115" cy="220" r="22" class="ohMinus" />
-  <text x="115" y="226" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
-  <polygon points="140,215 155,215 155,210 165,220 155,230 155,225 140,225" class="arrow" />
-  <ellipse cx="200" cy="220" rx="30" ry="22" class="h2oPool" />
-  <text x="200" y="226" class="wtext" font-size="18">H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  <!-- Line 1: 1価 -->
+  <ellipse cx="160" cy="200" rx="42" ry="24" class="posIon" />
+  <text x="160" y="206" font-size="16">＋イオン</text>
+  
+  <circle cx="240" cy="200" r="24" class="ohMinus" />
+  <text x="240" y="206" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
+  
+  <polygon points="270,195 285,195 285,190 300,200 285,210 285,205 270,205" class="arrow" />
+  
+  <ellipse cx="340" cy="200" rx="35" ry="24" class="h2oPool" />
+  <text x="340" y="206" class="wtext" font-size="18">H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  
+  <polygon points="410,195 395,195 395,190 380,200 395,210 395,205 410,205" class="arrow" />
+  
+  <rect class="valenceBox" x="405" y="165" width="165" height="70" />
+  <text x="430" y="185" class="wtext" font-size="16">1価</text>
+  <circle cx="440" cy="200" r="24" class="hPlus" />
+  <text x="440" y="206" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
+  <ellipse cx="520" cy="200" rx="40" ry="24" class="negIon" />
+  <text x="520" y="206" font-size="16">－イオン</text>
 
-  <rect class="valenceBox" x="255" y="180" width="105" height="70" />
-  <text x="307" y="198" class="wtext" font-size="16">1価</text>
-  <polygon points="275,215 260,215 260,210 250,220 260,230 260,225 275,225" class="arrow" />
-  <circle cx="295" cy="220" r="22" class="hPlus" />
-  <text x="295" y="226" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
-  <ellipse cx="330" cy="220" rx="30" ry="22" class="negIon" />
-  <text x="330" y="226" font-size="16">－イオン</text>
+  <!-- Line 2: 1価 -->
+  <ellipse cx="160" cy="280" rx="42" ry="24" class="posIon" />
+  <text x="160" y="286" font-size="16">＋イオン</text>
+  
+  <circle cx="240" cy="280" r="24" class="ohMinus" />
+  <text x="240" y="286" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
+  
+  <polygon points="270,275 285,275 285,270 300,280 285,290 285,285 270,285" class="arrow" />
+  
+  <ellipse cx="340" cy="280" rx="35" ry="24" class="h2oPool" />
+  <text x="340" y="286" class="wtext" font-size="18">H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  
+  <polygon points="410,275 395,275 395,270 380,280 395,290 395,285 410,285" class="arrow" />
 
-  <!-- 2行目 -->
-  <ellipse cx="60" cy="290" rx="30" ry="22" class="posIon" />
-  <text x="60" y="296" font-size="16">＋イオン</text>
-  <circle cx="115" cy="290" r="22" class="ohMinus" />
-  <text x="115" y="296" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
-  <polygon points="140,285 155,285 155,280 165,290 155,300 155,295 140,295" class="arrow" />
-  <ellipse cx="200" cy="290" rx="30" ry="22" class="h2oPool" />
-  <text x="200" y="296" class="wtext" font-size="18">H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  <rect class="valenceBox" x="405" y="245" width="165" height="70" />
+  <text x="430" y="265" class="wtext" font-size="16">1価</text>
+  <circle cx="440" cy="280" r="24" class="hPlus" />
+  <text x="440" y="286" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
+  <ellipse cx="520" cy="280" rx="40" ry="24" class="negIon" />
+  <text x="520" y="286" font-size="16">－イオン</text>
+  
+  <!-- 1価の説明 -->
+  <rect class="descBox" x="170" y="330" width="340" height="40" />
+  <text x="340" y="357" font-size="20">2個のH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">を出すのに2個の酸が必要</tspan></text>
 
-  <rect class="valenceBox" x="255" y="250" width="105" height="70" />
-  <text x="307" y="268" class="wtext" font-size="16">1価</text>
-  <polygon points="275,285 260,285 260,280 250,290 260,300 260,295 275,295" class="arrow" />
-  <circle cx="295" cy="290" r="22" class="hPlus" />
-  <text x="295" y="296" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
-  <ellipse cx="330" cy="290" rx="30" ry="22" class="negIon" />
-  <text x="330" y="296" font-size="16">－イオン</text>
+  <!-- Line 3: 2価 (top half) -->
+  <ellipse cx="160" cy="420" rx="42" ry="24" class="posIon" />
+  <text x="160" y="426" font-size="16">＋イオン</text>
+  
+  <circle cx="240" cy="420" r="24" class="ohMinus" />
+  <text x="240" y="426" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
+  
+  <polygon points="270,415 285,415 285,410 300,420 285,430 285,425 270,425" class="arrow" />
+  
+  <ellipse cx="340" cy="420" rx="35" ry="24" class="h2oPool" />
+  <text x="340" y="426" class="wtext" font-size="18">H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  
+  <polygon points="410,415 395,415 395,410 380,420 395,430 395,425 410,425" class="arrow" />
+  
+  <!-- Line 4: 2価 (bottom half) -->
+  <ellipse cx="160" cy="500" rx="42" ry="24" class="posIon" />
+  <text x="160" y="506" font-size="16">＋イオン</text>
+  
+  <circle cx="240" cy="500" r="24" class="ohMinus" />
+  <text x="240" y="506" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
+  
+  <polygon points="270,495 285,495 285,490 300,500 285,510 285,505 270,505" class="arrow" />
+  
+  <ellipse cx="340" cy="500" rx="35" ry="24" class="h2oPool" />
+  <text x="340" y="506" class="wtext" font-size="18">H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+  
+  <polygon points="410,495 395,495 395,490 380,500 395,510 395,505 410,505" class="arrow" />
 
-  <rect class="descBox" x="20" y="340" width="310" height="40" />
-  <text x="175" y="367" font-size="20">2個のH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">を出すのに2個の酸が必要</tspan></text>
-  <path class="lead" d="M 280 340 L 305 320" />
+  <rect class="valenceBox" x="405" y="380" width="165" height="160" />
+  <text x="430" y="405" class="wtext" font-size="16">2価</text>
+  <circle cx="440" cy="420" r="24" class="hPlus" />
+  <text x="440" y="426" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
+  <circle cx="440" cy="500" r="24" class="hPlus" />
+  <text x="440" y="506" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
+  <ellipse cx="520" cy="460" rx="40" ry="30" class="negIon" />
+  <text x="520" y="466" font-size="16">－イオン</text>
+  
+  <!-- 2価の説明 -->
+  <rect class="descBox" x="170" y="560" width="340" height="40" />
+  <text x="340" y="587" font-size="20">1個の酸で2個のH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">を出せる</tspan></text>
 
-
-  <!-- 右: 2価の酸1個 -->
-  <!-- 1行目 -->
-  <ellipse cx="380" cy="220" rx="30" ry="22" class="posIon" />
-  <text x="380" y="226" font-size="16">＋イオン</text>
-  <circle cx="435" cy="220" r="22" class="ohMinus" />
-  <text x="435" y="226" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
-  <polygon points="460,215 475,215 475,210 485,220 475,230 475,225 460,225" class="arrow" />
-  <ellipse cx="520" cy="220" rx="30" ry="22" class="h2oPool" />
-  <text x="520" y="226" class="wtext" font-size="18">H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
-
-  <!-- 2行目 -->
-  <ellipse cx="380" cy="290" rx="30" ry="22" class="posIon" />
-  <text x="380" y="296" font-size="16">＋イオン</text>
-  <circle cx="435" cy="290" r="22" class="ohMinus" />
-  <text x="435" y="296" class="wtext" font-size="18">OH<tspan font-size="12" dy="-8">-</tspan></text>
-  <polygon points="460,285 475,285 475,280 485,290 475,300 475,295 460,295" class="arrow" />
-  <ellipse cx="520" cy="290" rx="30" ry="22" class="h2oPool" />
-  <text x="520" y="296" class="wtext" font-size="18">H<tspan font-size="12" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
-
-  <rect class="valenceBox" x="555" y="200" width="105" height="110" />
-  <text x="607" y="218" class="wtext" font-size="16">2価</text>
-
-  <!-- 矢印斜め -->
-  <polygon points="575,240 565,235 567,230 555,225 560,240 562,235 572,240" class="arrow" transform="rotate(30, 565, 230)" />
-  <circle cx="590" cy="235" r="22" class="hPlus" />
-  <text x="590" y="241" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
-
-  <polygon points="575,270 565,275 567,280 555,285 560,270 562,275 572,270" class="arrow" transform="rotate(-30, 565, 280)" />
-  <circle cx="590" cy="275" r="22" class="hPlus" />
-  <text x="590" y="281" class="wtext" font-size="18">H<tspan font-size="12" dy="-8">+</tspan></text>
-
-  <ellipse cx="625" cy="255" rx="30" ry="22" class="negIon" />
-  <text x="625" y="261" font-size="16">－イオン</text>
-
-  <rect class="descBox" x="350" y="340" width="310" height="40" />
-  <text x="505" y="367" font-size="20">1個の酸で2個のH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">酸を出せる</tspan></text>
-  <path class="lead" d="M 540 340 L 590 300" />
-
-  <!-- 下段テキスト -->
-  <rect class="bottomBox" x="10" y="400" width="660" height="40" />
-  <text x="340" y="427" font-size="22">1個の酸が出すH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">の数が酸の価数， 1個の塩基が出すOH</tspan><tspan font-size="14" dy="-8">-</tspan><tspan dy="8">の数が塩基の価数</tspan></text>
-
+  <!-- Bottom text -->
+  <rect class="bottomBox" x="10" y="620" width="660" height="40" />
+  <text x="340" y="647" font-size="18">1個の酸が出すH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">の数が酸の価数， 1個の塩基が出すOH</tspan><tspan font-size="14" dy="-8">-</tspan><tspan dy="8">の数が塩基の価数</tspan></text>
 </svg>

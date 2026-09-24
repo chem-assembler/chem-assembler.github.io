@@ -118,9 +118,10 @@
   </g>
 
   <!-- 下段テキスト -->
-  <rect class="bottomBox" x="10" y="280" width="660" height="110" />
+  <rect class="bottomBox" x="10" y="280" width="660" height="135" />
   <text x="20" y="310" class="descText">水に溶けたとき</text>
-  <text x="40" y="345" class="descText"><tspan font-weight="bold">すべて電離</tspan>してH<tspan font-size="16" dy="-10">+</tspan><tspan dy="10">/OH</tspan><tspan font-size="16" dy="-10">-</tspan><tspan dy="10">を</tspan><tspan font-weight="bold">すべて放出</tspan>するのが<tspan font-weight="bold">強酸/強塩基</tspan></text>
-  <text x="40" y="380" class="descText"><tspan font-weight="bold">一部だけが電離</tspan>してH<tspan font-size="16" dy="-10">+</tspan><tspan dy="10">/OH</tspan><tspan font-size="16" dy="-10">-</tspan><tspan dy="10">を</tspan><tspan font-weight="bold">ほとんど放出しない</tspan>のが<tspan font-weight="bold">弱酸/弱塩基</tspan></text>
+  <text x="40" y="340" class="descText"><tspan font-weight="bold">すべて電離</tspan>してH<tspan font-size="16" dy="-10">+</tspan><tspan dy="10">/OH</tspan><tspan font-size="16" dy="-10">-</tspan><tspan dy="10">を</tspan><tspan font-weight="bold">すべて放出</tspan>するのが<tspan font-weight="bold">強酸/強塩基</tspan></text>
+  <text x="40" y="375" class="descText"><tspan font-weight="bold">一部だけが電離</tspan>してH<tspan font-size="16" dy="-10">+</tspan><tspan dy="10">/OH</tspan><tspan font-size="16" dy="-10">-</tspan><tspan dy="10">を</tspan></text>
+  <text x="60" y="405" class="descText"><tspan font-weight="bold">ほとんど放出しない</tspan>のが<tspan font-weight="bold">弱酸/弱塩基</tspan></text>
 
 </svg>
