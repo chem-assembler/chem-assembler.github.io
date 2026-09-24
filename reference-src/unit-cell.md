@@ -46,6 +46,9 @@ terms:
 - 面心立方格子
 - 六方最密構造
 - 配位数
+codes:
+- theo.structure.unit-cell-count
+- theo.structure.coordination-packing
 :::
 
 金属の結晶格子は、**体心立方格子・面心立方格子・六方最密構造**の3つのどれかです。体心立方格子は立方体の各頂点と中心に、面心立方格子は各頂点と各面の中心に原子があります。
@@ -99,6 +102,9 @@ title: 測る —— 半径と1辺の長さを結ぶ
 lead: 原子どうしが接している直線を見つけ、その長さを「半径 r の何個分」と「1辺 a の何倍」の2通りで書いて等しいとおきます。
 terms:
 - 原子半径
+codes:
+- theo.structure.radius-edge
+- theo.structure.ionic-lattice
 :::
 
 原子を球とみなすと、結晶の中では隣り合う原子が**接して**います。どの方向で接しているかを見つけるのが、この段のすべてです。
@@ -152,6 +158,8 @@ lead: 充塡率は「原子の体積の合計 ÷ 単位格子の体積」、密�
 terms:
 - 充塡率
 - 密度
+codes:
+- theo.structure.crystal-density
 :::
 
 単位格子の体積のうち、原子（球）が占める体積の割合を**充塡率**といいます。

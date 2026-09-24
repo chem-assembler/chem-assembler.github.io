@@ -38,6 +38,9 @@ terms:
 - 同素体
 - 黄リン
 - 赤リン
+codes:
+- inorg.nonmetal.phosphorus-allotrope
+- inorg.nonmetal.phosphorus-formula
 :::
 
 同じ元素からできていて、性質の異なる単体どうしを**同素体**といいます。リンには黄リンと赤リンの2つの同素体があります。
@@ -91,6 +94,8 @@ terms:
 - 十酸化四リン
 - 乾燥剤
 - 酸性酸化物
+codes:
+- inorg.nonmetal.p4o10
 :::
 
 リンを空気中で燃焼させると、白色の粉末の十酸化四リン P₄O₁₀ になります。
@@ -146,6 +151,9 @@ terms:
 - リン酸
 - 価数
 - 過リン酸石灰
+codes:
+- inorg.nonmetal.phosphoric-acid
+- inorg.nonmetal.superphosphate
 :::
 
 リン酸 H₃PO₄ は無色の結晶で、水によく溶けます。**1分子から H⁺ を3個まで出せる3価の酸**です。

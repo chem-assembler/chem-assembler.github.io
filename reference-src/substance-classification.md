@@ -41,6 +41,11 @@ terms:
 - 単体
 - 化合物
 - 元素
+codes:
+- theo.structure.substance-class
+- theo.structure.element-vs-substance
+- theo.structure.pure-mixture-bp
+- theo.structure.compound-decompose
 :::
 
 物質は、次の2つを順に確かめると分類できます。
@@ -141,6 +146,8 @@ title: 同素体 —— 同じ元素からできた別の単体
 lead: 同じ元素からできていて、性質が異なる単体どうしを同素体といいます。高校化学で扱うのは硫黄 S・炭素 C・酸素 O・リン P の4元素です。
 terms:
 - 同素体
+codes:
+- theo.structure.allotrope
 :::
 
 **同**じ元**素**からできた、別の単**体** —— 太字の3文字をつなぐと「**同素体**」です。
@@ -203,6 +210,9 @@ terms:
 - 沈殿
 - 石灰水
 - 硫酸銅(Ⅱ)無水物
+codes:
+- theo.structure.element-test
+- theo.structure.element-test-infer
 :::
 
 物質をつくっている元素を、その物質の**成分元素**といいます。食塩の中のナトリウムや塩素は目には見えませんが、化学変化で別の物質に移っても元素そのものは無くならないので、**その元素だけが示す変化**を起こせば、含まれていることを確かめられます。確かめ方は次の3つです。
@@ -311,6 +321,11 @@ terms:
 - 抽出
 - 昇華法
 - クロマトグラフィー
+codes:
+- theo.structure.separation-method
+- theo.structure.distillation-setup
+- theo.structure.separation-example
+- theo.structure.distillation-reason
 :::
 
 分離の方法は7つありますが、名前から覚えるより「**成分どうしで何が違うか**」から選ぶと迷いません。

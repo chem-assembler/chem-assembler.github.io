@@ -37,6 +37,8 @@ terms:
 - pOH
 - 水素イオン濃度
 - 水素イオン指数
+codes:
+- theo.acid-base.poh-def
 :::
 
 水素イオンのモル濃度を **[H⁺]**、水酸化物イオンのモル濃度を **[OH⁻]** と書きます。[H⁺] を対数で表したものが **pH**、[OH⁻] を対数で表したものが **pOH** です。計算では次の形で使います。
@@ -58,6 +60,9 @@ lead: 水の中では [H⁺][OH⁻] ＝ 1.0 × 10⁻¹⁴ (mol/L)² がいつも
 terms:
 - 水のイオン積
 - Kw
+codes:
+- theo.acid-base.water-ion-product
+- theo.acid-base.kw-meaning
 :::
 
 水の中では、[H⁺] と [OH⁻] の積がいつも一定の値になります。この積を**水のイオン積**といい、**Kw** で表します。
@@ -115,6 +120,8 @@ terms:
 - 酸性
 - 中性
 - 塩基性
+codes:
+- theo.acid-base.ph-def
 :::
 
 :::table
@@ -164,6 +171,9 @@ title: 薄めたときの pH の変化
 lead: 酸性の水溶液を 10ⁿ 倍に薄めると pH は n 増え、塩基性の水溶液では n 減ります。ただしどちらも 7 を越えては動きません。
 terms:
 - 希釈
+codes:
+- theo.acid-base.ph-dilution
+- theo.acid-base.dilution-oh
 :::
 
 酸性の水溶液を 10 倍に薄めると [H⁺] は 1/10 倍になるので、**pH は1増えます**（中性の 7 に近づく）。このとき [OH⁻] は 10 倍になり、pOH は1減ります。
@@ -211,6 +221,8 @@ title: pH ＝ −log₁₀[H⁺]
 lead: [H⁺] が 10 のちょうど何乗かで書けないときは、常用対数を使って pH ＝ −log₁₀[H⁺] で求めます。
 terms:
 - 常用対数
+codes:
+- theo.acid-base.ph-log
 :::
 
 pH の定義を対数で書くと **pH ＝ −log₁₀[H⁺]** です。[H⁺] ＝ 10⁻ᵖᴴ と同じことを言っています。
