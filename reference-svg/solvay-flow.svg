@@ -16,10 +16,10 @@
   <style>
     .box { fill: #fff; stroke: #333; stroke-width: 2; }
     .edge { fill: #eceff1; stroke: #333; stroke-width: 3; }
-    .t { font-size: 19px; fill: #222; text-anchor: middle; }
-    .tb { font-size: 21px; fill: #222; text-anchor: middle; }
-    .tag { font-size: 19px; fill: #555; }
-    .note { font-size: 19px; fill: #555; }
+    .t { font-size: 23px; fill: #222; text-anchor: middle; }
+    .tb { font-size: 25px; fill: #222; text-anchor: middle; }
+    .tag { font-size: 23px; fill: #555; }
+    .note { font-size: 23px; fill: #555; }
     .flow { stroke: #333; stroke-width: 2.5; fill: none; marker-end: url(#ad); }
     .co2 { stroke: #1565c0; stroke-width: 2; fill: none; stroke-dasharray: 7 5; marker-end: url(#ab); }
     .co2p { stroke: #1565c0; stroke-width: 2; fill: none; stroke-dasharray: 7 5; }
@@ -31,18 +31,18 @@
 
   <!-- ===== 左: ナトリウムの流れ ===== -->
   <text class="tag" x="80" y="22">原料</text>
-  <rect class="edge" x="80" y="30" width="240" height="56" rx="10" />
+  <rect class="edge" x="80" y="30" width="255" height="61" rx="10" />
   <text class="tb" x="200" y="64">NaCl の飽和水溶液</text>
 
-  <rect class="box" x="80" y="128" width="240" height="56" rx="10" />
+  <rect class="box" x="80" y="128" width="255" height="61" rx="10" />
   <text class="t" x="200" y="150">① NH₃ と CO₂ を吹き込む</text>
   <text class="t" x="200" y="172">NaHCO₃ が沈殿する</text>
 
-  <rect class="box" x="80" y="226" width="240" height="56" rx="10" />
+  <rect class="box" x="80" y="226" width="255" height="61" rx="10" />
   <text class="t" x="200" y="260">② NaHCO₃ を取り出して加熱</text>
 
   <text class="tag" x="80" y="318">製品</text>
-  <rect class="edge" x="80" y="324" width="240" height="56" rx="10" />
+  <rect class="edge" x="80" y="324" width="255" height="61" rx="10" />
   <text class="tb" x="200" y="358">Na₂CO₃</text>
 
   <path class="flow" d="M 200 86 L 200 126" />
@@ -51,18 +51,18 @@
 
   <!-- ===== 右: カルシウムの流れ ===== -->
   <text class="tag" x="610" y="22">原料</text>
-  <rect class="edge" x="610" y="30" width="240" height="56" rx="10" />
+  <rect class="edge" x="610" y="30" width="255" height="61" rx="10" />
   <text class="tb" x="730" y="64">CaCO₃（石灰石）</text>
 
-  <rect class="box" x="610" y="128" width="240" height="56" rx="10" />
+  <rect class="box" x="610" y="128" width="255" height="61" rx="10" />
   <text class="t" x="730" y="150">③ 石灰石を熱分解する</text>
   <text class="t" x="730" y="172">CaO と CO₂ ができる</text>
 
-  <rect class="box" x="610" y="226" width="240" height="56" rx="10" />
+  <rect class="box" x="610" y="226" width="255" height="61" rx="10" />
   <text class="t" x="730" y="248">④ CaO に水を加える</text>
   <text class="t" x="730" y="270">Ca(OH)₂ になる</text>
 
-  <rect class="box" x="610" y="324" width="240" height="56" rx="10" />
+  <rect class="box" x="610" y="324" width="255" height="61" rx="10" />
   <text class="t" x="730" y="346">⑤ Ca(OH)₂ ＋ NH₄Cl</text>
   <text class="t" x="730" y="368">NH₃ を追い出す</text>
 
