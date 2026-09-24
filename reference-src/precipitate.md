@@ -37,6 +37,8 @@ lead: Na⁺・K⁺・NH₄⁺ の塩と、硝酸塩 NO₃⁻ は、どんな組�
 terms:
 - 沈殿
 - イオン反応式
+codes:
+- inorg.qual.soluble-salts
 :::
 
 沈殿を覚えるときは、**沈殿しないもの**を先に押さえると量が減ります。
@@ -78,6 +80,9 @@ terms:
 - 硫酸バリウム
 - 炭酸カルシウム
 - クロム酸鉛(II)
+codes:
+- inorg.qual.chloride-sulfate-ppt
+- inorg.qual.sulfate-vs-carbonate
 :::
 
 :::table
@@ -181,6 +186,8 @@ lead: 多くの金属イオンが水酸化物の沈殿をつくります。色�
 terms:
 - 水酸化物
 - 両性水酸化物
+codes:
+- inorg.qual.hydroxide-colors
 :::
 
 NaOH 水溶液やアンモニア水を少量加えると、アルカリ金属・2族（Ca²⁺・Ba²⁺）以外の多くの金属イオンが水酸化物の沈殿をつくります。
@@ -242,6 +249,9 @@ lead: 硫化水素を通したとき、酸性でも沈むのはイオン化傾�
 terms:
 - 硫化物
 - 硫化水素
+codes:
+- inorg.qual.sulfide-ph
+- inorg.qual.sulfide-colors
 :::
 
 硫化水素 H₂S を通すと、多くの金属イオンが硫化物の沈殿をつくります。ただし、**液性によって沈むものが変わります。**
