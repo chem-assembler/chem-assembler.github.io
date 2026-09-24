@@ -35,6 +35,8 @@ terms:
 - 配位子
 - 配位数
 - 錯塩
+codes:
+- inorg.metal.complex-structure
 :::
 
 NH₃ の N 原子には**非共有電子対**が1組あります。この電子対を Cu²⁺ に一方的に提供して結合するのが**配位結合**です。配位結合する分子や陰イオンを**配位子**、1つの金属イオンに結合した配位子の数を**配位数**といいます。[Cu(NH₃)₄]²⁺ なら、配位子は NH₃、配位数は4です。
@@ -77,6 +79,10 @@ terms:
 - シアニド
 - ヒドロキシド
 - クロリド
+codes:
+- inorg.metal.complex-naming
+- inorg.metal.ligand-names
+- inorg.metal.central-oxidation
 :::
 
 :::table
@@ -149,6 +155,10 @@ terms:
 - 正方形
 - 正四面体形
 - 正八面体形
+codes:
+- inorg.metal.complex-shape
+- inorg.metal.coordination-rule
+- inorg.metal.complex-color
 :::
 
 :::table
@@ -187,6 +197,9 @@ title: 沈殿が錯イオンになって溶ける2つの型
 lead: 過剰のアンモニア水で溶けるのは Ag・Cu・Zn、過剰の NaOH 水溶液で溶けるのは両性金属の Al・Zn・Sn・Pb。Zn は両方に入ります。
 terms:
 - 沈殿の再溶解
+codes:
+- inorg.metal.complex-redissolve
+- inorg.metal.thiosulfate-agbr
 :::
 
 金属イオンの水溶液に少量の塩基を加えてできた沈殿が、試薬を**過剰に**加えると溶けることがあります。どちらも、錯イオンができて水に溶けるためです。
