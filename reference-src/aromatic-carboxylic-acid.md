@@ -114,6 +114,8 @@ terms:
 :::reaction
 left: C₆H₄(OH)COOH ＋ (CH₃CO)₂O
 right: C₆H₄(OCOCH₃)COOH ＋ CH₃COOH
+gen: サリチル酸 ＋ 無水酢酸 → アセチルサリチル酸 ＋ 酢酸
+app: acetylation
 level: ★★★
 note: アセチルサリチル酸ができます。−OH が −OCOCH₃ に変わり、−COOH は残っています。
 :::
@@ -131,6 +133,8 @@ caption: **アセチルサリチル酸**。−OH がアセチル化され、−C
 left: C₆H₄(OH)COOH ＋ CH₃OH
 over: 濃硫酸
 right: C₆H₄(OH)COOCH₃ ＋ H₂O
+gen: サリチル酸 ＋ メタノール → サリチル酸メチル ＋ 水
+app: esterification
 level: ★★★
 note: サリチル酸メチルができます。−COOH が −COOCH₃ に変わり、−OH は残っています。
 :::
