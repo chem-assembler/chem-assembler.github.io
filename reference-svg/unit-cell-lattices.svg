@@ -11,9 +11,9 @@
     .v { fill: #bbdefb; stroke: #1565c0; stroke-width: 1.6; }
     .f { fill: #fae3c8; stroke: #ef6c00; stroke-width: 1.6; }
     .i { fill: #e1bee7; stroke: #6a1b9a; stroke-width: 1.6; }
-    .name { font-size: 17px; fill: #222; }
-    .cnt { font-size: 17px; fill: #444; }
-    .frac { font-size: 17px; fill: #444; }
+    .name { font-size: 20px; fill: #222; }
+    .cnt { font-size: 20px; fill: #444; }
+    .frac { font-size: 20px; fill: #444; }
   </style>
 
   <!-- ===== 体心立方格子 ===== -->
