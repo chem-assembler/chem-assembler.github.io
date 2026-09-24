@@ -35,6 +35,9 @@ terms:
 - 陽イオン
 - 陰イオン
 - 価数
+codes:
+- theo.structure.ion-charge
+- theo.structure.ion-noble-config
 :::
 
 具体例として、ナトリウム原子 Na（K2・L8・M1）は、価電子1個を失うと Ne（K2・L8）と同じ電子配置になり、**ナトリウムイオン Na⁺** になります。塩素原子 Cl（K2・L8・M7）は、電子を1個受け取ると Ar（K2・L8・M8）と同じ電子配置になり、**塩化物イオン Cl⁻** になります。
@@ -85,6 +88,9 @@ lead: 原子1個がそのままイオンになったものが単原子イオン�
 terms:
 - 単原子イオン
 - 多原子イオン
+codes:
+- theo.structure.ion-name
+- theo.structure.polyatomic-ion
 :::
 
 単原子イオンの名前は、次の約束で決まります。
@@ -137,6 +143,8 @@ terms:
 - イオン結合
 - クーロン力
 - 組成式
+codes:
+- theo.structure.composition-formula
 :::
 
 一般に、陽イオンになりやすい**金属元素**と、陰イオンになりやすい**非金属元素**が結びつくと、イオン結合ができます。塩化ナトリウム NaCl の固体では、Na⁺ と Cl⁻ が 1：1 の割合で交互に並び、互いにクーロン力で引き合っています。
@@ -214,6 +222,9 @@ lead: 陽イオンと陰イオンがイオン結合によって規則正しく�
 terms:
 - イオン結晶
 - へき開
+codes:
+- theo.structure.ionic-crystal
+- theo.structure.cleavage-reason
 :::
 
 陽イオンと陰イオンが引き合う力は強く、ばらばらにするには大きなエネルギーが要ります。そのため、イオン結晶は**融点が高く、硬い**ものがほとんどです。例えば NaCl は 801℃ になるまで融けません。
