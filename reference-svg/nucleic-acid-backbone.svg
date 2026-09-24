@@ -6,9 +6,9 @@
     .s { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2; }
     .b { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2; }
     .bond { stroke: #333; stroke-width: 2.5; fill: none; }
-    .lab { font-size: 25px; fill: #222; }
-    .small { font-size: 25px; fill: #444; }
-    .sym { font-size: 26px; }
+    .lab { font-size: 29px; fill: #222; }
+    .small { font-size: 29px; fill: #444; }
+    .sym { font-size: 30px; }
   </style>
 
   <!-- 背骨の結合（左右は続きを表す） -->
@@ -30,25 +30,25 @@
   <polygon class="s" points="187,78 219,101 207,139 167,139 155,101" />
   <text class="small" x="187" y="115" text-anchor="middle" fill="#1565c0">糖</text>
   <path class="bond" d="M 187 139 L 187 176" />
-  <rect class="b" x="161" y="176" width="52" height="42" rx="7" />
+  <rect class="b" x="161" y="176" width="67" height="47" rx="7" />
   <text class="sym" x="187" y="204" text-anchor="middle" fill="#2e7d32">A</text>
 
   <polygon class="s" points="362,78 394,101 382,139 342,139 330,101" />
   <text class="small" x="362" y="115" text-anchor="middle" fill="#1565c0">糖</text>
   <path class="bond" d="M 362 139 L 362 176" />
-  <rect class="b" x="336" y="176" width="52" height="42" rx="7" />
+  <rect class="b" x="336" y="176" width="67" height="47" rx="7" />
   <text class="sym" x="362" y="204" text-anchor="middle" fill="#2e7d32">T</text>
 
   <polygon class="s" points="537,78 569,101 557,139 517,139 505,101" />
   <text class="small" x="537" y="115" text-anchor="middle" fill="#1565c0">糖</text>
   <path class="bond" d="M 537 139 L 537 176" />
-  <rect class="b" x="511" y="176" width="52" height="42" rx="7" />
+  <rect class="b" x="511" y="176" width="67" height="47" rx="7" />
   <text class="sym" x="537" y="204" text-anchor="middle" fill="#2e7d32">G</text>
 
   <polygon class="s" points="712,78 744,101 732,139 692,139 680,101" />
   <text class="small" x="712" y="115" text-anchor="middle" fill="#1565c0">糖</text>
   <path class="bond" d="M 712 139 L 712 176" />
-  <rect class="b" x="686" y="176" width="52" height="42" rx="7" />
+  <rect class="b" x="686" y="176" width="67" height="47" rx="7" />
   <text class="sym" x="712" y="204" text-anchor="middle" fill="#2e7d32">C</text>
 
   <text class="lab" x="40" y="48">糖とリン酸が交互 ＝ 背骨</text>
