@@ -39,23 +39,24 @@
     <!-- 銅樹 -->
     <rect class="cuLayer" x="10" y="75" width="40" height="65" />
     <!-- 亜鉛板 -->
-    <rect class="electrode" x="15" y="30" width="30" height="105" />
+    <rect class="electrode" x="12" y="30" width="36" height="105" />
     <text x="30" y="85" class="eq ctext">Zn</text>
 
     <!-- 電子の流れ -->
     <path class="arrowYellow" d="M 25 90 L 25 110 A 10 10 0 0 0 35 120 L 45 120 L 45 115 L 55 125 L 45 135 L 45 130 L 35 130 A 20 20 0 0 1 15 110 L 15 90 Z" />
-    <text x="40" y="105" class="eq">e<tspan font-size="12" dy="-8">-</tspan></text>
+    <rect x="35" y="90" width="20" height="20" fill="rgba(255,255,255,0)" />
+    <text x="35" y="105" class="eq">e<tspan font-size="12" dy="-8">-</tspan></text>
 
     <!-- 引き出し線 -->
     <text x="65" y="45" class="textOrange">銅樹</text>
     <path class="lead" d="M 60 50 L 45 65" />
 
     <!-- イオン -->
-    <circle cx="85" cy="155" r="22" class="circleCu" />
+    <circle cx="85" cy="155" r="24" class="circleCu" />
     <text x="85" y="161" class="wtext eq">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
     <path class="arrowBlue" d="M 70 145 L 55 135" />
 
-    <circle cx="95" cy="100" r="22" class="circleZn" />
+    <circle cx="95" cy="100" r="26" class="circleZn" />
     <text x="95" y="106" class="eq ctext">Zn<tspan font-size="12" dy="-8">2+</tspan></text>
     <path class="arrowBlue" d="M 55 120 L 75 105" />
 
@@ -66,16 +67,16 @@
 
     <!-- 反応式 (下に移動) -->
     <text x="40" y="215" class="eq">Zn</text>
-    <text x="115" y="215" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
+    <text x="140" y="215" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
     
     <text x="10" y="245" class="eq">＋）</text>
     <text x="40" y="245" class="eq">Cu<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
-    <text x="115" y="245" class="eq">→ Cu</text>
+    <text x="140" y="245" class="eq">→ Cu</text>
 
-    <line class="lineEq" x1="15" y1="255" x2="250" y2="255" />
+    <line class="lineEq" x1="15" y1="255" x2="275" y2="255" />
 
     <text x="40" y="280" class="eq">Zn ＋ Cu<tspan font-size="14" dy="-8">2+</tspan></text>
-    <text x="115" y="280" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ Cu</tspan></text>
+    <text x="140" y="280" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ Cu</tspan></text>
   </g>
 
   <!-- 右側: 金属が希酸に溶解する反応 -->
@@ -88,23 +89,24 @@
     <line class="beaker" x1="1" y1="80" x2="109" y2="80" />
 
     <!-- 亜鉛板 -->
-    <rect class="electrode" x="15" y="30" width="30" height="105" />
+    <rect class="electrode" x="12" y="30" width="36" height="105" />
     <text x="30" y="85" class="eq ctext">Zn</text>
 
     <!-- 電子の流れ -->
     <path class="arrowYellow" d="M 25 90 L 25 110 A 10 10 0 0 0 35 120 L 45 120 L 45 115 L 55 125 L 45 135 L 45 130 L 35 130 A 20 20 0 0 1 15 110 L 15 90 Z" />
-    <text x="40" y="105" class="eq">e<tspan font-size="12" dy="-8">-</tspan></text>
+    <rect x="35" y="90" width="20" height="20" fill="rgba(255,255,255,0)" />
+    <text x="35" y="105" class="eq">e<tspan font-size="12" dy="-8">-</tspan></text>
 
     <!-- イオン -->
-    <circle cx="85" cy="155" r="18" class="circleH" />
+    <circle cx="85" cy="155" r="22" class="circleH" />
     <text x="85" y="161" class="wtext eq">H<tspan font-size="12" dy="-5">+</tspan></text>
     <path class="arrowBlue" d="M 70 145 L 55 130" />
 
-    <circle cx="95" cy="110" r="22" class="circleZn" />
+    <circle cx="95" cy="110" r="26" class="circleZn" />
     <text x="95" y="116" class="eq ctext">Zn<tspan font-size="12" dy="-8">2+</tspan></text>
     <path class="arrowBlue" d="M 55 125 L 75 115" />
 
-    <circle cx="80" cy="50" r="18" class="circleH" />
+    <circle cx="80" cy="50" r="22" class="circleH" />
     <text x="80" y="56" class="wtext eq">H<tspan font-size="12" dy="5">2</tspan></text>
     <path class="arrowBlue" d="M 55 120 L 75 65" />
 
@@ -115,16 +117,16 @@
 
     <!-- 反応式 (下に移動) -->
     <text x="40" y="215" class="eq">Zn</text>
-    <text x="115" y="215" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
+    <text x="140" y="215" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
     
     <text x="10" y="245" class="eq">＋）</text>
     <text x="40" y="245" class="eq">2H<tspan font-size="14" dy="-8">+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="14" dy="-8">-</tspan></text>
-    <text x="115" y="245" class="eq">→ H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
+    <text x="140" y="245" class="eq">→ H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
 
-    <line class="lineEq" x1="15" y1="255" x2="250" y2="255" />
+    <line class="lineEq" x1="15" y1="255" x2="275" y2="255" />
 
     <text x="40" y="280" class="eq">Zn ＋ 2H<tspan font-size="14" dy="-8">+</tspan></text>
-    <text x="115" y="280" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ H</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
+    <text x="140" y="280" class="eq">→ Zn<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8"> ＋ H</tspan><tspan font-size="14" dy="5">2</tspan><tspan dy="-5">↑</tspan></text>
   </g>
 
   <!-- 下部テキスト -->
