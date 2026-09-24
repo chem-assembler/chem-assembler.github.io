@@ -114,6 +114,8 @@ caption: 炭素本来の **109.5°** に対して、三員環は **60°**、四�
 :::reaction
 left: C₃H₆（シクロプロパン） ＋ Br₂
 right: BrCH₂CH₂CH₂Br
+gen: シクロプロパン ＋ 臭素 → 1,3-ジブロモプロパン
+app: ring_opening_addition
 level: ★★☆
 note: 環が開いて、両端に Br が1個ずつ付いた鎖式化合物になります。**環が大きければこの反応は起こりません。**
 :::

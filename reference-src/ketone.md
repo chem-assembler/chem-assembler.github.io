@@ -159,6 +159,8 @@ note: **丸暗記**でかまいません。係数はすべて 1 なので、反�
 left: 2CH₂=CHCH₃ ＋ O₂
 over: PdCl₂・CuCl₂
 right: 2CH₃COCH₃
+gen: 2 プロペン ＋ 酸素 → 2 アセトン
+app: wacker_oxidation
 level: ★★☆
 note: エテンからアセトアルデヒドをつくるときと同じ触媒です。並べて覚えると1つぶん得をします。
 :::

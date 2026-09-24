@@ -192,6 +192,7 @@ note: トルエンのメチル基がカルボキシ基になって、安息香�
 left: C₆H₄(CH₃)₂（o-キシレン）
 over: KMnO₄
 right: C₆H₄(COOH)₂（フタル酸）
+gen: o-キシレン → フタル酸
 level: ★★★
 note: 2本のメチル基が、どちらもカルボキシ基になります。
 :::
@@ -200,6 +201,7 @@ note: 2本のメチル基が、どちらもカルボキシ基になります。
 left: C₆H₄(CH₃)₂（p-キシレン）
 over: KMnO₄
 right: C₆H₄(COOH)₂（テレフタル酸）
+gen: p-キシレン → テレフタル酸
 level: ★★★
 note: テレフタル酸は、ペットボトルの PET の原料です。
 :::
@@ -210,6 +212,8 @@ note: テレフタル酸は、ペットボトルの PET の原料です。
 left: C₆H₄(COOH)₂（フタル酸）
 over: 加熱
 right: C₆H₄(CO)₂O ＋ H₂O
+gen: フタル酸 → 無水フタル酸 ＋ 水
+app: dehydration_anhydride
 level: ★★☆
 note: 無水フタル酸ができます。隣り合った o 体だけが起こすので、o 体かどうかを見分ける手がかりになります。
 :::
@@ -220,6 +224,7 @@ note: 無水フタル酸ができます。隣り合った o 体だけが起こ�
 left: 2C₁₀H₈ ＋ 9O₂
 over: V₂O₅
 right: 2C₆H₄(CO)₂O ＋ 4CO₂ ＋ 4H₂O
+gen: 2 ナフタレン ＋ 9 酸素 → 2 無水フタル酸 ＋ 4 二酸化炭素 ＋ 4 水
 level: ★☆☆
 note: 無水フタル酸 C₈H₄O₃ の工業的な製法です。係数は覚えなくて構いません。
 :::
@@ -290,3 +295,5 @@ source: draft:reference-outline/aromatic.md の aromatic-homologs の「根も�
 prompt: エチルベンゼンを過マンガン酸カリウムで十分に酸化すると、何ができるか。
 answer: **安息香酸 C₆H₅COOH** です。側鎖の長さにかかわらず、環に付いた根もとの炭素1個だけが −COOH になるので、トルエンを酸化したときと同じものができます。
 :::
+
+

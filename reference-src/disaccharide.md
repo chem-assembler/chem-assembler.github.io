@@ -38,6 +38,7 @@ terms:
 :::reaction
 left: 2C₆H₁₂O₆
 right: C₁₂H₂₂O₁₁ ＋ H₂O
+gen: 2 α-グルコース → マルトース ＋ 水
 level: ★★☆
 note: 二糖ができる縮合。逆向きに水を加えて切るのが加水分解です。
 :::
@@ -101,6 +102,8 @@ rows:
 left: C₁₂H₂₂O₁₁（マルトース） ＋ H₂O
 over: マルターゼ
 right: 2C₆H₁₂O₆（グルコース）
+gen: マルトース ＋ 水 → 2 α-グルコース
+app: hydrolysis_glycoside
 level: ★★★
 note: 酸を加えて加熱しても同じように加水分解されます。
 :::
@@ -109,6 +112,8 @@ note: 酸を加えて加熱しても同じように加水分解されます。
 left: C₁₂H₂₂O₁₁（ラクトース） ＋ H₂O
 over: ラクターゼ
 right: C₆H₁₂O₆（グルコース） ＋ C₆H₁₂O₆（ガラクトース）
+gen: ラクトース ＋ 水 → β-グルコース ＋ β-ガラクトース
+app: hydrolysis_glycoside
 level: ★★☆
 note: 乳にふくまれる二糖です。
 :::
@@ -117,6 +122,8 @@ note: 乳にふくまれる二糖です。
 left: C₁₂H₂₂O₁₁（セロビオース） ＋ H₂O
 over: セロビアーゼ
 right: 2C₆H₁₂O₆（グルコース）
+gen: セロビオース ＋ 水 → 2 β-グルコース
+app: hydrolysis_glycoside
 level: ★★☆
 note: セルロースを途中まで加水分解すると得られます。マルトースとは、つながっているグルコースが α形か β形かだけが違います。
 :::
@@ -193,6 +200,8 @@ terms:
 left: C₁₂H₂₂O₁₁（スクロース） ＋ H₂O
 over: スクラーゼまたは希硫酸
 right: C₆H₁₂O₆（グルコース） ＋ C₆H₁₂O₆（フルクトース）
+gen: スクロース ＋ 水 → α-グルコース ＋ β-D-フルクトース（5員環構造）
+app: hydrolysis_glycoside
 level: ★★★
 note: ふさがっていた部分がほどけて、単糖が2つとも還元性を示すようになります。
 :::

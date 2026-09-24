@@ -38,6 +38,8 @@ terms:
 left: C₆H₆ ＋ Cl₂
 over: Fe または FeCl₃
 right: C₆H₅Cl ＋ HCl
+gen: ベンゼン ＋ 塩素 → クロロベンゼン ＋ 塩化水素
+app: aromatic_halogenation
 level: ★★★
 note: クロロベンゼンと塩化水素ができます。触媒の鉄が要ることが、紫外線での付加反応との分かれ目です。
 :::
@@ -49,10 +51,12 @@ note: クロロベンゼンと塩化水素ができます。触媒の鉄が要�
 **濃硝酸と濃硫酸の混合物（混酸）**をベンゼンに加えて約 60℃ に温めると、H が1個ニトロ基 −NO₂ に置き換わって**ニトロベンゼン**ができます。
 
 :::reaction
-left: C₆H₆ ＋ HNO₃
+left: C₆H₆ ＋ HNO₃（硝酸）
 over: 濃硫酸
 under: 約60℃
 right: C₆H₅NO₂ ＋ H₂O
+gen: ベンゼン → ニトロベンゼン ＋ 水
+app: aromatic_nitration
 level: ★★★
 note: ニトロベンゼンと水ができます。濃硫酸は反応物ではなく、触媒としてはたらきます。
 :::
@@ -64,9 +68,11 @@ note: ニトロベンゼンと水ができます。濃硫酸は反応物では�
 ベンゼンに**濃硫酸**を加えて加熱すると、H が1個スルホ基 −SO₃H に置き換わって**ベンゼンスルホン酸**ができます。
 
 :::reaction
-left: C₆H₆ ＋ H₂SO₄
+left: C₆H₆ ＋ H₂SO₄（硫酸）
 over: 加熱
 right: C₆H₅SO₃H ＋ H₂O
+gen: ベンゼン → ベンゼンスルホン酸 ＋ 水
+app: aromatic_sulfonation
 level: ★★★
 note: ベンゼンスルホン酸と水ができます。ニトロ化と違い、ここでは硫酸そのものが反応物です。
 :::
@@ -184,10 +190,12 @@ terms:
 たとえば、トルエン C₆H₅CH₃ をニトロ化すると、**o-ニトロトルエンと p-ニトロトルエンが主に**でき、m 体は少ししかできません。メチル基は o と p の位置に次の置換基を呼び込むはたらき（**o,p 配向性**）をもつためです。
 
 :::reaction
-left: C₆H₅CH₃ ＋ 3HNO₃
+left: C₆H₅CH₃ ＋ 3HNO₃（硝酸）
 over: 濃硫酸
 under: 加熱
 right: C₆H₂(CH₃)(NO₂)₃ ＋ 3H₂O
+gen: トルエン → 2,4,6-トリニトロトルエン ＋ 3 水
+app: aromatic_nitration
 level: ★☆☆
 note: 2,4,6-トリニトロトルエン（TNT）ができます。メチル基から見て o・p・o の3か所に入るので、位置番号が 2,4,6 になります。
 :::
@@ -221,3 +229,9 @@ source: draft:reference-outline/aromatic.md の benzene-substitution の表（3�
 prompt: ベンゼンに濃硫酸を加えて加熱したときにできる化合物の名称と示性式を答えよ。また、その水溶液の性質を答えよ。
 answer: **ベンゼンスルホン酸 C₆H₅SO₃H** です。スルホ基がほぼ完全に電離するので、水溶液は**強い酸性**を示します。
 :::
+
+
+
+
+
+

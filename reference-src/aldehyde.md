@@ -183,6 +183,7 @@ terms:
 left: 2CH₃OH ＋ O₂
 over: 熱した銅
 right: 2HCHO ＋ 2H₂O
+gen: 2 メタノール ＋ 酸素 → 2 ホルムアルデヒド ＋ 2 水
 level: ★★☆
 note: 酸化銅(II) は反応後に銅にもどるので、**銅は触媒**です。酸化剤としてはたらいているのは空気中の酸素のほうです。
 :::
@@ -195,6 +196,8 @@ note: 酸化銅(II) は反応後に銅にもどるので、**銅は触媒**で�
 left: CH≡CH ＋ H₂O
 over: HgSO₄
 right: CH₃CHO
+gen: アセチレン ＋ 水 → アセトアルデヒド
+app: add_water
 level: ★★★
 note: 途中のビニルアルコールは取り出せないので、反応式にはアセトアルデヒドだけを書きます。**丸暗記**でかまいません。
 :::
@@ -205,6 +208,8 @@ note: 途中のビニルアルコールは取り出せないので、反応式�
 left: 2CH₂=CH₂ ＋ O₂
 over: PdCl₂・CuCl₂
 right: 2CH₃CHO
+gen: 2 エチレン ＋ 酸素 → 2 アセトアルデヒド
+app: wacker_oxidation
 level: ★★☆
 note: 触媒の名前まで問われることがあります。**塩化パラジウム(II) と塩化銅(II)** の組み合わせです。
 :::

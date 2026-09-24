@@ -157,6 +157,8 @@ terms:
 :::reaction
 left: C₆H₅NH₂ ＋ (CH₃CO)₂O
 right: C₆H₅NHCOCH₃ ＋ CH₃COOH
+gen: アニリン ＋ 無水酢酸 → アセトアニリド ＋ 酢酸
+app: acetylation_anhydride
 level: ★★★
 note: アセトアニリドができます。−NH−CO− の結合を**アミド結合**といいます。
 :::
@@ -277,3 +279,4 @@ source: draft:reference-outline/aromatic.md の aniline の例題2（ジアゾ�
 prompt: ジアゾ化を 5℃以下に冷やして行うのはなぜか。冷やさずに温めると何ができるか、反応式で答えよ。
 answer: 塩化ベンゼンジアゾニウムは不安定で、温めると分解してしまうためです。C₆H₅N₂Cl ＋ H₂O → C₆H₅OH ＋ N₂ ＋ HCl となり、**フェノールと窒素**ができて、カップリングの相手が無くなります。
 :::
+
