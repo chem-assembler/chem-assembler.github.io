@@ -9,8 +9,8 @@
     .mark { stroke: #c62828; stroke-width: 3; fill: none; }
     .tick { stroke: #333; stroke-width: 1.5; fill: none; }
     .lead { stroke: #666; stroke-width: 1.5; fill: none; }
-    .name { font-size: 20px; font-weight: bold; fill: #222; }
-    .small { font-size: 19px; fill: #444; }
+    .name { font-size: 23px; font-weight: bold; fill: #222; }
+    .small { font-size: 22px; fill: #444; }
     .red { fill: #c62828; }
     .mid { text-anchor: middle; }
   </style>
@@ -18,7 +18,7 @@
   <!-- ===== メスフラスコ ===== -->
   <path class="liq" d="M 110 150 L 110 250 C 110 280, 60 290, 60 350 L 60 370 Q 60 390 80 390 L 160 390 Q 180 390 180 370 L 180 350 C 180 290, 130 280, 130 250 L 130 150 Z" />
   <path class="glass" d="M 110 86 L 110 250 C 110 280, 60 290, 60 350 L 60 370 Q 60 390 80 390 L 160 390 Q 180 390 180 370 L 180 350 C 180 290, 130 280, 130 250 L 130 86" />
-  <rect x="106" y="64" width="28" height="22" rx="3" fill="#9e9e9e" stroke="#333" stroke-width="2" />
+  <rect x="106" y="64" width="43" height="27" rx="3" fill="#9e9e9e" stroke="#333" stroke-width="2" />
   <path class="mark" d="M 102 150 L 138 150" />
   <text class="small red" x="146" y="156">標線</text>
   <text class="name mid" x="120" y="432">メスフラスコ</text>
@@ -45,7 +45,7 @@
     <path d="M 612 288 L 618 288" /><path d="M 612 299 L 618 299" /><path d="M 612 310 L 624 310" />
   </g>
   <!-- コック -->
-  <rect x="598" y="334" width="44" height="9" rx="3" fill="#9e9e9e" stroke="#333" stroke-width="2" />
+  <rect x="598" y="334" width="59" height="14" rx="3" fill="#9e9e9e" stroke="#333" stroke-width="2" />
   <!-- 落ちる1滴 -->
   <path d="M 620 366 C 617 371, 617 376, 620 377 C 623 376, 623 371, 620 366 Z" fill="#8fb4de" />
   <path class="lead" d="M 596 172 L 564 172" />
