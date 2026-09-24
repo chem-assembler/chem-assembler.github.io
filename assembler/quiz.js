@@ -3174,6 +3174,15 @@ function composeFigureRow(svg, parts, links) {
     const B = info.reduce((s, p) => s + p.sc.B, 0) / n;
     const capH = info.reduce((s, p) => s + p.sc.capH, 0) / n;
     const fs = capH / PAPER_CAP_EM;
+    /* ★ 分子ごとの縮尺をそろえる（2026-09-25・I-0142）。各分子は登録の結合の長さのまま描かれているので、
+       五員環の β-フルクトースだけ字が大きく出た。**字の高さ（capH）が全部の分子で同じ**になるように拡大縮小してから並べる。
+       ⚠ 端の余白（PAD）の内側の枠と、between の端（anchors）も同じ倍率で動かす */
+    info.forEach(p => {
+        const k = p.sc.capH > 0 ? capH / p.sc.capH : 1;
+        p.k = k;
+        p.x1 *= k; p.y1 *= k; p.x2 *= k; p.y2 *= k;
+        p.anchors = p.anchors.map(a => Object.assign({}, a, { cands: a.cands.map(c => Object.assign({}, c, { x: c.x * k, y: c.y * k })) }));
+    });
     const ink = PAPER_WIDTH_PER_BOND * B;
     const margin = capH * 0.7;                          // 分子の縁と矢印の端のすき間
     const warnings = [];
@@ -3248,7 +3257,7 @@ function composeFigureRow(svg, parts, links) {
         const g = document.createElementNS(NS, 'g');
         g.setAttribute('class', 'quiz-figure-part');
         g.setAttribute('data-part', String(i + 1));
-        g.setAttribute('transform', `translate(${p.dx.toFixed(2)},${p.dy.toFixed(2)})`);
+        g.setAttribute('transform', `translate(${p.dx.toFixed(2)},${p.dy.toFixed(2)})` + (Math.abs(p.k - 1) > 1e-6 ? ` scale(${p.k.toFixed(4)})` : ''));
         while (p.svg.firstChild) g.appendChild(p.svg.firstChild);
         svg.appendChild(g);
         grow(p.x1 + p.dx, p.y1 + p.dy, p.x2 + p.dx, p.y2 + p.dy);
