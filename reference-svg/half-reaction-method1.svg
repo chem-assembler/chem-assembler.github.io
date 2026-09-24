@@ -37,7 +37,7 @@
   <text x="270" y="150" class="eq">→</text>
   <text x="315" y="150" class="eq">Mn<tspan font-size="14" dy="-10">2+</tspan></text>
   <text x="370" y="150" class="eq">＋</text>
-  <rect class="boxOrange" x="385" y="125" width="75" height="28" />
+  <rect class="boxOrange" x="385" y="122" width="75" height="35" />
   <text x="395" y="150" class="eq">4H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
 
   <rect class="boxRight" x="470" y="105" width="200" height="40" />
@@ -48,7 +48,7 @@
   <text x="30" y="180">3． H<tspan font-size="12" dy="-8">+</tspan><tspan dy="8">で両辺のH原子の数を合わせる</tspan></text>
   <text x="100" y="210" class="eq">MnO<tspan font-size="14" dy="5">4</tspan><tspan font-size="14" dy="-15">-</tspan></text>
   <text x="165" y="210" class="eq">＋</text>
-  <rect class="boxOrange" x="180" y="185" width="60" height="28" />
+  <rect class="boxOrange" x="180" y="182" width="60" height="35" />
   <text x="185" y="210" class="eq">8H<tspan font-size="14" dy="-10">+</tspan></text>
   <text x="270" y="210" class="eq">→</text>
   <text x="315" y="210" class="eq">Mn<tspan font-size="14" dy="-10">2+</tspan></text>
@@ -70,7 +70,7 @@
   <text x="175" y="280" class="eq">8H<tspan font-size="14" dy="-10">+</tspan></text>
   <text x="215" y="280" class="eq">＋</text>
 
-  <rect class="boxOrange" x="230" y="255" width="60" height="28" />
+  <rect class="boxOrange" x="230" y="252" width="60" height="35" />
   <text x="235" y="280" class="eq">5e<tspan font-size="14" dy="-10">-</tspan></text>
 
   <text x="280" y="280" class="eq">→</text>
