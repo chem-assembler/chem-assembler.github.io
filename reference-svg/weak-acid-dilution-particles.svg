@@ -8,10 +8,10 @@
     .beaker { fill: none; stroke: #333; stroke-width: 3; }
     .water { fill: #eaf3fb; stroke: none; }
     .surf { stroke: #90caf9; stroke-width: 2; fill: none; }
-    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
-    .note { font-size: 19px; fill: #333; text-anchor: middle; }
-    .key { font-size: 19px; fill: #6a1b9a; text-anchor: middle; }
-    .p { font-size: 19px; text-anchor: middle; fill: #222; }
+    .ttl { font-size: 26px; fill: #222; text-anchor: middle; }
+    .note { font-size: 25px; fill: #333; text-anchor: middle; }
+    .key { font-size: 25px; fill: #6a1b9a; text-anchor: middle; }
+    .p { font-size: 25px; text-anchor: middle; fill: #222; }
     .acid { fill: #fff; stroke: #c62828; stroke-width: 2; }
     .anion { fill: #e8f1fb; stroke: #1565c0; stroke-width: 2; }
     .far { stroke: #6a1b9a; stroke-width: 2; stroke-dasharray: 7 6; fill: none; }
@@ -24,19 +24,19 @@
   <path class="surf" d="M 42 138 L 418 138" />
 
   <g class="acid">
-    <rect x="62" y="162" width="70" height="26" rx="13" />
-    <rect x="148" y="162" width="70" height="26" rx="13" />
-    <rect x="234" y="162" width="70" height="26" rx="13" />
-    <rect x="320" y="162" width="70" height="26" rx="13" />
-    <rect x="62" y="210" width="70" height="26" rx="13" />
-    <rect x="148" y="210" width="70" height="26" rx="13" />
-    <rect x="62" y="258" width="70" height="26" rx="13" />
-    <rect x="148" y="258" width="70" height="26" rx="13" />
-    <rect x="234" y="258" width="70" height="26" rx="13" />
-    <rect x="320" y="258" width="70" height="26" rx="13" />
-    <rect x="105" y="306" width="70" height="26" rx="13" />
-    <rect x="191" y="306" width="70" height="26" rx="13" />
-    <rect x="277" y="306" width="70" height="26" rx="13" />
+    <rect x="62" y="162" width="85" height="31" rx="13" />
+    <rect x="148" y="162" width="85" height="31" rx="13" />
+    <rect x="234" y="162" width="85" height="31" rx="13" />
+    <rect x="320" y="162" width="85" height="31" rx="13" />
+    <rect x="62" y="210" width="85" height="31" rx="13" />
+    <rect x="148" y="210" width="85" height="31" rx="13" />
+    <rect x="62" y="258" width="85" height="31" rx="13" />
+    <rect x="148" y="258" width="85" height="31" rx="13" />
+    <rect x="234" y="258" width="85" height="31" rx="13" />
+    <rect x="320" y="258" width="85" height="31" rx="13" />
+    <rect x="105" y="306" width="85" height="31" rx="13" />
+    <rect x="191" y="306" width="85" height="31" rx="13" />
+    <rect x="277" y="306" width="85" height="31" rx="13" />
   </g>
   <g class="p">
     <text x="97" y="180">CH₃COOH</text><text x="183" y="180">CH₃COOH</text>
@@ -48,7 +48,7 @@
     <text x="312" y="324">CH₃COOH</text>
   </g>
   <!-- 電離した1組（となり合っている） -->
-  <rect class="anion" x="238" y="210" width="72" height="26" rx="13" />
+  <rect class="anion" x="238" y="210" width="87" height="31" rx="13" />
   <text class="p" x="274" y="228">CH₃COO⁻</text>
   <circle cx="342" cy="223" r="15" fill="#c62828" />
   <text class="p" x="342" y="228" fill="#fff">H⁺</text>
@@ -60,15 +60,15 @@
   <path class="surf" d="M 462 138 L 838 138" />
 
   <g class="acid">
-    <rect x="496" y="168" width="70" height="26" rx="13" />
-    <rect x="712" y="306" width="70" height="26" rx="13" />
+    <rect x="496" y="168" width="85" height="31" rx="13" />
+    <rect x="712" y="306" width="85" height="31" rx="13" />
   </g>
   <g class="p">
     <text x="531" y="186">CH₃COOH</text>
     <text x="747" y="324">CH₃COOH</text>
   </g>
   <!-- 電離した1組（遠く離れている） -->
-  <rect class="anion" x="500" y="288" width="72" height="26" rx="13" />
+  <rect class="anion" x="500" y="288" width="87" height="31" rx="13" />
   <text class="p" x="536" y="306">CH₃COO⁻</text>
   <circle cx="770" cy="212" r="15" fill="#c62828" />
   <text class="p" x="770" y="217" fill="#fff">H⁺</text>
