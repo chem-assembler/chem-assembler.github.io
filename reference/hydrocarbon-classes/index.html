@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">炭化水素を6つのグループに分ける線の引き方と、それぞれの一般式。一般式は暗記しなくても、アルカンを基準に「二重結合で−2、三重結合で−4、環で−2」から組み立てられます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">有機化合物のきほん</span><span class="unit-label">炭化水素の分類と官能基</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-what" data-ref-anchor="what">まず2本の線を引く</a></li><li><a href="#ref-sec-classes" data-ref-anchor="classes">6つのグループと一般式</a></li><li><a href="#ref-sec-suffix" data-ref-anchor="suffix">名前のつくり方 —— 語尾と語頭</a></li><li><a href="#ref-sec-homolog" data-ref-anchor="homolog">一般式と同族体</a></li><li><a href="#ref-sec-why" data-ref-anchor="why">なぜ水素の数が減るのか</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -945,7 +963,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">1本目の線は<b>ベンゼン環をもつかどうか</b>です。<b>ベンゼン環をもつものを芳香族炭化水素、もたないものを脂肪族炭化水素</b>といいます。<b>芳香族炭化水素は、高校化学ではこれ以上細かく分類する必要はありません。</b></p>
 <p class="ref-p">2本目の線は、脂肪族の中に引きます。<b>環状構造をもたないものを鎖式炭化水素、もつものを環式炭化水素</b>といいます。</p>
 <p class="ref-p">3本目として、<b>不飽和結合（C=C・C≡C）をもつかどうか</b>で分けます。<b>単結合だけのものを飽和炭化水素、不飽和結合を1個でも含むものを不飽和炭化水素</b>といいます。<b>飽和と不飽和では性質が大きく異なるので、この2語は覚えておきましょう。</b></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.class-hydrocarbon,org.ali.class-aliphatic,org.ali.class-chain-ring,org.ali.class-saturated&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>炭化水素は炭素と水素だけからなる化合物。</li><li>脂肪族＝ベンゼン環をもたない炭化水素、芳香族＝ベンゼン環をもつ。</li><li>脂肪族は鎖式（環をもたない）と環式（環をもつ）に分かれる。</li><li>飽和＝不飽和結合をもたない、不飽和＝二重・三重結合をもつ。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.class-hydrocarbon,org.ali.class-aliphatic,org.ali.class-chain-ring,org.ali.class-saturated&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-classes"><h4 class="ref-sec-h">6つのグループと一般式</h4><p class="ref-sec-lead">脂肪族炭化水素は、鎖式か環式か、そして不飽和結合の種類で6つに分かれます。それぞれに一般式があります。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">脂肪族炭化水素の6つのグループ</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">グループ</th><th style="text-align: left;">どんな炭化水素か</th><th style="text-align: center;">一般式</th></tr></thead><tbody><tr><td style="text-align: left;"><b>アルカン</b></td><td style="text-align: left;">鎖式・単結合のみ</td><td style="text-align: center;">C<sub>n</sub>H<sub>2n+2</sub></td></tr><tr><td style="text-align: left;"><b>アルケン</b></td><td style="text-align: left;">鎖式・C=C を1個含む</td><td style="text-align: center;">C<sub>n</sub>H<sub>2n</sub></td></tr><tr><td style="text-align: left;"><b>アルキン</b></td><td style="text-align: left;">鎖式・C≡C を1個含む</td><td style="text-align: center;">C<sub>n</sub>H<sub>2n-2</sub></td></tr><tr><td style="text-align: left;"><b>シクロアルカン</b></td><td style="text-align: left;">環を1個含み、単結合のみ</td><td style="text-align: center;">C<sub>n</sub>H<sub>2n</sub></td></tr><tr><td style="text-align: left;"><b>シクロアルケン</b></td><td style="text-align: left;">環を1個と C=C を1個含む</td><td style="text-align: center;">C<sub>n</sub>H<sub>2n-2</sub></td></tr><tr><td style="text-align: left;"><b>シクロアルキン</b></td><td style="text-align: left;">環を1個と C≡C を1個含む</td><td style="text-align: center;">C<sub>n</sub>H<sub>2n-4</sub></td></tr></tbody></table></div>
 <p class="ref-p"><b>この6つは必ず言えるようにしてください。</b>表の中で<b>アルケンとシクロアルカンが同じ C<sub>n</sub>H<sub>2n</sub></b>、<b>アルキンとシクロアルケンが同じ C<sub>n</sub>H<sub>2n-2</sub></b> になっているところが、あとで効いてきます。<b>分子式だけからはグループを1つに決められない</b>、ということだからです。</p>
@@ -953,19 +971,19 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物グループの一般式を書け。<b>(1) アルカン　(2) アルケン　(3) アルキン　(4) シクロアルカン　(5) シクロアルケン　(6) シクロアルキン</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) C<sub>n</sub>H<sub>2n+2</sub>　(2) C<sub>n</sub>H<sub>2n</sub>　(3) C<sub>n</sub>H<sub>2n-2</sub>　(4) C<sub>n</sub>H<sub>2n</sub>　(5) C<sub>n</sub>H<sub>2n-2</sub>　(6) C<sub>n</sub>H<sub>2n-4</sub>。アルカンを基準に、二重結合で −2、三重結合で −4、環状構造で −2 と水素を減らします。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の分子式をもつ物質の化合物グループの名称として、考えられるものをすべて書け。<b>(1) C₅H₁₂　(2) C₈H₁₆　(3) C₆H₁₀</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) n=5 として 12 = 2n+2 なので<b>アルカン</b>。(2) n=8 として 16 = 2n なので<b>アルケン</b>と<b>シクロアルカン</b>。(3) n=6 として 10 = 2n−2 なので<b>アルキン</b>と<b>シクロアルケン</b>。炭素の数を n として、水素の数を n で表せば一般式が得られます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.formula-alkene,org.ali.formula-alkyne,org.ali.formula-cycloalkane,org.ali.formula-cycloalkene&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アルケン（鎖式・二重結合1個）の一般式は CₙH₂ₙ。</li><li>アルキン（鎖式・三重結合1個）の一般式は CₙH₂ₙ₋₂。</li><li>シクロアルカンの一般式は CₙH₂ₙ（鎖式アルケンと同じ）。</li><li>シクロアルケン（環1個＋二重結合1個）の一般式は CₙH₂ₙ₋₂。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.formula-alkene,org.ali.formula-alkyne,org.ali.formula-cycloalkane,org.ali.formula-cycloalkene&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-suffix"><h4 class="ref-sec-h">名前のつくり方 —— 語尾と語頭</h4><p class="ref-sec-lead">単結合だけなら -ane、二重結合があれば -ene、三重結合があれば -yne。環があれば頭に cyclo- をつけます。</p></section>
 <p class="ref-p">炭化水素の名前は、<b>アルカンを基準にして</b>、語尾と語頭を変えてつくります。</p>
 <ul class="ref-list"><li><b>単結合のみ</b> … 語尾に <b>-ane</b>（メタン methane、エタン ethane）</li><li><b>C=C を含む</b> … 語尾に <b>-ene</b>（エテン ethene、プロペン propene）</li><li><b>C≡C を含む</b> … 語尾に <b>-yne</b>（エチン ethyne、プロピン propyne）</li><li><b>環状構造をもつ</b> … 語頭に <b>cyclo-</b>（シクロプロパン cyclopropane）</li></ul>
 <p class="ref-p"><b>「シクロ－」は cyclo- のローマ字読み</b>です。自転車に乗ることをサイクリング、資源を再利用することをリサイクルというのと同じ語で、<b>日本語と英語で読み方が違うだけ</b>です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane-naming/">枝分かれのあるアルカンに名前をつける手順はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.suffix&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>語尾 -ene（二重結合）／-yne（三重結合）、語頭 cyclo-（環）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.suffix&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-homolog"><h4 class="ref-sec-h">一般式と同族体</h4><p class="ref-sec-lead">一般式は化合物グループの分子式を1つの式にまとめたもの。n に炭素の数を入れれば分子式が出ます。</p></section>
 <p class="ref-p"><b>化合物グループの分子式を、一般化して1つの式にまとめたもの</b>を<b>一般式</b>といいます。</p>
 <p class="ref-p">一般式は<b>書きっぱなしにせず、1回代入してみる</b>のが確実です。アルカンの一般式 C<sub>n</sub>H<sub>2n+2</sub> に <b>n=1 を代入すればメタン CH₄</b>、<b>n=4 を代入すればブタン C₄H₁₀</b> が出ます。数学の数列の一般項と同じようなものだと思ってください。</p>
 <p class="ref-p"><b>共通の一般式で表される化合物グループ</b>を<b>同族体</b>といいます。同族体どうしは<b>似た化学的性質</b>を示し、<b>となりあうものは組成が CH₂ 1個ぶんだけ違います。</b></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane/">アルカンの一般式が C<sub>n</sub>H<sub>2n+2</sub> になる理由（メチレン基で組み立てる）はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.homolog&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>同族体＝同じ一般式で表されるグループ。性質が似ていて、隣り合うものどうしは組成が CH₂ 1個分だけ異なる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.homolog&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-why"><h4 class="ref-sec-h">なぜ水素の数が減るのか</h4><p class="ref-sec-lead">一般式を6つとも丸暗記しなくても、アルカンを基準に「二重結合で−2、三重結合で−4、環で−2」と足し引きすれば出せます。</p></section>
 <p class="ref-p">アルカンの単結合 C−C を<b>二重結合 C=C にすると、水素原子が2個減ります。</b>それぞれの炭素から手が1本ずつ、たがいのほうへ回されるためです。<b>三重結合 C≡C にすると、水素原子は4個減ります。</b></p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hydrocarbon-double-triple.png?h=9a494a94" alt="エタンの構造式から、矢印で C−C を C=C にした構造式と、C≡C にした構造式へ分岐する図。二重結合にすると H が2個、三重結合にすると H が4個減ることを示している" loading="lazy"><figcaption class="ref-figure-cap">エタン C₂H₆ を基準にすると、<b>二重結合にしてエテン C₂H₄</b>（H が2個減）、<b>三重結合にしてエチン C₂H₂</b>（H が4個減）です。</figcaption></figure>
@@ -980,7 +998,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">付加反応がどう進むかはアルケンのページに</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkyne/">アルキン（三重結合を1個もつ炭化水素）はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/cycloalkane/">シクロアルカン（環を1個もつ炭化水素）はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.unsaturation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アルカンを基準に、二重結合で−2、三重結合で−4、環で−2、水素の数が減る。 この減った数を2で割った値が不飽和度。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.unsaturation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1087,6 +1105,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

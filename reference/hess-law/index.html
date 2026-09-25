@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">出発点と到達点が同じなら、途中でどんな道を通っても、出入りする熱の合計（反応エンタルピー）は変わりません（ヘスの法則）。エネルギー図に準位を置いて高さを決めれば、ΔH ＝（到達点の高さ）−（出発点の高さ）で、直接測れない反応の ΔH も求められます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">化学反応とエネルギー</span><span class="unit-label">ヘスの法則と結合エンタルピー</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-law" data-ref-anchor="law">ヘスの法則</a></li><li><a href="#ref-sec-diagram" data-ref-anchor="diagram">準位を置いて高さの差をとる</a></li><li><a href="#ref-sec-formation" data-ref-anchor="formation">生成エンタルピーで反応エンタルピーを出す</a></li><li><a href="#ref-sec-algebra" data-ref-anchor="algebra">別解 —— 式を足し引きする</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-table-wrap"><div class="ref-cap">液体の水をつくる2つの経路（25℃）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">経路</th><th style="text-align: left;">反応</th><th style="text-align: right;">ΔH</th></tr></thead><tbody><tr><td style="text-align: left;">Ⅰ（直接）</td><td style="text-align: left;">H₂(気) ＋ ½O₂(気) → H₂O(液)</td><td style="text-align: right;">−286 kJ</td></tr><tr><td style="text-align: left;">Ⅱ の1段目（水蒸気をつくる）</td><td style="text-align: left;">H₂(気) ＋ ½O₂(気) → H₂O(気)</td><td style="text-align: right;">−242 kJ</td></tr><tr><td style="text-align: left;">Ⅱ の2段目（凝縮させる）</td><td style="text-align: left;">H₂O(気) → H₂O(液)</td><td style="text-align: right;">−44 kJ</td></tr><tr><td style="text-align: left;">Ⅱ の合計</td><td style="text-align: left;">（はじめと終わりはⅠと同じ）</td><td style="text-align: right;">−286 kJ</td></tr></tbody></table></div>
 <p class="ref-p">経路Ⅱの2段を足すと (−242) ＋ (−44) ＝ −286kJ で、経路Ⅰと同じになります。<b>物質はそれぞれ決まったエンタルピーをもっている</b>ので、はじめと終わりが同じなら、その差もどの道を通っても同じになるためです。</p>
 <p class="ref-p">エネルギー図でいえば、<b>準位の高さは物質で決まっていて、どの経路を通っても高さの差は同じ</b>です。山登りで、どの登山道を通っても山頂と麓の標高差が変わらないのと同じです。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.hess-law&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>出発する物質と最後にできる物質が同じなら、途中でどんな道筋をたどっても、出入りする反応エンタルピーの合計は同じになる（ヘスの法則）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.hess-law&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-diagram"><h4 class="ref-sec-h">準位を置いて高さの差をとる</h4><p class="ref-sec-lead">基準の準位を 0 に置き、与えられた式から残りの準位の高さを決めます。求める ΔH は（到達点の高さ）−（出発点の高さ）です。</p></section>
 <p class="ref-p">ヘスの法則の計算は、エネルギー図の<b>準位の高さ</b>を決めていけば、足し算と引き算だけで解けます。次の順で進めます。</p>
 <ol class="ref-list"><li>与えられた式に出てくる状態を、準位として書き出す。<div class="ref-li-hang">準位は「C(黒鉛) ＋ O₂(気)」のように、<b>左辺全体・右辺全体を1つの準位</b>にする。</div></li><li>どれか1つの準位を基準にして、高さを 0 とする。<div class="ref-li-hang">ふつうは、いちばん上に来る準位（単体の組など）を基準にします。</div></li><li>与えられた式を1本ずつ使い、基準から順に高さを置いていく。<div class="ref-li-hang">「<span class="ref-blank">○○</span> → △△　ΔH ＝ −□□kJ」なら、△△ は <span class="ref-blank">○○</span> より □□ だけ低い。</div></li><li>求める反応の ΔH ＝（到達点の高さ）−（出発点の高さ）。</li></ol>
@@ -962,7 +980,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">「ヘスの法則は ΔH を足す法則」と覚えて、CO の生成エンタルピーを (−394) ＋ (−283) ＝ −677kJ とする</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">求める反応がどの準位からどの準位へ行くのかを図で決め、<b>（到達点の高さ）−（出発点の高さ）</b>をとります。この例では −111kJ です。</span></p><p class="ref-mistake-why">足すか引くかを式の見た目で決めると、逆向きにたどる所で符号を落とします。★ 図に矢印を描けば、逆向きにたどる所は矢印が逆を向くので、符号の反転が目で見えます。</p></div>
 <h5 class="ref-h5">例題 —— 準位を置いて高さの差をとる</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">C(黒鉛) ＋ O₂(気) → CO₂(気)　ΔH ＝ −394 kJ、C(ダイヤモンド) ＋ O₂(気) → CO₂(気)　ΔH ＝ −396 kJ である。<b>(1) C(黒鉛) → C(ダイヤモンド) の ΔH は何 kJ か。　(2) 黒鉛とダイヤモンドは、どちらがエネルギーの低い（安定な）状態か。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>＋2kJ</b>。C(黒鉛) ＋ O₂ を 0 とすると、CO₂ は −394。C(ダイヤモンド) ＋ O₂ は CO₂ より 396 高いので −394 ＋ 396 ＝ ＋2。黒鉛（0）からダイヤモンド（＋2）へ上るので ΔH ＝ ＋2 − 0 ＝ ＋2kJ。　(2) <b>黒鉛</b>。ダイヤモンドのほうが 2kJ 高いためです。炭素の生成エンタルピーの基準（0）を黒鉛にとるのも、黒鉛が安定だからです。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.hess-diagram&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ヘスの法則の計算は、基準の準位を 0 に置いて与えられた式から各準位の高さを決め、（到達点の高さ）−（出発点の高さ）で ΔH を求める。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.hess-diagram&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-formation"><h4 class="ref-sec-h">生成エンタルピーで反応エンタルピーを出す</h4><p class="ref-sec-lead">単体の組をいちばん上の基準 0 に置くと、各化合物の生成エンタルピーがそのまま準位の高さになります。反応エンタルピー ＝（生成物の生成エンタルピーの和）−（反応物の生成エンタルピーの和）です。</p></section>
 <p class="ref-p"><b>単体の組を基準 0 に置くと、生成エンタルピーがそのまま高さになります。</b>生成エンタルピーは「単体から化合物 1mol ができるときの ΔH」なので、単体からの高さの差そのものだからです。</p>
 <p class="ref-p">そのため、生成エンタルピーが分かっている物質だけでできた反応は、次の関係で ΔH が出ます。</p>
@@ -975,11 +993,11 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">⚠ <b>係数の分だけ生成エンタルピーを掛けます。</b> H₂O は 2mol できるので、−286 を2倍します。</p>
 <h5 class="ref-h5">例題 —— 生成エンタルピーで反応エンタルピーを出す</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">エタノール C₂H₅OH（液）の燃焼エンタルピーは −1368kJ/mol、CO₂（気）と H₂O（液）の生成エンタルピーはそれぞれ −394kJ/mol、−286kJ/mol である。<b>エタノールの生成エンタルピーは何 kJ/mol か。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>−278kJ/mol</b>。燃焼の式は C₂H₅OH(液) ＋ 3O₂(気) → 2CO₂(気) ＋ 3H₂O(液)　ΔH ＝ −1368 kJ。単体の組 2C(黒鉛) ＋ 3H₂(気) ＋ 7/2O₂(気) を 0 とすると、生成物の高さは 2×(−394) ＋ 3×(−286) ＝ −1646。反応物（エタノール ＋ 3O₂）の高さを x とすると、−1646 − x ＝ −1368 より x ＝ −278。O₂ の高さは 0 なので、これがエタノールの生成エンタルピーです。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.from-formation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>反応エンタルピー ＝（生成物の生成エンタルピーの和）−（反応物の生成エンタルピーの和）で、係数の分だけ掛け、単体は 0 とする。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.from-formation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-algebra"><h4 class="ref-sec-h">別解 —— 式を足し引きする</h4><p class="ref-sec-lead">与えられた式を数式のように足し引きして、求める式を組み立てる方法もあります。式を逆向きにしたら ΔH の符号も逆にします。</p></section>
 <p class="ref-p">与えられた式を、<b>求める式の左辺と右辺に合うように並べ替えて足し引きする</b>方法もあります。具体例2なら、1本目の式から2本目の式を引くと、CO₂ が消えて C(黒鉛) ＋ ½O₂ → CO が残り、ΔH は (−394) − (−283) ＝ −111kJ です。</p>
 <p class="ref-p">この方法では、<b>式を逆向きにしたら ΔH の符号を逆にし、式を <span class="ref-blank">○○</span> 倍したら ΔH も <span class="ref-blank">○○</span> 倍にする</b>のを忘れないようにします。どちらの解き方でも答えは同じなので、慣れたほうを使ってかまいません。準位の数が多い問題では、図のほうが見通しがよくなります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.hess-algebra&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>式を足し引きしてヘスの法則を使うとき、式を逆向きにしたら ΔH の符号を逆にし、式を n 倍したら ΔH も n 倍にする。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.hess-algebra&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">「経路によらず、はじめと終わりで決まる」と、準位を置いて差をとる手順を覚えます。値は問題文に書かれます。</p></section>
 <p class="ref-p"><b>「スタートとゴールが同じなら、どの道すじでも ΔH の合計は同じ」というヘスの法則の中身は必ず覚えてください。</b>計算は「基準を 0 に置く → 準位の高さを決める → 到達点 − 出発点」の3段で、どの問題も同じです。</p>
 <p class="ref-p">「（生成物の生成エンタルピーの和）−（反応物の生成エンタルピーの和）」は覚えてもよいですが、<b>図を描けば出てくる式なので、丸暗記より図から出せるようにしましょう。</b>生成エンタルピーや燃焼エンタルピーの数値は、問題文で与えられるので覚える必要はありません。</p>
@@ -1087,6 +1105,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">原子は電子を失ったり受け取ったりして、貴ガスと同じ電子配置のイオンになります。陽イオンと陰イオンはクーロン力で引き合ってイオン結合をつくり、物質は組成式で表します。組成式は電荷の合計が0になる比で書き、陰イオン → 陽イオンの順に読みます。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">原子と化学結合</span><span class="unit-label">イオンとイオン結合</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-ion" data-ref-anchor="ion">イオンのでき方 —— 貴ガスと同じ電子配置になる</a></li><li><a href="#ref-sec-names" data-ref-anchor="names">イオンの名前と多原子イオン</a></li><li><a href="#ref-sec-formula" data-ref-anchor="formula">イオン結合と組成式 —— 電荷の合計を0にする</a></li><li><a href="#ref-sec-crystal" data-ref-anchor="crystal">イオン結晶の性質</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -955,7 +973,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— イオンのでき方</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の原子が安定なイオンになったときの化学式を書き、そのイオンと同じ電子配置の貴ガスを答えよ。(1) Mg　(2) S　(3) K　(4) F</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>Mg²⁺</b>、Ne（価電子2個を失う）　(2) <b>S²⁻</b>、Ar（電子を2個受け取る）　(3) <b>K⁺</b>、Ar（価電子1個を失う）　(4) <b>F⁻</b>、Ne（電子を1個受け取る）</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.ion-charge,theo.structure.ion-noble-config&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>典型元素の原子は、価電子1〜3個なら失って陽イオンに、6〜7個なら受け取って陰イオンになり、価数は族の番号から出せる。</li><li>典型元素の原子は、いちばん近い貴ガスと同じ電子配置のイオンになる。Na⁺・Mg²⁺・Al³⁺・O²⁻・F⁻ はネオン Ne と、K⁺・Ca²⁺・S²⁻・Cl⁻ はアルゴン Ar と同じ電子配置である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.ion-charge,theo.structure.ion-noble-config&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-names"><h4 class="ref-sec-h">イオンの名前と多原子イオン</h4><p class="ref-sec-lead">原子1個がそのままイオンになったものが単原子イオン、いくつかの原子がひとかたまりになって全体で電荷をもつものが多原子イオンです。単原子の陰イオンは「〜化物イオン」、多原子イオンは固有の名前で呼びます。</p></section>
 <p class="ref-p">単原子イオンの名前は、次の約束で決まります。</p>
 <ul class="ref-list"><li>陽イオンは、元素名に「イオン」を付ける。<div class="ref-li-hang">Na⁺ → ナトリウムイオン、Ca²⁺ → カルシウムイオン</div></li><li>陰イオンは、元素名の語尾を「<span class="ref-blank">○○</span>化物イオン」に変える。<div class="ref-li-hang">Cl⁻ → 塩化物イオン、O²⁻ → 酸化物イオン、S²⁻ → 硫化物イオン</div></li><li>同じ元素で価数の違うイオンがあるときは、価数をローマ数字で添える。<div class="ref-li-hang">Fe²⁺ → 鉄(Ⅱ)イオン、Fe³⁺ → 鉄(Ⅲ)イオン、Cu⁺ → 銅(Ⅰ)イオン、Cu²⁺ → 銅(Ⅱ)イオン</div></li></ul>
@@ -972,7 +990,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5 ref-h5-advanced">H⁺ が1個ずつ外れる酸<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">硫酸・炭酸・リン酸のように H⁺ を2個以上もつ酸は、H⁺ が1個ずつ外れていきます。途中でできるイオンにも名前があり、残っている H の数を名前に入れます。リン酸 H₃PO₄ なら、1個外れると<b>リン酸二水素イオン H₂PO₄⁻</b>、2個外れると<b>リン酸水素イオン HPO₄²⁻</b>、3個外れると<b>リン酸イオン PO₄³⁻</b> です。H₂PO₄⁻ と HPO₄²⁻ は、緩衝液の問題で出てきます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/covalent-bond/">NH₄⁺・H₃O⁺ ができる仕組み（配位結合）へ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.ion-name,theo.structure.polyatomic-ion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>単原子の陽イオンは元素名＋イオン、陰イオンは「〜化物イオン」と呼び、価数の違うイオンがある元素は価数をローマ数字で添える。</li><li>多原子イオンは電子配置から価数が出せないので、名前と化学式（NH₄⁺・OH⁻・NO₃⁻・SO₄²⁻・CO₃²⁻・PO₄³⁻ など）を組で覚える。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.ion-name,theo.structure.polyatomic-ion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">イオン結合と組成式 —— 電荷の合計を0にする</h4><p class="ref-sec-lead">陽イオンと陰イオンは、プラスとマイナスの電気で引き合います（クーロン力）。この引き合いによるつながりがイオン結合です。イオンでできた物質は、イオンの数をいちばん簡単な整数の比にそろえた組成式で書き表します。</p></section>
 <p class="ref-p">一般に、陽イオンになりやすい<b>金属元素</b>と、陰イオンになりやすい<b>非金属元素</b>が結びつくと、イオン結合ができます。塩化ナトリウム NaCl の固体では、Na⁺ と Cl⁻ が 1：1 の割合で交互に並び、互いにクーロン力で引き合っています。</p>
 <p class="ref-p">イオンからなる物質は、全体としては電気的に中性です。<b>＋の電荷の合計と、−の電荷の合計が等しくなる</b>ように、イオンの数の比が決まります。</p>
@@ -987,7 +1005,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>組成式を書く・読む手順は、イオンの単元でいちばん使う技術です。</b>多原子イオンの表とセットで、何も見ずにできるようにしましょう。組成式は、分子をつくらない物質（イオン結晶・金属・共有結合の結晶）を表すときにも使います。</p>
 <h5 class="ref-h5">例題 —— イオン結合と組成式</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次のイオンからなる物質の組成式と名前を答えよ。(1) K⁺ と O²⁻　(2) Cu²⁺ と NO₃⁻　(3) Al³⁺ と Cl⁻　(4) Ca²⁺ と PO₄³⁻　(5) NH₄⁺ と CO₃²⁻</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 1×2 ＝ 2×1 より <b>K₂O</b>、酸化カリウム　(2) 2×1 ＝ 1×2 より <b>Cu(NO₃)₂</b>、硝酸銅(Ⅱ)　(3) <b>AlCl₃</b>、塩化アルミニウム　(4) 2 と 3 の最小公倍数 6 にそろえて <b>Ca₃(PO₄)₂</b>、リン酸カルシウム　(5) <b>(NH₄)₂CO₃</b>、炭酸アンモニウム</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.composition-formula&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>イオンからなる物質の組成式は、（陽イオンの価数）×（数）＝（陰イオンの価数）×（数）となる最も簡単な整数比で書き、多原子イオンが2個以上なら（ ）で囲む。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.composition-formula&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-crystal"><h4 class="ref-sec-h">イオン結晶の性質</h4><p class="ref-sec-lead">陽イオンと陰イオンがイオン結合によって規則正しく並んだ固体をイオン結晶といいます。融点が高くて硬いが、たたくと割れやすく、固体のままでは電気を通しません。</p></section>
 <p class="ref-p">陽イオンと陰イオンが引き合う力は強く、ばらばらにするには大きなエネルギーが要ります。そのため、イオン結晶は<b>融点が高く、硬い</b>ものがほとんどです。例えば NaCl は 801℃ になるまで融けません。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ionic-bond-crystal.png?h=345c06bc" alt="大きな緑の Cl⁻ と小さな青の Na⁺ が、上下左右に交互に、すき間なく接して並んでいる図。右に「Na⁺ と Cl⁻ が 1：1 で、上下左右に交互に並ぶ」「どのイオンも、まわりを反対の符号のイオンに囲まれて引き合っている」とある" loading="lazy"><figcaption class="ref-figure-cap">NaCl の結晶。どのイオンも、まわりを<b>反対の符号のイオン</b>に囲まれています。</figcaption></figure>
@@ -1001,7 +1019,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ionic-bond-cleavage.png?h=6e0dd62d" alt="左は＋と−のブロックが交互にすき間なく並んだイオン結晶。右は上の2段を1つぶん右へずらしたところで、ずれた面をはさんで＋と＋、−と−が向き合い、反発の矢印が描かれている" loading="lazy"><figcaption class="ref-figure-cap">硬いのに強くたたくと割れるのは、<b>1つぶんずれただけで引力が反発に変わる</b>からです。金属のように、ずれても結びつきが保たれることはありません。</figcaption></figure>
 <h5 class="ref-h5">例題 —— イオン結晶の性質</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">塩化ナトリウムの固体は電気を通さないが、加熱して融解させたものや水溶液は電気を通す。この理由を説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>固体では Na⁺ と Cl⁻ がイオン結合によって決まった位置に固定されていて動けないが、<b>融解したり水に溶けたりするとイオンが自由に動けるようになり、電荷を運べるため</b>。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.ionic-crystal,theo.structure.cleavage-reason&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>イオン結晶は融点が高く硬いがへき開しやすく、固体は電気を通さないが、融解液や水溶液はイオンが動けるので電気を通す。</li><li>イオン結晶は融点が高く硬いが、強い力を加えると特定の面に沿って割れる（へき開）。結晶の面がずれると同じ符号のイオンどうしが向き合って反発するためで、ずれても結びつきが保たれる金属とは違う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.ionic-crystal,theo.structure.cleavage-reason&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 </div>
 </div>
 
@@ -1105,6 +1123,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

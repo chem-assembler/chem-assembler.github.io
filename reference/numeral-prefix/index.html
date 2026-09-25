@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -936,6 +953,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h1>数を表す接頭辞</h1>
 <p class="lede">モノ・ジ・トリ・テトラ…という数を表す接頭辞の表と、有機化学のどこで出てくるか。ジカルボン酸・二糖・トリグリセリド・テトラペプチドまで、同じ1つの表で読めます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">脂肪族化合物</span><span class="unit-label">アルカンとシクロアルカン</span></div>
+
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（2節）</summary><ul><li><a href="#ref-sec-table" data-ref-anchor="table">接頭辞の表</a></li><li><a href="#ref-sec-where" data-ref-anchor="where">どこで出てくるか</a></li></ul></details></nav>
@@ -1055,6 +1073,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

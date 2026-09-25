@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">濃度のわからない酸（塩基）の濃度を、中和を使って決める実験。4つの器具の用途と共洗いの有無、酸・塩基のおおよその pH（強酸1・弱酸3・弱塩基11・強塩基13）から描く滴定曲線、指示薬の選び方（PP・MO は外側が赤）まで。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸と塩基</span><span class="unit-label">中和滴定</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-apparatus" data-ref-anchor="apparatus">器具と使い方</a></li><li><a href="#ref-sec-approx-ph" data-ref-anchor="approx-ph">酸・塩基のおおよその pH</a></li><li><a href="#ref-sec-curve" data-ref-anchor="curve">滴定曲線</a></li><li><a href="#ref-sec-indicator" data-ref-anchor="indicator">指示薬の選び方</a></li><li><a href="#ref-sec-two-step" data-ref-anchor="two-step">炭酸ナトリウムの二段階中和</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
 <div class="ref-scope">
@@ -954,7 +972,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">補足</h5>
 <ul class="ref-list"><li>BTB 溶液は酸性・中性・塩基性を見分けられますが、色の変化が鋭くないので、中和滴定の指示薬には使いません。</li><li>メスシリンダー・駒込ピペットは誤差の大きい器具なので、中和滴定では使いません。</li><li>液面（メニスカス）は、いちばん低い位置を真横から見て読みます。</li></ul>
 <p class="ref-p">高校化学の問題で、BTB・メスシリンダー・駒込ピペットが正解になる問題はほとんどありません。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.titration-apparatus,theo.acid-base.titration-rinse,theo.acid-base.rinse-reason&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>中和滴定では、メスフラスコで正確に薄め、ホールピペットで正確に測りとり、コニカルビーカーの中でビュレットから滴下して、滴下した体積をビュレットの目盛りの差で測る。</li><li>ホールピペットとビュレットは測る試料で共洗いしてから使い、メスフラスコとコニカルビーカーは純水でぬれたまま使ってよい（共洗いしない）。</li><li>中和滴定の器具の扱いには理由がある。ホールピペット・ビュレットは中に純水が残ると試料が薄まるので共洗いする。メスフラスコはあとから純水を加えて一定の体積にし、コニカルビーカーは純水が中和に影響しないので、ぬれたまま使い、共洗いすると試料が余分に入って結果がずれる。体積を正確に測る器具は、熱で変形すると正確さが損なわれるので加熱乾燥しない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.titration-apparatus,theo.acid-base.titration-rinse,theo.acid-base.rinse-reason&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-approx-ph"><h4 class="ref-sec-h">酸・塩基のおおよその pH</h4><p class="ref-sec-lead">約 0.1 mol/L の1価の酸・塩基で、弱い方の電離度を 0.01 とすると、強酸 pH ＝ 1、弱酸 pH ＝ 3、弱塩基 pH ＝ 11、強塩基 pH ＝ 13 です。</p></section>
 <p class="ref-p">中和滴定はふつう約 0.1 mol/L の水溶液どうしで行います。弱酸・弱塩基の電離度が約 0.01 であることと合わせると、おおよその pH は次の4つになります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">酸・塩基のおおよその pH</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">種類</th><th style="text-align: center;">pH</th><th style="text-align: left;">仮定</th></tr></thead><tbody><tr><td style="text-align: left;">強酸</td><td style="text-align: center;"><b>1</b></td><td style="text-align: left;">1価・0.1 mol/L</td></tr><tr><td style="text-align: left;">弱酸</td><td style="text-align: center;"><b>3</b></td><td style="text-align: left;">1価・0.1 mol/L・α ＝ 0.01</td></tr><tr><td style="text-align: left;">弱塩基</td><td style="text-align: center;"><b>11</b></td><td style="text-align: left;">1価・0.1 mol/L・α ＝ 0.01</td></tr><tr><td style="text-align: left;">強塩基</td><td style="text-align: center;"><b>13</b></td><td style="text-align: left;">1価・0.1 mol/L</td></tr></tbody></table></div>
@@ -963,7 +981,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <ul class="ref-list"><li>強酸 ＋ 強塩基の塩 → 中性（pH 7）</li><li>弱酸 ＋ 強塩基の塩 → 塩基性</li><li>強酸 ＋ 弱塩基の塩 → 酸性</li></ul>
 <p class="ref-p">中和点ではちょうど中和しきっているので、酸性塩・塩基性塩は考えなくて構いません。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/salt/">塩の水溶液の性質（強い方が勝つ）は、塩のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.approx-ph&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>約 0.1 mol/L の1価の酸・塩基のおおよその pH は、強酸1・弱酸3・弱塩基11・強塩基13（弱い方の電離度を 0.01 とする）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.approx-ph&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-curve"><h4 class="ref-sec-h">滴定曲線</h4><p class="ref-sec-lead">滴定曲線は、コニカルビーカーの水溶液の pH から始まり、ビュレットで滴下する水溶液の pH に近づいて終わります。中和点の近くで pH が一気に変わります（pH ジャンプ）。</p></section>
 <p class="ref-p">ビュレットから1滴ずつ加えるたびに、コニカルビーカーの中の pH は少しずつ変わっていきます。加えた体積（横軸）に対して pH（縦軸）がどう動くかを描いた線が<b>滴定曲線</b>です。まずは、塩酸へ水酸化ナトリウム水溶液を加えていく場合で見てみましょう。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/titration-curve-hcl-naoh.png?h=fba85096" alt="横軸に滴下した水酸化ナトリウム水溶液の体積、縦軸に pH をとった滴定曲線。pH 1 付近から始まり、中和点付近で pH が一気に上がって pH 7 を通り、pH 13 に近づいていく" loading="lazy"><figcaption class="ref-figure-cap">塩酸（強酸）に水酸化ナトリウム水溶液（強塩基）を滴下したときの滴定曲線。<b>pH 1 から始まり、中和点（NaCl 水溶液・pH 7）で一気に変わり、pH 13 に近づきます</b>。</figcaption></figure>
@@ -974,7 +992,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0.10 mol/L の酢酸 10 mL に 0.10 mol/L の水酸化ナトリウム水溶液を滴下したときの滴定曲線の概形を説明せよ（始まりの pH・中和点の液性と体積・終わりの pH）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>酢酸は弱酸なので <b>pH 3 くらいから始まり</b>、NaOH は強塩基なので <b>pH 13 くらいに近づいて終わります</b>。中和点は酢酸ナトリウム水溶液（弱酸 ＋ 強塩基の塩）なので<b>塩基性側</b>です。中和に要する体積は 1 × 0.10 × 10 ＝ 1 × 0.10 × x より <b>10 mL</b> です。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0.10 mol/L の水酸化ナトリウム水溶液 10 mL に 0.10 mol/L のシュウ酸を滴下したときの滴定曲線の概形を説明せよ（始まりの pH・中和点の液性と体積・終わりの pH）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>NaOH は強塩基なので <b>pH 13 くらいから始まり</b>、シュウ酸は弱酸なので <b>pH 3 くらいに近づいて終わります</b>。中和点はシュウ酸ナトリウム水溶液（弱酸 ＋ 強塩基の塩）なので<b>塩基性側</b>です。シュウ酸は2価なので 2 × 0.10 × x ＝ 1 × 0.10 × 10 より <b>5.0 mL</b> です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.titration-curve,theo.acid-base.curve-reverse&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>滴定曲線は、コニカルビーカーの水溶液のおおよその pH から始まり、中和点の近くで pH が急に変わり（pH ジャンプ）、滴下する水溶液の pH に近づいて終わる。中和点の液性はできた塩で決まる。</li><li>滴定曲線は、コニカルビーカーに入れた水溶液の pH から始まり、ビュレットから滴下する水溶液の pH に近づいて終わるので、塩基に酸を滴下すると高い pH から下がっていく。0.10 mol/L の NaOH 水溶液 10 mL に 0.10 mol/L のシュウ酸を滴下すると、pH 13 くらいから始まり、中和点（シュウ酸ナトリウム水溶液・塩基性側）は 5.0 mL で、pH 3 くらいに近づく。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.titration-curve,theo.acid-base.curve-reverse&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-indicator"><h4 class="ref-sec-h">指示薬の選び方</h4><p class="ref-sec-lead">指示薬は中和点を知るために使い、変色域を pH ジャンプの1滴で飛び越えられるものを選びます。フェノールフタレインは弱塩基に、メチルオレンジは弱酸に使えません。</p></section>
 <p class="ref-p">中和点を目で知るために加える、pH によって色が変わる物質を<b>指示薬</b>といい、色が変わる pH の範囲を<b>変色域</b>といいます。指示薬は、<b>変色域を pH ジャンプの1滴で飛び越えられる</b>ものでなければ使えません。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/titration-curve-indicators.png?h=f836a7bc" alt="強酸＋強塩基、弱酸＋強塩基、強酸＋弱塩基の3本の滴定曲線に、フェノールフタレイン（pH 8.0〜9.8）とメチルオレンジ（pH 3.1〜4.4）の変色域を帯で重ねた図" loading="lazy"><figcaption class="ref-figure-cap">酸に塩基を滴下した3本の滴定曲線と、<b>PP（pH 8.0〜9.8）・MO（pH 3.1〜4.4）の変色域</b>。pH ジャンプが帯を貫いていれば、その指示薬が使えます。</figcaption></figure>
@@ -984,11 +1002,11 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">弱酸と弱塩基の組み合わせは pH ジャンプがはっきりしないので、中和滴定には使いません。</p>
 <h5 class="ref-h5">例題 —— 指示薬の選び方</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の酸と塩基の組み合わせで中和滴定を行うとき、指示薬としてフェノールフタレイン（PP）・メチルオレンジ（MO）がそれぞれ使えるか（○）、使えないか（×）答えよ。(1) HCl と Ca(OH)₂　(2) H₂SO₄ と NH₃　(3) CH₃COOH と KOH　(4) (COOH)₂ と NaOH　(5) HNO₃ と Ba(OH)₂</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>PP は弱塩基に、MO は弱酸に使えません。(1) 強酸と強塩基：<b>PP ○・MO ○</b>　(2) 強酸と弱塩基：<b>PP ×・MO ○</b>　(3) 弱酸と強塩基：<b>PP ○・MO ×</b>　(4) 弱酸と強塩基：<b>PP ○・MO ×</b>　(5) 強酸と強塩基：<b>PP ○・MO ○</b></p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.indicator&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>指示薬は変色域を中和点の pH ジャンプで飛び越えられるものを選ぶ。フェノールフタレイン（変色域 pH 8.0〜9.8、無色→赤）は弱塩基の滴定に、メチルオレンジ（pH 3.1〜4.4、赤→黄）は弱酸の滴定に使えない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.indicator&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-two-step"><summary class="ref-adv-sum"><h4 class="ref-sec-h">炭酸ナトリウムの二段階中和<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">炭酸ナトリウム水溶液を塩酸で滴定すると、Na₂CO₃ → NaHCO₃ → CO₂ と2段階で中和が進み、中和点が2つ現れます。1段目は PP、2段目は MO で知ることができます。</p></summary><div class="ref-adv-body"><p class="ref-p">炭酸ナトリウムは、強塩基 NaOH と弱酸 CO₂（H₂CO₃）からできた正塩で、水溶液は塩基性です。塩酸を滴下すると、次の2段階で反応します。1段目がすっかり終わってから2段目が始まります。CO₃²⁻ のほうが HCO₃⁻ より H⁺ を受け取りやすいためです。</p><div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Na₂CO₃ ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaHCO₃ ＋ NaCl</span></div><p class="ref-note">1段目。第一中和点では NaHCO₃ のため弱い塩基性で、フェノールフタレインの赤色が消えることで知ります。</p></div><div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">NaHCO₃ ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O ＋ CO₂</span></div><p class="ref-note">2段目。第二中和点では CO₂ のため弱い酸性で、メチルオレンジが黄色から赤色に変わることで知ります。</p></div><p class="ref-p">1段目と2段目で使う HCl の物質量は等しいので、<b>1段目と2段目で滴下する塩酸の体積は等しくなります</b>。NaOH と Na₂CO₃ の混合水溶液を滴定すると、1段目に NaOH の中和も重なるので、1段目の体積のほうが大きくなります。この差から、それぞれの量が求められます。</p><p class="ref-p">具体例として、NaOH と Na₂CO₃ の混合水溶液を 0.10 mol/L の塩酸で滴定し、PP が消えるまでに 30.0 mL、さらに MO が赤くなるまでに 10.0 mL かかったとします。2段目の 10.0 mL が Na₂CO₃（＝ NaHCO₃）のぶんなので、1段目のうち Na₂CO₃ のぶんも 10.0 mL、残りの <b>20.0 mL が NaOH のぶん</b>です。</p></div></details>
 <h5 class="ref-h5">例題 —— 炭酸ナトリウムの二段階中和</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">水酸化ナトリウムと炭酸ナトリウムが溶けた水溶液 10.0 mL をコニカルビーカーにはかりとり、指示薬にフェノールフタレインを使って 0.10 mol/L 塩酸を滴下すると、24.0 mL で赤色が消えた。そこへメチルオレンジを加えて滴下を続けると、赤色に変わるまでにあと 8.0 mL かかった。はじめの水溶液に含まれていた NaOH と Na₂CO₃ のモル濃度を、それぞれ求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>2段目の 8.0 mL は NaHCO₃ ＋ HCl の分で、NaHCO₃ は Na₂CO₃ と同じ物質量なので、Na₂CO₃ は 0.10 × 8.0/1000 ＝ 8.0 × 10⁻⁴ mol。1段目の 24.0 mL のうち 8.0 mL が Na₂CO₃ → NaHCO₃ の分なので、NaOH は 0.10 × 16.0/1000 ＝ 1.6 × 10⁻³ mol。10.0 mL 中なので <b>NaOH 0.16 mol/L、Na₂CO₃ 8.0 × 10⁻² mol/L</b></p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.two-step-neutralization,theo.acid-base.two-step-mixture&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>炭酸ナトリウム水溶液を塩酸で滴定すると、Na₂CO₃ ＋ HCl → NaHCO₃ ＋ NaCl（第一中和点・フェノールフタレイン）、NaHCO₃ ＋ HCl → NaCl ＋ H₂O ＋ CO₂（第二中和点・メチルオレンジ）の2段階で中和が進み、2段で滴下する塩酸の体積は等しい。</li><li>NaOH と Na₂CO₃ の混合水溶液を塩酸で滴定すると、第一中和点（フェノールフタレイン）までに NaOH の中和と Na₂CO₃ → NaHCO₃ が起こり、第二中和点（メチルオレンジ）までに NaHCO₃ → CO₂ が起こる。2段目の体積が Na₂CO₃ のぶんで、1段目の体積からそれを引いた残りが NaOH のぶんである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.two-step-neutralization,theo.acid-base.two-step-mixture&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 </div>
 </div>
 
@@ -1153,6 +1171,7 @@ function refAdvSetup(root) {
 }
 refAdvSetup(document);
 </script>
+
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>

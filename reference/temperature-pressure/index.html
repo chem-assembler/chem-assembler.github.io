@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">温度は粒子の熱運動の激しさの平均で、下限の絶対零度から測った温度が絶対温度です。気体の圧力のしくみと単位、水銀柱で大気圧を測るわけ、加熱曲線で加えた熱の行き先（融解・蒸発のエンタルピー）、温度と圧力から状態を読む状態図をまとめます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">状態変化と気体</span><span class="unit-label">物質の三態と状態変化・気体の圧力</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-motion" data-ref-anchor="motion">温度と熱運動 —— 絶対温度</a></li><li><a href="#ref-sec-pressure" data-ref-anchor="pressure">気体の圧力</a></li><li><a href="#ref-sec-mercury" data-ref-anchor="mercury">水銀柱で大気圧を測る</a></li><li><a href="#ref-sec-heating-curve" data-ref-anchor="heating-curve">加熱曲線と状態変化の熱</a></li><li><a href="#ref-sec-phase-diagram" data-ref-anchor="phase-diagram">状態図 —— 温度と圧力で状態を読む</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -952,7 +970,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-callout ref-callout-skip"><b class="ref-callout-tag">覚えなくてよい</b><p class="ref-callout-text">余談：絶対零度は理論上の下限で、実際にはまだ到達できていません（ごく近い温度までは冷やせています）。正確な値は −273.15℃ ですが、高校の化学では −273℃ を使います。</p></div>
 <h5 class="ref-h5">例題 —— 絶対温度</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) 127℃ と −73℃ を絶対温度で表せ。(2) 気体の温度を上げたとき、速さの分布のグラフはどう変わるか。「山の高さ」「速い分子の割合」の2つの語を使って答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 127＋273 ＝ 400K、−73＋273 ＝ 200K。★ 400K の粒子の運動エネルギーの平均は 200K の2倍です（℃ の 127 と −73 では比べられません）。(2) 速い分子の割合が増え、山の高さは低くなって速い側へ広がる。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.absolute-temperature,theo.state.speed-distribution&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>温度は粒子の運動エネルギーの平均値を表し、絶対零度（−273℃）を 0 とした絶対温度は T〔K〕＝ t〔℃〕＋ 273 で、気体の計算は絶対温度で行う。</li><li>同じ温度でも気体分子の速さはばらばらで、速さごとの分子の数をグラフにすると山形になる。温度を上げると速い分子の割合が増え、山は速い側へ低く広がる。温度が表すのは、分子の運動エネルギーの平均値である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.absolute-temperature,theo.state.speed-distribution&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-pressure"><h4 class="ref-sec-h">気体の圧力</h4><p class="ref-sec-lead">飛び回る気体分子が容器の壁に次々と当たり、壁を押す。その押す力の合計が気体の圧力です。圧力は単位面積あたりの力で、単位は Pa。海面上の大気圧の平均 1.013×10⁵Pa を 1atm（1気圧）といい、760mmHg に等しくなります。</p></section>
 <p class="ref-p">気体分子は熱運動で飛び回り、容器の壁にぶつかっては跳ね返ります。1回1回の衝突で壁は外向きに押されるので、たくさんの分子の衝突を合わせたものが<b>気体の圧力</b>になります。<b>1個1個が速くぶつかるほど、また決まった時間に壁へ当たる回数が多いほど、壁を押す力は強くなり、圧力が大きくなります。</b></p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-pressure-wall.png?h=36b0e3dc" alt="箱の中を分子が飛び回り、右の壁にぶつかった3つの分子が跳ね返っている。ぶつかったところから、壁を外へ押す青い矢印が出ている。右に「ぶつかるたびに壁を外へ押す」「押す力を合わせたもの ＝ 気体の圧力」とある" loading="lazy"><figcaption class="ref-figure-cap">分子は壁にぶつかるたびに壁を外へ押します。その力を合わせたものが気体の圧力です。</figcaption></figure>
@@ -962,7 +980,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>1atm ＝ 760mmHg ＝ 1.013×10⁵Pa は必ず覚えてください。</b>単位の換算は、この等式を基準にした比例で解きます。例えば 380mmHg は 760mmHg の 1/2倍なので、1.013×10⁵Pa × 1/2 ≒ 5.1×10⁴Pa です。1Pa ＝ 1N/m² の組み立ては、覚えていなくて困ることはほとんどありません。</p>
 <h5 class="ref-h5">例題 —— 圧力の単位の換算</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1.0×10⁵Pa ＝ 760mmHg として、次の圧力を〔 〕内の単位で表せ。(1) 228mmHg〔Pa〕　(2) 7.5×10⁴Pa〔mmHg〕　(3) 天気予報の 990hPa〔Pa〕</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 3.0×10⁴Pa。228mmHg は 760mmHg の 228/760 ＝ 0.30倍なので、1.0×10⁵Pa × 0.30 ＝ 3.0×10⁴Pa。(2) 570mmHg。7.5×10⁴Pa は 1.0×10⁵Pa の 0.75倍なので、760mmHg × 0.75 ＝ 570mmHg。(3) 9.9×10⁴Pa。1hPa ＝ 100Pa なので、990 × 100 ＝ 99000Pa ＝ 9.9×10⁴Pa。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.gas-pressure,theo.state.pressure-units,theo.state.pressure-conversion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>気体の圧力は、熱運動している気体分子が容器の壁に衝突して押す力によるもので、分子の速さが大きいほど、一定時間に衝突する分子の数が多いほど大きい。圧力は単位面積あたりの力で表す。</li><li>1気圧 ＝ 760mmHg ＝ 1.013×10⁵Pa（＝ 1013hPa）。水銀柱の高さ 760mm は、大気圧が水銀面を押す圧力と、水銀柱の重さによる圧力のつり合いで決まる。</li><li>圧力の単位は、1気圧 ＝ 760mmHg ＝ 1.013×10⁵Pa を基準にした比例で換算する。1Pa は 1m² の面に 1N の力がはたらくときの圧力で、100Pa ＝ 1hPa である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.gas-pressure,theo.state.pressure-units,theo.state.pressure-conversion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-mercury"><h4 class="ref-sec-h">水銀柱で大気圧を測る</h4><p class="ref-sec-lead">水銀だめの液面 1cm² の上に載っている空気の柱の重さと、管の中の高さ 76cm の水銀の柱の重さが等しいので、水銀は 760mm の高さで止まります。</p></section>
 <p class="ref-p">大気圧は、水銀の柱の高さで測ることができます。</p>
 <ol class="ref-list"><li>一端を閉じた長さ約 1m のガラス管に、水銀をいっぱいに満たす。</li><li>口を押さえて逆さにし、水銀を入れた容器（水銀だめ）の中に立てる。</li><li>管の中の水銀は少し下がり、水銀だめの水銀面から<b>約 760mm の高さ</b>で止まる。<div class="ref-li-hang">管の上の、水銀が下がってできたすき間は、ほぼ真空（<b>トリチェリーの真空</b>）</div></li></ol>
@@ -979,7 +997,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">1m² の面で考える（物理でよく使う単位）と、水銀の密度 13.6×10³kg/m³、柱の高さ 0.76m より、柱の質量は 13.6×10³kg/m³ × 0.76m × 1m² ≒ 1.03×10⁴kg、重力は 1.03×10⁴kg × 9.8m/s² ≒ 1.01×10⁵N で、1m² にかかるので 1.01×10⁵Pa。面積の取り方を変えても、同じ圧力になります。</p>
 <h5 class="ref-h5">例題 —— 水銀柱</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">水銀（密度 13.6g/cm³）の代わりに、密度 0.80g/cm³ の液体を使って大気圧（760mmHg）を測ると、柱の高さは約何 m になるか。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>約 13m。同じ大気圧とつり合う柱の重さは同じなので、柱の高さは密度に反比例します。76cm × 13.6 ÷ 0.80 ≒ 1.29×10³cm ≒ 13m。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.mercury-density&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>大気圧を液体の柱の高さで測るのに水銀を使うのは、水銀の密度が水の約13.6倍と大きく、柱が短くて済むためである。同じことを水でやると、1気圧とつり合う水の柱は約10mになる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.mercury-density&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-heating-curve"><h4 class="ref-sec-h">加熱曲線と状態変化の熱</h4><p class="ref-sec-lead">融解や沸騰が起きている間は、加えた熱が粒子どうしを引き離すことだけに使われるので、温度が上がりません。1mol あたりに要る熱が、融解エンタルピー・蒸発エンタルピーです。</p></section>
 <p class="ref-p">氷に一定の割合で熱を加え続けると、0℃ と 100℃ で温度が上がらない区間があります（加熱曲線の読み方は化学基礎のページ）。この区間では、<b>加えた熱が温度を上げることには使われず、粒子どうしを引き離すことだけに使われています</b>。0℃ の区間では粒子を決まった位置から外すことに、100℃ の区間では粒子どうしを引き離して気体にすることに使われます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/states-of-matter/">加熱曲線の読み方（温度が止まる区間）は化学基礎のページへ</a></p>
@@ -990,7 +1008,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/reaction-enthalpy/">状態変化を ΔH つきの式で書く書き方は、反応エンタルピーのページで扱います</a></p>
 <h5 class="ref-h5">例題 —— 状態変化の熱</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">100℃ の水蒸気 54g を、1.013×10⁵Pa のもとで冷やしていき、すべて 0℃ の氷にした。この間に外へ出ていった熱量は何 kJ か。有効数字2桁で答えよ。使う値は H₂O ＝ 18、水の蒸発エンタルピー（100℃）41kJ/mol、氷の融解エンタルピー 6.0kJ/mol、水 1g を 1K 冷やすと出る熱量 4.2J。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>1.6×10² kJ。H₂O 1mol : 18g ＝ H₂O □mol : 54g より 3.0mol。① 凝縮（蒸発の逆向き）：H₂O 1mol : 41kJ ＝ 3.0mol : 123kJ。② 水の温度低下：54g × 4.2J/(g·K) × 100K ＝ 22680J ≒ 23kJ。③ 凝固（融解の逆向き）：H₂O 1mol : 6.0kJ ＝ 3.0mol : 18kJ。合計 123 ＋ 23 ＋ 18 ＝ 164kJ ≒ 1.6×10² kJ。★ 加熱曲線を逆にたどるだけなので、区間ごとの熱の大きさは加熱のときと同じです。3つのうち凝縮がいちばん大きく、全体の4分の3ほどを占めます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.heating-curve,theo.state.phase-enthalpy-def,theo.state.vaporization-larger,theo.state.heating-calc&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>融解や沸騰が起きている間は、加えた熱が粒子を引き離すことだけに使われるので温度は一定で、蒸発エンタルピーは融解エンタルピーよりずっと大きい。</li><li>1mol の固体が融解するときに吸収する熱量を融解エンタルピー、1mol の液体が蒸発するときに吸収する熱量を蒸発エンタルピー、1mol の固体が昇華するときに吸収する熱量を昇華エンタルピーという。どれも ΔH は正で、逆向きの凝固・凝縮・凝華では同じ大きさの熱が放出される。</li><li>蒸発エンタルピーが融解エンタルピーよりずっと大きいのは、液体では粒子がまだ集まったまま引き合っていて、気体にするにはその引き合いをほぼ全部断ち切る必要があるためである。</li><li>固体を加熱して気体にするのに必要な熱量は、区間ごとに求めて足す。状態変化の区間は「物質量 × 融解（蒸発）エンタルピー」、温度が上がる区間は「質量 × 1g を 1K 上げる熱量 × 温度差」で求める。0℃ の氷を 100℃ の水蒸気にするとき、いちばん大きいのは蒸発の区間である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.heating-curve,theo.state.phase-enthalpy-def,theo.state.vaporization-larger,theo.state.heating-calc&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-phase-diagram"><h4 class="ref-sec-h">状態図 —— 温度と圧力で状態を読む</h4><p class="ref-sec-lead">温度（横軸）と圧力（縦軸）を決めると、物質が固体・液体・気体のどれになるかが決まります。それを地図のように塗り分けたのが状態図です。3つの領域を分ける曲線の上では、両側の状態が共存します。</p></section>
 <p class="ref-p">状態図には、3つの領域（固体・液体・気体）と、その境目の3本の曲線があります。液体と気体の境目を<b>蒸気圧曲線</b>、固体と液体の境目を<b>融解曲線</b>、固体と気体の境目を<b>昇華圧曲線</b>といいます。</p>
 <p class="ref-p">3本の曲線が1点で交わる点を<b>三重点</b>といい、この温度と圧力では固体・液体・気体が共存します。蒸気圧曲線の高温側の端を<b>臨界点</b>といい、これを超えると気体と液体の区別がつかない状態（超臨界状態）になります。超臨界状態の物質を<b>超臨界流体</b>といいます。</p>
@@ -1002,7 +1020,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/vapor-pressure/">液体と気体の境目（蒸気圧曲線）と沸騰はこちら</a></p>
 <h5 class="ref-h5">例題 —— 状態図</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">二酸化炭素の三重点は −57℃・5.3×10⁵Pa である。(1) 1.013×10⁵Pa のもとでドライアイスを温めると、どのように状態が変化するか。(2) ドライアイスを液体にするには、圧力をどのようにすればよいか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 液体を経ずに、固体から直接気体になる（昇華する。約 −78℃）。1.013×10⁵Pa は三重点の圧力より低いので、この圧力の横線は液体の領域を通らないためです。(2) 三重点の圧力 5.3×10⁵Pa より高い圧力にしてから温める。そうすると、固体 → 液体 → 気体と変化します。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.phase-diagram,theo.state.phase-diagram-curves,theo.state.ice-pressure-mp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>状態図の3本の曲線が交わる三重点では三態が共存し、臨界点を超えると気体と液体の区別がなくなる。CO₂ は三重点の圧力が大気圧より高いので常圧で昇華し、水は圧力を上げると融点が下がる。</li><li>状態図で、液体と気体の境目の曲線を蒸気圧曲線、固体と液体の境目を融解曲線、固体と気体の境目を昇華圧曲線といい、曲線の上では両側の状態が共存する。臨界点を超えて気体と液体の区別がつかなくなった状態の物質を超臨界流体という。</li><li>水は、ほかの多くの物質と違い、圧力を高くすると融点が下がる（状態図の融解曲線が左に傾く）。氷は同じ質量の水より体積が大きい（密度が小さい）ので、押しつぶすと体積の小さい液体の側に変化しやすいためである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.phase-diagram,theo.state.phase-diagram-curves,theo.state.ice-pressure-mp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">T ＝ t ＋ 273 と、1atm ＝ 760mmHg ＝ 1.013×10⁵Pa は必ず覚えます。エンタルピーの値と状態図の数値は、問題文で与えられます。</p></section>
 <p class="ref-p"><b>必ず覚えるのは、T〔K〕＝ t〔℃〕＋ 273 と、1atm ＝ 760mmHg ＝ 1.013×10⁵Pa の2つです。</b>加熱曲線で温度が一定になる区間では、加えた熱が粒子を引き離すことだけに使われる、という理由まで説明できるようにしておきましょう。</p>
 <p class="ref-p">融解エンタルピー・蒸発エンタルピーの値、三重点・臨界点の数値は覚えなくて構いません。「蒸発エンタルピーの方がずっと大きい」「水は圧力を上げると融点が下がる」「同じ温度でも分子の速さはばらばら」の3つの向きだけは、よく登場するので押さえておきましょう。</p>
@@ -1109,6 +1127,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

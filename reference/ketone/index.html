@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">カルボニル基の両側が炭素なのがケトンです。アルデヒドと同じ一般式 CₙH₂ₙO をもちながら還元性を示さないこと、命名、そしてアセトンの3つのつくり方を1枚にまとめました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">脂肪族化合物</span><span class="unit-label">アルデヒドとケトン</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-what" data-ref-anchor="what">ケトンはどんな化合物か</a></li><li><a href="#ref-sec-naming" data-ref-anchor="naming">ケトンの命名</a></li><li><a href="#ref-sec-distinguish" data-ref-anchor="distinguish">アルデヒドとの区別 —— 還元性がない</a></li><li><a href="#ref-sec-iodoform" data-ref-anchor="iodoform">ケトンとヨードホルム反応</a></li><li><a href="#ref-sec-acetone" data-ref-anchor="acetone">アセトン</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-oxidation-map/">1級アルコール→アルデヒド→カルボン酸、2級アルコール→ケトンという酸化の行き先の対応表はこちら</a></p>
 <p class="ref-p">カルボニル基は極性が強いので、<b>炭素数3のアセトンは水と任意の割合で混ざり合い</b>、<b>炭素数4の2-ブタノンまでは水に溶けます</b>。炭素数5以上のケトンはほとんど水に溶けません。</p>
 <p class="ref-p">ケトンは常温では安定で、高校化学の範囲では反応しません。そのため<b>有機溶媒</b>として使われます。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.ketone-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ケトンはカルボニル基 C=O の両側に炭化水素基が結合した化合物（R−CO−R′）。最も簡単なものはアセトン。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.ketone-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-naming"><h4 class="ref-sec-h">ケトンの命名</h4><p class="ref-sec-lead">両側の2つのアルキル基の名称を続けて、語尾に「ケトン」を付けた慣用名を使います。</p></section>
 <p class="ref-p">規則どおりの名称は、対応するアルカンの語尾「-ane（アン）」を「-anon（アノン）」に変えたものです。炭素3個なら「2-プロパノン」、4個なら「2-ブタノン」になります。</p>
 <p class="ref-p">ただし高校化学ではこの名前をまず見かけないので、<b>覚えるのは慣用名のほう</b>です。慣用名は、カルボニル基の両側にあるアルキル基の名称を2つ続けて、語尾に「ケトン」を付けてつくります。2つが同じなら「ジ<span class="ref-blank">○○</span>ケトン」です。</p>
@@ -962,7 +980,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">ただし、あとで出てくる糖類の<b>フルクトース</b>はケトンの仲間なのにフェーリング液を還元します。カルボニル基のとなりにヒドロキシ基があり、塩基性の中でアルデヒドの構造に変わるためです。</p>
 <p class="ref-p"><b>ケトンを還元すると2級アルコールに戻ります</b>が、これは高校化学の範囲の外の反応なので<b>覚えなくても構いません。</b>問題文に「還元して」と出てきたら、酸化の逆向きが起きたと考えれば十分です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aldehyde/">還元性を示すほうのカルボニル化合物（アルデヒド）と、銀鏡反応・フェーリング液の還元はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.ketone-no-reduce&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ケトンは酸化されにくく、銀鏡反応もフェーリング液の還元も示さない。この違いでアルデヒドと区別できる。カルボニル基のとなりにヒドロキシ基があるフルクトースは例外。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.ketone-no-reduce&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-iodoform"><h4 class="ref-sec-h">ケトンとヨードホルム反応</h4><p class="ref-sec-lead">アセチル基 −COCH₃ をもつケトンは、ヨウ素と水酸化ナトリウム水溶液を加えて加熱すると黄色沈殿を出します。ケトンでは実質アセトンの話です。</p></section>
 <p class="ref-p"><b>カルボニル基 −CO− の一方にメチル基 −CH₃ が結合している</b>化合物 ＝ <b>アセチル基 −COCH₃</b> をもつ化合物は、ヨウ素 I₂ と水酸化ナトリウム水溶液とともに加熱すると、<b>ヨードホルム CHI₃ の黄色沈殿</b>を生じます。これを<b>ヨードホルム反応</b>といいます。</p>
 <p class="ref-p">ケトンでこの条件に当てはまるのは、<b>アセトン CH₃COCH₃</b> をはじめとする「メチル<span class="ref-blank">○○</span>ケトン」の形のものです。<b>アセトンがヨードホルム反応を示すことは必ず覚えてください。</b>アセトンかどうかを1回で決める手として、構造決定でよく使われます。</p>
@@ -981,7 +999,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/assembler/?open=isomer&amp;formula=C5H10O&amp;cls=ketone">分子式 C₅H₁₀O のケトンをアプリで書き出してみる（3種）</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">アルコールの級・沸点・命名など、酸化される前の側の性質はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">カルボニル基・アセチル基など、官能基そのものの一覧はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.acetone-props,org.carbonyl.acetone-prep,org.carbonyl.acetone-dry-distill&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アセトンは無色で特有のにおいのある揮発性の液体。水と任意の割合で混ざり、有機化合物もよく溶かすので溶媒に使う。</li><li>アセトンは2-プロパノール（第二級アルコール）の酸化でつくる。工業的にはクメン法でフェノールと同時に得られる。</li><li>酢酸カルシウムを乾留（空気を断って加熱）するとアセトンが生じる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.acetone-props,org.carbonyl.acetone-prep,org.carbonyl.acetone-dry-distill&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 </div>
 </div>
 
@@ -1105,6 +1123,7 @@ window.addEventListener('message', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

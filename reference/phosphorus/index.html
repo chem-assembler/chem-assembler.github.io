@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">同素体の黄リンと赤リン、燃えてできる十酸化四リン P₄O₁₀、それが水と反応してできるリン酸 H₃PO₄ の3段で読みます。P₄O₁₀ は強力な乾燥剤、リン酸は3価の酸です。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">非金属元素</span><span class="unit-label">15族（窒素・リン）</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-allotrope" data-ref-anchor="allotrope">黄リンと赤リン —— リンの同素体</a></li><li><a href="#ref-sec-p4o10" data-ref-anchor="p4o10">十酸化四リン P₄O₁₀ —— 強力な乾燥剤</a></li><li><a href="#ref-sec-phosphoric-acid" data-ref-anchor="phosphoric-acid">リン酸 H₃PO₄ —— 3価の酸</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -952,7 +970,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/p4-tetrahedron.png?h=adc70595" alt="黄リンの分子模型の図。4個の P が正四面体の頂点に置かれ、手前の3個は実線、奥の1個は点線の結合で結ばれている。P−P の結合は全部で6本ある" loading="lazy"><figcaption class="ref-figure-cap">どの2個の P も直接つながっているので、結合は6本です。この形のままの粒が集まっているので、黄リンは分子式 P₄ で書きます。</figcaption></figure>
 <h5 class="ref-h5">例題 —— 黄リンと赤リン</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">黄リンを水中に保存する理由を答えよ。また、黄リンと赤リンのうち、分子式で表すのはどちらか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>黄リンは空気中で自然発火するので、空気に触れないように水中に保存します。分子式で表すのは黄リン（P₄）です。赤リンは多数の P 原子がつながった構造なので、組成式 P で表します。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.phosphorus-allotrope,inorg.nonmetal.phosphorus-formula&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>リンの同素体のうち、黄リン（P₄）は空気中で自然発火するので水中に保存し、赤リンは反応性が低くマッチ箱の側薬に使われる。</li><li>黄リンは正四面体形の P₄ 分子からなるので分子式 P₄ で書き、二硫化炭素に溶ける。赤リンは多数の P 原子がつながった構造なので組成式 P で書き、二硫化炭素に溶けない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.phosphorus-allotrope,inorg.nonmetal.phosphorus-formula&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-p4o10"><h4 class="ref-sec-h">十酸化四リン P₄O₁₀ —— 強力な乾燥剤</h4><p class="ref-sec-lead">リンを燃やすと白色の P₄O₁₀ になります。水をよく吸うので乾燥剤に使い、水と反応するとリン酸になります。</p></section>
 <p class="ref-p">リンを空気中で燃焼させると、白色の粉末の十酸化四リン P₄O₁₀ になります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">4P ＋ 5O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">P₄O₁₀</span></div><p class="ref-note">リンの燃焼です。黄リンでも赤リンでも同じ P₄O₁₀ になります。</p></div>
@@ -966,7 +984,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">十酸化四リンは、五酸化二リン P₂O₅ という名前でも売られています。組成式で書くと P₂O₅ で、実際の分子が P₄O₁₀ です。</p>
 <h5 class="ref-h5">例題 —— 十酸化四リン P₄O₁₀</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の気体のうち、十酸化四リンで乾燥できないものを選び、理由を答えよ。<b>H₂・CO₂・NH₃・O₂</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>NH₃ です。十酸化四リンは酸性の乾燥剤なので、塩基性の気体の NH₃ と中和してしまうためです。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.p4o10&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>リンを燃やすと十酸化四リン P₄O₁₀ ができ、P₄O₁₀ は水と反応してリン酸になる酸性酸化物で、酸性の強力な乾燥剤なので NH₃ には使えない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.p4o10&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-phosphoric-acid"><h4 class="ref-sec-h">リン酸 H₃PO₄ —— 3価の酸</h4><p class="ref-sec-lead">3つの H⁺ を段階的に出す3価の酸です。高校化学では弱酸として扱います。</p></section>
 <p class="ref-p">リン酸 H₃PO₄ は無色の結晶で、水によく溶けます。<b>1分子から H⁺ を3個まで出せる3価の酸</b>です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">H₃PO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">3H⁺ ＋ PO₄³⁻</span></div><p class="ref-note">価数を確かめるためにまとめて書いた式です。実際は H⁺ を1個ずつ3段階に分けて出し、どの段階も電離はごく一部です。</p></div>
@@ -985,7 +1003,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>過リン酸石灰の反応式は覚えなくても構いません。</b>「リン酸カルシウムを硫酸で水に溶ける形にしたもの」と言えれば十分です。</p>
 <h5 class="ref-h5">例題 —— リン酸 H₃PO₄</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を化学反応式で書け。<b>(1) リンを空気中で燃焼させた　(2) 十酸化四リンに水を加えて加熱した　(3) リン酸水溶液と水酸化バリウム水溶液を過不足なく反応させた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 4P ＋ 5O₂ → P₄O₁₀　(2) P₄O₁₀ ＋ 6H₂O → 4H₃PO₄　(3) 2H₃PO₄ ＋ 3Ba(OH)₂ → Ba₃(PO₄)₂ ＋ 6H₂O</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.phosphoric-acid,inorg.nonmetal.superphosphate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>リン酸 H₃PO₄ は H⁺ を3段階で出す3価の酸で、高校化学では弱酸として扱い、中和は価数の逆の比で起こる。</li><li>リンは自然界ではリン灰石（主成分はリン酸カルシウム Ca₃(PO₄)₂）などとして存在する。リン酸カルシウムは水に溶けず植物が吸収できないので、硫酸と反応させて水に溶けるリン酸二水素カルシウムに変えたもの（過リン酸石灰）をリン酸肥料に使う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.phosphoric-acid,inorg.nonmetal.superphosphate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">黄リンの保存方法、P₄O₁₀ の2本の式、リン酸が3価の弱酸であることの3つです。</p></section>
 <p class="ref-p"><b>次の3つは必ず覚えてください。</b></p>
 <ul class="ref-list"><li>黄リンは空気中で自然発火するので水中に保存する（赤リンはマッチ）</li><li>4P ＋ 5O₂ → P₄O₁₀ と P₄O₁₀ ＋ 6H₂O → 4H₃PO₄</li><li>P₄O₁₀ は酸性の乾燥剤で、NH₃ には使えない</li></ul>
@@ -1094,6 +1112,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

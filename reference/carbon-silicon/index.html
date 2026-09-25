@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">14族の炭素とケイ素の単体と化合物です。炭素は同素体・一酸化炭素 CO・二酸化炭素 CO₂、ケイ素は単体（半導体）・二酸化ケイ素 SiO₂・水ガラス・シリカゲルの順に見ます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">非金属元素</span><span class="unit-label">14族（炭素・ケイ素）</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-allotrope" data-ref-anchor="allotrope">炭素の同素体</a></li><li><a href="#ref-sec-co" data-ref-anchor="co">一酸化炭素 CO —— 毒性と還元性</a></li><li><a href="#ref-sec-co2" data-ref-anchor="co2">二酸化炭素 CO₂ —— 酸性酸化物</a></li><li><a href="#ref-sec-silicon" data-ref-anchor="silicon">ケイ素 Si —— 半導体</a></li><li><a href="#ref-sec-sio2" data-ref-anchor="sio2">二酸化ケイ素 SiO₂ から シリカゲルまで</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -953,7 +971,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/diamond-graphite.png?h=e54c8b4e" alt="左はダイヤモンドの構造で、中心の C から4本の結合が正四面体の向きに出て、その先も同じつながりが続いている。右は黒鉛の構造で、六角形が並んだ平面の層が3枚重なり、層と層は点線でゆるくつながれている。いちばん上の層には電子が動く向きの矢印が書かれている" loading="lazy"><figcaption class="ref-figure-cap">ダイヤモンドは価電子4個をすべて共有結合に使い切るので、動ける電子がありません。黒鉛は3個しか使わないため、残った1個が層の中を動いて電気を通し、層どうしがずれるので軟らかくなります。</figcaption></figure>
 <h5 class="ref-h5">例題 —— 炭素の同素体</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">黒鉛が電気をよく通す理由を、ダイヤモンドと比べて説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>ダイヤモンドでは各 C が4個の価電子をすべて共有結合に使っていますが、黒鉛では各 C が3個の C と結合して平面の層をつくり、残り1個の価電子が層の中を自由に動けるためです。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.carbon-allotrope,inorg.nonmetal.amorphous-carbon&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>炭素の同素体のうち、ダイヤモンドは4本の共有結合の立体網目で非常に硬く電気を通さず、黒鉛は平面の層構造で動ける価電子があるので電気をよく通す。</li><li>木炭やすすは、小さな黒鉛の結晶がばらばらの向きに寄り集まった無定形炭素。そのうち活性炭はすき間だらけの多孔質で、においの分子をよく吸着するので脱臭剤になる。黒鉛から1層だけをはがしたものがグラフェンで、グラフェンを筒の形に丸めるとカーボンナノチューブになる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.carbon-allotrope,inorg.nonmetal.amorphous-carbon&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-co"><h4 class="ref-sec-h">一酸化炭素 CO —— 毒性と還元性</h4><p class="ref-sec-lead">無色・無臭で水に溶けにくい、極めて有毒な気体です。高温では酸素を奪う還元剤としてはたらきます。</p></section>
 <p class="ref-p">一酸化炭素は、炭素や炭素化合物の<b>不完全燃焼</b>で生じます。実験室でほしいときは、ギ酸 HCOOH に濃硫酸を加えて熱し、発生させます。濃硫酸が HCOOH から H と O を 2：1 で奪う<b>脱水作用</b>の例です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCOOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO ＋ H₂O</span></div><p class="ref-note">濃硫酸は脱水剤です（触媒ではありません）。矢印の上に書き、式には入れません。CO の実験室的製法として必ず覚えます。</p></div>
@@ -965,7 +983,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">高温では、ほかの物質から酸素を奪って CO₂ になりやすいので、<b>還元剤</b>として金属の製錬に使われます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Fe₂O₃ ＋ 3CO</span><span class="ref-rx-arrow"><span class="ref-rx-over">高温</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Fe ＋ 3CO₂</span></div><p class="ref-note">溶鉱炉で鉄鉱石を還元する反応です。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/iron/">鉄の製錬のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.co,inorg.nonmetal.co-toxicity&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>一酸化炭素はギ酸を濃硫酸とともに加熱してつくる無色・無臭で水に溶けにくい気体で、極めて有毒であり、高温では還元剤として金属の製錬に使われる。</li><li>一酸化炭素は炭素や炭素化合物の不完全燃焼で生じ、血液中のヘモグロビンと強く結びついて酸素の運搬をさまたげるので極めて有毒である。空気中では青白い炎を出して燃えて二酸化炭素になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.co,inorg.nonmetal.co-toxicity&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-co2"><h4 class="ref-sec-h">二酸化炭素 CO₂ —— 酸性酸化物</h4><p class="ref-sec-lead">無色・無臭で空気より重い気体です。水に少し溶けて弱い酸性を示し、塩基と中和します。石灰水の白濁で検出します。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">一酸化炭素と二酸化炭素</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">一酸化炭素 CO</th><th style="text-align: left;">二酸化炭素 CO₂</th></tr></thead><tbody><tr><td style="text-align: left;">色・におい</td><td style="text-align: left;">無色・無臭</td><td style="text-align: left;">無色・無臭</td></tr><tr><td style="text-align: left;">分子量</td><td style="text-align: left;">28</td><td style="text-align: left;">44（空気より重い）</td></tr><tr><td style="text-align: left;">水への溶けやすさ</td><td style="text-align: left;">溶けにくい</td><td style="text-align: left;">少し溶ける（弱い酸性）</td></tr><tr><td style="text-align: left;">捕集法</td><td style="text-align: left;">水上置換</td><td style="text-align: left;">下方置換</td></tr><tr><td style="text-align: left;">燃焼</td><td style="text-align: left;">燃える（青白い炎）</td><td style="text-align: left;">燃えない</td></tr><tr><td style="text-align: left;">毒性</td><td style="text-align: left;">極めて有毒</td><td style="text-align: left;">毒性は少ない</td></tr><tr><td style="text-align: left;">石灰水</td><td style="text-align: left;">変化なし</td><td style="text-align: left;">白濁する</td></tr><tr><td style="text-align: left;">酸化剤／還元剤</td><td style="text-align: left;">還元剤（高温）</td><td style="text-align: left;">——</td></tr></tbody></table></div>
 <p class="ref-p">CO₂ は水に少し溶けるだけなので、水上置換でも集められます。空気より重いことを使って下方置換で集めるのが一般的で、捕集法を問われたら<b>下方置換</b>と答えます。</p>
@@ -990,13 +1008,13 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/element-detection/">有機化合物の炭素を石灰水の白濁で確かめる操作のページへ</a></p>
 <h5 class="ref-h5">例題 —— 二酸化炭素 CO₂</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の記述のうち、一酸化炭素だけに当てはまるものをすべて選べ。<b>(ア) 無色・無臭である　(イ) 水に溶けにくい　(ウ) 石灰水を白濁させる　(エ) 極めて有毒である　(オ) 高温で還元剤としてはたらく</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(イ)・(エ)・(オ) です。(ア) はどちらにも当てはまり、(ウ) は二酸化炭素だけに当てはまります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.co2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>二酸化炭素は石灰石に希塩酸を加えてつくり、石灰水を白濁させる（CaCO₃）ことで検出し、さらに通じ続けると Ca(HCO₃)₂ となって無色にもどる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.co2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-silicon"><h4 class="ref-sec-h">ケイ素 Si —— 半導体</h4><p class="ref-sec-lead">地殻中で酸素の次に多い元素です。単体は自然界に無く、SiO₂ を炭素で還元してつくります。</p></section>
 <p class="ref-p">ケイ素は岩石や鉱物の成分として、地殻中で酸素の次に多く存在します。単体は自然界に存在しないので、二酸化ケイ素を電気炉で融解し、炭素で還元してつくります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">SiO₂ ＋ 2C</span><span class="ref-rx-arrow"><span class="ref-rx-over">電気炉で融解</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Si ＋ 2CO</span></div><p class="ref-note">炭素が還元剤としてはたらきます。</p></div>
 <p class="ref-p">ケイ素の単体は、ダイヤモンドと同じ形の共有結合の結晶です。灰色で金属のような光沢があり、電気の通しやすさが金属と非金属の中間の<b>半導体</b>です。高純度のケイ素は、コンピュータの部品や太陽電池に使われます。</p>
 <p class="ref-p"><b>ケイ素の単体の製法は覚えなくても構いません。</b>「ダイヤモンドと同じ構造」「半導体」の2つを押さえておきましょう。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.silicon-element&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ケイ素は地殻中で酸素の次に多い元素だが、単体は自然界に存在しない。単体はダイヤモンドと同じ形の共有結合の結晶で、電気の通しやすさが金属と非金属の中間の半導体であり、コンピュータの部品や太陽電池に使われる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.silicon-element&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-sio2"><h4 class="ref-sec-h">二酸化ケイ素 SiO₂ から シリカゲルまで</h4><p class="ref-sec-lead">SiO₂ は水とは反応しない酸性酸化物です。塩基と加熱してケイ酸ナトリウムにし、水ガラス → ケイ酸 → シリカゲルと変えていきます。</p></section>
 <p class="ref-p">二酸化ケイ素 SiO₂ は、Si 原子のまわりに O 原子が4個結合した四面体がつながった、<b>共有結合の結晶</b>です。水晶・石英・けい砂はほぼ純粋な SiO₂ で、光ファイバーにも使われます。</p>
 <p class="ref-p">CO₂ と同じ酸性酸化物ですが、<b>SiO₂ は水とは反応しません。</b>そのため塩基とは、固体どうしを加熱・融解して反応させます。</p>
@@ -1013,7 +1031,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">シリカゲルは表面に −OH を多くもち、水分子を水素結合で引きつけるので、<b>乾燥剤</b>や吸着剤に使われます。お菓子の袋に入っている乾燥剤がこれです。</p>
 <h5 class="ref-h5">例題 —— 二酸化ケイ素 SiO₂</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を化学反応式で書け。<b>(1) ギ酸に濃硫酸を加えて加熱した　(2) 石灰石に希塩酸を加えた　(3) 石灰水に二酸化炭素を通じると白濁した　(4) 二酸化ケイ素と水酸化ナトリウムを加熱・融解した　(5) 二酸化ケイ素にフッ化水素酸を加えた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) HCOOH → CO ＋ H₂O　(2) CaCO₃ ＋ 2HCl → CaCl₂ ＋ H₂O ＋ CO₂　(3) Ca(OH)₂ ＋ CO₂ → CaCO₃ ＋ H₂O　(4) SiO₂ ＋ 2NaOH → Na₂SiO₃ ＋ H₂O　(5) SiO₂ ＋ 6HF → H₂SiF₆ ＋ 2H₂O</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.sio2,inorg.nonmetal.silica-gel,inorg.nonmetal.sio2-na2co3&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>二酸化ケイ素は共有結合の結晶の酸性酸化物で、水とは反応しないが、水酸化ナトリウムと加熱融解するとケイ酸ナトリウムになり、フッ化水素酸には溶ける。</li><li>乾燥剤のシリカゲルは3段階でつくる。ケイ酸ナトリウムを水とともに加熱して水ガラスにし、そこへ塩酸を加えてケイ酸を遊離させ、最後にケイ酸を加熱して水を追い出す。</li><li>二酸化ケイ素は水と反応しないので、塩基とは固体どうしを加熱・融解して反応させ、水酸化ナトリウムとも炭酸ナトリウムとも同じケイ酸ナトリウムができる（SiO₂ ＋ Na₂CO₃ → Na₂SiO₃ ＋ CO₂）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.sio2,inorg.nonmetal.silica-gel,inorg.nonmetal.sio2-na2co3&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">CO の製法と毒性・還元性、CO₂ の製法と石灰水、SiO₂ が水と反応せず塩基・HF と反応すること、が中心です。</p></section>
 <p class="ref-p"><b>★★★ の式は、物質名から書けるようにしてください。</b>とくに次の2組は、並べて覚えると負担が半分になります。</p>
 <ul class="ref-list"><li>CO₂ ＋ 2NaOH → Na₂CO₃ ＋ H₂O と SiO₂ ＋ 2NaOH → Na₂SiO₃ ＋ H₂O（C を Si に置き換える）</li><li>CaCO₃ ＋ 2HCl → CaCl₂ ＋ H₂O ＋ CO₂ と Na₂SiO₃ ＋ 2HCl → 2NaCl ＋ H₂SiO₃（どちらも弱酸の遊離）</li></ul>
@@ -1122,6 +1140,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

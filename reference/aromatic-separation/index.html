@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">分液漏斗で芳香族化合物を分ける操作のまとめ。「塩にすると水層へ、遊離させるとエーテル層へ」の1行と、酸の強さの差を使って NaHCO₃ → NaOH の順に分ける理由を、4成分の例で追えます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">芳香族化合物</span><span class="unit-label">芳香族化合物の分離</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-principle" data-ref-anchor="principle">原理は1行</a></li><li><a href="#ref-sec-base" data-ref-anchor="base">塩基性の物質（アニリン）を分ける</a></li><li><a href="#ref-sec-acid" data-ref-anchor="acid">酸性の物質を強さの差で2段に分ける</a></li><li><a href="#ref-sec-four" data-ref-anchor="four">4成分を分けてみる</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-separation-nitrobenzene.png?h=1887580a" alt="ニトロベンゼンの構造式。ベンゼン環の炭素1個にニトロ基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>ニトロベンゼン C₆H₅NO₂</b>。酸でも塩基でもないので、何を加えても塩にならず、最後までエーテル層に残ります。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-separation-funnel.png?h=4a5d3cbf" alt="栓とコックが付いた洋なし形の分液漏斗の絵。中の液が上下2層に分かれていて、上の層にエーテル層、下の層に水層と書いてある。コックは漏斗のいちばん下に付いている" loading="lazy"><figcaption class="ref-figure-cap">液は上下2層に分かれ、<b>軽いエーテルが上</b>、水が下になります。コックは下にあるので、<b>先に出てくるのは水層</b>です。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/ether/">溶媒に使うジエチルエーテルの性質（水より軽く、水に溶けにくい）</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.separation-principle,org.aroN.separatory-funnel&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>芳香族化合物の分離は「塩にすると水層に移り、遊離させるとエーテル層に戻る」ことを利用する。酸性物質は塩基で、塩基性物質は酸で塩にする。</li><li>分液漏斗にジエチルエーテル溶液と水溶液を入れて振ると2層に分かれ、水より軽いエーテル層が上、水層が下になる。コックは漏斗のいちばん下にあるので、先に流れ出るのは水層である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.separation-principle,org.aroN.separatory-funnel&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-base"><h4 class="ref-sec-h">塩基性の物質（アニリン）を分ける</h4><p class="ref-sec-lead">塩酸を加えると、アニリンだけが塩になって水層へ移ります。</p></section>
 <p class="ref-p">混合物のエーテル溶液に<b>塩酸</b>を加えて振ると、塩基性のアニリンだけが中和されて<b>アニリン塩酸塩</b>になり、<b>水層へ</b>移ります。</p>
 <div class="ref-rx ref-rx-has-img"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-fig"><div class="ref-figure-scroll"><img class="ref-figure-img ref-rx-img ref-figure-img-scroll" src="/reference-img/rx-81e9adcd.png?h=503b7fdd" alt="構造式の反応式: C₆H₅NH₂ ＋ HCl → C₆H₅NH₃Cl" loading="lazy" style="width:99.7%"></div></div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅NH₂ ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅NH₃Cl</span></div><div class="embed embed-app"><div class="embed-run"><button type="button" data-embed="/assembler/?summon=%E3%82%A2%E3%83%8B%E3%83%AA%E3%83%B3&amp;reagent=amine_hcl&amp;from=reference&amp;page=aromatic-separation&amp;embed=1" data-embed-title="▶ ここで反応を試す">▶ ここで反応を試す</button></div><a class="alt" href="/assembler/?summon=%E3%82%A2%E3%83%8B%E3%83%AA%E3%83%B3&amp;reagent=amine_hcl&amp;from=reference&amp;page=aromatic-separation">▶ 大きな画面で開く</a></div><p class="ref-note">アニリンが塩になって水層へ移ります。酸性の物質と中性の物質はエーテル層に残ります。</p></div>
@@ -967,7 +985,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">酸性の物質はどれも NaOH で水層へ移せるので、最初に NaOH を加えればよい。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">NaOH はカルボン酸もフェノール類も両方塩にするので、先に使うと2つが同じ水層に入って分けられない。先に NaHCO₃ でカルボン酸だけを移す。</span></p><p class="ref-mistake-why">「弱いほうの試薬から使う」という順番の理由が抜けると、手順を丸暗記しても入れ替えてしまいます。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/phenol/">フェノールが炭酸より弱い酸であることは、フェノール類のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">カルボン酸が炭酸より強い酸であることは、カルボン酸のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.separation-order,org.phenol.separation,org.aroN.separation-recover&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>酸性物質どうしは酸の強さの差で分ける。炭酸水素ナトリウム水溶液ではカルボン酸だけが水層に移り、フェノール類はエーテル層に残る。次に水酸化ナトリウム水溶液を使えばフェノール類も移る。</li><li>フェノールは水酸化ナトリウム水溶液に塩として溶けるので、エーテル層の混合物から水層に移して分離できる。炭酸水素ナトリウム水溶液には移らない（カルボン酸だけが移る）。</li><li>塩として水層に移した物質は、遊離させてから取り出す。アニリン塩酸塩には水酸化ナトリウム水溶液を、安息香酸ナトリウムには塩酸を加えると、アニリン・安息香酸が遊離する。ナトリウムフェノキシドは、塩酸か二酸化炭素でフェノールに戻る。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.separation-order,org.phenol.separation,org.aroN.separation-recover&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-four"><h4 class="ref-sec-h">4成分を分けてみる</h4><p class="ref-sec-lead">安息香酸・フェノール・アニリン・ニトロベンゼンのエーテル溶液を、3回の操作で1つずつ分けます。</p></section>
 <p class="ref-p">安息香酸・フェノール・アニリン・ニトロベンゼンの4つを溶かしたエーテル溶液を、次の順に分けます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">4成分を分ける操作</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">操作</th><th style="text-align: left;">水層へ移るもの</th><th style="text-align: left;">エーテル層に残るもの</th></tr></thead><tbody><tr><td style="text-align: left;">① <b>塩酸</b>を加える</td><td style="text-align: left;"><b>アニリン</b>（アニリン塩酸塩）</td><td style="text-align: left;">安息香酸・フェノール・ニトロベンゼン</td></tr><tr><td style="text-align: left;">② <b>NaHCO₃ 水溶液</b>を加える</td><td style="text-align: left;"><b>安息香酸</b>（安息香酸ナトリウム）</td><td style="text-align: left;">フェノール・ニトロベンゼン</td></tr><tr><td style="text-align: left;">③ <b>NaOH 水溶液</b>を加える</td><td style="text-align: left;"><b>フェノール</b>（ナトリウムフェノキシド）</td><td style="text-align: left;"><b>ニトロベンゼン</b></td></tr></tbody></table></div>
@@ -979,7 +997,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">安息香酸・フェノール・アニリン・ニトロベンゼンを溶かしたエーテル溶液がある。この4つを分けるための操作を、順に答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>① 塩酸を加えて振ると、<b>アニリン</b>が塩になって水層へ移る（NaOH で遊離させて回収）。② 残ったエーテル層に <b>NaHCO₃ 水溶液</b>を加えると、<b>安息香酸</b>が水層へ移る（塩酸で遊離）。③ さらに <b>NaOH 水溶液</b>を加えると、<b>フェノール</b>が水層へ移る（塩酸か CO₂ で遊離）。④ 最後にエーテル層に残るのが<b>ニトロベンゼン</b>。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">上の操作の②と③の順番を入れ替えると、どうなるか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>NaOH は<b>安息香酸もフェノールも両方</b>塩にしてしまうので、2つが同じ水層に入って分けられなくなります。酸の強さの差を使うには、<b>弱い塩基の NaHCO₃ から先に</b>使います。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.separation-four&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>安息香酸・フェノール・アニリン・ニトロベンゼンのエーテル溶液は、塩酸でアニリン、炭酸水素ナトリウム水溶液で安息香酸、水酸化ナトリウム水溶液でフェノールを順に水層へ移すと分けられ、酸でも塩基でもないニトロベンゼンは最後までエーテル層に残る。炭酸水素ナトリウムと水酸化ナトリウムの順は入れ替えられないが、塩酸の操作は後に回してもよい。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.separation-four&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1103,6 +1121,7 @@ window.addEventListener('message', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

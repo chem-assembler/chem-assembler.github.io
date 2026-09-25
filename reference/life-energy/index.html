@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,25 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">都市ガス（メタン）とプロパンガスの違い、石油の分留の順、身のまわりの電池（乾電池・リチウムイオン電池・燃料電池）を整理します。化学の範囲として化学発光と光化学反応を置き、最後に、環境・資源の話題を問題文から読み取る方法と、共通テストで覚えておくことをまとめます。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">化学と人間生活</span><span class="unit-label">燃料・電池・光</span></div>
 
+<style>
+.goal-card{margin:12px 0 20px}
+.goal-seg{display:flex;gap:8px;flex-wrap:wrap}
+.goal-seg button{flex:1 1 180px;text-align:left;padding:10px 14px;border:2px solid #9cc7bd;border-radius:10px;background:#fff;color:#20242b;cursor:pointer;font:inherit}
+.goal-seg button b{display:block;font-size:17px}
+.goal-seg button small{display:block;font-size:14px;color:#4e5765;margin-top:2px}
+.goal-seg button[aria-pressed="true"]{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.goal-seg button[aria-pressed="true"] small{color:#e3f2ee}
+.goal-seg button[aria-pressed="true"] b::before{content:'✓ '}
+.goal-chip{position:fixed;left:12px;bottom:12px;z-index:50;padding:8px 14px;border-radius:20px;border:2px solid #2f7d6d;background:#fff;color:#1d4d43;font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+html[data-goal="basic"] .ref-scope .ref-cfold:not([open]){background:#f4f5f7;border-left-color:#b8bec8;padding:6px 10px;border-radius:0 8px 8px 0}
+</style>
+<div class="goal-card" id="goal-card">
+<div class="goal-seg" role="group" aria-label="読む人の目標">
+<button type="button" data-goal="basic" aria-pressed="false"><b>化学基礎まで</b><small>共通テストの「化学基礎」だけ</small></button>
+<button type="button" data-goal="adv" aria-pressed="false"><b>化学まで</b><small>「化学」も受ける（共通テスト・2次）</small></button>
+</div>
+</div>
+<button type="button" class="goal-chip" hidden></button>
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-fuel" data-ref-anchor="fuel">燃料 —— 都市ガス・プロパンガス・石油</a></li><li><a href="#ref-sec-battery" data-ref-anchor="battery">身のまわりの電池</a></li><li><a href="#ref-sec-light" data-ref-anchor="light">光を出す反応・光で進む反応</a><b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></li><li><a href="#ref-sec-environment" data-ref-anchor="environment">環境・資源の話題の読み方</a></li><li><a href="#ref-sec-boundary" data-ref-anchor="boundary">共通テストの線引き</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -958,7 +994,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 燃料</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の気体のうち、空気より軽いものをすべて選べ。空気の平均の分子量は 29、原子量は H＝1・C＝12・N＝14・O＝16 とする。(ア) メタン CH₄　(イ) プロパン C₃H₈　(ウ) アンモニア NH₃　(エ) 二酸化炭素 CO₂　(オ) 水素 H₂</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>分子量は (ア) 16・(イ) 44・(ウ) 17・(エ) 44・(オ) 2。29 より小さいのは <b>(ア)・(ウ)・(オ)</b>。★ 都市ガス（メタン）の警報器を天井の近くに、プロパンガスの警報器を床の近くに付けるのは、この重さの違いのためです。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.city-gas-methane,theo.life.petroleum-fraction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>都市ガスは天然ガスを原料とし、メタン CH₄（分子量 16）を主成分とする混合物で、空気（平均の分子量 約 29）より軽い。プロパンガス（LP ガス）はプロパン C₃H₈・ブタンが主成分で、空気より重い。</li><li>石油（原油）は炭化水素の混合物で、分留すると沸点の低いものから順に、石油ガス → ナフサ（粗製ガソリン）→ 灯油 → 軽油 → 重油（残りはアスファルトなど）に分かれる。炭素の数が多い大きな分子ほど沸点が高い。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.city-gas-methane,theo.life.petroleum-fraction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-battery"><h4 class="ref-sec-h">身のまわりの電池</h4><p class="ref-sec-lead">電池は、酸化還元反応で電子が負極から正極へ流れるのを電流として取り出す装置です。使い切りの一次電池（マンガン乾電池）と、充電してくり返し使える二次電池（リチウムイオン電池・鉛蓄電池）があり、乾電池の正極には酸化マンガン(Ⅳ) が使われます。</p></section>
 <p class="ref-p">電池の中では、負極で物質が電子を失い（酸化）、その電子が導線を通って正極へ流れ、正極で物質が電子を受け取ります（還元）。この電子の流れが電流です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">身のまわりの電池</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">電池</th><th style="text-align: left;">種類</th><th style="text-align: left;">負極・正極の主な物質</th><th style="text-align: left;">使われている所</th></tr></thead><tbody><tr><td style="text-align: left;"><b>マンガン乾電池</b>・アルカリマンガン乾電池</td><td style="text-align: left;">一次電池</td><td style="text-align: left;">負極 <b>亜鉛 Zn</b>・正極 <b>酸化マンガン(Ⅳ) MnO₂</b></td><td style="text-align: left;">リモコン・時計・懐中電灯</td></tr><tr><td style="text-align: left;"><b>リチウムイオン電池</b></td><td style="text-align: left;">二次電池</td><td style="text-align: left;">負極 リチウムを含む黒鉛・正極 リチウムを含む金属酸化物</td><td style="text-align: left;">スマートフォン・ノートパソコン・電気自動車</td></tr><tr><td style="text-align: left;"><b>鉛蓄電池</b></td><td style="text-align: left;">二次電池</td><td style="text-align: left;">負極 鉛 Pb・正極 酸化鉛(Ⅳ) PbO₂</td><td style="text-align: left;">自動車のバッテリー</td></tr><tr><td style="text-align: left;"><b>燃料電池</b></td><td style="text-align: left;">——</td><td style="text-align: left;">負極に水素 H₂・正極に酸素 O₂ を送り続ける</td><td style="text-align: left;">燃料電池自動車・家庭用の発電</td></tr></tbody></table></div>
@@ -966,15 +1002,9 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2H₂ ＋ O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O</span></div><p class="ref-note">燃料電池の全体の反応は、水素の燃焼と同じ式です。燃やす代わりに、電子の流れとして取り出します。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/cell-basics/">電池のしくみ（負極と正極・電子の流れ）は、電池の仕組みのページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/fuel-cell/">実用電池の比べ表と燃料電池の両極の式は、実用電池と燃料電池のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.dry-cell-mno2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
-<section class="ref-sec" id="ref-sec-light"><h4 class="ref-sec-h">光を出す反応・光で進む反応<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">化学反応のエネルギーが光として出る現象を化学発光といい、ルミノール反応（血痕の検出）やケミカルライトが例です。逆に、光を吸収して進む反応を光化学反応といい、光合成や写真の感光が例です。</p></section>
-<p class="ref-p">反応物のもつエネルギーの一部が、熱ではなく<b>光</b>として出てくる現象を<b>化学発光</b>といいます。暮らしの中の例は次の2つです。</p>
-<ul class="ref-list"><li><b>ルミノール反応</b><div class="ref-li-hang">ルミノールを塩基性の水溶液中で過酸化水素などで酸化すると、青白く光る。血液の成分が反応を速めるので、<b>血痕を見つける</b>のに使われる。</div></li><li><b>ケミカルライト</b><div class="ref-li-hang">筒を折り曲げると中の2つの液（シュウ酸のエステルと過酸化水素）が混ざり、そのエネルギーで色素が光る。熱をほとんど出さない。</div></li></ul>
-<p class="ref-p">ホタルの光も、生物の体の中で起こる化学発光です。</p>
-<p class="ref-p">反対に、光のエネルギーを吸収して進む反応を<b>光化学反応</b>といいます。植物の<b>光合成</b>（二酸化炭素と水から、光を使ってグルコースと酸素をつくる）や、写真のフィルムの臭化銀 AgBr が光で分解される反応がその例です。光で分解しやすい物質を褐色びんに保存するのも、光化学反応を防ぐためです。</p>
-<p class="ref-p"><b>「化学発光の例はルミノール反応とケミカルライト」「光合成は光化学反応」を言えるようにしておきましょう。</b>反応式やルミノールの構造は覚えなくて構いません。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/light-energy/">化学発光と光化学反応をエネルギー図で見るのは、化学反応と光のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.chemiluminescence-examples&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>マンガン乾電池（アルカリマンガン乾電池も）は、負極に亜鉛 Zn、正極に酸化マンガン(Ⅳ) MnO₂ を使う一次電池である。充電してくり返し使える電池を二次電池といい、リチウムイオン電池や鉛蓄電池がその例である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.dry-cell-mno2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<details class="ref-cfold" open="" id="ref-sec-light"><summary class="ref-cfold-sum"><h4 class="ref-sec-h">光を出す反応・光で進む反応<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">化学反応のエネルギーが光として出る現象を化学発光といい、ルミノール反応（血痕の検出）やケミカルライトが例です。逆に、光を吸収して進む反応を光化学反応といい、光合成や写真の感光が例です。</p><span class="ref-cfold-note">化学で学ぶ内容（化学基礎までの人は読み飛ばしてよい）</span></summary><div class="ref-cfold-body"><p class="ref-p">反応物のもつエネルギーの一部が、熱ではなく<b>光</b>として出てくる現象を<b>化学発光</b>といいます。暮らしの中の例は次の2つです。</p><ul class="ref-list"><li><b>ルミノール反応</b><div class="ref-li-hang">ルミノールを塩基性の水溶液中で過酸化水素などで酸化すると、青白く光る。血液の成分が反応を速めるので、<b>血痕を見つける</b>のに使われる。</div></li><li><b>ケミカルライト</b><div class="ref-li-hang">筒を折り曲げると中の2つの液（シュウ酸のエステルと過酸化水素）が混ざり、そのエネルギーで色素が光る。熱をほとんど出さない。</div></li></ul><p class="ref-p">ホタルの光も、生物の体の中で起こる化学発光です。</p><p class="ref-p">反対に、光のエネルギーを吸収して進む反応を<b>光化学反応</b>といいます。植物の<b>光合成</b>（二酸化炭素と水から、光を使ってグルコースと酸素をつくる）や、写真のフィルムの臭化銀 AgBr が光で分解される反応がその例です。光で分解しやすい物質を褐色びんに保存するのも、光化学反応を防ぐためです。</p><p class="ref-p"><b>「化学発光の例はルミノール反応とケミカルライト」「光合成は光化学反応」を言えるようにしておきましょう。</b>反応式やルミノールの構造は覚えなくて構いません。</p><p class="ref-link-row"><a class="ref-link" href="/reference/light-energy/">化学発光と光化学反応をエネルギー図で見るのは、化学反応と光のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p></div></details>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>化学反応のエネルギーが光として出る化学発光の例は、ルミノール反応（塩基性で過酸化水素などに酸化されて青白く光り、血痕の検出に使う）とケミカルライトである。光を吸収して進む光化学反応の例は、光合成や写真の臭化銀の感光である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.chemiluminescence-examples&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-environment"><h4 class="ref-sec-h">環境・資源の話題の読み方</h4><p class="ref-sec-lead">地球温暖化・酸性雨・オゾン層・プラスチックごみ・資源の再利用などの話題は、必要な知識を問題文が説明してくれます。問われるのは、説明を反応式の量的関係や酸化数に落として読む力です。</p></section>
 <p class="ref-p">共通テストでは、環境や資源が題材の小問がよく登場しますが、その話題の知識そのものが問われることはほとんどありません。どれも、問題文の説明を読んで、これまでの単元の道具で解く形です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">環境・資源の話題と、落とし込む単元</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">話題</th><th style="text-align: left;">問題文が説明してくれること</th><th style="text-align: left;">解くときに使う単元</th></tr></thead><tbody><tr><td style="text-align: left;">地球温暖化・燃料の比べ</td><td style="text-align: left;">CO₂ が温室効果ガスであること・燃料の組成</td><td style="text-align: left;">燃焼の反応式と物質量（出る CO₂ の量）</td></tr><tr><td style="text-align: left;">酸性雨</td><td style="text-align: left;">SO₂ や窒素の酸化物が雨に溶けて酸になること</td><td style="text-align: left;">酸化数の変化・中和の量的関係</td></tr><tr><td style="text-align: left;">オゾン層・大気の汚れ</td><td style="text-align: left;">物質が分解・反応する流れ</td><td style="text-align: left;">反応式の係数・酸化還元の見分け</td></tr><tr><td style="text-align: left;">プラスチックごみ・リサイクル</td><td style="text-align: left;">樹脂の種類や処理の方法</td><td style="text-align: left;">物質量・質量の比</td></tr><tr><td style="text-align: left;">放射性の炭素 ¹⁴C での年代測定</td><td style="text-align: left;">半減期の値</td><td style="text-align: left;">「半減期ごとに半分」の計算</td></tr></tbody></table></div>
@@ -1061,6 +1091,29 @@ document.addEventListener('click', function (e) {
 </script>
 
 
+<script>
+(function () {
+  var KEY = 'slz.readerGoal';
+  function apply(g) {
+    if (g) document.documentElement.setAttribute('data-goal', g); else document.documentElement.removeAttribute('data-goal');
+    document.querySelectorAll('button[data-goal]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-goal') === g)); });
+    document.querySelectorAll('details.ref-cfold').forEach(function (d) { d.open = g !== 'basic'; });
+    var chip = document.querySelector('.goal-chip');
+    if (chip) { chip.hidden = !g; chip.textContent = '目標: ' + (g === 'basic' ? '化学基礎まで' : '化学まで') + '（変える）'; }
+  }
+  var g = null; try { g = localStorage.getItem(KEY); } catch (e) {}
+  if (g !== 'basic' && g !== 'adv') g = null;
+  apply(g);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('.goal-chip')) { document.getElementById('goal-card').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    var b = e.target.closest ? e.target.closest('button[data-goal]') : null;
+    if (!b) return;
+    g = b.getAttribute('data-goal');
+    try { localStorage.setItem(KEY, g); } catch (e2) {}
+    apply(g);
+  });
+})();
+</script>
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>

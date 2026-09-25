@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">熱量は「質量 × 比熱 × 温度変化」で求めます。温度変化は、逃げた熱を補うため、グラフの直線部分を反応を始めた時刻まで延ばして読みます。求めた熱量を着目する物質 1mol あたりに直し、発熱なら負の符号を付けたものが反応エンタルピーです。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">化学反応とエネルギー</span><span class="unit-label">反応エンタルピーと熱量</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-specific-heat" data-ref-anchor="specific-heat">比熱と熱量</a></li><li><a href="#ref-sec-extrapolate" data-ref-anchor="extrapolate">逃げた熱を補う —— グラフを延ばす</a></li><li><a href="#ref-sec-to-enthalpy" data-ref-anchor="to-enthalpy">熱量から反応エンタルピーへ</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -950,7 +968,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">具体例1で、水 100g の温度が 20.0℃ から 25.0℃ に上がったときの熱量を求めます。温度変化は 5.0K なので、4.2J × 100 × 5.0 ＝ 2100J ＝ 2.1kJ です。</p>
 <p class="ref-p"><b>温度変化は、℃ の差をそのまま K の差として使ってかまいません。</b> ℃ と K は目盛りの幅が同じで、0 の位置がずれているだけだからです。</p>
 <div class="ref-table-wrap"><div class="ref-cap">熱量の式に入れる3つの量</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">量</th><th style="text-align: left;">単位</th><th style="text-align: left;">入れるときの注意</th></tr></thead><tbody><tr><td style="text-align: left;">質量</td><td style="text-align: left;">g</td><td style="text-align: left;">水だけでなく、<b>溶かした溶質も含めた溶液全体</b>の質量。体積で与えられたら密度をかける</td></tr><tr><td style="text-align: left;">比熱</td><td style="text-align: left;">J/(g·K)</td><td style="text-align: left;">問題文で与えられる。水溶液は水と同じ 4.2 とすることが多い</td></tr><tr><td style="text-align: left;">温度変化</td><td style="text-align: left;">K</td><td style="text-align: left;">℃ の差のままでよい。<b>グラフを延ばして読んだ値</b>を使う</td></tr></tbody></table></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.heat-quantity&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>熱量〔J〕＝ 質量〔g〕× 比熱〔J/(g·K)〕× 温度変化〔K〕で、質量には溶質も含めた溶液全体の質量を入れる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.heat-quantity&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-extrapolate"><h4 class="ref-sec-h">逃げた熱を補う —— グラフを延ばす</h4><p class="ref-sec-lead">測定中にも熱は周りへ逃げています。温度が下がっていく直線部分を、反応を始めた時刻まで延ばした点の温度を、逃げなかった場合の最高温度とします。</p></section>
 <p class="ref-p">断熱容器（発泡ポリスチレンのコップ）を使っても、測っている間に熱は少しずつ周りへ逃げます。そのため、<b>温度計の最高値は、本当に上がるはずだった温度より低く</b>なります。</p>
 <p class="ref-p">そこで、次の手順で温度変化を読みます。</p>
@@ -959,7 +977,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">延ばした点は、「一瞬で反応が終わり、熱がまったく逃げなかったとしたら」の温度にあたります。下がっていく直線の傾きが、逃げていく熱の速さを表しているためです。</p>
 <p class="ref-p">具体例2で、はじめ 20.0℃ の水に溶質を入れたところ、最高温度は 29.8℃ で、下がる直線を 0 分まで延ばすと 30.6℃ でした。使う温度変化は 30.6 − 20.0 ＝ 10.6K です。29.8 − 20.0 ＝ 9.8K を使うと、逃げた分だけ熱量を小さく見積もってしまいます。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">温度計が示した最高温度から、はじめの温度を引いて温度変化にする</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">最高温度を過ぎて下がっていく直線を、<b>反応を始めた時刻まで延ばした点</b>の温度を使います。</span></p><p class="ref-mistake-why">温度計の最高値は、それまでに逃げた熱の分だけ低くなっています。★ 問題にグラフが付いていたら、まず「延ばす直線」を探します。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.extrapolation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>測定中にも熱は逃げるので、温度変化は、最高温度のあとの直線を反応を始めた時刻まで延ばした点の温度から求める。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.extrapolation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-to-enthalpy"><h4 class="ref-sec-h">熱量から反応エンタルピーへ</h4><p class="ref-sec-lead">出てきた熱量を、着目する物質 1mol あたりに直します。発熱なら負、吸熱なら正の符号を付けたものが反応エンタルピーです。</p></section>
 <p class="ref-p">熱量が出たら、次の順で反応エンタルピーに直します。</p>
 <ol class="ref-list"><li>着目する物質の物質量を出す。<div class="ref-li-hang">溶解なら溶かした溶質、中和ならできた水 H₂O。</div></li><li>主語付きの比例式で 1mol あたりの熱量に直す。<div class="ref-li-hang"><span class="ref-blank">○○</span> <span class="ref-blank">○○</span>mol : <span class="ref-blank">○○</span>kJ ＝ <span class="ref-blank">○○</span> 1mol : x kJ</div></li><li>温度が上がったなら発熱なので負、下がったなら吸熱なので正の符号を付ける。</li></ol>
@@ -972,7 +990,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 熱量から反応エンタルピーへ</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1.0mol/L の塩酸 50mL と 1.0mol/L の水酸化ナトリウム水溶液 50mL を断熱容器で混ぜたところ、グラフを延ばして読んだ温度変化は 6.7K だった。水溶液の密度は 1.0g/cm³、比熱は 4.2J/(g·K) とする。<b>(1) 発生した熱量は何 kJ か。　(2) 中和エンタルピーは何 kJ/mol か。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>2.8kJ</b>。水溶液は 50 ＋ 50 ＝ 100mL で 100g。4.2J × 100 × 6.7 ＝ 2814J ≒ 2.8kJ。　(2) <b>−56kJ/mol</b>。できる水は HCl と同じ 1.0 × 50/1000 ＝ 0.050mol。H₂O 0.050mol : 2.8kJ ＝ H₂O 1mol : x kJ より x ≒ 56。発熱なので負の符号を付けます。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">水 48g に硝酸アンモニウム NH₄NO₃（式量 80）2.0g を溶かしたところ、温度は 20.0℃ から下がり、最低温度は 17.3℃ だった。そのあと温度がゆっくり上がっていく直線を溶かし始めた時刻まで延ばすと 16.9℃ だった。比熱は 4.2J/(g·K) とする。<b>NH₄NO₃ の溶解エンタルピーは何 kJ/mol か。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>＋26kJ/mol</b>。温度変化は 20.0 − 16.9 ＝ 3.1K（温度が下がる場合も、延ばした点を使います。周りから熱が入ってきて温度が戻っていくためです）。溶液は 48 ＋ 2.0 ＝ 50g で、熱量は 4.2J × 50 × 3.1 ＝ 651J ≒ 0.651kJ。NH₄NO₃ は 2.0 ÷ 80 ＝ 0.025mol。NH₄NO₃ 0.025mol : 0.651kJ ＝ NH₄NO₃ 1mol : x kJ より x ≒ 26。温度が下がったので吸熱で、符号は正です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.heat-to-enthalpy&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>実験で求めた熱量は、着目する物質 1 mol あたりに直し、発熱なら負・吸熱なら正の符号を付けて反応エンタルピーにする（中和では生じた水に着目）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.heat-to-enthalpy&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">熱量 ＝ 質量 × 比熱 × 温度変化、グラフを延ばすこと、1mol あたりに直して符号を付けること。比熱の値は与えられます。</p></section>
 <p class="ref-p"><b>「熱量 ＝ 質量 × 比熱 × 温度変化」と「グラフを反応開始の時刻まで延ばす」の2つは必ず覚えてください。</b>質量には溶質も含めること、最後に 1mol あたりに直して符号を付けることも、毎回の手順にしましょう。</p>
 <p class="ref-p"><b>比熱の値（水の 4.2J/(g·K) など）は問題文で与えられるので、覚えなくても構いません。</b>水溶液の密度も、1.0g/cm³ として与えられることがほとんどです。</p>
@@ -1079,6 +1097,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

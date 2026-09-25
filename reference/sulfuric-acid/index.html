@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">酸化数 +6 の硫黄の化合物のまとめ。三酸化硫黄、希硫酸の5つの性質（2価の強酸・弱酸の遊離・金属の溶解・硫酸塩の沈殿・鉛蓄電池）、濃硫酸の5つの性質（不揮発性・熱濃硫酸の酸化力・溶解熱・吸湿・脱水）、接触法と量の計算を1枚にしました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">非金属元素</span><span class="unit-label">硫黄</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-so3" data-ref-anchor="so3">三酸化硫黄 —— 水と反応して硫酸になる酸性酸化物</a></li><li><a href="#ref-sec-dilute" data-ref-anchor="dilute">希硫酸 —— 2価の強酸としての5つの顔</a></li><li><a href="#ref-sec-concentrated" data-ref-anchor="concentrated">濃硫酸 —— 不揮発性・酸化力・吸湿・脱水</a></li><li><a href="#ref-sec-summary" data-ref-anchor="summary">希硫酸と濃硫酸のまとめ</a></li><li><a href="#ref-sec-contact" data-ref-anchor="contact">接触法 —— 硫黄を2段階で酸化して硫酸にする</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -979,7 +997,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 希硫酸</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">Ag⁺・Al³⁺・Ba²⁺・Ca²⁺・Cu²⁺・Fe²⁺・Mg²⁺・Na⁺・Pb²⁺ のうち、<b>(1) 硫酸イオンと沈殿をつくるもの　(2) 塩化物イオンと沈殿をつくるもの</b> をすべて選び、沈殿の化学式と色を書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) BaSO₄ 白・CaSO₄ 白・PbSO₄ 白　(2) AgCl 白・PbCl₂ 白　Pb²⁺ は SO₄²⁻ とも Cl⁻ とも沈殿をつくります。代表的な強酸3つ（HCl・HNO₃・H₂SO₄）のうち、NO₃⁻ は沈殿をつくりません。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.dilute-sulfuric&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>希硫酸は2価の強酸として中和・弱酸の遊離・イオン化傾向が H₂ より大きい金属の溶解を起こし、SO₄²⁻ は Ba²⁺・Ca²⁺・Pb²⁺ と白色沈殿をつくる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.dilute-sulfuric&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-concentrated"><h4 class="ref-sec-h">濃硫酸 —— 不揮発性・酸化力・吸湿・脱水</h4><p class="ref-sec-lead">濃硫酸は沸点が高い不揮発性の酸で、加熱すると強い酸化力をもちます。水と強く結びつくので吸湿作用と脱水作用があり、溶けるときに大きな熱を出します。</p></section>
 <h5 class="ref-h5">① 不揮発性 —— 揮発性の酸を遊離する</h5>
 <p class="ref-p">濃硫酸は沸点が高い（蒸発しにくい）<b>不揮発性の酸</b>です。「揮発性の酸と塩基の塩」とともに加熱すると、揮発性の酸を追い出します。</p>
@@ -1017,12 +1035,12 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 濃硫酸</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">H₂・HCl・H₂S・NH₃・O₂・SO₂ のうち、乾燥剤として濃硫酸を用いることができる気体をすべて選び、化学式で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>H₂・HCl・O₂・SO₂　濃硫酸は酸性の乾燥剤なので、中和反応する塩基性の気体 NH₃ には使えません。還元力の強い H₂S とは酸化還元反応するので、H₂S にも使えません。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化学反応式を書け。<b>(1) 銅が熱濃硫酸に溶解した　(2) 銀が熱濃硫酸に溶解した　(3) グルコース C₆H₁₂O₆ に濃硫酸を滴下した　(4) スクロース C₁₂H₂₂O₁₁ に濃硫酸を滴下した</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) Cu ＋ 2H₂SO₄ → CuSO₄ ＋ 2H₂O ＋ SO₂↑　(2) 2Ag ＋ 2H₂SO₄ → Ag₂SO₄ ＋ 2H₂O ＋ SO₂↑　(3) C₆H₁₂O₆ → 6C ＋ 6H₂O　(4) C₁₂H₂₂O₁₁ → 12C ＋ 11H₂O　すべて★★★です。(3)(4) の濃硫酸は脱水剤なので、式には書きません。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.hot-conc-sulfuric,inorg.nonmetal.conc-sulfuric,inorg.nonmetal.hygroscopic-dehydrating&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>加熱した濃硫酸（熱濃硫酸）は酸化力のある酸で、H⁺ では溶けない Cu や Ag を溶かして SO₂ を発生させる。</li><li>濃硫酸は不揮発性（揮発性の酸を遊離）・吸湿作用（乾燥剤）・脱水作用（H と O を 2：1 で奪う）をもち、溶解熱が大きいので、薄めるときは多量の水に少しずつ加える。</li><li>濃硫酸の吸湿作用は、もともと H₂O として存在する水蒸気を吸収するはたらき（気体の乾燥剤）で、脱水作用は、ほかの分子を壊して H 原子と O 原子を 2：1 の割合で H₂O として奪うはたらき（スクロースの炭化など）である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.hot-conc-sulfuric,inorg.nonmetal.conc-sulfuric,inorg.nonmetal.hygroscopic-dehydrating&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-summary"><h4 class="ref-sec-h">希硫酸と濃硫酸のまとめ</h4><p class="ref-sec-lead">希硫酸は H⁺ と SO₄²⁻ のはたらき、濃硫酸は水と強く結びつくことと熱濃硫酸の酸化力のはたらきです。「濃硫酸は弱酸」という言い方は誤りです。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">希硫酸と濃硫酸の性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">希硫酸（0.1 mol/L 程度のものが多い）</th><th style="text-align: left;">濃硫酸（濃度 90〜98%・密度約 1.8 g/cm³）</th></tr></thead><tbody><tr><td style="text-align: left;">2価の強酸としてはたらく</td><td style="text-align: left;">不揮発性で、揮発性の酸を遊離する</td></tr><tr><td style="text-align: left;">強酸なので弱酸を遊離する</td><td style="text-align: left;">熱濃硫酸は強い酸化力をもち、Cu・Ag を溶かす</td></tr><tr><td style="text-align: left;">イオン化傾向が水素より大きい金属の単体を溶かす</td><td style="text-align: left;">溶解熱（発熱）が大きく、H₂O と結びつきやすい</td></tr><tr><td style="text-align: left;">Ba²⁺・Ca²⁺・Pb²⁺ と白色の沈殿をつくる</td><td style="text-align: left;">吸湿作用があり、塩基性でない気体の乾燥剤になる</td></tr><tr><td style="text-align: left;">鉛蓄電池の電解液になり、両極に PbSO₄ が析出する</td><td style="text-align: left;">脱水作用があり、ほかの分子を壊して H₂O を奪う</td></tr></tbody></table></div>
 <p class="ref-p"><b>この10項目は、どちらの硫酸の性質かを言えるようにしてください。</b>反応式の問題では、問題文の「希硫酸」「濃硫酸」「加熱した」の言葉から、どのはたらきかが決まります。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">希硫酸は強酸だが、濃硫酸は弱酸である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">濃硫酸がほとんど電離していないのは、周りに H⁺ を渡す相手の H₂O がないためで、<b>酸としての強さ（相手に H⁺ を与える力）は強い</b>ままです。</span></p><p class="ref-mistake-why">強酸として使うときは希硫酸を使い、濃硫酸はほとんど電離していないので「弱い」と取り違えます。水溶液の H⁺ は H₃O⁺ を省略した書き方で、酸が電離するには H⁺ を受け取る H₂O が要ります（H₂SO₄ ＋ H₂O → H₃O⁺ ＋ HSO₄⁻）。硫酸に限らず、どんな酸でも濃度が大きくなれば電離度は小さくなります。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.conc-not-weak&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>濃硫酸がほとんど電離していないのは、H⁺ を受け取る相手の H₂O が少ないためで、酸としての強さ（相手に H⁺ を与える力）は強いままであり、「濃硫酸は弱酸」という言い方は誤りである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.conc-not-weak&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-contact"><h4 class="ref-sec-h">接触法 —— 硫黄を2段階で酸化して硫酸にする</h4><p class="ref-sec-lead">S を燃やして SO₂、V₂O₅ 触媒で SO₃、それを水と反応させて H₂SO₄。3本の式を足して1本にまとめます。</p></section>
 <p class="ref-p">硫酸は工業的には<b>接触法</b>でつくります。原料の硫黄は、原油に不純物として含まれているものを取り除いて（脱硫して）得ます。</p>
 <ol class="ref-list"><li>硫黄 S を燃焼させて二酸化硫黄 SO₂ をつくる。<div class="ref-li-hang">空気中の燃焼では S の酸化数は +4 の SO₂ で止まる。</div></li><li>SO₂ を酸化バナジウム(Ⅴ) V₂O₅ を触媒にして酸化し、三酸化硫黄 SO₃ をつくる。<div class="ref-li-hang">V₂O₅ 触媒で S の酸化数を +6 まで上げられる。</div></li><li>SO₃ を濃硫酸に吸収させて発煙硫酸にする。</li><li>発煙硫酸を希硫酸で薄めて濃硫酸にする。<div class="ref-li-hang">酸性酸化物の SO₃ が H₂O と反応して、対応するオキソ酸 H₂SO₄ になっている。</div></li></ol>
@@ -1036,7 +1054,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfuric-acid-contact-flow.png?h=b7f7c8a4" alt="反応物 S（酸化数 0）から、①＋O₂ で中間生成物1 の SO₂（+4）、② V₂O₅ 触媒と＋O₂ で中間生成物2 の SO₃（+6）、③＋H₂O で生成物 H₂SO₄（+6）へ進む流れ図" loading="lazy"><figcaption class="ref-figure-cap">S を2段階で酸化して +6 にし、最後の水との反応では酸化数は変わりません。</figcaption></figure>
 <h5 class="ref-h5">例題 —— 接触法</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q"><b>(1) 硫黄を原料に硫酸を製造する接触法の反応を3本の化学反応式で書き、それらを1本の化学反応式にまとめよ。　(2) 接触法ですべての硫黄が硫酸に変えられたとすると、98% 濃硫酸 100 kg をつくるのに必要な硫黄は何 kg か（H＝1.0、O＝16、S＝32）。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) S ＋ O₂ → SO₂、2SO₂ ＋ O₂ → 2SO₃（触媒 V₂O₅）、SO₃ ＋ H₂O → H₂SO₄。まとめると 2S ＋ 3O₂ ＋ 2H₂O → 2H₂SO₄。　(2) 32 kg。① 98% 濃硫酸 100 kg に含まれる H₂SO₄ は 100 kg × 98/100 ＝ 98 kg。② 全体の式から、S 1 mol（32 g）から H₂SO₄ 1 mol（98 g）ができる。③ 比例式 H₂SO₄ 98 g : S 32 g ＝ H₂SO₄ 98 kg : S x kg より x ＝ 32。全体の式を書かなくても、S 原子の数に着目すれば「S 1 mol から H₂SO₄ 1 mol」とわかります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.contact-process&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>接触法では、S を燃やして SO₂ にし、V₂O₅ を触媒に SO₃ へ酸化し、SO₃ を濃硫酸に吸収させた発煙硫酸を希硫酸で薄めて硫酸をつくる（S 1 mol から H₂SO₄ 1 mol）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.contact-process&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1140,6 +1158,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

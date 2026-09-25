@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">周期律と周期表、金属元素と非金属元素、典型元素と遷移元素、陽性と陰性、イオン化エネルギー・電子親和力・電気陰性度を、化学基礎の範囲で説明します。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">原子と化学結合</span><span class="unit-label">元素の周期表</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（8節）</summary><ul><li><a href="#ref-sec-periodic-law" data-ref-anchor="periodic-law">周期律と周期表</a></li><li><a href="#ref-sec-typical-transition" data-ref-anchor="typical-transition">典型元素と遷移元素</a></li><li><a href="#ref-sec-families" data-ref-anchor="families">名前のついた族</a></li><li><a href="#ref-sec-electropositive" data-ref-anchor="electropositive">陽性と陰性</a></li><li><a href="#ref-sec-why" data-ref-anchor="why">右上ほど陰性が強い理由</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li><li><a href="#ref-sec-three-values" data-ref-anchor="three-values">イオン化エネルギー・電子親和力・電気陰性度</a></li><li><a href="#ref-sec-mulliken" data-ref-anchor="mulliken">マリケンの電気陰性度</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -951,14 +969,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">元素は、<b>金属元素</b>と<b>非金属元素</b>に分けられます。誤解をおそれずにざっくり言うと、次のとおりです。</p>
 <ul class="ref-list"><li><b>金属元素</b>：原子が電子を引きつける力が弱い。そのため、反応するとほかの原子に電子を奪われて、<b>陽イオン</b>になる</li><li><b>非金属元素</b>：原子が電子を引きつける力が強い。そのため、反応するとほかの原子から電子を奪って、<b>陰イオン</b>になる</li></ul>
 <p class="ref-p">周期表では、金属元素は左側と真ん中に、非金属元素は右上に集まっています。H は左上にありますが非金属元素です。貴ガスも非金属元素ですが、電子のやりとりをほとんどしません。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.periodic-law&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>元素を原子番号の順に並べると性質が周期的に変わることを周期律といい、価電子の数が同じ元素が縦に並ぶように配列した表を周期表という。周期表の縦の列を族、横の行を周期という。周期律が現れるのは、電子が電子殻に規則的に入り、価電子の数が規則的に変わるからである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.periodic-law&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-typical-transition"><h4 class="ref-sec-h">典型元素と遷移元素</h4><p class="ref-sec-lead">1・2・13〜18族が典型元素、3〜12族が遷移元素です。遷移元素はすべて金属です。</p></section>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/periodic-table-typical-transition.png?h=e734e324" alt="周期表の1・2族と13〜18族を典型元素、3〜12族を遷移元素として囲み、金属と非金属を色分けした図" loading="lazy"><figcaption class="ref-figure-cap">典型元素は両端、遷移元素は真ん中の3〜12族です。非金属（水色）はすべて典型元素の側にあります。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">典型元素と遷移元素の比べ方</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">観点</th><th style="text-align: left;">典型元素</th><th style="text-align: left;">遷移元素</th></tr></thead><tbody><tr><td style="text-align: center;"><b>族</b></td><td style="text-align: left;">1・2・13〜18族</td><td style="text-align: left;">3〜12族</td></tr><tr><td style="text-align: center;"><b>金属か</b></td><td style="text-align: left;">金属と非金属の両方がある</td><td style="text-align: left;">すべて金属</td></tr><tr><td style="text-align: center;"><b>価電子</b></td><td style="text-align: left;">族番号の一の位と一致する（貴ガスは0）</td><td style="text-align: left;">2個か1個で、ほとんど変わらない</td></tr><tr><td style="text-align: center;"><b>性質が似る向き</b></td><td style="text-align: left;">縦（同じ族）</td><td style="text-align: left;">横（となりどうし）も似ることが多い</td></tr><tr><td style="text-align: center;"><b>色</b></td><td style="text-align: left;">単体や化合物は白か黒が多い</td><td style="text-align: left;">有色のイオンや化合物が多い</td></tr><tr><td style="text-align: center;"><b>そのほか</b></td><td style="text-align: left;">——</td><td style="text-align: left;">触媒としてはたらくものが多い。単体は融点が高く、硬く、密度が大きいものが多い</td></tr></tbody></table></div>
 <p class="ref-p">典型元素は価電子の数が族ごとに決まっているので、<b>同じ族の元素は性質が似ています</b>。遷移元素は原子番号が増えても価電子の数がほとんど変わらないので、<b>横にとなり合う元素の性質が似ることが多い</b>ためです。</p>
 <p class="ref-p">遷移元素はすべて金属元素なので、<b>遷移金属</b>ともよびます。</p>
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 混乱しやすい</b><p class="ref-callout-text"><b>12族（Zn・Cd・Hg）の扱いは、教科書の改訂で変わりました。</b>いまの教科書は遷移元素を「3〜12族」とし、「12族は遷移元素に含めない場合もある」と書き添えています。改訂前の教科書と、それにもとづく過去問・問題集は、遷移元素を「3〜11族」として、12族を典型元素に入れています。古い資料で解くときは、この違いに気をつけてください。問題文に指定があれば、それに従います。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.typical-transition,inorg.basis.typical-props&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>1・2・13〜18族が典型元素、3〜12族が遷移元素で、遷移元素はすべて金属である。</li><li>典型元素は価電子の数が族ごとに決まっている（族の番号の一の位と一致し、貴ガスは0）ので、周期表の同じ族の元素どうしの性質が似る。典型元素には金属と非金属の両方があり、非金属元素はすべて典型元素である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.typical-transition,inorg.basis.typical-props&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-families"><h4 class="ref-sec-h">名前のついた族</h4><p class="ref-sec-lead">1族（H を除く）・2族・17族・18族には名前があります。この4つは必ず覚えます。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">名前のついた族</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">族</th><th style="text-align: center;">名前</th><th style="text-align: left;">例</th><th style="text-align: left;">性質（ひとことで）</th></tr></thead><tbody><tr><td style="text-align: center;">1族（H を除く）</td><td style="text-align: center;"><b>アルカリ金属</b></td><td style="text-align: left;">Li・Na・K</td><td style="text-align: left;">1価の陽イオンになりやすい。単体は水と激しく反応する</td></tr><tr><td style="text-align: center;">2族</td><td style="text-align: center;"><b>アルカリ土類金属</b></td><td style="text-align: left;">Mg・Ca・Ba</td><td style="text-align: left;">2価の陽イオンになりやすい</td></tr><tr><td style="text-align: center;">17族</td><td style="text-align: center;"><b>ハロゲン</b></td><td style="text-align: left;">F・Cl・Br・I</td><td style="text-align: left;">1価の陰イオンになりやすい</td></tr><tr><td style="text-align: center;">18族</td><td style="text-align: center;"><b>貴ガス</b></td><td style="text-align: left;">He・Ne・Ar</td><td style="text-align: left;">ほとんど反応しない</td></tr></tbody></table></div>
 <p class="ref-p"><b>この4つの族の名前は必ず覚えてください。</b>同じ族の元素は性質がよく似ているので、族の名前で呼び分けます。たとえば水酸化ナトリウム NaOH と水酸化カリウム KOH は、どちらも水によく溶けて強い塩基性を示し、ほぼ同じようにふるまいます。</p>
@@ -967,13 +985,13 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">H は1族ですが非金属なので、アルカリ金属には入りません。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkali-metal/">アルカリ金属のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/halogen/">ハロゲンのページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.named-groups&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>1族（H を除く）はアルカリ金属、2族はアルカリ土類金属、17族はハロゲン、18族は貴ガスとよぶ。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.named-groups&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-electropositive"><h4 class="ref-sec-h">陽性と陰性</h4><p class="ref-sec-lead">周期表の左下の元素ほど陽イオンになりやすく（陽性）、右上の元素ほど陰イオンになりやすい（陰性）です。貴ガスは除きます。</p></section>
 <p class="ref-p">原子核が電子をつかむ力の弱い元素は、自分の電子を手放して陽イオンになりがちです。この傾向を<b>陽性</b>とよびます。逆に、電子をつかむ力が強く、よそから電子を奪って陰イオンになりがちな傾向が<b>陰性</b>です。</p>
 <p class="ref-p">上の「金属元素と非金属元素」と見比べると、<b>陽性 ≒ 金属、陰性 ≒ 非金属</b>です。<b>周期表の左下ほど陽性が強く、右上ほど陰性が強い</b>、という向きを覚えておきます。</p>
 <p class="ref-p"><b>ただし、貴ガスは除きます。</b>貴ガスは周期表の右端にありますが、電子を手放すことも受け取ることもほとんどしないので、陽性とも陰性ともいいません。「右上ほど陰性」のいちばん右上は、貴ガスではなくハロゲンの F です。</p>
 <p class="ref-p">たとえば同じ第3周期でも、左端の Na は Na⁺ になりやすく、右の Cl は Cl⁻ になりやすいです。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.electropositive&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>周期表の左下の元素ほど陽性（陽イオンになりやすい）、右上の元素ほど陰性（陰イオンになりやすい）が強く、理由はクーロン力（電荷と距離）で説明できる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.electropositive&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-why"><summary class="ref-adv-sum"><h4 class="ref-sec-h">右上ほど陰性が強い理由<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">原子核が最外殻電子を引きつけるクーロン力は、電荷が大きいほど強く、距離が遠いほど弱くなります。</p></summary><div class="ref-adv-body"><p class="ref-p">同じ符号の電荷どうしには反発する力（斥力）、異なる符号の電荷どうしには引き合う力（引力）がはたらきます。これを<b>クーロン力</b>といいます。クーロン力は<b>電荷の積に比例し、距離の2乗に反比例</b>します。</p></div></details>
 <h5 class="ref-h5">クーロン力の大きさが見える例 —— イオン結晶の融点</h5>
 <p class="ref-p">クーロン力の強さは、イオン結晶の融点に表れます。陽イオンと陰イオンを引き離すほど強く引き合っていれば、融かすのに高い温度が要るからです。</p>
@@ -989,7 +1007,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">実質の電荷が同じなら、比べるのは距離だけです。Li の最外殻は L殻、Na の最外殻は M殻なので、Na のほうが原子核から遠くにあります。クーロン力は距離の2乗に反比例するので、Na は最外殻電子を引きつける力が弱く、電子を失いやすくなります。<b>同じ族では下の元素ほど陽性が強い</b>のはこのためです。</p>
 <h5 class="ref-h5">実質の電荷（有効核電荷）について</h5>
 <p class="ref-p">最外殻電子から見た実質の電荷を<b>有効核電荷</b>といいます。このページでは「原子核の電荷 − 内側の電子の数」として数えましたが、これは考え方を簡単にした形です。実際には内側の電子が原子核の電荷をぴったり打ち消すわけではなく、同じ殻の電子どうしも少し打ち消し合うので、値はもう少し複雑になります。周期表の上での向きを考えるには、この簡単な形で十分です。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.coulomb&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>異なる符号の電荷どうしには引力、同じ符号の電荷どうしには斥力がはたらき、これをクーロン力という。クーロン力は電荷の積に比例し、距離の2乗に反比例する。原子核が最外殻電子を引きつける力の強さも、この関係で決まる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.coulomb&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-three-values"><h4 class="ref-sec-h">イオン化エネルギー・電子親和力・電気陰性度</h4><p class="ref-sec-lead">3つとも「原子が電子を引きつける力」を、場面を変えて測ったものです。</p></section>
 <p class="ref-p">この3つの量で大切なのは、<b>それぞれの定義（どんな場面で、何を測った量か）を説明できること</b>です。3つとも「原子が電子を引きつける力の強さ」を表していて、違うのは場面だけです。場面を図で思い浮かべながら読みましょう。</p>
 <h5 class="ref-h5">イオン化エネルギー</h5>
@@ -1022,7 +1040,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— イオン化エネルギー・電子親和力・電気陰性度</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の文章の空欄 a〜d に当てはまる語句を選び、e〜j に当てはまる元素記号を書け。<b>イオン化エネルギーが（a 大きい・小さい）原子ほど陽イオンになりやすく、電子親和力が（b 大きい・小さい）原子ほど陰イオンになりやすい。金属元素は非金属元素と比較すると、イオン化傾向が（c 大きく・小さく）、電子親和力が（d 大きい・小さい）傾向がある。周期表の第3周期で最もイオン化エネルギーが大きい元素は（e）、電子親和力が最も大きい元素は（f）、電気陰性度が最も大きい元素は（g）である。すべての元素の中で最もイオン化エネルギーが大きい元素は（h）であり、最も電気陰性度が大きい元素は（i）、2番目に電気陰性度が大きい元素は（j）である。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>a 小さい　b 大きい　c 大きく　d 小さい　e Ar　f Cl　g Cl　h He　i F　j O</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">図のグラフの横軸は原子番号（1〜20）である。<b>(1) 縦軸は何を表しているか。　(2) a〜f のうち、最も陽イオンになりやすいのはどの元素か。</b></p><img class="ref-figure-img" src="/reference-img/periodic-table-ionization-energy.png?h=5c51ff5b" alt="原子番号1〜20についての折れ線グラフ。山に a・c・e、谷に b・d・f の記号が付いている" loading="lazy"><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) イオン化エネルギー。原子番号2・10・18 の貴ガスが各周期で山になっていることから分かります。　(2) f（K）。陽イオンになりやすいのはイオン化エネルギーが小さい元素で、グラフの中で最も小さいのが f です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.three-values,inorg.basis.max-elements,inorg.basis.ie-graph,inorg.basis.electron-affinity,inorg.basis.trend-direction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（5問）">✏️ この節の一問一答（5問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>陽イオンへのなりやすさはイオン化エネルギーで、陰イオンへのなりやすさは電子親和力で比べる。イオン化エネルギーは小さいほど、電子親和力は大きいほど、そのイオンになりやすい。電気陰性度は結合の中で共有電子対を引き寄せる強さを表し、貴ガスには定義されない。</li><li>イオン化エネルギーが最大の元素は He、電子親和力は Cl、電気陰性度は F、イオン化傾向は Li で、電気陰性度の上位は F ＞ O ＞ Cl ＞ N の順である。</li><li>原子番号とイオン化エネルギーのグラフでは、各周期の貴ガス（He・Ne・Ar）が山になり、そのすぐ後のアルカリ金属（Li・Na・K）が谷になる。谷にある元素ほど電子を手放すのに要るエネルギーが少ないので、陽イオンになりやすい。</li><li>電子親和力は、陰イオンへのなりやすさを比べる量。原子が電子を1個受け取って1価の陰イオンになるときに、外へ出ていくエネルギーのことで、陰イオンになりやすいのはこの値が大きい原子のほう。同じ周期の中ではハロゲンが最大で、貴ガスは電子を取り込んでも安定にならないのでほぼ0である。</li><li>イオン化エネルギー・電子親和力・電気陰性度は、貴ガスの扱いを除けば、周期表の右上の元素ほど大きく、左下の元素ほど小さいという同じ向きになる。イオン化傾向は電子の失いやすさなので向きが逆で、金属元素は非金属元素に比べてイオン化傾向が大きく、電子親和力が小さい。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.three-values,inorg.basis.max-elements,inorg.basis.ie-graph,inorg.basis.electron-affinity,inorg.basis.trend-direction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（5問）">✏️ この節の一問一答（5問）</button></div></div>
 <details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-mulliken"><summary class="ref-adv-sum"><h4 class="ref-sec-h">マリケンの電気陰性度<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">電気陰性度は、イオン化エネルギーと電子親和力の平均として表すこともできます。</p></summary><div class="ref-adv-body"><p class="ref-p">電気陰性度は「自分の電子を取られまいとする力（イオン化エネルギー）」と「他人の電子を奪う力（電子親和力）」を合わせたもの、と考えることができます。そこで、イオン化エネルギーと電子親和力を足して2で割った値を電気陰性度とする決め方があり、これを<b>マリケンの電気陰性度</b>といいます。</p><p class="ref-p">2つとも大きい原子（右上の F・O・Cl など）は電気陰性度も大きく、2つとも小さい原子（左下のアルカリ金属など）は電気陰性度も小さくなります。上の表で、電気陰性度がイオン化エネルギーと電子親和力の両方と同じ向きになるのはこのためです。上の数直線の値（ポーリングの値）とは決め方が違いますが、並ぶ順はほぼ同じです。<b>名前は覚えなくても構いません。</b></p></div></details>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">族の名前4つ、陽性と陰性の向き、3つの量の定義、それぞれの量で最大の元素、電気陰性度の上位の順を覚えます。</p></section>
 <p class="ref-p"><b>必ず覚えるもの</b>は次の6つです。</p>
@@ -1192,6 +1210,7 @@ function refAdvSetup(root) {
 }
 refAdvSetup(document);
 </script>
+
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,25 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">材料の性質は結合の型でおおよそ決まります。ケイ素（半導体）と二酸化ケイ素（ガラスの原料）の違い、陶磁器・ガラス・セメントなどのセラミックスを整理し、化学の範囲としてガラスの種類・光ファイバー・シリカゲル・漆喰を後半に置きます。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">化学と人間生活</span><span class="unit-label">ガラスとセラミックス</span></div>
 
+<style>
+.goal-card{margin:12px 0 20px}
+.goal-seg{display:flex;gap:8px;flex-wrap:wrap}
+.goal-seg button{flex:1 1 180px;text-align:left;padding:10px 14px;border:2px solid #9cc7bd;border-radius:10px;background:#fff;color:#20242b;cursor:pointer;font:inherit}
+.goal-seg button b{display:block;font-size:17px}
+.goal-seg button small{display:block;font-size:14px;color:#4e5765;margin-top:2px}
+.goal-seg button[aria-pressed="true"]{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.goal-seg button[aria-pressed="true"] small{color:#e3f2ee}
+.goal-seg button[aria-pressed="true"] b::before{content:'✓ '}
+.goal-chip{position:fixed;left:12px;bottom:12px;z-index:50;padding:8px 14px;border-radius:20px;border:2px solid #2f7d6d;background:#fff;color:#1d4d43;font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+html[data-goal="basic"] .ref-scope .ref-cfold:not([open]){background:#f4f5f7;border-left-color:#b8bec8;padding:6px 10px;border-radius:0 8px 8px 0}
+</style>
+<div class="goal-card" id="goal-card">
+<div class="goal-seg" role="group" aria-label="読む人の目標">
+<button type="button" data-goal="basic" aria-pressed="false"><b>化学基礎まで</b><small>共通テストの「化学基礎」だけ</small></button>
+<button type="button" data-goal="adv" aria-pressed="false"><b>化学まで</b><small>「化学」も受ける（共通テスト・2次）</small></button>
+</div>
+</div>
+<button type="button" class="goal-chip" hidden></button>
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（7節）</summary><ul><li><a href="#ref-sec-materials" data-ref-anchor="materials">結合の型から材料を選ぶ</a></li><li><a href="#ref-sec-silicon" data-ref-anchor="silicon">ケイ素と二酸化ケイ素 —— 半導体とガラスの原料</a></li><li><a href="#ref-sec-ceramics" data-ref-anchor="ceramics">セラミックス —— 陶磁器・ガラス・セメント</a></li><li><a href="#ref-sec-glass" data-ref-anchor="glass">ガラスの種類と光ファイバー</a><b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></li><li><a href="#ref-sec-silica-gel" data-ref-anchor="silica-gel">シリカゲルのでき方</a><b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></li><li><a href="#ref-sec-plaster" data-ref-anchor="plaster">漆喰とセッコウ —— カルシウムの化合物で固める</a><b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></li><li><a href="#ref-sec-boundary" data-ref-anchor="boundary">共通テストの線引き</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -946,14 +982,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-table-wrap"><div class="ref-cap">結合の型と、身のまわりの材料</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">結合の型</th><th style="text-align: left;">物質</th><th style="text-align: left;">使っている性質</th><th style="text-align: left;">用途</th></tr></thead><tbody><tr><td style="text-align: left;"><b>イオン結晶</b></td><td style="text-align: left;">塩化カルシウム CaCl₂</td><td style="text-align: left;">水を吸いやすい</td><td style="text-align: left;">乾燥剤・道路にまく凍結防止剤</td></tr><tr><td style="text-align: left;"><b>イオン結晶</b></td><td style="text-align: left;">硫酸バリウム BaSO₄</td><td style="text-align: left;">水にも酸にも溶けず、X 線を通しにくい</td><td style="text-align: left;">胃や腸の X 線撮影の造影剤</td></tr><tr><td style="text-align: left;"><b>共有結合の結晶</b></td><td style="text-align: left;">ケイ素 Si</td><td style="text-align: left;">電気の通しやすさが金属と非金属の中間（半導体）</td><td style="text-align: left;">集積回路・太陽電池</td></tr><tr><td style="text-align: left;"><b>共有結合の結晶</b></td><td style="text-align: left;">二酸化ケイ素 SiO₂</td><td style="text-align: left;">硬く、熱に強い。電気を通さない</td><td style="text-align: left;">水晶・ガラスの原料</td></tr><tr><td style="text-align: left;"><b>金属結晶</b></td><td style="text-align: left;">銅 Cu</td><td style="text-align: left;">電気と熱をよく通し、細く延ばせる</td><td style="text-align: left;">電線</td></tr><tr><td style="text-align: left;"><b>分子からなる物質（高分子）</b></td><td style="text-align: left;">ポリエチレン</td><td style="text-align: left;">軽く、形をつくりやすく、腐らない</td><td style="text-align: left;">袋・容器</td></tr></tbody></table></div>
 <p class="ref-p"><b>表の用途をすべて覚える必要はありません。</b>大切なのは、「イオン結晶は硬いがもろい」「金属は電気を通し、延ばせる」のように、<b>型ごとの性質を言えること</b>です。型ごとの性質の比べ方は、結晶の種類のページで1枚の表にまとめています。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/crystal-types/">結晶の4つの型と性質の比べ表へ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.bond-material&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>材料の性質は結合の型でおおよそ決まる（銅は電気をよく通して電線に・ケイ素は半導体・セラミックスは熱に強く電気を通しにくい・BaSO₄ は水にも酸にも溶けず X 線の造影剤に）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.bond-material&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-silicon"><h4 class="ref-sec-h">ケイ素と二酸化ケイ素 —— 半導体とガラスの原料</h4><p class="ref-sec-lead">ケイ素の単体は電気を少しだけ通す半導体で、集積回路や太陽電池に使われます。二酸化ケイ素は電気を通さない硬い結晶で、ガラスの原料です。名前が似ていますが、性質も使いみちも違います。</p></section>
 <p class="ref-p">ケイ素 Si の単体は、ダイヤモンドと同じ形につながった<b>共有結合の結晶</b>です。電気の通しやすさが金属と非金属の中間にあるので<b>半導体</b>と呼ばれ、純度を極めて高くしたものがコンピュータの集積回路や太陽電池の材料になります。</p>
 <p class="ref-p">二酸化ケイ素 SiO₂ も共有結合の結晶ですが、<b>電気を通しません。</b>硬く、融点が高く、水晶・石英・ケイ砂（砂の粒）として自然に多く存在します。SiO₂ は、次の節のガラスや陶磁器の原料です。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">二酸化ケイ素 SiO₂ は半導体で、太陽電池の材料になる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">半導体として使われるのは<b>ケイ素 Si の単体</b>です。二酸化ケイ素 SiO₂ は電気を通さず、ガラスの原料になります。</span></p><p class="ref-mistake-why">どちらも「ケイ素の仲間」で、どちらも共有結合の結晶なので混同しやすいためです。★ <b>O が付いたら電気を通さない</b>、と区別します。</p></div>
 <p class="ref-p"><b>「半導体はケイ素 Si の単体、ガラスの原料は二酸化ケイ素 SiO₂」は必ず覚えてください。</b></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">ケイ素の単体と二酸化ケイ素の反応は、14族（炭素・ケイ素）のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.si-vs-sio2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>半導体として集積回路や太陽電池に使われるのはケイ素 Si の単体である。二酸化ケイ素 SiO₂ も共有結合の結晶だが電気を通さず、水晶・石英・ケイ砂として存在し、ガラスの原料になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.si-vs-sio2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-ceramics"><h4 class="ref-sec-h">セラミックス —— 陶磁器・ガラス・セメント</h4><p class="ref-sec-lead">ケイ砂・粘土・石灰石などの無機物質を高温で処理してつくる材料をセラミックスといいます。熱に強く、さびず、電気を通しにくいのが共通の長所です。セメントの原料は石灰石（炭酸カルシウム）です。</p></section>
 <p class="ref-p">ケイ砂・粘土・石灰石などの天然の無機物質を、高温で焼いたり融かしたりしてつくる、金属ではない材料を<b>セラミックス</b>といいます。身近な代表は、<b>陶磁器・ガラス・セメント</b>の3つです。熱に強い・さびない・電気を通しにくいという長所がある一方、硬いが衝撃に弱く、割れやすいのが短所です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">代表的なセラミックスと、その原料</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">セラミックス</th><th style="text-align: left;">主な原料</th><th style="text-align: left;">つくり方</th><th style="text-align: left;">性質と用途</th></tr></thead><tbody><tr><td style="text-align: left;"><b>陶磁器</b></td><td style="text-align: left;">粘土・ケイ砂など</td><td style="text-align: left;">練って形をつくり、高温で焼き固める</td><td style="text-align: left;">食器・タイル・電気を通さない部品（がいし）</td></tr><tr><td style="text-align: left;"><b>ガラス</b></td><td style="text-align: left;">ケイ砂 SiO₂・炭酸ナトリウム・石灰石</td><td style="text-align: left;">高温で融かしてから冷やす</td><td style="text-align: left;">透明。窓・びん・食器</td></tr><tr><td style="text-align: left;"><b>セメント</b></td><td style="text-align: left;"><b>石灰石 CaCO₃</b>・粘土など</td><td style="text-align: left;">焼いたものを粉にする。水と練ると固まる</td><td style="text-align: left;">砂・砂利と混ぜてコンクリートに</td></tr></tbody></table></div>
@@ -964,25 +1000,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— セラミックス</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の (ア)〜(オ) のうち、正しいものをすべて選べ。(ア) 太陽電池の材料になる半導体は、二酸化ケイ素 SiO₂ である　(イ) セメントの主な原料の1つは、石灰石（炭酸カルシウム）である　(ウ) ガラスは非晶質なので、決まった融点をもたない　(エ) 陶磁器は金属なので、電気をよく通す　(オ) 塩化カルシウムは水を吸いやすいので、乾燥剤に使われる</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(イ)・(ウ)・(オ)</b>。(ア) 半導体はケイ素 Si の単体で、SiO₂ は電気を通さない。(エ) 陶磁器は金属ではないセラミックスで、電気を通しにくい。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.ceramics,theo.life.cement-glass-raw&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
-<section class="ref-sec" id="ref-sec-glass"><h4 class="ref-sec-h">ガラスの種類と光ファイバー<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">ガラスは、ケイ砂に混ぜる物質を変えると性質が変わります。窓やびんのソーダ石灰ガラス、光をよく屈折させる鉛ガラス、熱に強いホウケイ酸ガラス、光をよく通す石英ガラスの4つを、使いみちと組にします。光ファイバーは石英ガラス（SiO₂）です。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">ガラスの種類</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名前</th><th style="text-align: left;">ケイ砂 SiO₂ に加える主な原料</th><th style="text-align: left;">性質</th><th style="text-align: left;">使いみち</th></tr></thead><tbody><tr><td style="text-align: left;"><b>ソーダ石灰ガラス</b></td><td style="text-align: left;">炭酸ナトリウム Na₂CO₃・石灰石 CaCO₃</td><td style="text-align: left;">安くつくれる</td><td style="text-align: left;">窓ガラス・びん（いちばん多く使われる）</td></tr><tr><td style="text-align: left;"><b>鉛ガラス</b></td><td style="text-align: left;">酸化鉛(Ⅱ) PbO・炭酸カリウム K₂CO₃</td><td style="text-align: left;">光を大きく屈折させる。放射線を遮る</td><td style="text-align: left;">レンズ・放射線を遮る窓</td></tr><tr><td style="text-align: left;"><b>ホウケイ酸ガラス</b></td><td style="text-align: left;">ホウ砂（ホウ素の化合物）</td><td style="text-align: left;">熱や薬品に強い</td><td style="text-align: left;">耐熱の食器・ビーカーなどの実験器具</td></tr><tr><td style="text-align: left;"><b>石英ガラス</b></td><td style="text-align: left;">（ほぼ SiO₂ だけ）</td><td style="text-align: left;">光をよく通し、熱にも強い</td><td style="text-align: left;"><b>光ファイバー</b>・プリズム</td></tr></tbody></table></div>
-<p class="ref-p"><b>光ファイバーは石英ガラス、つまり二酸化ケイ素 SiO₂ でできている</b>ことは必ず覚えてください。ケイ素の単体（半導体）と取り違えないようにしましょう。そのほかは、「鉛ガラスは光を大きく曲げる」「ホウケイ酸ガラスは熱に強い」のように、特徴を1つずつ言えれば十分です。原料の細かい組成は覚えなくても構いません。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.glass-kinds&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
-<section class="ref-sec" id="ref-sec-silica-gel"><h4 class="ref-sec-h">シリカゲルのでき方<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">二酸化ケイ素を塩基と融かしてケイ酸ナトリウムにし、水ガラス → ケイ酸 → シリカゲルと変えていきます。シリカゲルは表面の −OH で水分子を引きつけるので、乾燥剤に使われます。</p></section>
-<p class="ref-p">お菓子の袋に入っている透明な粒の乾燥剤は<b>シリカゲル</b>です。シリカゲルは、二酸化ケイ素から次の順につくります。</p>
-<ol class="ref-list"><li>二酸化ケイ素を、水酸化ナトリウム（または炭酸ナトリウム）と一緒に融かして、<b>ケイ酸ナトリウム</b> Na₂SiO₃ にする。</li><li>ケイ酸ナトリウムを水と一緒に加熱すると、粘り気の強い液体の<b>水ガラス</b>になる。</li><li>水ガラスに塩酸を加えると、弱酸の<b>ケイ酸</b>が遊離して、白いゲル状の沈殿になる。</li><li>ケイ酸を加熱して水を除くと、すき間の多い固体の<b>シリカゲル</b>になる。</li></ol>
-<p class="ref-p">シリカゲルは、細かいすき間の多い（多孔質の）固体で、表面に −OH を多くもちます。この −OH が水分子を水素結合で引きつけるので、<b>乾燥剤</b>や吸着剤に使われます。</p>
-<p class="ref-p"><b>覚えるのは「水ガラス → ケイ酸 → シリカゲル」の順番と、シリカゲルが乾燥剤になることです。</b>反応式は14族のページで扱います。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">水ガラスからシリカゲルまでの反応式は、14族（炭素・ケイ素）のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<section class="ref-sec" id="ref-sec-plaster"><h4 class="ref-sec-h">漆喰とセッコウ —— カルシウムの化合物で固める<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">漆喰は消石灰（水酸化カルシウム）を主成分とする壁の材料で、空気中の二酸化炭素を吸って炭酸カルシウムになりながら固まります。セッコウ像や建材に使うセッコウは、焼きセッコウが水と結びついて固まります。</p></section>
-<p class="ref-p"><b>漆喰</b>は、消石灰（水酸化カルシウム Ca(OH)₂）を主成分とする壁の材料です。塗ったあと、空気中の二酸化炭素 CO₂ を少しずつ吸収して、硬い炭酸カルシウム CaCO₃ に変わりながら固まります。石灰水に CO₂ を通すと白く濁るのと同じ反応です。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Ca(OH)₂ ＋ CO₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CaCO₃ ＋ H₂O</span></div><p class="ref-note">石灰水が白く濁る反応と同じ式です。漆喰が固まるのに時間がかかるのは、空気中の少ない CO₂ を少しずつ吸うためです。</p></div>
-<p class="ref-p"><b>セッコウ</b>（硫酸カルシウムの二水和物 CaSO₄・2H₂O）を加熱すると、水の一部を失った<b>焼きセッコウ</b>になります。焼きセッコウを水で練ると、水と結びついてセッコウにもどりながら固まるので、セッコウ像や建材に使われます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/alkaline-earth/">石灰石・生石灰・消石灰・セッコウのつながりは2族元素のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>けい砂や粘土などの無機物質を高温で焼き固めてつくる材料をセラミックスといい、陶磁器・ガラス・セメントがその例である。電気を通しにくく、熱に強い。</li><li>セラミックスの代表は陶磁器・ガラス・セメントで、セメントの主な原料は石灰石（炭酸カルシウム CaCO₃）と粘土、ふつうのガラスの原料はケイ砂 SiO₂・炭酸ナトリウム・石灰石である。ガラスは非晶質なので決まった融点をもたない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.ceramics,theo.life.cement-glass-raw&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<details class="ref-cfold" open="" id="ref-sec-glass"><summary class="ref-cfold-sum"><h4 class="ref-sec-h">ガラスの種類と光ファイバー<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">ガラスは、ケイ砂に混ぜる物質を変えると性質が変わります。窓やびんのソーダ石灰ガラス、光をよく屈折させる鉛ガラス、熱に強いホウケイ酸ガラス、光をよく通す石英ガラスの4つを、使いみちと組にします。光ファイバーは石英ガラス（SiO₂）です。</p><span class="ref-cfold-note">化学で学ぶ内容（化学基礎までの人は読み飛ばしてよい）</span></summary><div class="ref-cfold-body"><div class="ref-table-wrap"><div class="ref-cap">ガラスの種類</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名前</th><th style="text-align: left;">ケイ砂 SiO₂ に加える主な原料</th><th style="text-align: left;">性質</th><th style="text-align: left;">使いみち</th></tr></thead><tbody><tr><td style="text-align: left;"><b>ソーダ石灰ガラス</b></td><td style="text-align: left;">炭酸ナトリウム Na₂CO₃・石灰石 CaCO₃</td><td style="text-align: left;">安くつくれる</td><td style="text-align: left;">窓ガラス・びん（いちばん多く使われる）</td></tr><tr><td style="text-align: left;"><b>鉛ガラス</b></td><td style="text-align: left;">酸化鉛(Ⅱ) PbO・炭酸カリウム K₂CO₃</td><td style="text-align: left;">光を大きく屈折させる。放射線を遮る</td><td style="text-align: left;">レンズ・放射線を遮る窓</td></tr><tr><td style="text-align: left;"><b>ホウケイ酸ガラス</b></td><td style="text-align: left;">ホウ砂（ホウ素の化合物）</td><td style="text-align: left;">熱や薬品に強い</td><td style="text-align: left;">耐熱の食器・ビーカーなどの実験器具</td></tr><tr><td style="text-align: left;"><b>石英ガラス</b></td><td style="text-align: left;">（ほぼ SiO₂ だけ）</td><td style="text-align: left;">光をよく通し、熱にも強い</td><td style="text-align: left;"><b>光ファイバー</b>・プリズム</td></tr></tbody></table></div><p class="ref-p"><b>光ファイバーは石英ガラス、つまり二酸化ケイ素 SiO₂ でできている</b>ことは必ず覚えてください。ケイ素の単体（半導体）と取り違えないようにしましょう。そのほかは、「鉛ガラスは光を大きく曲げる」「ホウケイ酸ガラスは熱に強い」のように、特徴を1つずつ言えれば十分です。原料の細かい組成は覚えなくても構いません。</p></div></details>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ガラスはケイ砂に加える物質で性質が変わる。窓やびんはソーダ石灰ガラス、光を大きく屈折させる鉛ガラスはレンズや放射線を遮る窓に、熱や薬品に強いホウケイ酸ガラスは耐熱の器具に使われ、ほぼ SiO₂ だけの石英ガラスは光をよく通すので光ファイバーになる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.glass-kinds&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<details class="ref-cfold" open="" id="ref-sec-silica-gel"><summary class="ref-cfold-sum"><h4 class="ref-sec-h">シリカゲルのでき方<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">二酸化ケイ素を塩基と融かしてケイ酸ナトリウムにし、水ガラス → ケイ酸 → シリカゲルと変えていきます。シリカゲルは表面の −OH で水分子を引きつけるので、乾燥剤に使われます。</p><span class="ref-cfold-note">化学で学ぶ内容（化学基礎までの人は読み飛ばしてよい）</span></summary><div class="ref-cfold-body"><p class="ref-p">お菓子の袋に入っている透明な粒の乾燥剤は<b>シリカゲル</b>です。シリカゲルは、二酸化ケイ素から次の順につくります。</p><ol class="ref-list"><li>二酸化ケイ素を、水酸化ナトリウム（または炭酸ナトリウム）と一緒に融かして、<b>ケイ酸ナトリウム</b> Na₂SiO₃ にする。</li><li>ケイ酸ナトリウムを水と一緒に加熱すると、粘り気の強い液体の<b>水ガラス</b>になる。</li><li>水ガラスに塩酸を加えると、弱酸の<b>ケイ酸</b>が遊離して、白いゲル状の沈殿になる。</li><li>ケイ酸を加熱して水を除くと、すき間の多い固体の<b>シリカゲル</b>になる。</li></ol><p class="ref-p">シリカゲルは、細かいすき間の多い（多孔質の）固体で、表面に −OH を多くもちます。この −OH が水分子を水素結合で引きつけるので、<b>乾燥剤</b>や吸着剤に使われます。</p><p class="ref-p"><b>覚えるのは「水ガラス → ケイ酸 → シリカゲル」の順番と、シリカゲルが乾燥剤になることです。</b>反応式は14族のページで扱います。</p><p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">水ガラスからシリカゲルまでの反応式は、14族（炭素・ケイ素）のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p></div></details>
+<details class="ref-cfold" open="" id="ref-sec-plaster"><summary class="ref-cfold-sum"><h4 class="ref-sec-h">漆喰とセッコウ —— カルシウムの化合物で固める<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">漆喰は消石灰（水酸化カルシウム）を主成分とする壁の材料で、空気中の二酸化炭素を吸って炭酸カルシウムになりながら固まります。セッコウ像や建材に使うセッコウは、焼きセッコウが水と結びついて固まります。</p><span class="ref-cfold-note">化学で学ぶ内容（化学基礎までの人は読み飛ばしてよい）</span></summary><div class="ref-cfold-body"><p class="ref-p"><b>漆喰</b>は、消石灰（水酸化カルシウム Ca(OH)₂）を主成分とする壁の材料です。塗ったあと、空気中の二酸化炭素 CO₂ を少しずつ吸収して、硬い炭酸カルシウム CaCO₃ に変わりながら固まります。石灰水に CO₂ を通すと白く濁るのと同じ反応です。</p><div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Ca(OH)₂ ＋ CO₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CaCO₃ ＋ H₂O</span></div><p class="ref-note">石灰水が白く濁る反応と同じ式です。漆喰が固まるのに時間がかかるのは、空気中の少ない CO₂ を少しずつ吸うためです。</p></div><p class="ref-p"><b>セッコウ</b>（硫酸カルシウムの二水和物 CaSO₄・2H₂O）を加熱すると、水の一部を失った<b>焼きセッコウ</b>になります。焼きセッコウを水で練ると、水と結びついてセッコウにもどりながら固まるので、セッコウ像や建材に使われます。</p><p class="ref-link-row"><a class="ref-link" href="/reference/alkaline-earth/">石灰石・生石灰・消石灰・セッコウのつながりは2族元素のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p></div></details>
 <h5 class="ref-h5">例題 —— 漆喰とセッコウ</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">（化学）壁に塗った漆喰に含まれていた水酸化カルシウム 3.7 kg が、すべて空気中の二酸化炭素と反応して炭酸カルシウムになった（Ca(OH)₂ ＋ CO₂ → CaCO₃ ＋ H₂O）。吸収された二酸化炭素は何 kg か。式量は Ca(OH)₂＝74・CO₂＝44 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>Ca(OH)₂ 3.7 kg は 3.7 × 10³ ／ 74 ＝ 50 mol。反応式の係数から CO₂ も 50 mol 吸収されるので、44 × 50 ＝ 2.2 × 10³ g ＝ <b>2.2 kg</b>。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.plaster-co2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>漆喰は消石灰（水酸化カルシウム Ca(OH)₂）を主成分とする壁の材料で、空気中の二酸化炭素を吸収して炭酸カルシウムに変わりながら固まる（Ca(OH)₂ ＋ CO₂ → CaCO₃ ＋ H₂O）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.life.plaster-co2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-boundary"><h4 class="ref-sec-h">共通テストの線引き</h4><p class="ref-sec-lead">ケイ素と焼き物の小問で知識が要るのは、「Si は半導体・SiO₂ はガラスの原料」「セメントの原料は石灰石」と、化学の範囲のガラスの種類・シリカゲル・漆喰です。原料の組成や反応の量は問題文が教えてくれます。</p></section>
 <p class="ref-p">左の列は、問題文に説明が無くても答えられるようにしておくものです。右の列は、出てきたときに問題文が教えてくれるので、覚えておく必要はありません。（化学）と書いた行は、化学（科目）の範囲です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">ガラスとセラミックス —— 覚えておくことと、問題文が教えてくれること</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">覚えておく</th><th style="text-align: left;">問題文が教えてくれる</th></tr></thead><tbody><tr><td style="text-align: left;">結合の型ごとの性質（イオン結晶は硬いがもろい・金属は電気を通す など）</td><td style="text-align: left;">表にない材料の、細かい使いみち</td></tr><tr><td style="text-align: left;"><b>半導体はケイ素 Si の単体</b>、SiO₂ は電気を通さずガラスの原料</td><td style="text-align: left;">半導体の純度などの数値</td></tr><tr><td style="text-align: left;">セラミックスの例は陶磁器・ガラス・セメント。<b>セメントの原料は石灰石 CaCO₃</b></td><td style="text-align: left;">セメントの成分の割合・固まる反応の式</td></tr><tr><td style="text-align: left;">ガラスは非晶質で、決まった融点をもたない</td><td style="text-align: left;">ファインセラミックスの成分と用途</td></tr><tr><td style="text-align: left;">（化学）<b>光ファイバーは石英ガラス（SiO₂）</b>・鉛ガラスは光を大きく屈折させる</td><td style="text-align: left;">ガラスの原料の組成・屈折率の値</td></tr><tr><td style="text-align: left;">（化学）水ガラス → ケイ酸 → シリカゲル の順と、シリカゲルが乾燥剤になること</td><td style="text-align: left;">シリカゲルができる反応式の係数</td></tr><tr><td style="text-align: left;">（化学）漆喰は Ca(OH)₂ が CO₂ を吸って CaCO₃ になって固まる</td><td style="text-align: left;">吸収する CO₂ の量の計算に使う数値</td></tr></tbody></table></div>
@@ -1061,6 +1086,29 @@ document.addEventListener('click', function (e) {
 </script>
 
 
+<script>
+(function () {
+  var KEY = 'slz.readerGoal';
+  function apply(g) {
+    if (g) document.documentElement.setAttribute('data-goal', g); else document.documentElement.removeAttribute('data-goal');
+    document.querySelectorAll('button[data-goal]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-goal') === g)); });
+    document.querySelectorAll('details.ref-cfold').forEach(function (d) { d.open = g !== 'basic'; });
+    var chip = document.querySelector('.goal-chip');
+    if (chip) { chip.hidden = !g; chip.textContent = '目標: ' + (g === 'basic' ? '化学基礎まで' : '化学まで') + '（変える）'; }
+  }
+  var g = null; try { g = localStorage.getItem(KEY); } catch (e) {}
+  if (g !== 'basic' && g !== 'adv') g = null;
+  apply(g);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('.goal-chip')) { document.getElementById('goal-card').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    var b = e.target.closest ? e.target.closest('button[data-goal]') : null;
+    if (!b) return;
+    g = b.getAttribute('data-goal');
+    try { localStorage.setItem(KEY, g); } catch (e2) {}
+    apply(g);
+  });
+})();
+</script>
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>

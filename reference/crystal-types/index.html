@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">結晶は、粒子をつなぐ力でイオン結晶・共有結合の結晶・分子結晶・金属結晶の4つに分かれます。化学式の元素から型を決めれば、融点・電気の通しやすさ・硬さが1枚の表から読めます。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">原子と化学結合</span><span class="unit-label">金属結合と結晶の分類</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-metallic-bond" data-ref-anchor="metallic-bond">金属結合と金属の性質</a></li><li><a href="#ref-sec-four-types" data-ref-anchor="four-types">4つの結晶を並べる</a></li><li><a href="#ref-sec-melting-point" data-ref-anchor="melting-point">融点の比べ方</a></li><li><a href="#ref-sec-amorphous" data-ref-anchor="amorphous">非晶質（アモルファス）—— 結晶ではない固体</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">金属の単体は、水銀 Hg（常温で液体）を除いてすべて常温で固体です。分子をつくらないので、Fe・Cu・Na のように元素記号だけの<b>組成式</b>で表します。</p>
 <div class="ref-table-wrap"><div class="ref-cap">金属の性質と、その理由</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">性質</th><th style="text-align: left;">中身</th><th style="text-align: left;">理由</th></tr></thead><tbody><tr><td style="text-align: left;">金属光沢</td><td style="text-align: left;">銀白色などの特有のつや</td><td style="text-align: left;">自由電子が光を反射する</td></tr><tr><td style="text-align: left;">電気伝導性・熱伝導性</td><td style="text-align: left;">電気や熱をよく伝える</td><td style="text-align: left;">自由電子が動いて電気や熱を運ぶ</td></tr><tr><td style="text-align: left;">展性・延性</td><td style="text-align: left;">たたくと薄く広がる（展性）、引っ張ると細く延びる（延性）</td><td style="text-align: left;">原子の並びがずれても、自由電子が原子どうしをつなぎ続ける</td></tr></tbody></table></div>
 <p class="ref-p">3つの性質は、どれも「<b>自由電子があるから</b>」の一言で説明できます。性質を丸暗記するより、「自由電子が〜するため」と理由をつけて言えるようにしておきましょう。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.metallic-bond,theo.structure.non-molecular-formula&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>金属結合は自由電子による原子どうしの結びつきで、金属光沢・電気伝導性・熱伝導性・展性・延性はすべて自由電子で説明できる。</li><li>分子をつくらない物質（イオン結晶・共有結合の結晶・金属）は、構成する粒子の数の比を最も簡単な整数比で表した組成式で表す。金属の単体は Fe・Cu・Na のように元素記号だけで表し、共有結合の結晶の二酸化ケイ素は SiO₂ と書く。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.metallic-bond,theo.structure.non-molecular-formula&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-four-types"><h4 class="ref-sec-h">4つの結晶を並べる</h4><p class="ref-sec-lead">粒子をつなぐ力が、イオン結合ならイオン結晶、共有結合なら共有結合の結晶、分子間力なら分子結晶、金属結合なら金属結晶です。固体で電気を通すのは金属結晶（と黒鉛）だけです。</p></section>
 <p class="ref-p">粒子が規則正しく並んだ固体を<b>結晶</b>といいます。結晶は、何の粒子が何の力でつながっているかで、次の4つに分かれます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">結晶の4つの型の比較</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">イオン結晶</th><th style="text-align: left;">共有結合の結晶</th><th style="text-align: left;">分子結晶</th><th style="text-align: left;">金属結晶</th></tr></thead><tbody><tr><td style="text-align: left;">粒子</td><td style="text-align: left;">陽イオンと陰イオン</td><td style="text-align: left;">原子</td><td style="text-align: left;">分子</td><td style="text-align: left;">金属の原子（陽イオンと自由電子）</td></tr><tr><td style="text-align: left;">つなぐ力</td><td style="text-align: left;">イオン結合</td><td style="text-align: left;">共有結合</td><td style="text-align: left;">分子間力</td><td style="text-align: left;">金属結合</td></tr><tr><td style="text-align: left;">融点</td><td style="text-align: left;">高い</td><td style="text-align: left;"><b>非常に高い</b></td><td style="text-align: left;"><b>低い</b>（昇華しやすいものも）</td><td style="text-align: left;">低いものから高いものまで</td></tr><tr><td style="text-align: left;">固体の電気伝導性</td><td style="text-align: left;">通さない</td><td style="text-align: left;">通さない（黒鉛は通す）</td><td style="text-align: left;">通さない</td><td style="text-align: left;"><b>通す</b></td></tr><tr><td style="text-align: left;">液体（融解）の電気伝導性</td><td style="text-align: left;"><b>通す</b></td><td style="text-align: left;">——</td><td style="text-align: left;">通さない</td><td style="text-align: left;">通す</td></tr><tr><td style="text-align: left;">硬さなど</td><td style="text-align: left;">硬いがもろい（割れやすい）</td><td style="text-align: left;">非常に硬い（黒鉛は軟らかい）</td><td style="text-align: left;">軟らかい</td><td style="text-align: left;">展性・延性がある</td></tr><tr><td style="text-align: left;">例</td><td style="text-align: left;">NaCl・CaO・NH₄Cl</td><td style="text-align: left;">ダイヤモンド・黒鉛・Si・SiO₂</td><td style="text-align: left;">ドライアイス・I₂・ナフタレン・氷</td><td style="text-align: left;">Fe・Cu・Al・Na</td></tr></tbody></table></div>
@@ -964,7 +982,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の物質の結晶の型（イオン結晶・共有結合の結晶・分子結晶・金属結晶）を答えよ。(1) KCl　(2) SiO₂　(3) I₂　(4) Cu　(5) NH₄Cl　(6) CO₂（ドライアイス）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>イオン結晶</b>（金属元素 K と非金属元素 Cl）　(2) <b>共有結合の結晶</b>（非金属だけで、共有結合の結晶の5つの1つ）　(3) <b>分子結晶</b>　(4) <b>金属結晶</b>　(5) <b>イオン結晶</b>（NH₄⁺ と Cl⁻。アンモニウム塩は例外）　(6) <b>分子結晶</b>（SiO₂ と違って CO₂ は分子）</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(ア)〜(エ)のうち、固体では電気を通さないが、融解すると電気を通すものをすべて選べ。(ア) 塩化ナトリウム　(イ) 黒鉛　(ウ) ナフタレン　(エ) 酸化カルシウム</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(ア)・(エ)</b>。どちらもイオン結晶で、固体ではイオンが動けないが、融解するとイオンが動けるようになる。(イ) 黒鉛は固体でも電気を通す。(ウ) ナフタレンは分子結晶で、融解しても電気を通さない。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.crystal-particle-force,theo.structure.crystal-classify,theo.structure.crystal-conductivity,theo.structure.crystal-hardness&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>結晶は、何の粒子が何の力でつながっているかで4つの型に分かれる。イオン結晶は陽イオンと陰イオンがイオン結合で、共有結合の結晶は原子が共有結合で、分子結晶は分子が分子間力で、金属結晶は金属の原子が自由電子による金属結合でつながっている。</li><li>結晶の型は、金属元素だけなら金属結晶、金属と非金属ならイオン結晶、非金属だけなら共有結合の結晶の5つ（ダイヤモンド・黒鉛・Si・SiO₂・SiC）かどうかで決め、アンモニウム塩はイオン結晶とする。</li><li>固体で電気を通すのは金属結晶と黒鉛だけで、イオン結晶は融解すると電気を通し、分子結晶と黒鉛以外の共有結合の結晶は通さない。</li><li>結晶の硬さや変形のしかたは型で決まる。イオン結晶は硬いがもろく割れやすく、共有結合の結晶は非常に硬く（黒鉛は軟らかい）、分子結晶は軟らかく、金属結晶は展性・延性がある。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.crystal-particle-force,theo.structure.crystal-classify,theo.structure.crystal-conductivity,theo.structure.crystal-hardness&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-melting-point"><h4 class="ref-sec-h">融点の比べ方</h4><p class="ref-sec-lead">融点は、粒子をつなぐ力の強さの順に、共有結合の結晶 ＞ イオン結晶 ＞ 分子結晶 となります。金属結晶は物質によって大きく違います。</p></section>
 <p class="ref-p">固体が融けるには、粒子が並びをくずして動けるだけのエネルギーが要ります。だから、<b>粒子をつなぐ力が強い結晶ほど融点が高く</b>なります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">結晶の型と融点のおよその値（℃）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">型</th><th style="text-align: left;">物質と融点</th></tr></thead><tbody><tr><td style="text-align: left;">共有結合の結晶</td><td style="text-align: left;">SiO₂ 約1700、Si 約1410、ダイヤモンド 3500 以上</td></tr><tr><td style="text-align: left;">イオン結晶</td><td style="text-align: left;">NaCl 801、KCl 770、CaO 約2600</td></tr><tr><td style="text-align: left;">分子結晶</td><td style="text-align: left;">氷 0、ナフタレン 81、I₂ 114、ドライアイス（1.0×10⁵Pa では −79 で昇華）</td></tr><tr><td style="text-align: left;">金属結晶</td><td style="text-align: left;">Hg −39、Na 98、Al 660、Fe 1538、W 約3400</td></tr></tbody></table></div>
@@ -972,7 +990,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">同じイオン結晶どうしでは、<b>イオンの電荷が大きいほど、またイオンが小さく中心どうしの距離が近いほど</b>、イオンどうしの引力が強くなり、融点が高くなります。NaCl（1価どうし）より CaO（2価どうし）の方がずっと高いのはこのためです。</p>
 <h5 class="ref-h5">例題 —— 融点の比べ方</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の3つの物質を融点の高い順に並べ、理由を答えよ。ヨウ素 I₂、二酸化ケイ素 SiO₂、塩化ナトリウム NaCl</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>SiO₂ ＞ NaCl ＞ I₂</b>。SiO₂ はすべての原子が共有結合でつながった共有結合の結晶、NaCl はイオン結合でできたイオン結晶、I₂ は弱い分子間力でつながった分子結晶で、つなぐ力が強いほど融点が高い。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.crystal-mp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>結晶の融点は、粒子をつなぐ力の強さの順に共有結合の結晶 ＞ イオン結晶 ＞ 分子結晶 となり、金属結晶は物質によって大きく違う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.crystal-mp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-amorphous"><h4 class="ref-sec-h">非晶質（アモルファス）—— 結晶ではない固体</h4><p class="ref-sec-lead">ガラスのように、粒子の並び方に規則性の無い固体を非晶質（アモルファス）といいます。結晶は決まった融点をもちますが、非晶質は温めると少しずつ軟らかくなり、決まった融点を示しません。</p></section>
 <p class="ref-p">非晶質は、化学の範囲です。</p>
 <p class="ref-p">固体には、粒子が規則正しく並んだ<b>結晶</b>と、粒子の並び方に規則性の無い<b>非晶質（アモルファス）</b>があります。代表はガラスです。粒子の種類が同じでも、並び方が違えば結晶にも非晶質にもなります。例えば二酸化ケイ素 SiO₂ は、規則正しく並んだものが水晶（石英の結晶）、並びの乱れたものが<b>石英ガラス</b>です。</p>
@@ -988,7 +1006,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/unit-cell/">結晶の中で粒子がどう並んでいるか（単位格子）は、結晶格子のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">例題 —— 非晶質（アモルファス）</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) 次の固体のうち、非晶質であるものをすべて選べ。(ア) 水晶　(イ) 石英ガラス　(ウ) 塩化ナトリウム　(エ) アモルファスシリコン　(オ) 氷　(2) 石英ガラスを加熱したとき、水晶と比べてどのように融けるか。理由とともに答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>(イ)・(エ)</b>。(ア)・(ウ)・(オ) は粒子が規則正しく並んだ結晶。(2) 水晶は決まった融点で一斉に融けるが、石英ガラスは<b>決まった融点を示さず、温度が上がるにつれて少しずつ軟らかくなる</b>。石英ガラスは粒子の並び方に規則性が無く、粒子どうしの引き合いの強さが場所ごとに違うので、引き合いの弱いところから順に動けるようになるため。どちらも同じ SiO₂ で、違うのは並び方だけ。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.amorphous,theo.structure.amorphous-reason&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>粒子の並び方に規則性の無い固体を非晶質（アモルファス）といい、決まった融点を示さず、温めると少しずつ軟らかくなる。例はガラス（石英ガラスなど）・アモルファスシリコン。</li><li>非晶質に決まった融点が無いのは、粒子の並び方が場所ごとに違って引き合いの強さがばらばらなので、引き合いの弱いところから順に動けるようになるためである。非晶質は、融かした物質を急に冷やし、粒子が規則正しく並ぶ前に固めるとできやすい。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.amorphous,theo.structure.amorphous-reason&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 </div>
 </div>
 
@@ -1092,6 +1110,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

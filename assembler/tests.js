@@ -56243,6 +56243,22 @@
                     assert(tocHomeOf(p.id) && tocHomeOf(p.id).course === 'basic',
                         `${where} の ${i + 1} 番目: 化学基礎でないページのリンクに「化学」の札が付いている`);
                 }
+                /* ★ 節の「まとめ」（I-0146・.ref-summary）は面Aの生成器が qa の知識項目から足すもの（面Bには無い）。
+                   畳みの中に一問一答の口があると一緒に入るので、除いて照らす */
+                if (gotEl.querySelector && gotEl.querySelector('.ref-summary')) {
+                    gotEl = gotEl.cloneNode(true);
+                    gotEl.querySelectorAll('.ref-summary').forEach(e => e.remove());
+                }
+                /* ★ 畳み（化学の器など）の中のリンクにも生成器が「化学」の札を付ける ＝ 上の段落のリンクと同じく除いて照らす */
+                if (!liveLink && gotEl.querySelector && gotEl.querySelector('a.ref-link .ref-course-tag')) {
+                    gotEl = gotEl.cloneNode(true);
+                    gotEl.querySelectorAll('a.ref-link .ref-course-tag').forEach(t => {
+                        // ⚠ 札の前の空白も落とす（段落の途中のリンクだと「ページへ 活性炭」のように空白が残って食い違う）
+                        const prev = t.previousSibling;
+                        if (prev && prev.nodeType === 3) prev.textContent = prev.textContent.replace(/\s+$/, '');
+                        t.remove();
+                    });
+                }
                 assert(flat(gotEl.textContent) === flat(liveCmp.textContent),
                     `${where} の ${i + 1} 番目（${live.tagName.toLowerCase()}.${live.className}）が、いまアプリが組む中身と違う\n`
                     + `    焼いたもの: ${flat(got[i].textContent).slice(0, 90)}\n`
@@ -57472,7 +57488,7 @@
             const walk = el => {
                 flat.push(el);
                 if (el.tagName !== 'DETAILS') return;
-                const body = [...el.children].find(x => x.classList.contains('ref-adv-body') || x.classList.contains('ref-hfold-body'));
+                const body = [...el.children].find(x => x.classList.contains('ref-adv-body') || x.classList.contains('ref-hfold-body') || x.classList.contains('ref-cfold-body'));
                 if (body) [...body.children].forEach(walk);
             };
             built.els.forEach(walk);
@@ -57510,6 +57526,35 @@
         assert(/2つの節/.test(threw(() => RM.parsePage(FM + sec('a', ['org.ali.alkane-shape']) + sec('b', ['org.ali.alkane-shape']), '(REF29)'))), '★ 2つの節に同じ code が赤にならない');
     });
 
+    /* ★ REF30（I-0146・2026-09-26 ユーザー決定「札なしで先に公開」）: 面Aの節の「まとめ」と、読む人の目標の切り替え。
+       ① 節の一問一答の箱の中の先頭に「まとめ」があり、項目は節の codes の数と同じ（qa の知識項目そのもの）
+       ② 段階の札（必須・有利…）はまだ出さない ③ 切り替えは化学（科目）の範囲の器（course: adv）を持つページだけ・器は既定で開いている */
+    test('REF30: 節の一問一答の箱に「まとめ」があり、目標の切り替えは化学の範囲の器を持つページだけに出る（★否定対照: 器の無いページには出ない）', async (c) => {
+        const pages = await refPagesJson();
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const fetchDoc = async (id) => new DOMParser().parseFromString(await (await fetch('/reference/' + id + '/' + FRESH())).text(), 'text/html');
+        // ① ② 半反応式（節ごとの codes を持つページ）
+        const hr = await fetchDoc('half-reaction');
+        const boxes = [...hr.querySelectorAll('.ref-scope .embed')].filter(e => e.querySelector('button[data-embed*="scope=section"]'));
+        assert(boxes.length >= 3, `half-reaction の節の一問一答の箱が ${boxes.length} 個`);
+        boxes.forEach((box, i) => {
+            const sum = box.firstElementChild;
+            assert(sum && sum.classList.contains('ref-summary'), `half-reaction の ${i + 1} 個目の箱の先頭が「まとめ」でない`);
+            const href = box.querySelector('button[data-embed]').getAttribute('data-embed');
+            const n = decodeURIComponent((href.match(/[?&]codes=([^&]*)/) || [])[1] || '').split(',').filter(Boolean).length;
+            assert(sum.querySelectorAll('li').length === n, `half-reaction の ${i + 1} 個目のまとめが ${sum.querySelectorAll('li').length} 項目（codes は ${n}）`);
+        });
+        assert(!hr.querySelector('.mx-badge'), '段階の札がもう出ている（値は入試の判定のあと・ユーザー決定）');
+        // ③ 器を持つページ（life-metal）には切り替えがあり、器は既定で開いている
+        const lm = await fetchDoc('life-metal');
+        assert(lm.querySelectorAll('.goal-card button[data-goal]').length === 2, 'life-metal に目標の切り替え（2つのボタン）が無い');
+        const cf = [...lm.querySelectorAll('details.ref-cfold')];
+        assert(cf.length >= 1 && cf.every(d => d.open), 'life-metal の化学の範囲の器が無い／既定で閉じている');
+        // ★ 否定対照: 器の無いページ（half-reaction）には切り替えを出さない
+        assert(!hr.querySelector('.goal-card'), '化学の範囲の器が無いページに目標の切り替えが出ている');
+        assert(pages.some(p => p.id === 'life-metal'), '前提: life-metal が参考書に無い');
+    });
+
     test('REF25: 発展は閉じた <details> で出し、畳んだ中身は1ブロックも落ちない', async (c) => {
         const W = c.W;
         const book = W.referenceBook;
@@ -57535,9 +57580,9 @@
             /* ★ 畳む小見出し（.ref-hfold・`fold: true`）は、器1つが見出し1ブロック、中身は .ref-hfold-body に入る
                ＝ 発展の畳みの中にあっても外にあっても、中身の数を足せば勘定が合う */
             const hbodies = [];
-            built.els.forEach(el => { if (el.matches && el.matches('details.ref-hfold')) hbodies.push(el); if (el.querySelectorAll) el.querySelectorAll('details.ref-hfold').forEach(x => hbodies.push(x)); });
+            built.els.forEach(el => { if (el.matches && el.matches('details.ref-hfold, details.ref-cfold')) hbodies.push(el); if (el.querySelectorAll) el.querySelectorAll('details.ref-hfold, details.ref-cfold').forEach(x => hbodies.push(x)); });
             const packed = dets.reduce((n, d) => n + [...d.querySelector('.ref-adv-body').children].filter(notQa).length, 0)
-                + hbodies.reduce((n, d) => n + [...d.querySelector('.ref-hfold-body').children].filter(notQa).length, 0);
+                + hbodies.reduce((n, d) => n + [...d.querySelector('.ref-hfold-body, .ref-cfold-body').children].filter(notQa).length, 0);
             const outside = built.els.filter(notQa).length;
             assert(outside + packed === flat,
                 `${pg.id}: 畳む前 ${flat} ブロックが、畳んだあと 外 ${outside} ＋ 中 ${packed} になっている`

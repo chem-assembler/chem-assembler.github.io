@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">気体の反応では、濃度の代わりに分圧で表した圧平衡定数 Kp を使います。Kp と Kc は「両辺の分子の数の差」の分の RT で書き換えます。N₂O₄ の解離度 α を使うと Kp ＝ 4pα²／(1 − α) で、全圧 P で表すと Kp ＝ 4α²P／(1 − α²) です。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">反応速度と化学平衡</span><span class="unit-label">化学平衡と平衡定数</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-kp-kc" data-ref-anchor="kp-kc">濃度平衡定数と圧平衡定数</a></li><li><a href="#ref-sec-conversion" data-ref-anchor="conversion">Kc と Kp の書き換え —— 分子の数の差の分だけ RT</a></li><li><a href="#ref-sec-dissociation" data-ref-anchor="dissociation">解離度 —— 可逆的に分解した割合</a></li><li><a href="#ref-sec-total-pressure" data-ref-anchor="total-pressure">全圧で表す圧平衡定数 —— Kp ＝ 4α²P／(1 − α²)</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -952,7 +970,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <ol class="ref-list"><li>反応式の下に、左辺と右辺の気体の分子の数を書く。<div class="ref-li-hang">N₂ ＋ 3H₂ ⇄ 2NH₃ なら「4個　2個」</div></li><li>求めたい方の式に、分圧 ＝ [A]RT（または [A] ＝ 分圧／RT）を代入する。</li><li>RT が分母と分子に何回かかるかを数え、差の分だけ残す。<div class="ref-li-hang"><span class="ref-blank">○○</span> 個 − <span class="ref-blank">○○</span> 個 ＝ <span class="ref-blank">○○</span> 回 だけ RT が残る</div></li></ol>
 <div class="ref-table-wrap"><div class="ref-cap">Kc と Kp の書き換えの具体例</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">反応</th><th style="text-align: left;">分子の数（左辺 : 右辺）</th><th style="text-align: left;">Kp を Kc で</th><th style="text-align: left;">Kc を Kp で</th></tr></thead><tbody><tr><td style="text-align: left;">N₂ ＋ 3H₂ ⇄ 2NH₃</td><td style="text-align: left;">4個 : 2個（差 2）</td><td style="text-align: left;">Kp ＝ Kc／(RT)²</td><td style="text-align: left;">Kc ＝ (RT)²Kp</td></tr><tr><td style="text-align: left;">N₂O₄ ⇄ 2NO₂</td><td style="text-align: left;">1個 : 2個（差 1）</td><td style="text-align: left;">Kp ＝ Kc × RT</td><td style="text-align: left;">Kc ＝ Kp／RT</td></tr><tr><td style="text-align: left;">H₂ ＋ I₂ ⇄ 2HI</td><td style="text-align: left;">2個 : 2個（差 0）</td><td style="text-align: left;">Kp ＝ Kc</td><td style="text-align: left;">Kc ＝ Kp</td></tr></tbody></table></div>
 <p class="ref-p">H₂ ＋ I₂ ⇄ 2HI のように両辺の分子の数が等しい反応は、平衡が移動しても全圧が変わりません。<b>Kp が役に立つのは、全圧の変化から平衡の様子を読むとき</b>なので、分子の数が変わらない反応で Kp を考える意味はあまりありません。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.equilibrium.kp-kc&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>気体の反応は分圧で表した圧平衡定数 Kp でも表せ、pA ＝ [A]RT を代入すると、Kp は Kc に RT を（右辺の分子の数 − 左辺の分子の数）回かけた値になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.equilibrium.kp-kc&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-dissociation"><h4 class="ref-sec-h">解離度 —— 可逆的に分解した割合</h4><p class="ref-sec-lead">物質が可逆的に分解することを解離といい、解離した割合を解離度 α で表します。N₂O₄ ⇄ 2NO₂ で、解離前の N₂O₄ の分圧を p とすると、Kp ＝ 4pα²／(1 − α) です。</p></section>
 <p class="ref-p">「分解」はもとに戻らない反応も含む言葉ですが、「解離」はもとに戻れる（可逆的な）分解に使います。電離は、イオンに分かれる解離のことで、電離度も同じ記号 α で表します。</p>
 <p class="ref-p">N₂O₄ は、ルシャトリエの原理の例にも出てきた、2分子の NO₂ に解離する気体です。解離前の N₂O₄ の分圧を p〔Pa〕とし、そのうち割合 α が解離して平衡に達したとします。圧力で3行の表を書きます（温度・体積が一定なら、分圧は物質量に比例するので、mol と同じように係数の比で埋められます）。</p>
@@ -966,7 +984,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1.0 mol の N₂O₄ を体積一定の反応容器に入れたところ、全体の 75% が解離して平衡状態に達し、反応容器の圧力は 1.4 × 10⁵ Pa を示した。圧平衡定数の値を有効数字2桁で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>3行の表を mol で書くと、N₂O₄ 1.00 → −0.75 → 0.25 mol、NO₂ ＋1.50 → 1.50 mol、全体 1.00 → ＋0.75 → 1.75 mol（小数第2位で桁をそろえると比が見やすい）。温度・体積が一定なので圧力は物質量に比例し、pN₂O₄ : pNO₂ : P ＝ 0.25 : 1.50 : 1.75 ＝ 1 : 6 : 7。P ＝ 1.4 × 10⁵ Pa なので pN₂O₄ ＝ 0.2 × 10⁵ ＝ 2 × 10⁴ Pa、pNO₂ ＝ 1.2 × 10⁵ ＝ 12 × 10⁴ Pa。Kp ＝ (12 × 10⁴)²／(2 × 10⁴) ＝ 6 × 12 × 10⁴ ＝ <b>7.2 × 10⁵ Pa</b>（分子に圧力が2回・分母に1回なので単位は Pa）。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">練習１の条件での濃度平衡定数と、反応容器の体積を有効数字2桁で求めよ。ただし反応時の温度を 300 K、気体定数を R ＝ 8.3 × 10³ Pa·L/(K·mol) とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>N₂O₄ ⇄ 2NO₂ は分子の数が 1個 : 2個 なので、[A] ＝ pA／RT を Kc に代入すると Kc ＝ Kp／RT。Kc ＝ 7.2 × 10⁵／(8.3 × 10³ × 300) ＝ 24／83 ≒ <b>0.29 mol/L</b>（計算の前後で 24／80 ＝ 0.3 などと概算して確かめる）。次に、練習１より N₂O₄ : NO₂ ＝ 1 : 6（mol）なので [NO₂] ＝ 6[N₂O₄]。Kc ＝ [NO₂]²／[N₂O₄] ＝ 36[N₂O₄] ＝ 24／83 より [N₂O₄] ＝ 2／(83 × 3) mol/L。平衡時の N₂O₄ は 0.25 mol なので、比例式「2／249 mol : 1 L ＝ 1／4 mol : □ L」より □ ＝ 249／8 ≒ <b>31 L</b>。（検算: V ＝ nRT／P ＝ 1.75 × 8.3 × 10³ × 300／(1.4 × 10⁵) ≒ 31 L で一致する。）</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.equilibrium.dissociation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>N₂O₄ ⇄ 2NO₂ で解離前の分圧を p、解離度を α とすると、平衡時の分圧は p(1 − α)・2pα、全圧は p(1 ＋ α) で、Kp ＝ 4pα²／(1 − α) ＝ 4α²P／(1 − α²) になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.equilibrium.dissociation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-total-pressure"><h4 class="ref-sec-h">全圧で表す圧平衡定数 —— Kp ＝ 4α²P／(1 − α²)</h4><p class="ref-sec-lead">平衡時の全圧 P ＝ p(1 ＋ α) を使って各分圧を P で表し直すと、Kp ＝ 4α²P／(1 − α²) になります。全圧は測定できるので、全圧から解離度を求められます。</p></section>
 <p class="ref-p">解離前の分圧 p は、平衡に達したあとの容器では測れません。測れるのは容器全体の圧力（全圧）P だけです。そこで、分圧を P で表し直します。</p>
 <ol class="ref-list"><li>3行の表の「全体」の列から、平衡時の全圧は P ＝ p(1 ＋ α)。</li><li>平衡時の分圧と全圧の比を書く。<div class="ref-li-hang">pN₂O₄ : pNO₂ : P ＝ p(1 − α) : 2pα : p(1 ＋ α)</div></li><li>比の全体に P／p(1 ＋ α) をかけて、全圧の項を P にする。<div class="ref-li-hang">pN₂O₄ ＝ (1 − α)P／(1 ＋ α)、pNO₂ ＝ 2αP／(1 ＋ α)</div></li><li>Kp の式に代入して整理する。<div class="ref-li-hang">Kp ＝ 4α²P／{(1 − α)(1 ＋ α)} ＝ 4α²P／(1 − α²)</div></li></ol>
@@ -974,7 +992,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">解離度 α は小さいので、いつでも 1 − α ≒ 1 と近似してよい</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body"><b>解離度は幅広い値をとり、0.3 や 0.75 のように大きいこともよくあります。</b>近似は α ＜ 0.05（有効数字2桁のとき）が確かめられたときか、問題文で指示されたときだけにします。</span></p><p class="ref-mistake-why">弱酸の電離度の近似（α ≪ 1）に慣れていて、同じ記号の α にもそのまま当てはめやすいためです。</p></div>
 <h5 class="ref-h5">例題 —— 全圧で表す圧平衡定数</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">N₂O₄ を体積一定の反応容器に入れたところ、平衡に達したとき容器の圧力は 4.0 × 10⁵ Pa だった。圧平衡定数を Kp ＝ 2.0 × 10⁵ Pa として、N₂O₄ の解離度 α を有効数字2桁で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>解離前の N₂O₄ の分圧を p、平衡時の全圧を P として3行の表を書き、分圧を P で書き直すと Kp ＝ 4α²P／(1 − α²)。これを α² について解くと Kp(1 − α²) ＝ 4Pα²、Kp ＝ (4P ＋ Kp)α²、α² ＝ Kp／(4P ＋ Kp)。代入して α² ＝ 2.0 × 10⁵／(16 × 10⁵ ＋ 2.0 × 10⁵) ＝ 2／18 ＝ 1／9。α ＞ 0 より α ＝ 1／3 ≒ <b>0.33</b>。α が大きいので、1 − α ≒ 1 の近似は使えない。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.equilibrium.dissociation-approx&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>解離度は小さい値とは限らないので、1 − α ≒ 1 の近似は α が十分小さい（有効数字2桁なら α ＜ 0.05）と確かめられたときか、指示があるときだけ使う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.equilibrium.dissociation-approx&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1078,6 +1096,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

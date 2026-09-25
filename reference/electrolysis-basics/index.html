@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">外部の電源で e⁻ を押し付けたり奪ったりして、無理やり酸化還元反応を起こすのが電気分解です。陽極は4段、陰極は2段の優先順位で、どの物質が反応するかが決まります。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">電気化学</span><span class="unit-label">電気分解</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-mechanism" data-ref-anchor="mechanism">電気分解の仕組み</a></li><li><a href="#ref-sec-anode" data-ref-anchor="anode">陽極で反応するもの —— 4段の優先順位</a></li><li><a href="#ref-sec-cathode" data-ref-anchor="cathode">陰極で反応するもの —— 2段の優先順位</a></li><li><a href="#ref-sec-flowchart" data-ref-anchor="flowchart">フローチャートで判断する</a></li><li><a href="#ref-sec-why" data-ref-anchor="why">優先順位がこうなる理由</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -949,12 +967,12 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-cell.png?h=f80f9a21" alt="電解槽の模式図。電源の負極から出た e⁻ が陰極に流れ込み、陽極から出た e⁻ が電源の正極にもどる。陰極は e⁻ を押し付けられて酸化剤が還元され、陽極は e⁻ を奪われて還元剤が酸化される。電解液の中では陰イオンが陽極へ、陽イオンが陰極へ移動する" loading="lazy"><figcaption class="ref-figure-cap">陰極は e⁻ を<b>押し付けられ</b>、酸化剤が還元されます。陽極は e⁻ を<b>奪われ</b>、還元剤が酸化されます。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">陽極と陰極</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: center;">陽極</th><th style="text-align: center;">陰極</th></tr></thead><tbody><tr><td style="text-align: left;">つなぐ先</td><td style="text-align: center;">電源の正極</td><td style="text-align: center;">電源の負極</td></tr><tr><td style="text-align: left;">e⁻</td><td style="text-align: center;">奪われる</td><td style="text-align: center;">押し付けられる</td></tr><tr><td style="text-align: left;">反応する物質</td><td style="text-align: center;">還元剤（e⁻ を出すもの）</td><td style="text-align: center;">酸化剤（e⁻ を受け取るもの）</td></tr><tr><td style="text-align: left;">起こる反応</td><td style="text-align: center;">酸化</td><td style="text-align: center;">還元</td></tr></tbody></table></div>
 <p class="ref-p"><b>「陽極は e⁻ を奪われて還元剤が酸化される、陰極は e⁻ を押し付けられて酸化剤が還元される」を必ず覚えてください。</b>電池の正極・負極と名前が似ていますが、電池の負極（酸化が起こる）に対応するのは電気分解の陽極です。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.anode-cathode&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>電気分解では、電源の正極につないだ陽極で e⁻ を奪われて還元剤が酸化され、負極につないだ陰極で e⁻ を押し付けられて酸化剤が還元される。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.anode-cathode&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-anode"><h4 class="ref-sec-h">陽極で反応するもの —— 4段の優先順位</h4><p class="ref-sec-lead">①電極の金属 → ②ハロゲン化物イオン → ③OH⁻ → ④H₂O の順に、e⁻ を奪われやすいものから反応します。</p></section>
 <p class="ref-p">陽極では e⁻ が奪われる反応（酸化される反応）が、次の優先順位で起こります。<b>上にあるものが1つでもあれば、それが反応します。</b></p>
 <ol class="ref-list"><li>炭素 C・金 Au・白金 Pt 以外の電極の金属が、e⁻ を失って陽イオンになり電解液に溶け込む。<div class="ref-li-hang">例：Cu → Cu²⁺ ＋ 2e⁻、Ag → Ag⁺ ＋ e⁻</div></li><li>電解液中のハロゲン化物イオンが e⁻ を失い、ハロゲンの単体ができる。<div class="ref-li-hang">例：2Cl⁻ → Cl₂ ＋ 2e⁻、2I⁻ → I₂ ＋ 2e⁻</div></li><li>電解液中の水酸化物イオン OH⁻ が e⁻ を失い、酸素 O₂ が発生する（塩基性のときだけ）。<div class="ref-li-hang">例：4OH⁻ → O₂ ＋ 2H₂O ＋ 4e⁻</div></li><li>電解液中の水 H₂O が e⁻ を失い、酸素 O₂ が発生する。<div class="ref-li-hang">例：2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻</div></li></ol>
 <p class="ref-p">③の OH⁻ は、<b>塩基性の水溶液の中にしか存在しません</b>。中性・酸性の水溶液では OH⁻ はほとんど無いので、③は飛ばして④の水が反応します。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.anode-priority&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>陽極で反応するものの優先順位は ①C・Au・Pt 以外の電極の金属 ②ハロゲン化物イオン ③OH⁻（塩基性のときだけ） ④H₂O。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.anode-priority&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-cathode"><h4 class="ref-sec-h">陰極で反応するもの —— 2段の優先順位</h4><p class="ref-sec-lead">Al よりイオン化傾向が小さい金属の陽イオン（H⁺ も含む）があればそれが、無ければ H₂O が e⁻ を受け取ります。</p></section>
 <p class="ref-p">陰極では e⁻ を押し付けられる反応（還元される反応）が、次の優先順位で起こります。</p>
 <ol class="ref-list"><li>電解液中の、Al よりイオン化傾向が小さい金属の陽イオンが e⁻ を受け取り、単体の金属として析出する。H⁺ の場合は H₂ が発生する。<div class="ref-li-hang">例：Cu²⁺ ＋ 2e⁻ → Cu、Ag⁺ ＋ e⁻ → Ag、2H⁺ ＋ 2e⁻ → H₂</div></li><li>水 H₂O が e⁻ を受け取り、水素 H₂ が発生する。<div class="ref-li-hang">例：2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻</div></li></ol>
@@ -963,7 +981,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/electrolysis-industry/">水の無い状態で電気分解する溶融塩電解（アルミニウムの製造）はこちら</a></p>
 <h5 class="ref-h5 ref-h5-advanced">イオン化傾向が中くらいの金属の陽イオン<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">Zn²⁺・Ni²⁺・Fe²⁺ のようにイオン化傾向が中くらいの金属の陽イオンでは、濃度や電圧によって、金属の析出と H₂ の発生が同時に起こることがあります（金属イオンが濃いときは金属の析出が、薄いときは H₂ の発生が優勢になります）。<b>高校の問題では、優先順位のとおり金属が析出するとして解いて構いません。</b></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.cathode-priority&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>陰極では、Al よりイオン化傾向が小さい金属の陽イオン（H⁺ も含む）があればそれが、無ければ H₂O が e⁻ を受け取る。Li〜Al の陽イオンは水溶液中では還元されない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.cathode-priority&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-flowchart"><h4 class="ref-sec-h">フローチャートで判断する</h4><p class="ref-sec-lead">陽極は「電極 → ハロゲン化物イオン → 塩基性か」を順に確かめて決まり、陰極は「Al より小さい陽イオンがあるか」だけで決まります。</p></section>
 <p class="ref-p">優先順位を、上から順に「ある？」と問うていくと、次のフローチャートになります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-flowchart.png?h=618175e2" alt="電気分解のフローチャート。陽極：電極が C・Pt・Au 以外なら電極の金属が反応、そうでなく電解液にハロゲン化物イオンがあればそれが反応、そうでなく塩基性なら OH⁻ が反応、どれでもなければ水が反応。陰極：Al よりイオン化傾向が小さい元素の陽イオンがあればそれが反応、無ければ水が反応" loading="lazy"><figcaption class="ref-figure-cap">陽極も陰極も、上から順にたどります。<b>OH⁻ は塩基性のときにしか存在しない</b>ことに注意します。</figcaption></figure>
@@ -980,7 +998,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">ハロゲン化物イオンの中では、I⁻ ＞ Br⁻ ＞ Cl⁻ の順に陽極で反応しやすく、F⁻ は反応しません。ハロゲンの単体の酸化力は原子が小さいほど強く（F₂ ＞ Cl₂ ＞ Br₂ ＞ I₂）、その逆向きの反応であるハロゲン化物イオンの酸化は、原子が小さいほど起こりにくいためです。</p>
 <p class="ref-p">NO₃⁻ や SO₄²⁻ などの陰イオンは安定で、H₂O より e⁻ を奪われにくいので、水溶液では陽極で反応しません。<b>「NO₃⁻・SO₄²⁻ があるときは、陽極では水（塩基性なら OH⁻）が反応する」と覚えましょう。</b></p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">硫酸銅(Ⅱ)水溶液を白金電極で電気分解すると、陽極では SO₄²⁻ が反応する</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">SO₄²⁻ は水溶液の中では陽極で反応しません。陽極では <b>H₂O</b> が反応して O₂ が発生します。</span></p><p class="ref-mistake-why">「陰イオンは陽極へ移動する」から「陽極へ来た陰イオンが反応する」と短絡してしまうためです。★ 移動することと、e⁻ を奪われることは別で、奪われやすさは優先順位で決まります。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.priority-why&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>電極の金属は還元剤なので陽極でしか反応せず、Au・Pt・C は陽極でも反応しない。NO₃⁻・SO₄²⁻ は H₂O より e⁻ を奪われにくいので、水溶液では反応しない。陽極へ移動することと反応することは別。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.priority-why&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">陽極4段・陰極2段の優先順位と、「Al までの陽イオンは水溶液では還元されない」境界を覚えます。</p></section>
 <p class="ref-p"><b>陽極の優先順位「①C・Au・Pt 以外の電極の金属 ②ハロゲン化物イオン ③OH⁻（塩基性のとき） ④H₂O」と、陰極の優先順位「①Al よりイオン化傾向が小さい金属の陽イオン（H⁺ も含む） ②H₂O」は必ず暗記してください。</b>フローチャートの形で覚えても構いません。</p>
 <p class="ref-p">ハロゲン化物イオンの反応しやすさの順（I⁻ ＞ Br⁻ ＞ Cl⁻）は、問題で問われることはほとんどありません。<b>理由の説明として読めれば十分でしょう。</b></p>
@@ -1088,6 +1106,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

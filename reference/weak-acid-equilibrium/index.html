@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">弱酸・弱塩基は水溶液の中で電離平衡になっています。3行の表から Ka ＝ cα² を導き、[H⁺] ＝ √(cKa) で pH を出します。薄めると電離度は大きくなり、10倍に薄めると pH は 0.5 だけ7に近づきます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">電離平衡</span><span class="unit-label">電離平衡</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-ionization-equilibrium" data-ref-anchor="ionization-equilibrium">電離平衡と電離定数</a></li><li><a href="#ref-sec-derivation" data-ref-anchor="derivation">電離定数を濃度と電離度で表す —— Ka ＝ cα²</a></li><li><a href="#ref-sec-calculation" data-ref-anchor="calculation">弱酸・弱塩基の pH の計算</a></li><li><a href="#ref-sec-dilution" data-ref-anchor="dilution">薄めると電離度は大きくなる —— 10倍で pH は 0.5</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -950,7 +968,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NH₃ ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NH₄⁺ ＋ OH⁻</span></div><p class="ref-note">アンモニアの電離平衡。電離定数は Kb ＝ [NH₄⁺][OH⁻]／[NH₃]（単位 mol/L）です。水の濃度は式に入れません。</p></div>
 <p class="ref-p">Ka の a は酸（acid）、Kb の b は塩基（base）の頭文字です。<b>電離定数は平衡定数なので、温度が変わらなければ一定</b>です。濃度を変えても変わりません。</p>
 <div class="ref-callout ref-callout-note"><b class="ref-callout-tag">補足</b><p class="ref-callout-text">教科書には、CH₃COOH ＋ H₂O ⇄ CH₃COO⁻ ＋ H₃O⁺ の平衡定数 K に、ほぼ一定の水の濃度 [H₂O] を掛けたものを Ka とする説明もあります。どちらの説明で導いても、Ka の式は同じ形になります。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.ionization-constant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>弱酸・弱塩基が電離と結合をくり返してつり合った状態を電離平衡といい、その平衡定数（電離定数 Ka・Kb）は温度が一定なら濃度によらず一定である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.ionization-constant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-derivation"><h4 class="ref-sec-h">電離定数を濃度と電離度で表す —— Ka ＝ cα²</h4><p class="ref-sec-lead">酢酸の濃度を c mol/L、電離度を α として3行の表を書くと Ka ＝ cα²／(1 − α)、α が十分に小さいとき Ka ＝ cα² です。</p></section>
 <p class="ref-p">弱酸の計算は、すべて次の3行の表から始めます。電離した酢酸は cα mol/L で、同じだけ CH₃COO⁻ と H⁺ ができます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">酢酸の電離の3行表（単位 mol/L）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">段</th><th style="text-align: center;">CH₃COOH</th><th style="text-align: center;">CH₃COO⁻</th><th style="text-align: center;">H⁺</th></tr></thead><tbody><tr><td style="text-align: left;">反応前</td><td style="text-align: center;">c</td><td style="text-align: center;">0</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">変化量</td><td style="text-align: center;">−cα</td><td style="text-align: center;">＋cα</td><td style="text-align: center;">＋cα</td></tr><tr><td style="text-align: left;">反応後（平衡）</td><td style="text-align: center;">c(1 − α)</td><td style="text-align: center;">cα</td><td style="text-align: center;">cα</td></tr></tbody></table></div>
@@ -963,7 +981,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">近似 1 − α ≒ 1 が使える範囲</h5>
 <p class="ref-p">1 − α ≒ 1 の近似は、<b>α がおよそ 0.05 より小さければ使えます</b>。弱酸・弱塩基の電離度はふつう 0.01 程度なので、問題文に断りがなくても、弱酸・弱塩基であればこの近似を使って構いません。</p>
 <p class="ref-p">不安なときは、求めた [H⁺] と酸の濃度 c を比べます。0.05 ＝ 10⁻¹·³ なので、<b>c と [H⁺] が 10 の指数で2桁以上違えば、近似は確実に使えます</b>。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.ka-c-alpha&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>濃度 c・電離度 α の弱酸では Ka ＝ cα²／(1 − α)、α ≪ 1 なら Ka ＝ cα² で、[H⁺] ＝ √(cKa)、α ＝ √(Ka／c) となる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.ka-c-alpha&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-calculation"><h4 class="ref-sec-h">弱酸・弱塩基の pH の計算</h4><p class="ref-sec-lead">[H⁺] ＝ √(cKa)（塩基は [OH⁻] ＝ √(cKb)）に代入し、「整数」と 10ⁿ を分けて 10 の何乗かに直します。</p></section>
 <p class="ref-p">計算の手順は毎回同じです。</p>
 <ol class="ref-list"><li>電離の式を書き、[H⁺] ＝ cα ＝ √(cKa)（塩基なら [OH⁻] ＝ √(cKb)）に c と Ka を代入する。</li><li>根号の中を「整数」と 10ⁿ に分ける。10ⁿ の n は偶数にそろえておく。<div class="ref-li-hang">0.10 × 2.0 × 10⁻⁵ ＝ 2 × 10⁻⁶</div></li><li>log₁₀2 ＝ 0.30 から 2 ＝ 10⁰·³⁰ のように、整数を 10 の何乗かに直す。</li><li>[H⁺] ＝ 10⁻ᵖᴴ の形にして pH を読む。塩基は pOH を出してから pH ＝ 14 − pOH。</li></ol>
@@ -977,7 +995,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">酢酸は水溶液中で CH₃COOH ⇄ CH₃COO⁻ ＋ H⁺ の電離平衡の状態にある。酢酸の電離定数 Ka は各物質の濃度を用いて（ア）と表せ、酢酸の濃度を c mol/L、電離度を α とすると（イ）と表せる。α は1より十分小さいので Ka は（ウ）と近似できる。このとき [H⁺] は Ka と c を用いて（エ）と表せ、pH は（オ）と表せる。（ア）〜（オ）に適当な式を入れよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>3行表の反応後の行 c(1 − α)・cα・cα を代入する。（ア）<b>Ka ＝ [CH₃COO⁻][H⁺]／[CH₃COOH]</b>（イ）<b>Ka ＝ cα²／(1 − α)</b>（ウ）<b>Ka ＝ cα²</b>（エ）<b>[H⁺] ＝ √(cKa)</b>（オ）<b>pH ＝ −log₁₀√(cKa)</b></p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0.030 mol/L の酢酸の pH を小数第2位まで求めよ。ただし電離定数を 2.0 × 10⁻⁵ mol/L、log₁₀2 ＝ 0.30、log₁₀3 ＝ 0.48 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>[H⁺] ＝ √(cKa) ＝ √(0.030 × 2.0 × 10⁻⁵) ＝ √(6 × 10⁻⁷)。「整数」と 10ⁿ を分けて √2 × √3 × 10⁻³·⁵ ＝ 10⁰·¹⁵ × 10⁰·²⁴ × 10⁻³·⁵⁰ ＝ 10⁻³·¹¹ mol/L。よって <b>pH ＝ 3.11</b></p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0.025 mol/L のアンモニア水の pH を小数第2位まで求めよ。ただし電離定数を 2.0 × 10⁻⁵ mol/L、log₁₀2 ＝ 0.30 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>[OH⁻] ＝ √(cKb) ＝ √(0.025 × 2.0 × 10⁻⁵) ＝ √(5 × 10⁻⁷) ＝ √(50 × 10⁻⁸)。2 × 5 ＝ 10 から 5 ＝ 10⁰·⁷⁰ なので、√50 ＝ √(5 × 10) ＝ 10⁰·⁸⁵、[OH⁻] ＝ 10⁰·⁸⁵ × 10⁻⁴ ＝ 10⁻³·¹⁵ mol/L。pOH ＝ 3.15、<b>pH ＝ 14 − 3.15 ＝ 10.85</b></p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.weak-ph&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>弱酸の pH は [H⁺] ＝ √(cKa)、弱塩基は [OH⁻] ＝ √(cKb) に代入し、根号の中を整数と 10ⁿ に分けて 10 の何乗かに直して求める。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.weak-ph&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-dilution"><h4 class="ref-sec-h">薄めると電離度は大きくなる —— 10倍で pH は 0.5</h4><p class="ref-sec-lead">α ＝ √(Ka／c) なので、電離度は √c に反比例します。弱酸・弱塩基を 10 倍に薄めると [H⁺] は √10 分の1（約 1/3）になり、pH は 0.5 だけ7に近づきます。</p></section>
 <p class="ref-p">化学基礎では、弱酸の電離度を「約 0.01」という決まった数として扱いました。実際には <b>α ＝ √(Ka／c)</b> なので、温度が一定（Ka が一定）なら、<b>電離度は濃度 c の平方根に反比例</b>します。薄いほど電離しやすくなります。</p>
 <p class="ref-p">濃度が大きいと分子とイオンが密集していて、電離した H⁺ がすぐに別の CH₃COO⁻ とくっついてしまいます。薄いとイオンどうしが出会いにくく、電離したままでいやすいためです。</p>
@@ -986,7 +1004,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/weak-acid-dilution-particles.png?h=1d9698c0" alt="同じ大きさのビーカーを2つ並べ、左には酢酸の粒をぎっしり、右にはまばらに描いた模式図。どちらにも電離した H+ と CH3COO- が1組ずつあり、左では隣り合い、右では離れている" loading="lazy"><figcaption class="ref-figure-cap">粒の数の比は向きを見せるためのもので、α の値を読む図ではありません。薄めるほど<b>電離したままでいられる</b>、とつかめれば十分です。</figcaption></figure>
 <p class="ref-p">「0.5 だけ7に近づく」は結論を暗記しなくても構いませんが、α ＝ √(Ka／c) から、薄めたときの pH を計算で出せるようにしておきましょう。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/ph/">強酸・強塩基を薄めたときの pH（10ⁿ 倍で n 動く・7 は越えない）は、pH のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.weak-dilution&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>弱酸の電離度は α ＝ √(Ka／c) で濃度の平方根に反比例するので、10倍に薄めると [H⁺] は 1／√10 倍になり pH は 0.5 だけ7に近づく（強酸なら 1）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.weak-dilution&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1090,6 +1108,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

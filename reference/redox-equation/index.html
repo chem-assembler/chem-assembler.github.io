@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">酸化剤と還元剤の半反応式を整数倍して e⁻ をそろえて足し、省略されているイオンを両辺に戻して化学反応式にします。酸化剤・還元剤の価数と「価数の逆の比」、硝酸のように H⁺ も自分で出す酸まで。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸化と還元</span><span class="unit-label">酸化剤と還元剤</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-valence" data-ref-anchor="valence">酸化剤・還元剤の価数と、反応の量的関係</a></li><li><a href="#ref-sec-assemble" data-ref-anchor="assemble">反応式の組み立て方</a></li><li><a href="#ref-sec-sulfuric" data-ref-anchor="sulfuric">具体例 —— H⁺ を硫酸から持ってくる反応</a></li><li><a href="#ref-sec-nitric" data-ref-anchor="nitric">具体例 —— 硝酸は H⁺ も自分で出す</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -956,7 +974,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">価数は丸暗記するものではありません。<b>半反応式が書ければ、e⁻ の係数から読めます</b>。</p>
 <p class="ref-p">この関係は、酸塩基の中和で「酸と塩基は価数の逆の比で反応する」のと同じ形です。酸化還元滴定の計算もこの式で解きます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/redox-titration/">価数と物質量から濃度を求める計算は「酸化還元滴定」で</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.valence,theo.redox.inverse-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>1個の酸化剤が受け取る e⁻ の数が酸化剤の価数、1個の還元剤が放出する e⁻ の数が還元剤の価数。半反応式の e⁻ の係数から読む。</li><li>酸化剤と還元剤は、受け取る e⁻ と放出する e⁻ の数が等しくなるように、価数の逆の比で反応する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.valence,theo.redox.inverse-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-assemble"><h4 class="ref-sec-h">反応式の組み立て方</h4><p class="ref-sec-lead">半反応式を整数倍して e⁻ をそろえて足し、省略されているイオンを両辺に加えます。</p></section>
 <p class="ref-p">硫酸酸性の過マンガン酸カリウム KMnO₄ 水溶液と過酸化水素 H₂O₂ 水の反応を、次の3段で組み立てます。</p>
 <ol class="ref-list"><li>酸化剤・還元剤の半反応式を書き、それぞれを整数倍して e⁻ の係数をそろえてから足し合わせる。<div class="ref-li-hang">KMnO₄ の式を2倍、H₂O₂ の式を5倍すると e⁻ がどちらも10個になり、足すと e⁻ が消える</div></li><li>反応式の左辺のイオンと、反応させた物質を比べて、省略されているイオンを両辺に加える。<div class="ref-li-hang">MnO₄⁻ はもともと K⁺ と、H⁺ はもともと SO₄²⁻ とくっついていたので、両辺に 2K⁺ と 3SO₄²⁻ を加える</div></li><li>左辺はイオンを組み合わせて反応させた物質を復元し、右辺は陽イオンと陰イオンを組み合わせて塩をつくる。</li></ol>
@@ -967,7 +985,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">左辺の物質は用意したもの、右辺はあるものを組み合わせてよい</h5>
 <p class="ref-p"><b>左辺の物質は、実際に用意したもの</b>でなければなりません。一方、<b>右辺のイオンは、あるものを自由に組み合わせて</b>塩にしてかまいません。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">左辺にある 2K⁺ と SO₄²⁻ で K₂SO₄ をつくって、左辺に K₂SO₄ を書く</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">左辺には、<b>用意した KMnO₄ と H₂SO₄ と H₂O₂</b> を書きます。K₂SO₄ は右辺にだけ出てきます。</span></p><p class="ref-mistake-why">用意していない物質は反応させることができないためです。K⁺ は KMnO₄ から、SO₄²⁻ は H₂SO₄ から来ているので、左辺ではそれぞれ元の物質に戻します。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.assemble&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>酸化還元反応の化学反応式は、半反応式を整数倍して e⁻ をそろえて足し、省略されているイオンを両辺に加え、左辺は用意した物質に、右辺は塩に組んでつくる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.assemble&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-sulfuric"><h4 class="ref-sec-h">具体例 —— H⁺ を硫酸から持ってくる反応</h4><p class="ref-sec-lead">KMnO₄ や K₂Cr₂O₇ の反応では、H⁺ を供給するために硫酸を加えます（硫酸酸性）。</p></section>
 <p class="ref-p">過マンガン酸カリウムと鉄(Ⅱ)イオンなら、5価の酸化剤と1価の還元剤なので、Fe²⁺ の式を5倍すると e⁻ がそろいます。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/redox-equation-app-kmno4-fe.png?h=1d452ee1" alt="Fe²⁺ → Fe³⁺ ＋ e⁻ に ×5、MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O に ×1 を掛けて、e⁻ がどちらも5個にそろった状態。各式の Fe・Mn の下に酸化数（＋2 → ＋3、＋7 → ＋2）が添えてある" loading="lazy"><figcaption class="ref-figure-cap">過マンガン酸イオン（5価）と鉄(Ⅱ)イオン（1価）。<b>価数の逆の比 1：5</b> で e⁻ がそろいます。</figcaption></figure>
@@ -997,7 +1015,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/redox.html?rxn=rn2&amp;from=reference&amp;page=redox-equation">銅 × 濃硝酸</a></p>
 <h5 class="ref-h5">例題 —— 硝酸が H⁺ も出す反応</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">銅が希硝酸に溶解した。<b>この反応を化学反応式で書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>3Cu ＋ 8HNO₃ → 3Cu(NO₃)₂ ＋ 2NO ＋ 4H₂O</b> です。希硝酸の半反応式を2倍、Cu の半反応式を3倍して足すと 3Cu ＋ 2HNO₃ ＋ 6H⁺ → 3Cu²⁺ ＋ 2NO ＋ 4H₂O。H⁺ は HNO₃ から来ているので両辺に 6NO₃⁻ を加え、左辺の HNO₃ を 8HNO₃ にまとめます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.copper-acids&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>銅と希硝酸の反応では HNO₃ が酸化剤と H⁺ の供給役の2役をし、3Cu ＋ 8HNO₃ → 3Cu(NO₃)₂ ＋ 2NO ＋ 4H₂O になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.copper-acids&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1101,6 +1119,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

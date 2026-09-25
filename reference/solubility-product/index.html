@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">沈殿しやすい塩の飽和溶液では、イオンの濃度の積が溶解度積 Ksp という一定の値になります。Ksp と比べて沈殿するかを判定し、飽和溶液の濃度、共通イオン効果、モール法、硫化物の分離（K₁K₂ と Ksp）まで扱います。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">電離平衡</span><span class="unit-label">溶解度積</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-ksp" data-ref-anchor="ksp">溶解度積 Ksp</a></li><li><a href="#ref-sec-judge" data-ref-anchor="judge">沈殿するかの判定 —— 積と Ksp を比べる</a></li><li><a href="#ref-sec-saturated" data-ref-anchor="saturated">飽和溶液の濃度を求める</a></li><li><a href="#ref-sec-mohr" data-ref-anchor="mohr">モール法 —— 沈殿の順番で Cl⁻ を定量する</a></li><li><a href="#ref-sec-common-ion" data-ref-anchor="common-ion">共通イオン効果</a></li><li><a href="#ref-sec-sulfide" data-ref-anchor="sulfide">硫化物の分離 —— [S²⁻] は pH で決まる</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">Ksp の単位は式の形で変わります。AgCl は mol²/L²、Ag₂CrO₄（Ksp ＝ [Ag⁺]²[CrO₄²⁻]）は mol³/L³ です。<b>単位は毎回、式から書くようにしましょう</b>。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/solubility-product-saturated.png?h=de793a8b" alt="沈殿の量だけが違う2つのビーカーを並べた模式図。どちらも底に AgCl の固体があり、溶液中の Ag+ と Cl- はどちらも3個ずつ描かれている" loading="lazy"><figcaption class="ref-figure-cap">沈殿の量を変えても、溶けているイオンの数は変わりません。だから<b>固体の濃度は式に入れない</b>のです。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/equilibrium-constant/">平衡定数の式に固体を入れない理由は、平衡定数のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.ksp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>沈殿しやすい塩の飽和溶液の溶解平衡の平衡定数を溶解度積 Ksp といい、固体は式に入れないので AgCl なら Ksp ＝ [Ag⁺][Cl⁻] で、沈殿の量によらず一定である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.ksp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-judge"><h4 class="ref-sec-h">沈殿するかの判定 —— 積と Ksp を比べる</h4><p class="ref-sec-lead">すべて溶けたと仮定したときのイオンの濃度の積を Ksp と比べます。Ksp より大きければ沈殿し、等しければ飽和、小さければ沈殿しません。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">イオンの濃度の積と Ksp の比べ方（AgCl の例）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">積と Ksp</th><th style="text-align: left;">判定</th><th style="text-align: left;">そのあと</th></tr></thead><tbody><tr><td style="text-align: left;">[Ag⁺][Cl⁻] ＞ Ksp</td><td style="text-align: left;"><b>沈殿する</b></td><td style="text-align: left;">積が Ksp に等しくなるまで沈殿する</td></tr><tr><td style="text-align: left;">[Ag⁺][Cl⁻] ＝ Ksp</td><td style="text-align: left;">飽和溶液</td><td style="text-align: left;">ちょうど溶けきった状態</td></tr><tr><td style="text-align: left;">[Ag⁺][Cl⁻] ＜ Ksp</td><td style="text-align: left;"><b>沈殿しない</b></td><td style="text-align: left;">まだ溶かせる</td></tr></tbody></table></div>
 <p class="ref-p">判定の手順は次のとおりです。</p>
@@ -960,14 +978,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 沈殿するかの判定</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">4.0 × 10⁻⁵ mol/L の CaCl₂ 水溶液 10 mL に、6.0 × 10⁻⁶ mol/L の AgNO₃ 水溶液 10 mL を加えたとき、AgCl の沈殿は生じるか。ただし AgCl の Ksp ＝ 1.8 × 10⁻¹⁰ mol²/L² とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>体積が 20 mL になるので、濃度はどちらも 1/2 倍。[CaCl₂] ＝ 2.0 × 10⁻⁵ mol/L で、CaCl₂ → Ca²⁺ ＋ 2Cl⁻ より [Cl⁻] ＝ 4.0 × 10⁻⁵ mol/L。[Ag⁺] ＝ 3.0 × 10⁻⁶ mol/L。積は 3.0 × 10⁻⁶ × 4.0 × 10⁻⁵ ＝ 1.2 × 10⁻¹⁰ ＜ 1.8 × 10⁻¹⁰（Ksp）なので、<b>AgCl は沈殿しない</b>。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.precipitation-judge&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>すべて溶けたと仮定したイオンの濃度の積を Ksp と比べ、Ksp より大きければ沈殿し、等しければ飽和、小さければ沈殿しない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.precipitation-judge&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-saturated"><h4 class="ref-sec-h">飽和溶液の濃度を求める</h4><p class="ref-sec-lead">溶けた塩を x mol/L とおき、電離の式の係数からイオンの濃度を x で表して Ksp の式に代入します。</p></section>
 <p class="ref-p">AgCl が x mol 溶けると、水 1.0 L 中に Ag⁺ と Cl⁻ が x mol ずつできます。x² ＝ 1.8 × 10⁻¹⁰ なので、x ＝ √1.8 × 10⁻⁵ ≒ <b>1.3 × 10⁻⁵ mol/L</b> です。</p>
 <p class="ref-p">Ag₂CrO₄ が x mol 溶けると、Ag⁺ は 2x、CrO₄²⁻ は x です。Ksp ＝ (2x)² × x ＝ 4x³ ＝ 2.0 × 10⁻¹² なので、x³ ＝ 0.5 × 10⁻¹²、x ≒ <b>7.9 × 10⁻⁵ mol/L</b> です。</p>
 <div class="ref-callout ref-callout-memorize"><b class="ref-callout-tag">丸暗記でよい</b><p class="ref-callout-text">答えの桁は、係数を無視して概算しておくと間違えません。AgCl は Ksp ≒ 10⁻¹⁰ の平方根で約 10⁻⁵ mol/L、Ag₂CrO₄ は 10⁻¹² の3乗根で約 10⁻⁴ mol/L です。</p></div>
 <h5 class="ref-h5">沈殿しやすさは Ksp の大小だけでは決まらない</h5>
 <p class="ref-p">Ksp は AgCl（1.8 × 10⁻¹⁰）より Ag₂CrO₄（2.0 × 10⁻¹²）のほうが小さいですが、飽和溶液の [Ag⁺] は AgCl が 1.3 × 10⁻⁵ mol/L、Ag₂CrO₄ が 2 × 7.9 × 10⁻⁵ ≒ 1.6 × 10⁻⁴ mol/L です。<b>AgCl のほうが少ない Ag⁺ で沈殿する ＝ 沈殿しやすい</b>のです。式の形（単位）が違う Ksp どうしは、数の大小をそのまま比べられないためです。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.ksp-saturated&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>飽和溶液の濃度は、溶けた塩を x とおいて電離の係数からイオンの濃度を表し Ksp に代入して求め、式の形（単位）が違う Ksp どうしは大小をそのまま比べられない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.ksp-saturated&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-mohr"><h4 class="ref-sec-h">モール法 —— 沈殿の順番で Cl⁻ を定量する</h4><p class="ref-sec-lead">Cl⁻ を含む水溶液に指示薬として CrO₄²⁻ を加え、Ag⁺ を少しずつ加えると、まず AgCl の白色沈殿ができ、Cl⁻ がほぼ沈殿しきってから Ag₂CrO₄ の暗赤色沈殿ができます。暗赤色が出たところが終点です。</p></section>
 <p class="ref-p">[CrO₄²⁻] ＝ [Cl⁻] ＝ 5.0 × 10⁻³ mol/L の水溶液で確かめます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">モール法の始点と終点（Ksp は AgCl 1.8 × 10⁻¹⁰ mol²/L²・Ag₂CrO₄ 2.0 × 10⁻¹² mol³/L³）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">時点</th><th style="text-align: left;">何が起こるか</th><th style="text-align: left;">[Ag⁺]</th><th style="text-align: left;">[Cl⁻]</th></tr></thead><tbody><tr><td style="text-align: left;">始点</td><td style="text-align: left;">AgCl の白色沈殿ができ始める</td><td style="text-align: left;">1.8 × 10⁻¹⁰／5.0 × 10⁻³ ＝ 3.6 × 10⁻⁸ mol/L</td><td style="text-align: left;">5.0 × 10⁻³ mol/L</td></tr><tr><td style="text-align: left;">終点</td><td style="text-align: left;">Ag₂CrO₄ の暗赤色沈殿ができ始める</td><td style="text-align: left;">√(2.0 × 10⁻¹²／5.0 × 10⁻³) ＝ 2.0 × 10⁻⁵ mol/L</td><td style="text-align: left;">1.8 × 10⁻¹⁰／2.0 × 10⁻⁵ ＝ 9.0 × 10⁻⁶ mol/L（≒ 0）</td></tr></tbody></table></div>
@@ -975,7 +993,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">具体例として、Cl⁻ の濃度がわからない水溶液 10 mL に、Ag⁺ を 1.2 mmol 加えたところで暗赤色の沈殿ができたとします。Cl⁻ も 1.2 mmol なので、Cl⁻ 1.2 mmol：10 mL ＝ Cl⁻ 0.12 mol：1 L、<b>[Cl⁻] ＝ 0.12 mol/L</b> です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/solubility-product-mohr-blocks.png?h=9c66b2f9" alt="Ag⁺ と Cl⁻ の量を2本の横線で表した図。上の Ag⁺ の線は、加えた Ag⁺ の総量 1.2 mmol のうち、AgCl として沈殿した Ag⁺ が 1.2 mmol、水溶液中に残っている Ag⁺ が 2.0 × 10⁻⁴ mmol でほぼ0。下の Cl⁻ の線は、水溶液中に存在していた Cl⁻ の総量 1.2 mmol のうち、AgCl として沈殿した Cl⁻ が 1.2 mmol、残っている Cl⁻ はほぼゼロ。沈殿した Ag⁺ と Cl⁻ を「等mol」の弧で結んでいる" loading="lazy"><figcaption class="ref-figure-cap">沈殿した Ag⁺ と Cl⁻ は同じ mol です。残りはどちらもほぼ0なので、加えた Ag⁺ の量がそのままもとの Cl⁻ の量になります。</figcaption></figure>
 <p class="ref-p"><b>モール法は、名前と「AgCl の白 → Ag₂CrO₄ の暗赤色で終点」の順番を覚えておきましょう。</b>始点・終点の [Ag⁺] の計算は、問題で誘導されるので覚える必要はありません。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.mohr&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>モール法では CrO₄²⁻ を指示薬に Ag⁺ を加えていき、AgCl の白色沈殿のあと Ag₂CrO₄ の暗赤色沈殿が出たところを終点とし、加えた Ag⁺ の物質量 ＝ もとの Cl⁻ の物質量とみなす。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.mohr&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-common-ion"><h4 class="ref-sec-h">共通イオン効果</h4><p class="ref-sec-lead">AgCl は純水よりも、Cl⁻ を含む塩酸に溶けにくくなります。同じイオンを含む電解質を加えると溶解平衡が左に移動するためで、これを共通イオン効果といいます。</p></section>
 <p class="ref-p">HCl → H⁺ ＋ Cl⁻ で [Cl⁻] が大きくなると、ルシャトリエの原理により AgCl ⇄ Ag⁺ ＋ Cl⁻ の平衡が左に移動します。Ksp ＝ [Ag⁺][Cl⁻] の式で見ても、[Cl⁻] が大きいぶん [Ag⁺] は小さくしかなれません。どちらで説明しても構いません。</p>
 <p class="ref-p">具体例として、Ksp ＝ 1.8 × 10⁻¹⁰ mol²/L² の AgCl は、純水には 1.3 × 10⁻⁵ mol/L 溶けますが、0.010 mol/L の塩酸には [Ag⁺] ＝ 1.8 × 10⁻¹⁰／1.0 × 10⁻² ＝ 1.8 × 10⁻⁸ mol/L しか溶けません。<b>3桁小さくなります</b>。</p>
@@ -987,7 +1005,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/solubility/">固体の溶解度（水 100 g あたり）は、溶解度のページへ</a></p>
 <h5 class="ref-h5">例題 —— 共通イオン効果</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">AgCl の Ksp ＝ 1.8 × 10⁻¹⁰ mol²/L²、√1.8 ＝ 1.34 として、有効数字2桁で答えよ。(a) 純水に AgCl は何 mol/L まで溶けるか。(b) 0.010 mol/L の塩酸に AgCl は何 mol/L まで溶けるか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(a) [Ag⁺] ＝ [Cl⁻] なので [Ag⁺]² ＝ 1.8 × 10⁻¹⁰、[Ag⁺] ＝ 1.34 × 10⁻⁵ ≒ <b>1.3 × 10⁻⁵ mol/L</b>。(b) 塩酸から Cl⁻ が 1.0 × 10⁻² mol/L 生じ、AgCl から生じる Cl⁻ はこれに比べて十分小さいので [Cl⁻] ＝ 1.0 × 10⁻² mol/L とみなせる。[Ag⁺] ＝ 1.8 × 10⁻¹⁰／1.0 × 10⁻² ＝ <b>1.8 × 10⁻⁸ mol/L</b>。Cl⁻ の 10⁻² と 10⁻⁸ は6桁違うので、近似は妥当（共通イオン効果）。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.common-ion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>溶解平衡にある塩に同じイオンを含む電解質を加えると、平衡が左に移動して塩が溶けにくくなる（共通イオン効果）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.common-ion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-sulfide"><h4 class="ref-sec-h">硫化物の分離 —— [S²⁻] は pH で決まる</h4><p class="ref-sec-lead">H₂S の2段階の電離をまとめた K₁K₂ ＝ [H⁺]²[S²⁻]／[H₂S] を使うと、pH から [S²⁻] が出ます。その [S²⁻] で硫化物ごとに積と Ksp を比べれば、どれが沈殿するかがわかります。</p></section>
 <p class="ref-p">硫化水素は2価の弱酸で、2段階をまとめると次のようになります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂S</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H⁺ ＋ S²⁻</span></div><p class="ref-note">K ＝ K₁K₂ ＝ [H⁺]²[S²⁻]／[H₂S] ＝ 1.0 × 10⁻²¹ mol²/L²（K₁ ＝ 1.0 × 10⁻⁷ mol/L、K₂ ＝ 1.0 × 10⁻¹⁴ mol/L）</p></div>
@@ -1001,7 +1019,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 硫化物の分離</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">[Cu²⁺] ＝ [Zn²⁺] ＝ 1.0 × 10⁻² mol/L の水溶液に硫化水素を通じ、常に [H₂S] ＝ 0.10 mol/L に保った。K₁K₂ ＝ 1.0 × 10⁻²¹ mol²/L²、CuS の Ksp ＝ 6.0 × 10⁻³⁰ mol²/L²、ZnS の Ksp ＝ 2.0 × 10⁻¹⁸ mol²/L² とする。(1) pH ＝ 7.0 に保ったときに生じる沈殿の化学式をすべて答えよ。(2) pH ＝ 1.0 に保ったときに生じる沈殿の化学式をすべて答えよ。(3) (2) で沈殿が生じたあとの [Cu²⁺]・[Zn²⁺] を有効数字2桁で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) [S²⁻] ＝ K₁K₂ × [H₂S]／[H⁺]² ＝ 1.0 × 10⁻²¹ × 0.10／(10⁻⁷)² ＝ 10⁻⁸ mol/L。積はどちらも 10⁻² × 10⁻⁸ ＝ 10⁻¹⁰ で、両方の Ksp を超えるので <b>CuS・ZnS</b>。(2) [S²⁻] ＝ 1.0 × 10⁻²¹ × 0.10／(10⁻¹)² ＝ 10⁻²⁰ mol/L。積は 10⁻²²。CuS の Ksp（6.0 × 10⁻³⁰）は超えるが ZnS の Ksp（2.0 × 10⁻¹⁸）は超えないので <b>CuS</b> だけ。(3) CuS は飽和しているので [Cu²⁺] ＝ 6.0 × 10⁻³⁰／10⁻²⁰ ＝ <b>6.0 × 10⁻¹⁰ mol/L</b>。ZnS は沈殿していないので <b>[Zn²⁺] ＝ 1.0 × 10⁻² mol/L</b> のまま。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">[Cu²⁺] ＝ [Zn²⁺] ＝ 1.0 × 10⁻³ mol/L の水溶液に硫化水素を通じて [H₂S] ＝ 0.10 mol/L に保った。K₁K₂・Ksp は前の問題と同じ値、log₁₀2 ＝ 0.30 とする。(1) CuS と ZnS のうち一方だけを沈殿させる pH の最大値を求めよ。(2) Zn²⁺ のうち 90 % が沈殿しているときの pH を求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 沈殿し始める [S²⁻] は CuS が 6.0 × 10⁻³⁰／10⁻³ ＝ 6.0 × 10⁻²⁷、ZnS が 2.0 × 10⁻¹⁸／10⁻³ ＝ 2.0 × 10⁻¹⁵ mol/L。CuS だけを沈殿させるには [S²⁻] ≦ 2.0 × 10⁻¹⁵。K₁K₂ を [H⁺]² について解いてから代入すると、[H⁺]² ＝ 1.0 × 10⁻²¹ × 0.10／(2.0 × 10⁻¹⁵) ＝ 2⁻¹ × 10⁻⁷、[H⁺] ＝ 10⁻⁰·¹⁵⁻³·⁵⁰ ＝ 10⁻³·⁶⁵ mol/L。<b>pH ＝ 3.65</b>。(2) [Zn²⁺] ＝ 10⁻⁴ mol/L（10 % が残る）で飽和しているので [S²⁻] ＝ 2.0 × 10⁻¹⁸／10⁻⁴ ＝ 2 × 10⁻¹⁴ mol/L。[H⁺]² ＝ 1.0 × 10⁻²¹ × 0.10／(2 × 10⁻¹⁴) ＝ 2⁻¹ × 10⁻⁸、[H⁺] ＝ 10⁻⁰·¹⁵⁻⁴·⁰⁰ ＝ 10⁻⁴·¹⁵ mol/L。<b>pH ＝ 4.15</b></p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.sulfide&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>硫化水素の [S²⁻] は K₁K₂ ＝ [H⁺]²[S²⁻]／[H₂S] により pH で決まり、酸性では [S²⁻] が小さいので Ksp のとても小さい CuS などだけが沈殿し、中性・塩基性では ZnS なども沈殿する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.ionic-eq.sulfide&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1105,6 +1123,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

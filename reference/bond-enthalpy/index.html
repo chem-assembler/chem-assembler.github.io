@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">結合エンタルピーは、気体の分子で結合 1mol をばらばらの原子に引き離すのに要るエネルギーです。原子の状態をいちばん上に置いたエネルギー図を描くと、反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）で求められます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">化学反応とエネルギー</span><span class="unit-label">ヘスの法則と結合エンタルピー</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（3節）</summary><ul><li><a href="#ref-sec-define" data-ref-anchor="define">結合エンタルピーとは</a></li><li><a href="#ref-sec-diagram" data-ref-anchor="diagram">原子をいちばん上に置く図</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -952,7 +970,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/bond-enthalpy-methane.png?h=35925f05" alt="メタンの構造式。中心の炭素 C から上下左右に線が1本ずつ出て、その先に水素 H が1個ずつ、合計4個つながっている" loading="lazy"><figcaption class="ref-figure-cap">メタン CH₄。C に H が4個つながっているので、<b>C−H 結合は4本</b>あります。結合の数は、構造を描いて数えるのが確実です。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">おもな結合エンタルピー（kJ/mol）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">結合</th><th style="text-align: right;">結合エンタルピー</th><th style="text-align: left;">（どの分子の値か）</th></tr></thead><tbody><tr><td style="text-align: left;">H−H</td><td style="text-align: right;">436</td><td style="text-align: left;">H₂</td></tr><tr><td style="text-align: left;">Cl−Cl</td><td style="text-align: right;">243</td><td style="text-align: left;">Cl₂</td></tr><tr><td style="text-align: left;">H−Cl</td><td style="text-align: right;">432</td><td style="text-align: left;">HCl</td></tr><tr><td style="text-align: left;">O＝O</td><td style="text-align: right;">498</td><td style="text-align: left;">O₂</td></tr><tr><td style="text-align: left;">O−H</td><td style="text-align: right;">463</td><td style="text-align: left;">H₂O</td></tr><tr><td style="text-align: left;">C−H</td><td style="text-align: right;">416</td><td style="text-align: left;">CH₄</td></tr><tr><td style="text-align: left;">C＝O</td><td style="text-align: right;">804</td><td style="text-align: left;">CO₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>結合エンタルピーの値は問題文で与えられるので、覚える必要はありません。</b>ただし、二重結合は同じ原子どうしの単結合より大きい（切りにくい）ことは知っておきましょう。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.bond-enthalpy&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>結合エンタルピーは、共有結合の強さを比べるための量。気体の分子の中のある結合を 1 mol ぶん切り離すのに要るエネルギーで表す。切るときは ΔH が正、結合ができるときは負になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.bond-enthalpy&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-diagram"><h4 class="ref-sec-h">原子をいちばん上に置く図</h4><p class="ref-sec-lead">反応物を基準 0 に置き、結合をすべて切った原子の状態をその上に、生成物を下に置きます。反応エンタルピーは、原子の状態を経由した高さの差で求められます。</p></section>
 <p class="ref-p">結合エンタルピーを使うときは、エネルギー図に<b>「結合をすべて切った原子の状態」</b>という準位を1つ足します。どの反応物も生成物も、結合を切れば同じ原子の組になるので、この準位を経由すればヘスの法則が使えます。</p>
 <p class="ref-p">次の順で進めます。</p>
@@ -970,7 +988,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 原子をいちばん上に置く図</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">H−H、O＝O、O−H の結合エンタルピーをそれぞれ 436kJ/mol、498kJ/mol、463kJ/mol とする。<b>H₂(気) ＋ ½O₂(気) → H₂O(気) の反応エンタルピーは何 kJ か。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>−241kJ</b>。切れるのは H−H 1本と O＝O ½本で、436 ＋ 498×½ ＝ 685。できるのは O−H 2本で、2×463 ＝ 926。反応物を 0 とすると原子の状態は ＋685、生成物は 685 − 926 ＝ −241。ΔH ＝ −241kJ。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">H₂(気) ＋ ½O₂(気) → H₂O(気)　ΔH ＝ −242 kJ である。H−H、O＝O の結合エンタルピーをそれぞれ 436kJ/mol、498kJ/mol とするとき、<b>O−H の結合エンタルピーは何 kJ/mol か。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>464kJ/mol</b>。反応物を 0 とすると、原子の状態は 436 ＋ 249 ＝ ＋685、生成物 H₂O(気) は −242。原子の状態から生成物までは 685 −（−242）＝ 927 下りるので、O−H 2本の和が 927kJ。1本あたり 927 ÷ 2 ≒ 464kJ/mol。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.bond-calc,theo.thermo.bond-gas-only&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）で、生成エンタルピーの式とは引く向きが逆になる。</li><li>結合エンタルピーで計算できるのは反応物も生成物もすべて気体のときで、液体の水ができる反応は水蒸気として計算してから凝縮の分を足す。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.bond-calc,theo.thermo.bond-gas-only&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">「切るときは ＋、できるときは −」と、原子をいちばん上に置く図を覚えます。結合エンタルピーの値は与えられます。</p></section>
 <p class="ref-p"><b>「結合を切るときは ＋、できるときは −」と「原子の状態をいちばん上に置く図」は必ず覚えてください。</b>図が描ければ、（反応物の和）−（生成物の和）の式も、その逆問題も同じ手順で解けます。</p>
 <p class="ref-p">結合の数え間違いがいちばん多い失点です。<b>係数の分だけ分子があり、1分子の中にも同じ結合が何本もある</b>（CH₄ の C−H は4本、CO₂ の C＝O は2本）ことに気をつけましょう。</p>
@@ -1078,6 +1096,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">どの陰イオンが、どの陽イオンと沈殿をつくるかを、陰イオンごとに並べました。色と「酸に溶けるか」も一緒に覚えます。硫化物だけは、液性で沈むかどうかが変わります。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">金属イオンを見分ける</span><span class="unit-label">金属イオンの沈殿と炎色反応</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-rule" data-ref-anchor="rule">まず「沈殿しないもの」を覚える</a></li><li><a href="#ref-sec-by-anion" data-ref-anchor="by-anion">陰イオンごとの沈殿</a></li><li><a href="#ref-sec-hydroxide" data-ref-anchor="hydroxide">水酸化物イオン OH⁻ による沈殿</a></li><li><a href="#ref-sec-sulfide" data-ref-anchor="sulfide">硫化物イオン S²⁻ による沈殿 —— 液性で変わる</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -951,7 +969,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s4&amp;from=reference&amp;page=precipitate">硝酸銀と塩化ナトリウム（沈殿）</a></p>
 <p class="ref-p">アルカリ金属のイオンはどの試薬とも沈殿をつくらないので、<b>炎色反応</b>で見分けます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/flame-color/">炎色反応とイオンの色のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.qual.soluble-salts&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>Na⁺・K⁺ などアルカリ金属のイオンと NH₄⁺ の塩、および硝酸塩はすべて水に溶けるので、沈殿をつくる試薬の側として使われる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.qual.soluble-salts&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-by-anion"><h4 class="ref-sec-h">陰イオンごとの沈殿</h4><p class="ref-sec-lead">Cl⁻・SO₄²⁻・CO₃²⁻・CrO₄²⁻ の4つは、沈む相手が少ないので名前で覚えます。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">陰イオンごとの沈殿と色</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">加える陰イオン</th><th style="text-align: left;">沈殿する陽イオン</th><th style="text-align: left;">沈殿と色</th><th style="text-align: left;">強酸を加えると</th></tr></thead><tbody><tr><td style="text-align: left;">塩化物イオン Cl⁻</td><td style="text-align: left;">Ag⁺・Pb²⁺</td><td style="text-align: left;">AgCl（白）・PbCl₂（白）</td><td style="text-align: left;">溶けない</td></tr><tr><td style="text-align: left;">硫酸イオン SO₄²⁻</td><td style="text-align: left;">Ca²⁺・Ba²⁺・Pb²⁺</td><td style="text-align: left;">CaSO₄（白）・BaSO₄（白）・PbSO₄（白）</td><td style="text-align: left;">溶けない</td></tr><tr><td style="text-align: left;">炭酸イオン CO₃²⁻</td><td style="text-align: left;">Ca²⁺・Ba²⁺ など</td><td style="text-align: left;">CaCO₃（白）・BaCO₃（白）</td><td style="text-align: left;">CO₂ を出して溶ける</td></tr><tr><td style="text-align: left;">クロム酸イオン CrO₄²⁻</td><td style="text-align: left;">Ag⁺・Pb²⁺・Ba²⁺</td><td style="text-align: left;">Ag₂CrO₄（暗赤・赤褐とも）・PbCrO₄（黄）・BaCrO₄（黄）</td><td style="text-align: left;">——</td></tr></tbody></table></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/precipitate-app-list.png?h=5bf4d147" alt="暗い地の画面に、陽イオンと陰イオンの組み合わせと、できる沈殿が1行ずつ並んだ一覧。AgCl は白、Ag₂O は褐色、Cu(OH)₂ は青白色、CuCO₃ は青緑色の文字で書かれ、BaSO₄・BaCO₃・CaSO₄・CaCO₃ は白い文字" loading="lazy"><figcaption class="ref-figure-cap">沈殿の一覧の画面。<b>沈殿の化学式の文字の色が、沈殿の色</b>です（イオンの文字の色は見分けるための色で、水溶液の色ではありません）。</figcaption></figure>
@@ -969,7 +987,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/halogen/">ハロゲンを並べて比べるページへ</a></p>
 <h5 class="ref-h5">例題 —— 陰イオンごとの沈殿</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の操作で沈殿が生じるものはどれか。生じる場合は沈殿の化学式と色を答えよ。<b>(1) 塩化バリウム水溶液に希硫酸を加えた　(2) 硝酸銀水溶液に塩酸を加えた　(3) 硝酸カルシウム水溶液に希硝酸を加えた　(4) 硝酸鉛(II) 水溶液に塩酸を加えた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) BaSO₄（白）　(2) AgCl（白）　(3) 沈殿しない（硝酸塩はすべて水に溶ける）　(4) PbCl₂（白）</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.qual.chloride-sulfate-ppt,inorg.qual.sulfate-vs-carbonate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>Cl⁻ で沈殿するのは Ag⁺ と Pb²⁺（AgCl・PbCl₂ ともに白色）、SO₄²⁻ で沈殿するのは Ca²⁺・Ba²⁺・Pb²⁺（どれも白色）。PbCl₂ は熱水に溶ける。</li><li>硫酸塩（BaSO₄・CaSO₄）と炭酸塩（BaCO₃・CaCO₃）はどちらも白色沈殿だが、強酸を加えると炭酸塩だけが CO₂ を出して溶ける。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.qual.chloride-sulfate-ppt,inorg.qual.sulfate-vs-carbonate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-hydroxide"><h4 class="ref-sec-h">水酸化物イオン OH⁻ による沈殿</h4><p class="ref-sec-lead">多くの金属イオンが水酸化物の沈殿をつくります。色と、過剰の試薬に溶けるかどうかがポイントです。</p></section>
 <p class="ref-p">NaOH 水溶液やアンモニア水を少量加えると、アルカリ金属・2族（Ca²⁺・Ba²⁺）以外の多くの金属イオンが水酸化物の沈殿をつくります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">水酸化物の沈殿と色</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">イオン</th><th style="text-align: left;">沈殿と色</th><th style="text-align: center;">過剰の NaOH で</th><th style="text-align: center;">過剰の NH₃ 水で</th></tr></thead><tbody><tr><td style="text-align: left;">Al³⁺</td><td style="text-align: left;">Al(OH)₃（白）</td><td style="text-align: center;">溶ける</td><td style="text-align: center;">溶けない</td></tr><tr><td style="text-align: left;">Zn²⁺</td><td style="text-align: left;">Zn(OH)₂（白）</td><td style="text-align: center;">溶ける</td><td style="text-align: center;">溶ける</td></tr><tr><td style="text-align: left;">Pb²⁺</td><td style="text-align: left;">Pb(OH)₂（白）</td><td style="text-align: center;">溶ける</td><td style="text-align: center;">溶けない</td></tr><tr><td style="text-align: left;">Cu²⁺</td><td style="text-align: left;">Cu(OH)₂（青白）</td><td style="text-align: center;">溶けない</td><td style="text-align: center;">溶ける（深青色）</td></tr><tr><td style="text-align: left;">Ag⁺</td><td style="text-align: left;">Ag₂O（褐）</td><td style="text-align: center;">溶けない</td><td style="text-align: center;">溶ける</td></tr><tr><td style="text-align: left;">Fe²⁺</td><td style="text-align: left;">Fe(OH)₂（緑白）</td><td style="text-align: center;">溶けない</td><td style="text-align: center;">溶けない</td></tr><tr><td style="text-align: left;">Fe³⁺</td><td style="text-align: left;">FeO(OH)（赤褐）</td><td style="text-align: center;">溶けない</td><td style="text-align: center;">溶けない</td></tr></tbody></table></div>
@@ -980,7 +998,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">「過剰の NaOH に溶ける」のは<b>両性</b>の水酸化物（Al・Zn・Pb）、「過剰の NH₃ 水に溶ける」のは<b>アンモニアと錯イオンをつくる</b>もの（Zn・Cu・Ag）です。<b>Zn だけがどちらにも溶けます。</b>溶ける仕組みは、それぞれのページが持っています。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/amphoteric-metal/">過剰の NaOH に溶ける両性の水酸化物のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/complex-ion/">過剰のアンモニア水に溶けて錯イオンになるページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.qual.hydroxide-colors&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>少量の塩基で生じる沈殿の色は、Cu(OH)₂ 青白色・Ag₂O 褐色・Fe(OH)₂ 緑白色・FeO(OH) 赤褐色で、Al(OH)₃・Zn(OH)₂・Pb(OH)₂ は白色。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.qual.hydroxide-colors&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-sulfide"><h4 class="ref-sec-h">硫化物イオン S²⁻ による沈殿 —— 液性で変わる</h4><p class="ref-sec-lead">硫化水素を通したとき、酸性でも沈むのはイオン化傾向の小さい金属だけ。Zn・Fe などは中性・塩基性でしか沈みません。</p></section>
 <p class="ref-p">硫化水素 H₂S を通すと、多くの金属イオンが硫化物の沈殿をつくります。ただし、<b>液性によって沈むものが変わります。</b></p>
 <p class="ref-p">H₂S は弱酸で、H₂S ⇄ 2H⁺ ＋ S²⁻ のように電離します。酸性にして H⁺ を増やすと電離が左へ押し戻され、S²⁻ がごくわずかになります。そのため、<b>酸性では、とても溶けにくい硫化物だけが沈みます。</b></p>
@@ -995,7 +1013,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 硫化物イオン S²⁻ による沈殿</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化をイオン反応式で書け。<b>(1) 硝酸銀水溶液に塩化ナトリウム水溶液を加えると白色沈殿が生じた　(2) 硫酸銅(II) 水溶液に硫化水素を通じると黒色沈殿が生じた　(3) 硝酸銀水溶液に硫化ナトリウム水溶液を加えると黒色沈殿が生じた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) Ag⁺ ＋ Cl⁻ → AgCl　(2) Cu²⁺ ＋ S²⁻ → CuS　(3) 2Ag⁺ ＋ S²⁻ → Ag₂S</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">Cu²⁺ と Zn²⁺ を含む水溶液を酸性にして硫化水素を通じた。沈殿するのはどちらか。また、もう一方を沈殿させるにはどうすればよいか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>沈殿するのは Cu²⁺（CuS・黒）です。Zn²⁺ は、ろ液をアンモニア水などで中性〜塩基性にしてから硫化水素を通すと、ZnS（白）として沈殿します。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.qual.sulfide-ph,inorg.qual.sulfide-colors&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>H₂S を通したとき、酸性でも沈殿するのはイオン化傾向の小さい金属（Cu²⁺・Pb²⁺・Ag⁺ など）の硫化物だけで、Zn²⁺・Fe²⁺ は中性・塩基性でだけ沈殿する。</li><li>硫化物の沈殿は黒色が基本（CuS・PbS・Ag₂S・FeS）で、ZnS は白色、CdS は黄色。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.qual.sulfide-ph,inorg.qual.sulfide-colors&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">陰イオンごとの沈む相手と色、硫化物の液性の線引き、が中心です。</p></section>
 <p class="ref-p"><b>次の4つは必ず覚えてください。</b></p>
 <ul class="ref-list"><li>Cl⁻ → Ag⁺・Pb²⁺（白）。PbCl₂ は熱水に溶ける</li><li>SO₄²⁻ → Ca²⁺・Ba²⁺・Pb²⁺（白・強酸に溶けない）。CO₃²⁻ → Ca²⁺・Ba²⁺（白・強酸に溶ける）</li><li>水酸化物の色（Cu(OH)₂ 青白・Ag₂O 褐・Fe(OH)₂ 緑白・FeO(OH) 赤褐・ほかは白）</li><li>硫化物は黒が基本（ZnS 白・CdS 黄）。酸性でも沈むのは Cu・Pb・Ag など、ZnS・FeS は中性・塩基性でだけ</li></ul>
@@ -1103,6 +1121,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

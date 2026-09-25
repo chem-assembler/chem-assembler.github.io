@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">単位格子の問題は、中の原子を数える・原子が接している方向で半径と辺の長さを結ぶ・原子の体積や質量を詰めて充塡率と密度を出す、の3段です。体心立方・面心立方・六方最密と、NaCl 型・CsCl 型を扱います。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">固体の構造</span><span class="unit-label">結晶の構造・非晶質</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（3節）</summary><ul><li><a href="#ref-sec-count" data-ref-anchor="count">数える —— 単位格子の中の原子の数</a></li><li><a href="#ref-sec-measure" data-ref-anchor="measure">測る —— 半径と1辺の長さを結ぶ</a></li><li><a href="#ref-sec-pack" data-ref-anchor="pack">詰める —— 充塡率と密度</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -953,7 +971,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">1つの原子から見て、いちばん近くにある原子の数を<b>配位数</b>といいます。体心立方格子では、中心の原子は8つの頂点の原子と接しているので配位数は 8 です。面心立方格子と六方最密構造は、どちらも配位数 12 です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">金属の3つの結晶格子</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">体心立方格子</th><th style="text-align: left;">面心立方格子</th><th style="text-align: left;">六方最密構造</th></tr></thead><tbody><tr><td style="text-align: left;">単位格子中の原子の数</td><td style="text-align: left;">2</td><td style="text-align: left;">4</td><td style="text-align: left;">2（六角柱で見ると 6）</td></tr><tr><td style="text-align: left;">配位数</td><td style="text-align: left;">8</td><td style="text-align: left;">12</td><td style="text-align: left;">12</td></tr><tr><td style="text-align: left;">接している方向</td><td style="text-align: left;">立方体の対角線</td><td style="text-align: left;">面の対角線</td><td style="text-align: left;">——</td></tr><tr><td style="text-align: left;">半径と1辺の関係</td><td style="text-align: left;">√3 a ＝ 4r</td><td style="text-align: left;">√2 a ＝ 4r</td><td style="text-align: left;">——</td></tr><tr><td style="text-align: left;">充塡率</td><td style="text-align: left;">68％</td><td style="text-align: left;">74％</td><td style="text-align: left;">74％</td></tr><tr><td style="text-align: left;">例</td><td style="text-align: left;">Na・K・Fe</td><td style="text-align: left;">Al・Cu・Ag・Au</td><td style="text-align: left;">Mg・Zn</td></tr></tbody></table></div>
 <p class="ref-p"><b>この表の数値（原子の数・配位数・充塡率）は覚えてください。</b> 単位格子の問題は、この表の数値を使う所から始まります。例の金属は、「アルカリ金属と鉄は体心立方」「Al・Cu・Ag・Au は面心立方」くらいを覚えておけば十分です。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.unit-cell-count,theo.structure.coordination-packing&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>単位格子の頂点の原子は ⅛ 個、辺の中央は ¼ 個、面の中心は ½ 個、内部は1個と数え、体心立方格子は2個、面心立方格子は4個である。</li><li>配位数は体心立方格子8・面心立方格子12・六方最密構造12、充塡率は体心立方格子68％・面心立方格子と六方最密構造74％である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.unit-cell-count,theo.structure.coordination-packing&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-measure"><h4 class="ref-sec-h">測る —— 半径と1辺の長さを結ぶ</h4><p class="ref-sec-lead">原子どうしが接している直線を見つけ、その長さを「半径 r の何個分」と「1辺 a の何倍」の2通りで書いて等しいとおきます。</p></section>
 <p class="ref-p">原子を球とみなすと、結晶の中では隣り合う原子が<b>接して</b>います。どの方向で接しているかを見つけるのが、この段のすべてです。</p>
 <p class="ref-p">体心立方格子では、中心の原子は頂点の原子と接しているので、<b>立方体の対角線</b>の上に「頂点の原子の半径 ＋ 中心の原子の直径 ＋ 頂点の原子の半径」＝ 4r が並びます。立方体の対角線の長さは √3 a なので、√3 a ＝ 4r です。</p>
@@ -968,7 +986,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 半径と1辺の長さ</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。有効数字は2桁とします。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ナトリウムの結晶は体心立方格子で、単位格子の1辺は 0.43 nm である。(1) 単位格子中の原子の数と配位数を答えよ。(2) ナトリウム原子の半径は何 nm か。√3 ＝ 1.73 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 原子の数は 1／8 × 8 ＋ 1 ＝ <b>2 個</b>、配位数は <b>8</b>。(2) 立方体の対角線で原子が接しているので √3 a ＝ 4r。r ＝ √3 × 0.43 ÷ 4 ＝ 1.73 × 0.43 ÷ 4 ≒ <b>0.19 nm</b>。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.radius-edge,theo.structure.ionic-lattice&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>原子どうしが接する直線で半径 r と1辺 a を結び、体心立方格子は立方体の対角線で √3 a ＝ 4r、面心立方格子は面の対角線で √2 a ＝ 4r となる。</li><li>NaCl 型は陽イオン・陰イオン各4個・配位数6で a ＝ 2（r₊ ＋ r₋）、CsCl 型は各1個・配位数8で √3 a ＝ 2（r₊ ＋ r₋）となり、接しているのは陽イオンと陰イオンである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.radius-edge,theo.structure.ionic-lattice&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-pack"><h4 class="ref-sec-h">詰める —— 充塡率と密度</h4><p class="ref-sec-lead">充塡率は「原子の体積の合計 ÷ 単位格子の体積」、密度は「原子の質量の合計 ÷ 単位格子の体積」です。どちらも単位格子1個で考えます。</p></section>
 <p class="ref-p">単位格子の体積のうち、原子（球）が占める体積の割合を<b>充塡率</b>といいます。</p>
 <p class="ref-p">体心立方格子なら、原子 2 個の体積 2 × (4／3)πr³ を、単位格子の体積 a³ で割ります。r ＝ √3 a／4 を代入すると a が消えて、充塡率 ＝ √3π／8 ≒ 0.68 ＝ <b>68％</b> になります。面心立方格子では、原子 4 個と r ＝ √2 a／4 から √2π／6 ≒ 0.74 ＝ <b>74％</b> です。</p>
@@ -982,7 +1000,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 充塡率と密度</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">銅の結晶は面心立方格子で、単位格子の1辺は 3.6 × 10⁻⁸ cm である。銅の密度は何 g/cm³ か。Cu ＝ 63.5、アボガドロ定数は 6.0 × 10²³ /mol とし、3.6³ ＝ 46.7 を使ってよい。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>9.1 g/cm³</b>。面心立方格子の単位格子には原子が 4 個。単位格子1個の質量は 4 × 63.5 ÷ (6.0 × 10²³) ≒ 4.23 × 10⁻²² g。体積は (3.6 × 10⁻⁸)³ ＝ 46.7 × 10⁻²⁴ ＝ 4.67 × 10⁻²³ cm³。密度は 4.23 × 10⁻²² ÷ (4.67 × 10⁻²³) ≒ 9.1 g/cm³。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">塩化ナトリウムの結晶（NaCl 型）の単位格子の1辺は 0.56 nm である。(1) 単位格子中の Na⁺ と Cl⁻ の数、Na⁺ の配位数を答えよ。(2) 密度は何 g/cm³ か。NaCl ＝ 58.5、アボガドロ定数は 6.0 × 10²³ /mol、5.6³ ＝ 176 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) Na⁺ <b>4 個</b>・Cl⁻ <b>4 個</b>、配位数 <b>6</b>。(2) <b>2.2 g/cm³</b>。単位格子には NaCl が 4 組分入るので、質量は 4 × 58.5 ÷ (6.0 × 10²³) ＝ 3.9 × 10⁻²² g。1辺は 0.56 nm ＝ 5.6 × 10⁻⁸ cm で、体積は 176 × 10⁻²⁴ ＝ 1.76 × 10⁻²² cm³。密度は 3.9 × 10⁻²² ÷ (1.76 × 10⁻²²) ≒ 2.2 g/cm³。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.crystal-density&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>結晶の密度は、単位格子1個の質量（原子の数 × モル質量 M ÷ アボガドロ定数 Nᴀ）を単位格子の体積 a³ で割って求める。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.crystal-density&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1086,6 +1104,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

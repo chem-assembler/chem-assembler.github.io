@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">物質の変化は、エンタルピーが下がる向き（発熱）と、乱雑さ（エントロピー）が大きくなる向きの2つに進もうとします。吸熱反応でも、エントロピーの増大が勝てば自然に進みます。固体 → 液体 → 気体の順にエントロピーは大きくなり、温度が高いほどエントロピーの影響が大きくなります。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">化学反応とエネルギー</span><span class="unit-label">エントロピー</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-endothermic" data-ref-anchor="endothermic">吸熱なのに自然に進む変化</a></li><li><a href="#ref-sec-entropy" data-ref-anchor="entropy">エントロピー —— 乱雑さの大きさ</a></li><li><a href="#ref-sec-two-tendencies" data-ref-anchor="two-tendencies">自然に進む向きを決める2つの傾向</a></li><li><a href="#ref-sec-gibbs" data-ref-anchor="gibbs">ギブズエネルギー —— 2つの傾向を1つの式にまとめる</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -966,7 +984,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/dissolution/">イオンのまわりに水分子が集まる「水和」はこちら</a></p>
 <h5 class="ref-h5">例題 —— エントロピー</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(ア)〜(カ)の変化のうち、<b>エントロピーが増える（ΔS ＞ 0）もの</b>をすべて選べ。(ア) ドライアイスが昇華する　(イ) 水蒸気が冷えて水滴になる　(ウ) 砂糖が水に溶ける　(エ) N₂(気) ＋ 3H₂(気) → 2NH₃(気)　(オ) 2H₂O₂(液) → 2H₂O(液) ＋ O₂(気)　(カ) 食塩水と硝酸銀水溶液を混ぜ、白い AgCl が沈殿する</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(ア)・(ウ)・(オ)</b>。(ア) 固体 → 気体で散らばる。(ウ) 固体の砂糖の分子が水の中に散らばる。(オ) 気体の O₂ ができる（気体が 0 → 1 個）。(イ) は凝縮で気体 → 液体、(エ) は気体が 4 個 → 2 個に減る、(カ) は水中に散らばっていたイオンが集まって固体の沈殿になるので、どれも ΔS ＜ 0 です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.entropy-def,theo.thermo.entropy-sign&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>エントロピーは、物質をつくる粒子の散らばり具合（乱雑さ）の大きさを表す量で、物質は乱雑さが大きくなる向きに変化しようとする。</li><li>融解・蒸発・昇華・固体の溶解・拡散・気体の分子の数が増える反応ではエントロピーが増え（ΔS ＞ 0）、凝固・凝縮・気体の溶解・沈殿の生成・気体の分子の数が減る反応では減る（ΔS ＜ 0）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.entropy-def,theo.thermo.entropy-sign&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-two-tendencies"><h4 class="ref-sec-h">自然に進む向きを決める2つの傾向</h4><p class="ref-sec-lead">変化は「エンタルピーが下がる（発熱）」と「エントロピーが増える」の2つの傾向で進みます。2つがそろえば必ず進み、2つとも逆なら進まず、引っぱり合うときは影響の大きいほうが勝ちます。</p></section>
 <p class="ref-p">変化を進める傾向は、次の2つです。</p>
 <ol class="ref-list"><li><b>エンタルピーが下がる向き</b>（ΔH ＜ 0、発熱）</li><li><b>エントロピーが増える向き</b>（ΔS ＞ 0、乱雑さが増す）</li></ol>
@@ -986,8 +1004,8 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/activation-energy/">反応の速さを決める活性化エネルギーと触媒はこちら</a></p>
 <h5 class="ref-h5">例題 —— 自然に進む向きを決める2つの傾向</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(1)〜(3)の変化は、「どの温度でも自然に進む」「どの温度でも自然には進まない」「温度によって決まる」のどれか。温度によって決まるものは、高温と低温のどちらで進みやすいかも答えよ。<b>(1) 2H₂O₂(液) → 2H₂O(液) ＋ O₂(気)　ΔH ＝ −196 kJ　(2) 3O₂(気) → 2O₃(気)　ΔH ＝ ＋285 kJ　(3) CaCO₃(固) → CaO(固) ＋ CO₂(気)　ΔH ＝ ＋178 kJ</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>どの温度でも自然に進む</b>。発熱で、気体の O₂ ができてエントロピーも増えるので、2つの傾向がそろっています。　(2) <b>どの温度でも自然には進まない</b>。吸熱で、気体が 3 個 → 2 個に減るのでエントロピーも減り、2つの傾向がどちらも逆向きです。　(3) <b>温度によって決まる・高温で進みやすい</b>。吸熱ですが、気体の CO₂ ができてエントロピーが増えます。温度が高いほどエントロピーの影響が大きくなるので、強く熱すると進みます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.two-tendencies,theo.thermo.entropy-temperature,theo.thermo.spontaneous-vs-rate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-gibbs"><summary class="ref-adv-sum"><h4 class="ref-sec-h">ギブズエネルギー —— 2つの傾向を1つの式にまとめる<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">エンタルピーとエントロピーの2つの傾向は、ギブズエネルギー変化 ΔG ＝ ΔH − TΔS の1つの式にまとめられます。ΔG が負なら自然に進み、正なら自然には進みません。</p></summary><div class="ref-adv-body"><p class="ref-p">2つの傾向を1つの量にまとめたものを、<b>ギブズエネルギー変化</b>（記号 ΔG）といいます。式は <b>ΔG ＝ ΔH − TΔS</b> で、T は絶対温度です。</p><p class="ref-p"><b>ΔG が負なら、その変化は自然に進みます。正なら自然には進みません。0 なら2つの傾向がつり合っています。</b></p><p class="ref-p">ΔS に T がかかっているのが、「温度が高いほどエントロピーの影響が大きい」の正体です。T が大きいほど、−TΔS の項が ΔG を大きく動かします。</p><p class="ref-p">⚠ <b>単位をそろえます。</b>ΔH はふつう kJ、ΔS は J/K で与えられます。ΔS を 1000 で割って kJ/K に直してから T をかけます。</p><p class="ref-p">具体例5で、氷の融解がつり合う温度を求めます。H₂O 1mol あたり ΔH ＝ ＋6.0kJ、ΔS ＝ ＋22J/K ＝ ＋0.022kJ/K とします。つり合うのは ΔG ＝ 0 のときなので、</p><p class="ref-p"><b>0 ＝ 6.0kJ − T × 0.022kJ/K</b>　より　<b>T ＝ 6.0 ／ 0.022 ≒ 273K</b> です。</p><p class="ref-p">273K は 0℃ です。これより高い温度では TΔS が ΔH より大きくなって ΔG が負になり、氷がとけます。低い温度では ΔG が正になり、とけずに逆向き（水が凍る）が進みます。</p><p class="ref-p"><b>ギブズエネルギーの式は覚える必要はありません。</b>入試で使うときは、式と意味が問題文で説明されます。ΔH と TΔS の大小で符号が決まる、という読み方ができれば十分です。</p><div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.gibbs-energy&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>変化は、エンタルピーが下がる向き（発熱）とエントロピーが増える向きの2つの傾向で進み、吸熱の変化でもエントロピーの増大が勝てば自然に進む。</li><li>温度が高いほどエントロピーの影響が大きくなるので、吸熱でエントロピーが増える変化は高温で、発熱でエントロピーが減る変化は低温で進みやすい。</li><li>エンタルピーとエントロピーが決めるのは変化が自然に進む向きだけで、進む速さは活性化エネルギーで決まる。水素と酸素は、室温で混ぜただけではほとんど反応しない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.two-tendencies,theo.thermo.entropy-temperature,theo.thermo.spontaneous-vs-rate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-gibbs"><summary class="ref-adv-sum"><h4 class="ref-sec-h">ギブズエネルギー —— 2つの傾向を1つの式にまとめる<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">エンタルピーとエントロピーの2つの傾向は、ギブズエネルギー変化 ΔG ＝ ΔH − TΔS の1つの式にまとめられます。ΔG が負なら自然に進み、正なら自然には進みません。</p></summary><div class="ref-adv-body"><p class="ref-p">2つの傾向を1つの量にまとめたものを、<b>ギブズエネルギー変化</b>（記号 ΔG）といいます。式は <b>ΔG ＝ ΔH − TΔS</b> で、T は絶対温度です。</p><p class="ref-p"><b>ΔG が負なら、その変化は自然に進みます。正なら自然には進みません。0 なら2つの傾向がつり合っています。</b></p><p class="ref-p">ΔS に T がかかっているのが、「温度が高いほどエントロピーの影響が大きい」の正体です。T が大きいほど、−TΔS の項が ΔG を大きく動かします。</p><p class="ref-p">⚠ <b>単位をそろえます。</b>ΔH はふつう kJ、ΔS は J/K で与えられます。ΔS を 1000 で割って kJ/K に直してから T をかけます。</p><p class="ref-p">具体例5で、氷の融解がつり合う温度を求めます。H₂O 1mol あたり ΔH ＝ ＋6.0kJ、ΔS ＝ ＋22J/K ＝ ＋0.022kJ/K とします。つり合うのは ΔG ＝ 0 のときなので、</p><p class="ref-p"><b>0 ＝ 6.0kJ − T × 0.022kJ/K</b>　より　<b>T ＝ 6.0 ／ 0.022 ≒ 273K</b> です。</p><p class="ref-p">273K は 0℃ です。これより高い温度では TΔS が ΔH より大きくなって ΔG が負になり、氷がとけます。低い温度では ΔG が正になり、とけずに逆向き（水が凍る）が進みます。</p><p class="ref-p"><b>ギブズエネルギーの式は覚える必要はありません。</b>入試で使うときは、式と意味が問題文で説明されます。ΔH と TΔS の大小で符号が決まる、という読み方ができれば十分です。</p><div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>（発展）ギブズエネルギー変化 ΔG ＝ ΔH − TΔS（T は絶対温度）が負なら変化は自然に進み、正なら進まない。ΔG ＝ 0 のとき2つの傾向がつり合う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.thermo.gibbs-energy&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">「エントロピー＝乱雑さ」「固体 ＜ 液体 ＜ 気体」「2つの傾向」の3つを覚えます。計算はほとんど問われません。</p></section>
 <p class="ref-p"><b>「エントロピーは乱雑さの大きさ」「エントロピーは固体 ＜ 液体 ＜ 気体」「変化は、エンタルピーが下がる向きとエントロピーが増える向きの2つに進もうとする」の3つは必ず覚えてください。</b>吸熱なのに自然に進む変化を見たら、「エントロピーの増大が勝った」と説明できるようにしましょう。</p>
 <p class="ref-p">変化ごとの ΔS の正負は、上の表を丸暗記してもよいですが、<b>「粒子が散らばるか、集まって並ぶか」「気体の分子が増えるか、減るか」</b>の2つで考えれば、ほとんどの変化は判断できます。</p>
@@ -1157,6 +1175,7 @@ function refAdvSetup(root) {
 }
 refAdvSetup(document);
 </script>
+
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>

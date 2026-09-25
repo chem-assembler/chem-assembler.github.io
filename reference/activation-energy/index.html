@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">反応速度は濃度・温度・触媒・表面積・光で変わります。温度を上げると活性化エネルギーの山を越えられる分子が増え、触媒は活性化エネルギーの小さい別の経路をつくります。どちらも反応エンタルピーは変えません。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">反応速度と化学平衡</span><span class="unit-label">活性化エネルギーと触媒</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-factors" data-ref-anchor="factors">反応速度を変える3つの要因 —— 濃度・温度・触媒</a></li><li><a href="#ref-sec-temperature" data-ref-anchor="temperature">温度 —— 活性化エネルギーを越える分子の割合</a></li><li><a href="#ref-sec-transition-state" data-ref-anchor="transition-state">遷移状態とエネルギー図</a></li><li><a href="#ref-sec-catalyst" data-ref-anchor="catalyst">触媒 —— 活性化エネルギーの小さい別の経路</a></li><li><a href="#ref-sec-others" data-ref-anchor="others">そのほかの要因 —— 表面積と光</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -945,20 +963,20 @@ a.ref-sec-qa-link::before { content: ''; }
 <section class="ref-sec" id="ref-sec-factors"><h4 class="ref-sec-h">反応速度を変える3つの要因 —— 濃度・温度・触媒</h4><p class="ref-sec-lead">反応物の濃度を大きくする・温度を上げる・触媒を加える、のどれでも反応速度は大きくなります。濃度は速度式に代入する値を、温度と触媒は速度定数 k を変えます。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">反応速度を大きくする3つの要因</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">要因</th><th style="text-align: left;">数学的解釈（v ＝ k[A]ᵃ[B]ᵇ のどこが変わるか）</th><th style="text-align: left;">言語的解釈（分子の世界で何が起きるか）</th></tr></thead><tbody><tr><td style="text-align: left;"><b>濃度</b>を大きくする</td><td style="text-align: left;">代入する [A]・[B] の値が大きくなる</td><td style="text-align: left;">律速段階である分子どうしの衝突が起こりやすくなる</td></tr><tr><td style="text-align: left;"><b>温度</b>を上げる</td><td style="text-align: left;">速度定数 k が大きくなる</td><td style="text-align: left;">活性化エネルギーの山を越えられるだけの勢いをもつ分子が増える</td></tr><tr><td style="text-align: left;"><b>触媒</b>を加える</td><td style="text-align: left;">別の式 v′ ＝ k′[A]ᵃ[B]ᵇ（k′ ＞ k）になる</td><td style="text-align: left;">活性化エネルギーの小さい別の反応経路ができる</td></tr></tbody></table></div>
 <p class="ref-p">濃度の効果は次数で決まります。v ＝ k[A]²[B]³ なら、[A] を2倍にすると v は4倍、[B] を2倍にすると v は8倍です。温度と触媒は濃度を変えずに速度を変えるので、<b>k の値が変わる</b>と考えます。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.kinetics.rate-factors,theo.kinetics.concentration-collision&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>反応速度は濃度・温度・触媒で大きくなり、濃度は速度式に代入する値を、温度と触媒は反応速度定数 k を変える。</li><li>濃度・温度・触媒の3つは、分子の世界ではそれぞれ別のことを変える。濃度を上げると反応物の分子どうしがぶつかる機会が増え、温度を上げると活性化エネルギーを越えられるだけのエネルギーをもった分子が多くなり、触媒を加えると活性化エネルギーの低い別の経路が開ける。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.kinetics.rate-factors,theo.kinetics.concentration-collision&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-temperature"><h4 class="ref-sec-h">温度 —— 活性化エネルギーを越える分子の割合</h4><p class="ref-sec-lead">反応物が生成物に変わるには、途中にあるエネルギーの山を越えなければなりません。その山の高さが活性化エネルギーです。温度を上げると、山を越えられるだけの勢いをもつ分子の割合がふくらむので、反応が速く進みます。</p></section>
 <p class="ref-p">同じ温度でも、分子がもつエネルギーはばらばらです。横軸に分子のエネルギー、縦軸にその分子の割合をとると、低温では山が左に高く、高温では山が右に低く広がります。<b>活性化エネルギーより右側（反応できる分子）の面積</b>が、高温のほうがずっと大きくなります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-distribution.png?h=e389983e" alt="横軸に分子のエネルギー、縦軸に分子の割合をとったグラフ。低温の曲線は左に高い山、高温の曲線は右に低く広がる山。活性化エネルギーの位置に縦の破線があり、その右側が反応するのに必要なエネルギーを持った分子" loading="lazy"><figcaption class="ref-figure-cap">破線より右が反応できる分子です。高温の曲線のほうが、破線より右の部分がずっと大きくなります。</figcaption></figure>
 <p class="ref-p">常温付近では、一般に<b>温度を10℃上げると反応速度は2〜4倍</b>になります。温度が上がると反応速度は急に大きくなる、ということは知っておきましょう。数値の「2〜4倍」は覚えておくと、温度の問題で見当がつけられます。</p>
 <div class="ref-callout ref-callout-skip"><b class="ref-callout-tag">覚えなくてよい</b><p class="ref-callout-text">分子のエネルギー分布の曲線の名前や、温度と速度定数の関係を表す式（アレニウスの式）は、教科書では発展の扱いです。<b>覚えなくても構いません。</b>グラフの形（高温で右に広がる）と「割合が増える」が言えれば十分です。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.kinetics.temperature,theo.kinetics.energy-distribution&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>温度を上げると、活性化エネルギー（反応に必要な最小のエネルギー）以上のエネルギーをもつ分子の割合が増えるので反応速度が大きくなり、常温付近では10 ℃ で2〜4倍になる。</li><li>分子のエネルギーの分布を表すグラフは、高温では山が低くなってエネルギーの大きい側（右）へ広がり、活性化エネルギーより右側の面積（反応できる分子の割合）が大きくなる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.kinetics.temperature,theo.kinetics.energy-distribution&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-transition-state"><h4 class="ref-sec-h">遷移状態とエネルギー図</h4><p class="ref-sec-lead">衝突した分子は、エネルギーの高い遷移状態を経て生成物になります。反応物が遷移状態になるのに必要なエネルギーが活性化エネルギーです。</p></section>
 <p class="ref-p">H₂ ＋ I₂ ⇄ 2HI を例に、横軸に反応の進行、縦軸にエネルギーをとります。正反応は図を左から右へ進み、H₂ と I₂ が衝突して H と I が4つ組になった<b>遷移状態</b>（山の頂上）を経て、2分子の HI に分かれます。逆反応は図を右から左へ進み、同じ遷移状態を通ります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-diagram.png?h=50530d83" alt="横軸に反応の進行、縦軸にエネルギーをとった図。左の反応物 H₂ と I₂ から山を越えて右の生成物 2HI へ下がる。山の頂上は H と I が4つ組になった遷移状態。反応物から頂上までが正反応の活性化エネルギー、生成物から頂上までが逆反応の活性化エネルギー、反応物と生成物の差が反応エンタルピー" loading="lazy"><figcaption class="ref-figure-cap">正反応も逆反応も同じ遷移状態を通ります。2つの活性化エネルギーの差が反応エンタルピーです。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">エネルギー図から読む3つの量（H₂ ＋ I₂ ⇄ 2HI・発熱反応）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">量</th><th style="text-align: left;">図のどこか</th><th style="text-align: left;">E₁（正反応の活性化エネルギー）・E₂（反応エンタルピーの大きさ）で書くと</th></tr></thead><tbody><tr><td style="text-align: left;">正反応の活性化エネルギー</td><td style="text-align: left;">反応物 → 山の頂上</td><td style="text-align: left;">E₁</td></tr><tr><td style="text-align: left;">反応エンタルピーの大きさ</td><td style="text-align: left;">反応物と生成物の高さの差</td><td style="text-align: left;">E₂（発熱なので ΔH ＝ −E₂）</td></tr><tr><td style="text-align: left;">逆反応の活性化エネルギー</td><td style="text-align: left;">生成物 → 山の頂上</td><td style="text-align: left;">E₁ ＋ E₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>逆反応の活性化エネルギーは「正反応の活性化エネルギー ＋ 反応エンタルピーの大きさ」</b>です（発熱反応のとき）。山の高さを生成物の側から測り直すだけなので、式を覚えるより図を描いて読むようにしましょう。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/reaction-enthalpy/">反応エンタルピー ΔH の符号（発熱は負）とエネルギー図へ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.kinetics.transition-state&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>反応物はエネルギーの高い遷移状態を経て生成物になり、正反応と逆反応は同じ遷移状態を通るので、発熱反応では逆反応の活性化エネルギー ＝ 正反応の活性化エネルギー ＋ 反応エンタルピーの大きさ になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.kinetics.transition-state&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-catalyst"><h4 class="ref-sec-h">触媒 —— 活性化エネルギーの小さい別の経路</h4><p class="ref-sec-lead">触媒は、反応を速めながら、反応が終わったあとには元の姿のまま残る物質です。山の低い回り道を用意して反応を速めますが、反応エンタルピーは変えません。</p></section>
 <p class="ref-p">触媒を加えると、触媒が関わる別の反応経路ができ、その経路の山（活性化エネルギー）が低いので反応が速くなります。反応物と生成物のエネルギーは変わらないので、<b>反応エンタルピー ΔH は変わりません</b>。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-catalyst.png?h=95f57bcc" alt="H₂ ＋ I₂ ⇄ 2HI のエネルギー図を2枚並べ、矢印で左の触媒なしから右の触媒ありへつないだ図。触媒ありでは遷移状態が触媒に囲まれ、山が低くなって正反応・逆反応の活性化エネルギーがどちらも小さい。反応物と生成物の高さは同じで、反応エンタルピーは変わらない" loading="lazy"><figcaption class="ref-figure-cap">触媒を加えると山だけが低くなります。反応物と生成物の高さは動かないので、反応エンタルピーは変わりません。</figcaption></figure>
@@ -970,7 +988,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">H₂ ＋ I₂ ⇄ 2HI のエネルギー図で、反応物（H₂ ＋ I₂）から山の頂上までの高さを E₁、反応物と生成物（2HI）の高さの差を E₂ とする。生成物は反応物より低い位置にある。(1) 正反応は発熱反応か吸熱反応か。(2) 逆反応の活性化エネルギーを E₁・E₂ で表せ。(3) 触媒を加えると E₁・E₂ はそれぞれどうなるか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 反応物より生成物のエネルギーが低いので、差の分の熱を放出する<b>発熱反応</b>（反応エンタルピーは負）。(2) 逆反応は図を右から左へ進み、生成物から山の頂上まで越えるので <b>E₁ ＋ E₂</b>。(3) 触媒は活性化エネルギーの小さい別の経路をつくるので <b>E₁ は小さくなり、E₂ は変わらない</b>。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">反応速度式が v ＝ k[A][B]² の反応について、次の操作で反応速度はどうなるか。(1) [A] を3倍にする。(2) [B] を3倍にする。(3) 常温で温度を 10℃ 上げる（おおよその倍率）。(4) 触媒を加える（k と ΔH がどうなるかも答えよ）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) [A] について1次なので<b>3倍</b>。(2) [B] について2次なので 3² ＝ <b>9倍</b>。(3) 一般に <b>2〜4倍</b>（k が大きくなる）。(4) 活性化エネルギーの小さい別の経路ができ、<b>k が大きくなって速くなる</b>。<b>ΔH は変わらない</b>。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.kinetics.catalyst,theo.kinetics.catalyst-kinds&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>触媒は、活性化エネルギーの低い別の道筋（反応経路）を用意する。そのおかげで正反応も逆反応も同時に速くなるが、反応エンタルピーは変わらず、触媒自身も反応の前後で変わらない。</li><li>反応物と均一に混ざってはたらく触媒を均一触媒（Fe³⁺ など）、表面ではたらく触媒を不均一触媒（MnO₂ など）といい、固体の表面積や光も反応速度を変える。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.kinetics.catalyst,theo.kinetics.catalyst-kinds&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-others"><h4 class="ref-sec-h">そのほかの要因 —— 表面積と光</h4><p class="ref-sec-lead">固体が関わる反応は、固体を細かくして表面を広げるほど速く進みます。物質が光を吸収して起こる光化学反応では、光を当てると反応速度が大きくなります。</p></section>
 <p class="ref-p">固体の反応は固体の表面でしか起こらないので、<b>細かく砕いて表面積を大きくすると速くなります</b>。固体を水に溶かすときに、粉にすると速く溶けるのと同じです。</p>
 <p class="ref-p">光合成のように、物質が光を吸収して起こる化学反応を<b>光化学反応</b>といいます。光化学反応は光を当てると速くなります。水素と塩素の混合気体に光を当てると爆発的に反応するのも、その例です。</p>
@@ -1078,6 +1096,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">分子どうしを引きつける力が分子間力で、ファンデルワールス力と水素結合があります。沸点は「水素結合があるか → 分子量 → 極性」の順に見れば比べられます。分子結晶の性質や、実在気体のずれも同じ力で説明できます。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">原子と化学結合</span><span class="unit-label">分子間力</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（3節）</summary><ul><li><a href="#ref-sec-kinds" data-ref-anchor="kinds">分子間力の種類</a></li><li><a href="#ref-sec-boiling-point" data-ref-anchor="boiling-point">沸点を比べる3つのものさし</a></li><li><a href="#ref-sec-molecular-crystal" data-ref-anchor="molecular-crystal">分子結晶と気体への影響</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -951,7 +969,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">粒子の間の力の強さを全部並べると、次の順になります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">粒子の間にはたらく力の強さ</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">力</th><th style="text-align: left;">強さの順</th></tr></thead><tbody><tr><td style="text-align: left;">化学結合</td><td style="text-align: left;">共有結合・イオン結合・金属結合</td><td style="text-align: left;">強い</td></tr><tr><td style="text-align: left;">分子間力</td><td style="text-align: left;">水素結合</td><td style="text-align: left;">化学結合よりはるかに弱い</td></tr><tr><td style="text-align: left;">分子間力</td><td style="text-align: left;">ファンデルワールス力</td><td style="text-align: left;">水素結合よりさらに弱い</td></tr></tbody></table></div>
 <p class="ref-p">「化学結合 ≫ 水素結合 ＞ ファンデルワールス力」の順は覚えておきましょう。化学結合どうし（共有結合・イオン結合・金属結合）の強さの比べ合いは、物質によってまちまちなので、順を覚える必要はありません。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.imf-kinds,theo.structure.hydrogen-bond&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>分子間力はファンデルワールス力（すべての分子にはたらく分散力と、極性分子どうしの引力）と水素結合に分けられ、化学結合 ≫ 水素結合 ＞ ファンデルワールス力 の順に強い。</li><li>水素結合は、F・O・N に直接結合した H をもつ分子が、H を仲立ちにして隣の分子と引き合う結びつきである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.imf-kinds,theo.structure.hydrogen-bond&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-boiling-point"><h4 class="ref-sec-h">沸点を比べる3つのものさし</h4><p class="ref-sec-lead">沸点は「水素結合があるか」を最初に見て、なければ分子量で、分子量が同じくらいなら極性で比べます。分子間力が強いほど沸点は高くなります。</p></section>
 <p class="ref-p">液体が沸騰して気体になるには、分子が隣の分子との分子間力をふり切って飛び出さなければなりません。だから、<b>分子間力が強いほど沸点は高く</b>なります。比べるときは、次の順で見ます。</p>
 <ol class="ref-list"><li>水素結合をつくるかを見る。つくる方が、沸点がとび抜けて高い。<div class="ref-li-hang">H₂O（100℃）と H₂S（−60℃）なら、水素結合のある H₂O</div></li><li>水素結合がない（または両方ある）なら、分子量を見る。構造が似ていれば、分子量が大きい方が高い。<div class="ref-li-hang">CH₄ ＜ SiH₄ ＜ GeH₄ ＜ SnH₄ の順に高くなる</div></li><li>分子量が同じくらいなら、極性を見る。極性分子の方が高い。<div class="ref-li-hang">F₂（分子量 38・無極性）より HCl（分子量 36.5・極性）の方が高い</div></li></ol>
@@ -971,7 +989,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の各組で、沸点が高いのはどちらか。理由も答えよ。(1) CH₄ と SiH₄　(2) H₂O と H₂S　(3) F₂ と HCl　(4) エタノール C₂H₅OH とジメチルエーテル CH₃OCH₃</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>SiH₄</b>。どちらも正四面体の無極性分子で、分子量の大きい SiH₄ の方がファンデルワールス力が強い。(2) <b>H₂O</b>。H₂O は分子間で水素結合をつくる。(3) <b>HCl</b>。分子量は同じくらいだが、HCl は極性分子で、無極性の F₂ よりファンデルワールス力が強い。(4) <b>エタノール</b>。分子量は同じ 46 だが、−OH をもつエタノールは水素結合をつくる。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">16族の水素化合物 H₂O・H₂S・H₂Se・H₂Te のうち、H₂O だけが分子量の順から外れて沸点がとび抜けて高い。その理由を答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>O は電気陰性度がとても大きく、O−H 結合の H が強く正に帯電するので、H₂O 分子どうしの間に<b>水素結合</b>がはたらく。水素結合はファンデルワールス力よりずっと強いので、分子量が小さくても沸点が高くなる。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.bp-comparison,theo.structure.hydride-bp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>分子からなる物質の沸点は、水素結合の有無 → 分子量（構造が似ていれば大きい方が高い）→ 極性（分子量が同じくらいなら極性分子が高い）の順に見て比べる。</li><li>14〜17族の水素化合物は分子量が大きいほど沸点が高いが、第2周期の NH₃・H₂O・HF だけは水素結合のためにとび抜けて沸点が高い。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.bp-comparison,theo.structure.hydride-bp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-molecular-crystal"><h4 class="ref-sec-h">分子結晶と気体への影響</h4><p class="ref-sec-lead">分子が分子間力で規則正しく並んだ固体が分子結晶です。分子間力が弱いので、融点が低く、昇華しやすいものがあります。気体の中でも分子間力ははたらき、体積をわずかに小さくします。</p></section>
 <p class="ref-p">分子どうしが分子間力でゆるく引き合い、きちんと列をつくって積み重なった結晶が<b>分子結晶</b>です。ドライアイス（CO₂）・ヨウ素 I₂・ナフタレン・氷（H₂O）が代表です。分子間力は弱いので、分子結晶は<b>融点が低く、軟らかい</b>ものが多く、電気を通しません。</p>
 <p class="ref-p">とくに CO₂・I₂・ナフタレンのような無極性分子の結晶は、分子間力がとても弱いので、固体から直接気体になる<b>昇華</b>を起こしやすいのが特徴です。ドライアイスが溶けずに消えていくのはこのためです。</p>
@@ -984,7 +1002,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/real-gas/">実在気体が理想気体からずれるしくみ（分子間力と分子の体積）は、実在気体のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">例題 —— 分子結晶と気体への影響</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">H₂・CH₄・CO₂・NH₃ のうち、標準状態で 1mol の体積が最も小さいものはどれか。理由とともに答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>NH₃</b>。標準状態くらいの圧力では分子の体積の影響は小さく、分子間力の強い気体ほど体積が小さくなる。NH₃ は極性分子で、分子間力が4つの中でいちばん強い（実測は 22.09 L）。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.molecular-crystal&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>分子結晶は分子が分子間力で並んだ結晶で、融点が低く軟らかく、無極性分子の結晶（CO₂・I₂・ナフタレン）は昇華しやすい。氷はすき間の多い結晶で水より密度が小さい。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.structure.molecular-crystal&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1088,6 +1106,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">無機の反応式は、中和・遊離・酸化還元・沈殿・錯イオンの5つの型のどれかに当てはまります。型を見分けて、型ごとの書き方のページへ進むための入口です。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">非金属元素</span><span class="unit-label">周期表と元素の性質</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（9節）</summary><ul><li><a href="#ref-sec-five-types" data-ref-anchor="five-types">5つの型の一覧</a></li><li><a href="#ref-sec-how-to-tell" data-ref-anchor="how-to-tell">型の見分け方</a></li><li><a href="#ref-sec-neutralization" data-ref-anchor="neutralization">中和の型</a></li><li><a href="#ref-sec-displacement" data-ref-anchor="displacement">遊離の型</a></li><li><a href="#ref-sec-redox" data-ref-anchor="redox">酸化還元の型</a></li><li><a href="#ref-sec-precipitate" data-ref-anchor="precipitate">沈殿の型</a></li><li><a href="#ref-sec-complex" data-ref-anchor="complex">錯イオンの型</a></li><li><a href="#ref-sec-others" data-ref-anchor="others">5つの型に入らない反応</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -950,7 +968,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/portal.html?from=reference&amp;page=inorg-reaction-types#sr-acid-base">酸と塩基の反応（中和・弱酸の遊離）</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/portal.html?from=reference&amp;page=inorg-reaction-types#sr-redox">酸化還元の反応（e⁻ のやりとり）</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/portal.html?from=reference&amp;page=inorg-reaction-types#sr-precipitate">沈殿と溶解の反応（沈殿・錯イオン）</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.five-types&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>無機の反応の多くは、中和・遊離・酸化還元・沈殿・錯イオンの5つの型のどれかに当てはまり、型ごとに見分ける手がかりがある。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.five-types&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-how-to-tell"><h4 class="ref-sec-h">型の見分け方</h4><p class="ref-sec-lead">酸化数が変わるかどうかを最初に見ます。変わらなければ、H⁺ と OH⁻ のやりとりか、沈殿か、錯イオンかを見ます。</p></section>
 <ol class="ref-list"><li>反応の前後で、酸化数が変わる原子があるかを見る。あれば<b>酸化還元</b>。<div class="ref-li-hang">左辺か右辺に単体（Zn・Cu・Cl₂・O₂ など）があれば、その原子の酸化数は必ず変わります。</div></li><li>酸化数が変わらず、H⁺ と OH⁻ が結びついて H₂O ができるなら<b>中和</b>。<div class="ref-li-hang">酸性酸化物（CO₂・SO₃）や塩基性酸化物（CaO・Na₂O）が相手でも中和の仲間です。</div></li><li>弱酸・弱塩基・揮発性の酸が「生成物として出てくる」なら<b>遊離</b>。<div class="ref-li-hang">H₂S・SO₂・CO₂・NH₃・HCl の気体が発生する反応の多くはこれです。</div></li><li>生成物に水に溶けない塩ができるなら<b>沈殿</b>。</li><li>いったんできた沈殿が、過剰の NH₃ や OH⁻ で溶けるなら<b>錯イオン</b>。</li></ol>
 <h5 class="ref-h5">具体例：同じ SO₂ でも型が違う</h5>
@@ -960,7 +978,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">できる気体は同じでも、書き方の手順が違います。遊離は「イオンの組み換え」で1行で書け、酸化還元は「半反応式を書いてから足す」手順で書きます。<b>型を先に決める理由はここにあります。</b></p>
 <h5 class="ref-h5">例題 —— 型の見分け方</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の反応は、中和・遊離・酸化還元・沈殿・錯イオンのどの型か答えよ。<b>(1) Zn ＋ H₂SO₄ → ZnSO₄ ＋ H₂　(2) Ba²⁺ ＋ SO₄²⁻ → BaSO₄　(3) NaCl ＋ H₂SO₄ → NaHSO₄ ＋ HCl　(4) AgCl ＋ 2NH₃ → [Ag(NH₃)₂]⁺ ＋ Cl⁻　(5) CO₂ ＋ 2NaOH → Na₂CO₃ ＋ H₂O</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 酸化還元（Zn の酸化数が 0 → +2）　(2) 沈殿　(3) 遊離（揮発性の酸の遊離）　(4) 錯イオン　(5) 中和（酸性酸化物と塩基）</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.redox-first&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>型を見分けるときは、まず酸化数が変わる原子があるかを見る。単体が出入りする反応は必ず酸化還元である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.redox-first&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-neutralization"><h4 class="ref-sec-h">中和の型</h4><p class="ref-sec-lead">酸の H⁺ と塩基の OH⁻ が結びついて水になり、残りのイオンが塩になります。</p></section>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/inorg-reaction-types-neutralization.png?h=81f10ff5" alt="酸（H⁺ と陰イオン）と塩基（陽イオンと OH⁻）が反応して、陽イオンと陰イオンが塩に、H⁺ と OH⁻ が水になる組み換えの図" loading="lazy"><figcaption class="ref-figure-cap">中和は<b>イオンの組み換え</b>です。酸の H⁺ と塩基の OH⁻ が水に、残りの陽イオンと陰イオンが塩になります。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCl ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O</span></div><p class="ref-note">酸と塩基は価数の逆の比で反応します。</p></div>
@@ -977,7 +995,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/acid-displacement/">弱酸の遊離・揮発性の酸の遊離のページへ</a></p>
 <h5 class="ref-h5">例題 —— 遊離の型</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(1)〜(4)を化学反応式で書け。また、それぞれ5つの型のどれに当たるか答えよ。<b>(1) 酢酸ナトリウム水溶液に塩酸を加えた　(2) 塩化アンモニウム水溶液に水酸化ナトリウム水溶液を加えた　(3) 硫化鉄(II)に希硫酸を加えた　(4) 塩化アンモニウムと水酸化カルシウムを混合して加熱した</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) CH₃COONa ＋ HCl → CH₃COOH ＋ NaCl（弱酸の遊離）　(2) NH₄Cl ＋ NaOH → NaCl ＋ H₂O ＋ NH₃（弱塩基の遊離）　(3) FeS ＋ H₂SO₄ → FeSO₄ ＋ H₂S↑（弱酸の遊離）　(4) 2NH₄Cl ＋ Ca(OH)₂ → CaCl₂ ＋ 2H₂O ＋ 2NH₃↑（弱塩基の遊離）　4つとも、弱い酸・塩基のイオンが H⁺ か OH⁻ と結びつく同じ型です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>弱酸の塩に強酸、弱塩基の塩に強塩基、揮発性の酸の塩に不揮発性の酸を加えると、弱い（揮発性の）側が追い出される（遊離）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-redox"><h4 class="ref-sec-h">酸化還元の型</h4><p class="ref-sec-lead">還元剤が出した e⁻ を酸化剤が受け取ります。半反応式を2本書いて、e⁻ をそろえて足します。</p></section>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/inorg-reaction-types-redox.png?h=e1bdc005" alt="亜鉛板を硫酸銅(II)水溶液に入れると銅が析出し、希酸に入れると水素が発生する様子と、それぞれの半反応式を足し合わせた式" loading="lazy"><figcaption class="ref-figure-cap">金属樹の生成と、金属が希酸に溶ける反応は同じ仕組みです。どちらも Zn が出した e⁻ を、Cu²⁺ か H⁺ が受け取ります。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Zn ＋ H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">ZnSO₄ ＋ H₂↑</span></div><p class="ref-note">Zn が還元剤、希硫酸の H⁺ が酸化剤です。H₂ の実験室的製法です。</p></div>
@@ -997,12 +1015,12 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Al(OH)₃ ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Na[Al(OH)₄]</span></div><p class="ref-note">両性水酸化物は、過剰の水酸化ナトリウム水溶液に溶けます。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/complex-ion/">錯イオンの形と名前のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/amphoteric-metal/">両性金属（Al・Zn・Sn・Pb）のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.complex-dissolve&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>金属イオンの水溶液にアンモニア水や水酸化ナトリウム水溶液を少しずつ加えると、まず水酸化物（Ag⁺ では酸化物）の沈殿ができ、さらに過剰に加えると錯イオンになって沈殿が溶けるものがある。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.complex-dissolve&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-others"><h4 class="ref-sec-h">5つの型に入らない反応</h4><p class="ref-sec-lead">燃焼や化合のように、イオンにならずに分子どうしが組み替わる反応もあります。</p></section>
 <p class="ref-p">水素の燃焼 2H₂ ＋ O₂ → 2H₂O やアンモニアの合成 N₂ ＋ 3H₂ → 2NH₃ は、分子がばらばらの原子になって組み替わる反応として書けます。どちらも酸化数が変わるので、型としては酸化還元に入ります。係数は原子の数を両辺でそろえれば決まります。</p>
 <p class="ref-p">熱分解（CaCO₃ → CaO ＋ CO₂ など）も、酸化数が変わらない反応です。これは各物質のページで扱います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/portal.html?from=reference&amp;page=inorg-reaction-types#sr-molecule">分子の組み換え</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.outside-five&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>水素の燃焼やアンモニアの合成のように分子どうしが組み替わる反応も、酸化数が変わるので型としては酸化還元に入る。一方、炭酸カルシウムの熱分解 CaCO₃ → CaO ＋ CO₂ はどの原子の酸化数も変わらない反応である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.basis.outside-five&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">5つの型の名前と、見分ける手がかりを覚えます。</p></section>
 <p class="ref-p"><b>5つの型（中和・遊離・酸化還元・沈殿・錯イオン）と、それぞれの見分ける手がかりは必ず覚えてください。</b></p>
 <p class="ref-p">反応式は、このページに出した ★★★ の式を物質名から書けるようにしておきます。ほかの反応式は各物質のページで、型ごとの手順を使って書く練習をします。</p>
@@ -1110,6 +1128,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

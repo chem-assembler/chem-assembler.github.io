@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">酵素は生物の体の中ではたらく触媒で、主成分はタンパク質です。相手を選ぶ基質特異性、温度と pH に最適な値があること、高温で失活すること、そしてどの酵素が何を分解するかの一覧を1枚にしました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">天然高分子</span><span class="unit-label">タンパク質と酵素</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-definition" data-ref-anchor="definition">酵素とは</a></li><li><a href="#ref-sec-specificity" data-ref-anchor="specificity">基質特異性</a></li><li><a href="#ref-sec-optimum" data-ref-anchor="optimum">最適温度と最適 pH</a></li><li><a href="#ref-sec-examples" data-ref-anchor="examples">おもな酵素</a></li><li><a href="#ref-sec-saturation" data-ref-anchor="saturation">基質の濃度と反応速度</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
 <div class="ref-scope">
@@ -946,7 +964,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">具体例として、過酸化水素の分解を見ます。酸化マンガン(IV) MnO₂ を加えても、肝臓などにふくまれる酵素<b>カタラーゼ</b>を加えても、<b>まったく同じ反応</b>が起こります。</p>
 <div class="ref-rx ref-rx-has-img"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-fig"><div class="ref-figure-scroll"><img class="ref-figure-img ref-rx-img ref-figure-img-scroll" src="/reference-img/rx-0348cbf4.png?h=0d27ed31" alt="構造式の反応式: 2H₂O₂ → 2H₂O ＋ O₂" loading="lazy" style="width:100.0%"></div></div><div class="ref-rx-eq"><span class="ref-rx-side">2H₂O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">カタラーゼ（または MnO₂）</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O ＋ O₂</span></div><p class="ref-note">反応そのものは同じです。酵素の特徴は、反応の中身ではなく、はたらく条件と相手の選び方のほうにあります。</p></div>
 <p class="ref-p">酵素がはたらきかける相手の物質を<b>基質</b>といいます。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.enzyme-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>生体内でつくられ、体温付近のおだやかな条件で反応を促進する触媒を酵素といい、主成分はタンパク質である。作用する相手の物質（基質）が決まっている性質を基質特異性という。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.enzyme-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-specificity"><h4 class="ref-sec-h">基質特異性</h4><p class="ref-sec-lead">1つの酵素は、決まった基質としか反応しません。この性質を基質特異性といいます。</p></section>
 <p class="ref-p">酵素の分子には、基質とぴったり結びつく部分があり、これを<b>活性部位</b>といいます。活性部位の立体的な形に合う基質だけが結びつくので、<b>1つの酵素は決まった基質としかはたらきません</b>。これを<b>基質特異性</b>といいます。</p>
 <p class="ref-p">具体例として、ラクターゼはラクトース（乳糖）を分解しますが、同じ C₁₂H₂₂O₁₁ のスクロースもマルトースも分解しません。</p>
@@ -967,7 +985,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">酵素の水溶液を80℃に加熱してから体温に戻しても、はたらきが戻らないのはなぜか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>酵素の主成分は<b>タンパク質</b>で、高温で<b>変性</b>して<b>活性部位の立体構造がこわれる</b>ためです（失活）。変性はふつう元に戻りません。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">胃液にふくまれるペプシンは、小腸（弱い塩基性）に入るとはたらきが弱くなる。その理由を、酵素の性質を表す語を使って書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>ペプシンの<b>最適 pH</b> は約2の強い酸性で、弱い塩基性の小腸はその pH から大きく外れているためです。酵素は最適 pH から離れると、活性部位の立体構造が変わってはたらきが弱くなります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.enzyme-optimum,org.bio.enzyme-optimum-ph&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>酵素のはたらきが最大になる温度を最適温度といい、人体ではたらく酵素では多くが35〜40℃。はたらきが最大になる pH を最適 pH という。最適温度より高温にするとタンパク質が変性して活性部位の立体構造がこわれ、はたらきを失う（失活）。</li><li>最適 pH は酵素ごとに違い、多くは中性付近だが、胃液のペプシンは強い酸性（pH 約2）、すい液のトリプシンは弱い塩基性（pH 約8）でよくはたらく。最適 pH から大きく外れると、活性部位の立体構造が変わってはたらきが弱くなる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.enzyme-optimum,org.bio.enzyme-optimum-ph&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-examples"><h4 class="ref-sec-h">おもな酵素</h4><p class="ref-sec-lead">「〜アーゼ」の「〜」が基質の名前になっている酵素が多くあります。名前が基質を言っていないものだけ、別に覚えます。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">おもな酵素とはたらき</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">酵素</th><th style="text-align: left;">基質（何を分解するか）</th><th style="text-align: left;">生成物</th><th style="text-align: left;">おもにどこにあるか</th></tr></thead><tbody><tr><td style="text-align: left;">アミラーゼ</td><td style="text-align: left;">デンプン</td><td style="text-align: left;">デキストリンを経てマルトース</td><td style="text-align: left;">だ液・すい液</td></tr><tr><td style="text-align: left;">マルターゼ</td><td style="text-align: left;">マルトース</td><td style="text-align: left;">グルコース</td><td style="text-align: left;">小腸</td></tr><tr><td style="text-align: left;">スクラーゼ（インベルターゼ）</td><td style="text-align: left;">スクロース</td><td style="text-align: left;">グルコース ＋ フルクトース</td><td style="text-align: left;">小腸・酵母</td></tr><tr><td style="text-align: left;">ラクターゼ</td><td style="text-align: left;">ラクトース</td><td style="text-align: left;">グルコース ＋ ガラクトース</td><td style="text-align: left;">小腸</td></tr><tr><td style="text-align: left;">セルラーゼ</td><td style="text-align: left;">セルロース</td><td style="text-align: left;">セロビオース</td><td style="text-align: left;">微生物（ヒトはもたない）</td></tr><tr><td style="text-align: left;">セロビアーゼ</td><td style="text-align: left;">セロビオース</td><td style="text-align: left;">グルコース</td><td style="text-align: left;">微生物</td></tr><tr><td style="text-align: left;">チマーゼ</td><td style="text-align: left;">グルコースなどの単糖</td><td style="text-align: left;">エタノール ＋ 二酸化炭素</td><td style="text-align: left;">酵母</td></tr><tr><td style="text-align: left;">ペプシン</td><td style="text-align: left;">タンパク質</td><td style="text-align: left;">ペプチド</td><td style="text-align: left;">胃液</td></tr><tr><td style="text-align: left;">トリプシン</td><td style="text-align: left;">タンパク質・ペプチド</td><td style="text-align: left;">ペプチド</td><td style="text-align: left;">すい液</td></tr><tr><td style="text-align: left;">リパーゼ</td><td style="text-align: left;">油脂</td><td style="text-align: left;">脂肪酸 ＋ モノグリセリドなど</td><td style="text-align: left;">すい液</td></tr><tr><td style="text-align: left;">カタラーゼ</td><td style="text-align: left;">過酸化水素</td><td style="text-align: left;">水 ＋ 酸素</td><td style="text-align: left;">肝臓など</td></tr></tbody></table></div>
 <p class="ref-p"><b>「〜アーゼの〜が基質」という決まり</b>を覚えれば、マルターゼ・スクラーゼ・ラクターゼ・セルラーゼ・セロビアーゼは名前から自動的に出ます。名前が基質を言っていない<b>チマーゼ・ペプシン・トリプシン・カタラーゼの4つは、基質まで暗記してください。</b>どの臓器にあるかは、覚えなくても構いません。</p>
@@ -979,8 +997,8 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/polysaccharide/">アミラーゼ・セルラーゼが分解する多糖はデンプンとセルロースのページへ</a></p>
 <h5 class="ref-h5">例題 —— おもな酵素</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">デンプンからグルコースまで分解する経路を、はたらく酵素の名前をつけて書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>デンプン →（<b>アミラーゼ</b>）→ デキストリン → マルトース →（<b>マルターゼ</b>）→ グルコース</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.enzyme-examples&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-saturation"><summary class="ref-adv-sum"><h4 class="ref-sec-h">基質の濃度と反応速度<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">基質の濃度を上げていくと反応速度は大きくなりますが、やがて頭打ちになります。酵素が基質と結びついてからはたらくためです。</p></summary><div class="ref-adv-body"><p class="ref-p">酵素の量を一定にして基質の濃度を上げていくと、はじめは基質の濃度にほぼ比例して反応速度が大きくなります。しかし基質の濃度が高くなると、<b>反応速度はそれ以上大きくならず、頭打ち</b>になります。</p><p class="ref-p">これは、酵素が基質と結びついて<b>酵素-基質複合体</b>をつくってから反応を進めるためです。すべての酵素が基質と結びついてしまうと、基質をそれ以上増やしても、はたらける酵素が残っていません。頭打ちになる理由を1文で説明できれば十分で、速度を表す式は覚える必要はありません。</p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/enzyme-saturation.png?h=e5de7601" alt="横軸が基質の濃度、縦軸が反応速度のグラフ。原点から立ち上がる曲線は、低い濃度では原点を通る破線の直線に重なり、濃度が高くなるにつれて寝ていき、ある高さの水平な破線に近づいて止まる" loading="lazy"><figcaption class="ref-figure-cap">低い濃度では破線の直線に重なり、濃度を上げていくと<b>ある高さより上には行かなくなります</b>。</figcaption></figure><div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.enzyme-saturation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>だ液のアミラーゼはデンプンをマルトースに、マルターゼはマルトースをグルコースに変える。胃液のペプシンとすい液のトリプシンはタンパク質を分解し、カタラーゼは過酸化水素を水と酸素に分解する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.enzyme-examples&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-saturation"><summary class="ref-adv-sum"><h4 class="ref-sec-h">基質の濃度と反応速度<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">基質の濃度を上げていくと反応速度は大きくなりますが、やがて頭打ちになります。酵素が基質と結びついてからはたらくためです。</p></summary><div class="ref-adv-body"><p class="ref-p">酵素の量を一定にして基質の濃度を上げていくと、はじめは基質の濃度にほぼ比例して反応速度が大きくなります。しかし基質の濃度が高くなると、<b>反応速度はそれ以上大きくならず、頭打ち</b>になります。</p><p class="ref-p">これは、酵素が基質と結びついて<b>酵素-基質複合体</b>をつくってから反応を進めるためです。すべての酵素が基質と結びついてしまうと、基質をそれ以上増やしても、はたらける酵素が残っていません。頭打ちになる理由を1文で説明できれば十分で、速度を表す式は覚える必要はありません。</p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/enzyme-saturation.png?h=e5de7601" alt="横軸が基質の濃度、縦軸が反応速度のグラフ。原点から立ち上がる曲線は、低い濃度では原点を通る破線の直線に重なり、濃度が高くなるにつれて寝ていき、ある高さの水平な破線に近づいて止まる" loading="lazy"><figcaption class="ref-figure-cap">低い濃度では破線の直線に重なり、濃度を上げていくと<b>ある高さより上には行かなくなります</b>。</figcaption></figure><div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>酵素の量を一定にして基質の濃度を上げると、はじめは反応速度が基質の濃度にほぼ比例して大きくなるが、やがて頭打ちになる。酵素は基質と結びついて酵素-基質複合体をつくってから反応を進めるので、すべての酵素が基質と結びつくと、基質を増やしてもはたらける酵素が残っていないためである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.enzyme-saturation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
 </div>
 </div>
 
@@ -1148,6 +1166,7 @@ function refAdvSetup(root) {
 }
 refAdvSetup(document);
 </script>
+
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">化学反応式は、反応物を左辺・生成物を右辺に書き、両辺で原子の種類と数がそろうように係数をつけた式です。係数は、いちばん複雑な物質を 1 とおいて順に合わせる目算法で決め、決まらないときは未定係数法を使います。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">物質量と化学反応式</span><span class="unit-label">化学反応式</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-rules" data-ref-anchor="rules">化学反応式の書き方</a></li><li><a href="#ref-sec-inspection" data-ref-anchor="inspection">目算法 —— いちばん複雑な物質を 1 とおく</a></li><li><a href="#ref-sec-undetermined" data-ref-anchor="undetermined">未定係数法 —— 目算法で詰まったとき</a></li><li><a href="#ref-sec-ionic" data-ref-anchor="ionic">イオンを含む反応式 —— 電荷もそろえる</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -950,7 +968,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">触媒は式に書かない代わりに、→ の上に書き添えることがあります（例：過酸化水素の分解の MnO₂）。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2H₂O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">MnO₂</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O ＋ O₂</span></div><p class="ref-note">MnO₂ は触媒なので、反応の前後で変化しません。左辺にも右辺にも書かず、矢印の上に添えています。</p></div>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">H₂O ＋ O₂ → H₂O₂ の O の数を合わせるために、右辺を H₂O₃ に書き換える</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">数を合わせるときに変えてよいのは<b>係数だけ</b>です。化学式の右下の小さな数字（H₂O の 2 など）を変えると、別の物質になってしまいます。</span></p><p class="ref-mistake-why">係数と化学式の中の数字が、どちらも「原子の数」を表しているように見えるためです。★ 化学式は物質の名札、係数はその物質の個数、と分けて考えましょう。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.equation-rules&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>化学反応式は反応物を左辺・生成物を右辺に書き、原子の種類と数がそろうように係数（最も簡単な整数比・1は省略）をつけ、変化しない溶媒や触媒は書かない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.equation-rules&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-inspection"><h4 class="ref-sec-h">目算法 —— いちばん複雑な物質を 1 とおく</h4><p class="ref-sec-lead">いちばん複雑な物質の係数を 1 とおき、1か所にしか出てこない原子から順に合わせます。O と H は最後に回し、分数が出たら最後に全体を整数倍します。</p></section>
 <p class="ref-p">ほとんどの反応式は、次の順に係数を決めれば、試行錯誤なしで書けます。この方法を<b>目算法</b>といいます。</p>
 <ol class="ref-list"><li>原子の種類と数がいちばん多い物質の係数を 1 とおく。</li><li>その物質に含まれる原子のうち、<b>ほかに1か所にしか出てこない原子</b>から合わせる。燃焼なら C → H の順。</li><li><b>単体（O₂ など）の係数は最後</b>に決める。単体の係数はほかに影響しないので、分数になってもよい。</li><li>分数が出たら、全体を何倍かして分母をはらう。</li></ol>
@@ -967,7 +985,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 目算法</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">エタノール C₂H₆O が完全燃焼して、二酸化炭素と水ができる反応を化学反応式で表せ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>C₂H₆O ＋ 3O₂ → 2CO₂ ＋ 3H₂O。C₂H₆O を 1 とおくと、C から CO₂ は 2、H から H₂O は 3。右辺の O は 2 × 2 ＋ 3 ＝ 7 で、左辺はエタノールに O が1個あるので、O₂ から 6 個 ＝ O₂ の係数 3。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">アルミニウムの粉末を酸素の中で燃やすと、酸化アルミニウム Al₂O₃ ができる。この変化を化学反応式で書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>4Al ＋ 3O₂ → 2Al₂O₃。Al₂O₃ を 1 とおくと、Al は 2。O は右辺 3 個なので O₂ は 3/2。全体を2倍して分母をはらいます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.coefficient-method,theo.mole.combustion-equation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>目算法では、いちばん複雑な物質の係数を 1 とおき、1か所にしか出てこない原子から合わせ、単体の係数は最後に決め、分数は最後に整数倍してはらう。</li><li>炭化水素 CₘHₙ の完全燃焼では、CₘHₙ を 1 とおくと CO₂ は m、H₂O は n／2 で、最後に O₂ の係数を決める。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.coefficient-method,theo.mole.combustion-equation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-undetermined"><h4 class="ref-sec-h">未定係数法 —— 目算法で詰まったとき</h4><p class="ref-sec-lead">係数を文字でおき、原子ごとに「左辺の数 ＝ 右辺の数」の式を立て、連立方程式を解きます。どの原子も複数の物質に出てくる反応で使います。</p></section>
 <p class="ref-p">どの原子も2か所以上に出てくる反応では、目算法の「1か所にしか出てこない原子から」が使えません。そのときは、係数を a・b・c … とおいて、原子ごとに等式を立てます。これを<b>未定係数法</b>といいます。</p>
 <p class="ref-p">具体例4で、銅と希硝酸の反応（生成物は硝酸銅(Ⅱ)・一酸化窒素・水）を考えます。</p>
@@ -983,7 +1001,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Ag⁺ ＋ Cl⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">AgCl</span></div><p class="ref-note">左辺の電荷は ＋1 と −1 で合計 0、右辺も 0。原子の数と電荷の両方がそろっています。</p></div>
 <p class="ref-p">イオン反応式では、<b>原子の数に加えて電荷の合計も両辺でそろえます</b>。どのイオンが反応に関係するかの見分け方は、イオン反応式を組み立てるアプリで練習できます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/portal.html?from=reference&amp;page=chemical-equation#sr-precipitate">沈殿のできる反応を、イオンを組み合わせて書いてみよう</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.ionic-equation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>反応に関係したイオンだけで書くイオン反応式では、原子の数に加えて両辺の電荷の合計もそろえる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.ionic-equation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">化学反応式の書き方と目算法の手順は、どの反応にも使うので身につけます。個々の反応式そのものは、無機・有機の各ページで覚えます。</p></section>
 <p class="ref-p"><b>「変えてよいのは係数だけ」「いちばん複雑な物質を 1 とおき、単体は最後」の2つは必ず覚えてください。</b>炭化水素の燃焼の式は、何も見ずに書けるようにしましょう。</p>
 <p class="ref-p">未定係数法は、目算法や半反応式で書けないときの最後の手段です。<b>計算が長くなるので、試験で使うことはほとんどありません。</b>解き方を知っていれば十分です。</p>
@@ -1092,6 +1110,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

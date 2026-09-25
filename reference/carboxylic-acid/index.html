@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">カルボキシ基 −COOH をもつ化合物のまとめ。価数・脂肪酸・ヒドロキシ酸という分け方から、二量体・弱酸の遊離・酸無水物まで。ギ酸とシュウ酸の「還元性」が別のものであることも1か所で見比べられます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">脂肪族化合物</span><span class="unit-label">カルボン酸</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-class" data-ref-anchor="class">カルボン酸の分け方</a></li><li><a href="#ref-sec-props" data-ref-anchor="props">カルボン酸の性質</a></li><li><a href="#ref-sec-list" data-ref-anchor="list">主なカルボン酸</a></li><li><a href="#ref-sec-liberation" data-ref-anchor="liberation">弱酸の遊離 —— 炭酸より強いことが効いてくる</a></li><li><a href="#ref-sec-anhydride" data-ref-anchor="anhydride">酸無水物 —— カルボキシ基から水がとれる</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -949,7 +967,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">ヒドロキシ基 −OH をふくむカルボン酸を<b>ヒドロキシ酸</b>といいます。乳酸 CH₃CH(OH)COOH は −OH と −COOH を合わせもつので、ヒドロキシ酸です。</p>
 <p class="ref-p"><b>この5つの分け方の名前は、どれも覚えてください。</b>軸が別なので、1つの化合物に2つ以上の名前が同時に付きます。たとえばオレイン酸は「鎖式の1価カルボン酸」で「C=C をもつ」「C原子が18個ある」ので、<b>高級不飽和脂肪酸</b>と呼ばれます。この重ね方が読めれば、油脂の単元で出てくる長い呼び名はその場で分解できます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/fat/">高級脂肪酸が3つ集まってできる油脂のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.carboxy,org.carbonyl.fatty-acid&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>カルボン酸の官能基はカルボキシ基 −COOH。</li><li>鎖式の1価カルボン酸（モノカルボン酸）を脂肪酸といい、炭素数の少ないものを低級脂肪酸、多いものを高級脂肪酸という。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.carboxy,org.carbonyl.fatty-acid&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-props"><h4 class="ref-sec-h">カルボン酸の性質</h4><p class="ref-sec-lead">一般式・水への溶けやすさ・沸点・酸の強さ。カルボン酸はエステルと同じ一般式をもちます。</p></section>
 <p class="ref-p">鎖式で不飽和結合をもたないカルボン酸の一般式は <b>C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub></b> です。n = 2 を代入すると C₂H₄O₂ ＝ 酢酸 CH₃COOH の分子式が得られます。</p>
 <p class="ref-p">エステルも同じ一般式 C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub> をもつので、<b>同じ分子式のカルボン酸とエステルは互いに構造異性体</b>です。C₂H₄O₂ なら酢酸とギ酸メチル HCOOCH₃ が、この関係にあたります。</p>
@@ -961,7 +979,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">二量体は1個の分子として振る舞うので、凝固点降下度を測ると、どれだけの割合が会合しているか（<b>会合度</b>）が求められます。計算問題としてよく登場します。</p>
 <p class="ref-p">カルボキシ基は<b>1価の弱酸</b>としてはたらき、塩基と中和して塩をつくります。</p>
 <div class="ref-callout ref-callout-memorize"><b class="ref-callout-tag">丸暗記でよい</b><p class="ref-callout-text"><b>カルボン酸は、炭酸 H₂CO₃ より強い酸です。</b>この1行が次の節の遊離反応をすべて決めるので、丸暗記してください。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.acidity,org.carbonyl.dimer&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>カルボン酸の水溶液は弱酸性を示し、塩基と中和して塩をつくる。</li><li>カルボン酸は沸点が高く、無極性溶媒中や気体では2分子がカルボキシ基どうしの水素結合で会合して二量体をつくる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.acidity,org.carbonyl.dimer&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-list"><h4 class="ref-sec-h">主なカルボン酸</h4><p class="ref-sec-lead">名前・示性式と、その化合物だけがもつ性質。ギ酸とシュウ酸の「還元性」は別のものです。</p></section>
 <p class="ref-p">カルボン酸の名前は、対応するアルカンの語尾に「酸」を付け加えるのが IUPAC 命名法です。メタンからは「メタン酸」、エタンからは「エタン酸」となります。ただし高校化学でこの名前を見かけることはまずないので、<b>慣用名のほうを覚えます</b>。メタン酸がギ酸、エタン酸が酢酸、プロパン酸がプロピオン酸です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">主なモノカルボン酸</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: left;">おさえるところ</th><th style="text-align: left;">覚える範囲</th></tr></thead><tbody><tr><td style="text-align: left;"><b>ギ酸</b></td><td style="text-align: left;">HCOOH</td><td style="text-align: left;">ホルミル基をもつので還元性を示す</td><td style="text-align: left;"><b>必ず覚える</b></td></tr><tr><td style="text-align: left;"><b>酢酸</b></td><td style="text-align: left;">CH₃COOH</td><td style="text-align: left;">純粋なものは融点が17℃で、寒い日には凍るので<b>氷酢酸</b>という</td><td style="text-align: left;"><b>必ず覚える</b></td></tr><tr><td style="text-align: left;">プロピオン酸</td><td style="text-align: left;">CH₃CH₂COOH</td><td style="text-align: left;">慣用名がそのまま問われることはまずない</td><td style="text-align: left;">名前だけ</td></tr><tr><td style="text-align: left;">酪酸</td><td style="text-align: left;">CH₃CH₂CH₂COOH</td><td style="text-align: left;">強い不快臭をもつ</td><td style="text-align: left;">名前だけ</td></tr></tbody></table></div>
@@ -983,7 +1001,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/stereoisomers/">シス−トランス異性体そのものの数え方は異性体のページへ</a></p>
 <h5 class="ref-h5 ref-h5-advanced">酒石酸は不斉炭素原子を2個もつ<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">酒石酸は不斉炭素原子を2個もちますが、分子内に対称面をもつ<b>メソ化合物</b>があるため、立体異性体は 2×2 − 1 = 3 種類になります。<b>メソ化合物まで覚える必要はありません。</b>酒石酸という名前と、フェーリング液の材料であることが分かれば十分です。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.formic,org.carbonyl.formic-reducing,org.carbonyl.acetic,org.carbonyl.dicarboxylic,org.carbonyl.maleic-fumaric,org.carbonyl.lactic&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（6問）">✏️ この節の一問一答（6問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ギ酸 HCOOH は最も簡単なカルボン酸で、無色・刺激臭の液体。ホルミル基をもつので還元性を示す。</li><li>ギ酸は分子中にホルミル基の構造をもつため、カルボン酸でありながら還元性を示す（銀鏡反応陽性）。</li><li>酢酸 CH₃COOH は食酢に含まれる刺激臭の無色液体。純度の高いものは氷酢酸といい、約17℃以下で凝固する。</li><li>分子中にカルボキシ基を2個もつ酸をジカルボン酸といい、最も簡単なものはシュウ酸 (COOH)₂。</li><li>マレイン酸とフマル酸はブテン二酸のシス-トランス異性体で、シス形がマレイン酸、トランス形がフマル酸。</li><li>乳酸 CH₃CH(OH)COOH はヒドロキシ基とカルボキシ基を合わせもち、不斉炭素原子が1つあるため鏡像異性体が存在する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.formic,org.carbonyl.formic-reducing,org.carbonyl.acetic,org.carbonyl.dicarboxylic,org.carbonyl.maleic-fumaric,org.carbonyl.lactic&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（6問）">✏️ この節の一問一答（6問）</button></div></div>
 <section class="ref-sec" id="ref-sec-liberation"><h4 class="ref-sec-h">弱酸の遊離 —— 炭酸より強いことが効いてくる</h4><p class="ref-sec-lead">「強酸 ＞ カルボン酸 ＞ 炭酸」の順番だけで、3本の反応式が決まります。</p></section>
 <p class="ref-p">弱酸の遊離は、<b>相対的に強い酸が塩から弱い酸を追い出す</b>反応です。だから覚えるのは酸の強さの順番だけで足ります。</p>
 <p class="ref-p"><b>「強酸 ＞ R−COOH ＞ H₂CO₃」の順番は必ず暗記してください。</b>カルボン酸は塩酸・硫酸・硝酸などの強酸に比べれば弱い酸ですが、炭酸よりは強い酸です。</p>
@@ -995,7 +1013,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 弱酸の遊離</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化学反応式を書け。<b>(1) 炭酸水素ナトリウム水溶液に酢酸を加えた　(2) 炭酸ナトリウム水溶液に酢酸を加えた　(3) 酢酸ナトリウム水溶液に塩酸を加えた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) NaHCO₃ ＋ CH₃COOH → CH₃COONa ＋ H₂O ＋ CO₂↑　(2) Na₂CO₃ ＋ 2CH₃COOH → 2CH₃COONa ＋ H₂O ＋ CO₂↑　(3) CH₃COONa ＋ HCl → NaCl ＋ CH₃COOH　どれも「強いほうの酸が、塩から弱いほうの酸を追い出す」形です。(2) だけは Na が2個あるので、酢酸の係数が 2 になります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.vs-carbonic,org.carbonyl.salt-strong-acid&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>カルボン酸は炭酸より強い酸なので、炭酸水素ナトリウム水溶液に二酸化炭素を発生しながら溶ける（弱酸の遊離）。</li><li>カルボン酸の塩に塩酸などの強い酸を加えると、弱いカルボン酸が遊離する（弱酸の遊離）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.vs-carbonic,org.carbonyl.salt-strong-acid&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-anhydride"><h4 class="ref-sec-h">酸無水物 —— カルボキシ基から水がとれる</h4><p class="ref-sec-lead">2つのカルボキシ基から水1分子がとれると酸無水物になります。1分子の中で起こるか、2分子の間で起こるかの2通りです。</p></section>
 <p class="ref-p">カルボン酸のカルボキシ基2個から水1分子がとれて縮合したものを<b>酸無水物</b>といいます。とれかたは2通りあって、<b>1つの分子の中で起こる場合（分子内脱水）</b>と、<b>2つの分子の間で起こる場合（分子間の脱水縮合）</b>に分かれます。</p>
 <p class="ref-p">シス形のマレイン酸を加熱すると、2つのカルボキシ基が近いところにあるので、<b>分子内脱水</b>して無水マレイン酸になります。</p>
@@ -1013,7 +1031,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">カルボキシ基をふくむ官能基15種の一覧はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-oxidation-map/">カルボン酸は第1級アルコールを酸化してできる —— その対応表はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">カルボン酸がアルコールと縮合してエステルになる反応（エステル化とけん化）はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.maleic-anhydride,org.carbonyl.acid-anhydride,org.carbonyl.acetic-anhydride-props&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>シス形のマレイン酸だけが加熱で分子内脱水して無水マレイン酸になる。トランス形のフマル酸はならない。シス-トランスの判定に使える。</li><li>カルボン酸2分子から水1分子がとれて縮合したものが酸無水物。酢酸からは無水酢酸 (CH₃CO)₂O が得られる。</li><li>無水酢酸は水に溶けにくい無色の液体で、カルボキシ基をもたないため酸性を示さない。水とは徐々に反応して酢酸に戻る。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.maleic-anhydride,org.carbonyl.acid-anhydride,org.carbonyl.acetic-anhydride-props&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 </div>
 </div>
 
@@ -1137,6 +1155,7 @@ window.addEventListener('message', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">化学反応式の係数の比は、反応する物質の mol の比です。反応前・変化量・反応後の3行の表を書き、変化量を「係数 × 倍率」で埋めます。過不足は「mol ÷ 係数」の小さい方で反応が止まります。気体どうしなら体積のまま計算できます。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">物質量と化学反応式</span><span class="unit-label">化学反応の量的関係・化学の基本法則</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-ratio" data-ref-anchor="ratio">係数の比 ＝ 分子の数の比 ＝ mol の比</a></li><li><a href="#ref-sec-three-rows" data-ref-anchor="three-rows">3行の表 —— 変化量は「係数 × 倍率」</a></li><li><a href="#ref-sec-units" data-ref-anchor="units">g や L で与えられたら —— まず mol にそろえる</a></li><li><a href="#ref-sec-limiting" data-ref-anchor="limiting">過不足 —— 「mol ÷ 係数」の小さい方で止まる</a></li><li><a href="#ref-sec-gas" data-ref-anchor="gas">気体どうしは体積のまま計算できる</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -947,7 +965,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-table-wrap"><div class="ref-cap">2H₂ ＋ O₂ → 2H₂O の係数が表すもの（H＝1.0、O＝16）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">何の比か</th><th style="text-align: right;">2H₂</th><th style="text-align: right;">O₂</th><th style="text-align: right;">2H₂O</th><th style="text-align: left;">係数の比か</th></tr></thead><tbody><tr><td style="text-align: left;">分子の数</td><td style="text-align: right;">2個</td><td style="text-align: right;">1個</td><td style="text-align: right;">2個</td><td style="text-align: left;">○ 係数の比</td></tr><tr><td style="text-align: left;">物質量</td><td style="text-align: right;">2mol</td><td style="text-align: right;">1mol</td><td style="text-align: right;">2mol</td><td style="text-align: left;">○ 係数の比</td></tr><tr><td style="text-align: left;">質量</td><td style="text-align: right;">4g</td><td style="text-align: right;">32g</td><td style="text-align: right;">36g</td><td style="text-align: left;">× 係数の比ではない（左辺の合計 ＝ 右辺）</td></tr><tr><td style="text-align: left;">気体の体積（標準状態）</td><td style="text-align: right;">44.8L</td><td style="text-align: right;">22.4L</td><td style="text-align: right;">——（水は液体）</td><td style="text-align: left;">○ 気体どうしなら係数の比</td></tr></tbody></table></div>
 <p class="ref-p"><b>係数の比は「数」の比</b>です。mol は数の単位なので mol の比にもなり、同じ温度・圧力の気体は同じ体積に同じ数の分子を含むので、体積の比にもなります。一方、分子1個の重さは物質ごとに違うので、<b>質量の比にはなりません</b>。質量で言えるのは「左辺の合計 ＝ 右辺の合計」（質量保存の法則）だけです。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">2H₂ ＋ O₂ → 2H₂O なので、水素 2g と酸素 1g が反応する</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">係数の比 2 : 1 は <b>mol の比</b>です。水素 2mol（4g）と酸素 1mol（32g）が反応します。質量で問われたら、必ず一度 mol に直します。</span></p><p class="ref-mistake-why">反応式の数字を、問題で与えられた単位（g）のまま読んでしまうためです。★ 「係数の比は mol の比」と、主語を mol にして唱えましょう。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.coefficient-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>反応式の係数の比は、分子の数の比・物質量の比であり、同温・同圧の気体なら体積の比でもあるが、質量の比ではない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.coefficient-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-three-rows"><h4 class="ref-sec-h">3行の表 —— 変化量は「係数 × 倍率」</h4><p class="ref-sec-lead">反応式の下に、反応前・変化量・反応後の3行の表を書きます。変化量の行は、係数に同じ倍率 x を掛けたものです。反応物は減り（−）、生成物は増えます（＋）。</p></section>
 <p class="ref-p">反応の量の計算は、反応式の下に<b>3行の表</b>を書いて進めます。</p>
 <ol class="ref-list"><li>反応式を書き、その下に「反応前」「変化量」「反応後」の3行をつくる。</li><li>反応前の行に、与えられた量を mol で入れる。</li><li>変化量の行は「<b>係数 × 倍率 x</b>」。反応物は − <span class="ref-blank">○○</span>x、生成物は ＋ <span class="ref-blank">○○</span>x。<div class="ref-li-hang">倍率 x は「反応が何回ぶん進んだか」です。</div></li><li>反応後 ＝ 反応前 ＋ 変化量。</li></ol>
@@ -956,7 +974,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">CH₄ の係数は 1 なので、0.50mol 燃えたなら倍率 x ＝ 0.50 です。<b>同じ倍率がすべての物質にかかる</b>ので、H₂O は 2 × 0.50 ＝ 1.0mol できます（単位はすべて mol）。</p>
 <p class="ref-p">★ これは物質量のページの「倍率で解く比例式」と同じことです。CH₄ 1mol : H₂O 2mol ＝ CH₄ 0.50mol : H₂O □mol の比例式を、全部の物質について一度に書いたのが3行の表です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/ratio/stoich.html?r=r2&amp;from=reference&amp;page=stoichiometry">メタンの燃焼で、倍率を入れて3行の表を埋めてみよう</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.three-row-table&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>反応の量は、反応前・変化量・反応後の3行の表を mol で書いて求め、変化量は係数 × 倍率 x（反応物は −、生成物は ＋）で決まる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.three-row-table&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-units"><h4 class="ref-sec-h">g や L で与えられたら —— まず mol にそろえる</h4><p class="ref-sec-lead">反応前の量が g や L で与えられたら、表に入れる前に mol に直します。答えを g や L で問われたら、最後に mol から戻します。</p></section>
 <p class="ref-p">3行の表の中は、<b>必ず mol で書きます</b>（気体どうしの例外は下の節）。流れは「g・L → mol → 3行の表 → mol → g・L」の3段です。</p>
 <p class="ref-p">具体例2で、炭酸カルシウム CaCO₃（式量 100）25g に十分な量の塩酸を加えたとき、発生する二酸化炭素の標準状態での体積を求めます。</p>
@@ -965,7 +983,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— g や L で与えられたとき</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">メタン CH₄ 0.50mol を完全燃焼させたとき、生成する水の質量は何 g か（H＝1.0、O＝16）。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>18g。CH₄ ＋ 2O₂ → CO₂ ＋ 2H₂O で、CH₄ の係数 1 から倍率 x ＝ 0.50。H₂O は 2 × 0.50 ＝ 1.0mol。H₂O 1mol : 18g なので 18g。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">標準状態で 11.2L のメタンを完全燃焼させたとき、生成する水は何 g か（H＝1.0、O＝16）。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>18g。水の質量を問われているので、L のままでは解けません。CH₄ は 11.2 ÷ 22.4 ＝ 0.50mol。x ＝ 0.50 で H₂O は 1.0mol、18g。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.mass-unit-flow&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>反応前の量が g や L で与えられたら、mol に直してから3行の表に入れ、答えを g や L で問われたら最後に mol から戻す（g・L → mol → 3行の表 → mol → g・L）。例えば炭酸カルシウム CaCO₃（式量 100）25g に十分な塩酸を加えると、CaCO₃ 0.25mol から CO₂ 0.25mol ができ、標準状態で 5.6L になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.mass-unit-flow&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-limiting"><h4 class="ref-sec-h">過不足 —— 「mol ÷ 係数」の小さい方で止まる</h4><p class="ref-sec-lead">反応物が2つとも量で与えられたら、それぞれ「mol ÷ 係数」を出します。小さい方の値が倍率 x になり、その物質がなくなったところで反応は止まります。</p></section>
 <p class="ref-p">反応物が2つとも与えられたときは、どちらかが先になくなり、もう一方が余ります。どちらが先になくなるかは、<b>それぞれ「自分だけなら何回ぶん反応できるか」＝ mol ÷ 係数</b>を比べて決めます。<b>小さい方で反応は止まり</b>、その値が倍率 x です。</p>
 <p class="ref-p">具体例3で、水素 0.30mol と酸素 0.10mol を反応させます。</p>
@@ -978,7 +996,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 過不足</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">水素 0.60g と酸素 3.2g を反応させた。生成する水は何 g か（H＝1.0、O＝16）。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>3.6g。mol にそろえると H₂ は 0.60 ÷ 2.0 ＝ 0.30mol、O₂ は 3.2 ÷ 32 ＝ 0.10mol。2H₂ ＋ O₂ → 2H₂O で、H₂ 0.30 ÷ 2 ＝ 0.15、O₂ 0.10 ÷ 1 ＝ 0.10 なので O₂ が先になくなり x ＝ 0.10。H₂O は 0.20mol ＝ 0.20 × 18 ＝ 3.6g（H₂ が 0.10mol 余る）。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">メタン 0.30mol と酸素 0.40mol を反応させた。反応後に残るメタンは何 mol か。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>0.10mol。CH₄ ＋ 2O₂ → CO₂ ＋ 2H₂O で、CH₄ 0.30 ÷ 1 ＝ 0.30、O₂ 0.40 ÷ 2 ＝ 0.20。O₂ が先になくなり x ＝ 0.20。CH₄ は反応前 0.30、変化量 −0.20 で、反応後 0.10mol。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.limiting-reactant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>反応物が2つとも与えられたら、それぞれの「mol ÷ 係数」を比べ、小さい方の値が倍率 x になり、その物質がなくなったところで反応が止まる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.limiting-reactant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-gas"><h4 class="ref-sec-h">気体どうしは体積のまま計算できる</h4><p class="ref-sec-lead">同じ温度・圧力の気体どうしなら、係数の比は体積の比です。22.4 で割って掛け直さず、L のまま3行の表を書けます。同じ容器の中なら、圧力〔Pa〕のままでも書けます。</p></section>
 <p class="ref-p">同温・同圧の気体は、同じ体積に同じ数の分子を含みます。だから<b>気体どうしの反応では、係数の比 ＝ 体積の比</b>です。問われている量も気体なら、mol に直さず <b>L のまま</b>3行の表を書けます。</p>
 <p class="ref-p">具体例4で、同温・同圧で窒素 2.0L と水素 3.0L を反応させたときにできるアンモニアの体積を求めます。N₂ は 2.0 ÷ 1 ＝ 2.0、H₂ は 3.0 ÷ 3 ＝ 1.0 なので、水素が先になくなり、倍率 x ＝ 1.0（L）。NH₃ は 2 × 1.0 ＝ 2.0L できます。</p>
@@ -989,7 +1007,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/gas-with-vapor/">反応でできた水が液体になるかどうかの判定は、水蒸気を含む気体のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">例題 —— 気体どうしの体積の計算</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">同温・同圧で、メタン 2.0L と酸素 3.0L を混ぜて反応させた。生成する二酸化炭素は何 L か。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>1.5L。気体どうしなので L のまま解けます。CH₄ 2.0 ÷ 1 ＝ 2.0、O₂ 3.0 ÷ 2 ＝ 1.5 で O₂ が先になくなり x ＝ 1.5。CO₂ は 1 × 1.5 ＝ 1.5L（CH₄ が 0.5L 余る）。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.gas-volume-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>同温・同圧の気体どうしの反応では係数の比が体積の比なので L のまま3行の表を書け、同じ容器の中なら圧力のままでも書けるが、液体になる物質の量は mol を経由する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.gas-volume-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">「係数の比は mol の比」「変化量は係数 × 倍率」「過不足は mol ÷ 係数の小さい方」の3つを覚えれば、量的関係の問題はすべてこの3行の表で解けます。</p></section>
 <p class="ref-p"><b>「係数の比 ＝ mol の比（質量の比ではない）」と「過不足は mol ÷ 係数の小さい方で止まる」の2つは必ず覚えてください。</b></p>
 <p class="ref-p">3行の表は、化学のあとの単元でも同じ形で何度も使います。化学平衡（平衡に達したときの量）・電離平衡（電離度）・気体の反応（圧力で書く表）は、どれも「反応前・変化量・反応後」の3行です。<b>ここで3行の表を書く習慣をつけておくと、あとが楽になります。</b></p>
@@ -1098,6 +1116,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

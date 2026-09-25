@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">トルエン・キシレン・エチルベンゼン・スチレン・ナフタレンと、o-・m-・p- の呼び方、C₈H₁₀ の4種の数え方。そして「環は酸化されず、側鎖が −COOH になる」側鎖の酸化まで。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">芳香族化合物</span><span class="unit-label">芳香族炭化水素</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-toluene" data-ref-anchor="toluene">トルエン</a></li><li><a href="#ref-sec-omp" data-ref-anchor="omp">二置換体の位置の呼び方 o・m・p</a></li><li><a href="#ref-sec-c8h10" data-ref-anchor="c8h10">分子式 C₈H₁₀ の芳香族炭化水素は4種</a></li><li><a href="#ref-sec-styrene-naphthalene" data-ref-anchor="styrene-naphthalene">スチレンとナフタレン</a></li><li><a href="#ref-sec-oxidation" data-ref-anchor="oxidation">側鎖の酸化 —— 環は酸化されない</a></li><li><a href="#ref-sec-ortho-hbond" data-ref-anchor="ortho-hbond">o- 体だけ性質が違うことがある</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
 <div class="ref-scope">
@@ -944,7 +962,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <section class="ref-sec" id="ref-sec-toluene"><h4 class="ref-sec-h">トルエン</h4><p class="ref-sec-lead">ベンゼンの H を1個メチル基に置き換えたもの。メチルベンゼンともいいます。</p></section>
 <p class="ref-p">トルエン C₆H₅CH₃ は、ベンゼンの H を1個<b>メチル基 −CH₃</b> に置き換えた化合物で、<b>メチルベンゼン</b>ともいいます。特有のにおいをもつ無色の液体で、溶媒に使われます。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-toluene.png?h=aa04791a" alt="トルエンの構造式。ベンゼン環の炭素1個にメチル基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>トルエン C₆H₅CH₃</b>。環に付いたメチル基が、このページでいう「側鎖」です。</figcaption></figure>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.toluene&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>トルエン C₆H₅CH₃ はベンゼンの水素原子1個をメチル基に置き換えた化合物（メチルベンゼン）。無色の液体で溶剤に使う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.toluene&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-omp"><h4 class="ref-sec-h">二置換体の位置の呼び方 o・m・p</h4><p class="ref-sec-lead">置換基が2個付いたとき、隣り合うものが o-、1つおきが m-、向かい合うものが p- です。</p></section>
 <p class="ref-p">ベンゼン環に置換基が2個付くと、2個の位置関係は3通りあります。<b>隣り合う（1,2-）ものを o-（オルト）</b>、<b>1つおき（1,3-）を m-（メタ）</b>、<b>向かい合う（1,4-）ものを p-（パラ）</b>といいます。</p>
 <p class="ref-p">メチル基が2個付いたものが<b>キシレン</b> C₆H₄(CH₃)₂ で、位置によって o-キシレン・m-キシレン・p-キシレンの3種があります。</p>
@@ -952,7 +970,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-m-xylene.png?h=9f5804bd" alt="m-キシレンの構造式。ベンゼン環の炭素を1個はさんだ位置に、メチル基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>m-キシレン</b>。2個のメチル基が1つおきに付いています（1,3-）。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-p-xylene.png?h=ceabfe85" alt="p-キシレンの構造式。ベンゼン環の向かい合う2個の炭素に、メチル基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>p-キシレン</b>。2個のメチル基が向かい合っています（1,4-）。</figcaption></figure>
 <p class="ref-p"><b>o・m・p の3つの位置の呼び方は必ず覚えてください。</b>「メチル基が2個なら『<span class="ref-blank">○○</span>-キシレン』の <span class="ref-blank">○○</span> に o・m・p を入れる」と、名前の型ごと覚えてしまうのが確実です。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.ortho-meta-para&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>二置換ベンゼンの位置関係は、隣（1,2-）を o-（オルト）、1つおき（1,3-）を m-（メタ）、向かい（1,4-）を p-（パラ）と表す。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.ortho-meta-para&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-c8h10"><h4 class="ref-sec-h">分子式 C₈H₁₀ の芳香族炭化水素は4種</h4><p class="ref-sec-lead">ベンゼン環の外にある炭素2個を、1本にまとめるか2本に分けるかで場合分けします。</p></section>
 <p class="ref-p">分子式 C₈H₁₀ の芳香族炭化水素は、ベンゼン環 C₆ の外に炭素が2個あります。次の手順で数えると、もれなく数えられます。</p>
 <ol class="ref-list"><li>ベンゼン環の外にある炭素の数を数える。<div class="ref-li-hang">C₈H₁₀ なら 8−6＝2個</div></li><li>その炭素を「1本の側鎖にまとめる」か「2本に分ける」かで場合分けする。</li><li>まとめた場合は、側鎖の名前を付けて1種。<div class="ref-li-hang">炭素2個をまとめるとエチル基 → エチルベンゼンの1種</div></li><li>分けた場合は、2本の位置で o・m・p の3種。<div class="ref-li-hang">メチル基2本 → o-キシレン・m-キシレン・p-キシレンの3種</div></li></ol>
@@ -962,14 +980,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 分子式 C₈H₁₀ の芳香族炭化水素</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">分子式 C₈H₁₀ の芳香族炭化水素の名称をすべて答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>エチルベンゼン・o-キシレン・m-キシレン・p-キシレン</b>の4種です。環の外の炭素2個を、1本にまとめる（エチル基）か、2本に分ける（メチル基2本で o・m・p）かで場合分けします。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.c8h10-isomers&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>分子式 C₈H₁₀ の芳香族炭化水素は、キシレン（o-・m-・p- の3種）とエチルベンゼンの計4種。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.c8h10-isomers&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-styrene-naphthalene"><h4 class="ref-sec-h">スチレンとナフタレン</h4><p class="ref-sec-lead">スチレンは環にビニル基が付いたもので、付加重合します。ナフタレンは環が2個つながったもので、昇華しやすい結晶です。</p></section>
 <p class="ref-p">スチレン C₆H₅CH=CH₂ は、ベンゼン環に<b>ビニル基 −CH=CH₂</b> が付いた化合物です。側鎖の C=C のところで<b>付加重合</b>して、ポリスチレンになります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CH(C₆H₅)</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CH(C₆H₅)］ₙ</span></div><p class="ref-note">スチレンが付加重合してポリスチレンになります。反応するのは側鎖の C=C だけで、ベンゼン環はそのまま残ります。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">ポリスチレンなど、付加重合でできる合成樹脂のページへ</a></p>
 <p class="ref-p">ナフタレン C₁₀H₈ は、ベンゼン環2個が<b>1辺を共有してつながった</b>化合物です。<b>昇華しやすい無色の板状の結晶</b>で、防虫剤に使われます。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-naphthalene.png?h=0a62c5d9" alt="ナフタレンの構造式。ベンゼン環2個が1本の辺を共有してつながっている" loading="lazy"><figcaption class="ref-figure-cap"><b>ナフタレン C₁₀H₈</b>。2個の環が真ん中の1辺を共有しています。</figcaption></figure>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.styrene,org.aro.naphthalene&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>スチレン C₆H₅CH=CH₂ はベンゼン環にビニル基が付いた化合物。C=C の部分で付加重合してポリスチレンになる。</li><li>ナフタレン C₁₀H₈ はベンゼン環2個が1辺を共有して縮合した化合物。昇華しやすい無色の板状結晶で、防虫剤に使う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.styrene,org.aro.naphthalene&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-oxidation"><h4 class="ref-sec-h">側鎖の酸化 —— 環は酸化されない</h4><p class="ref-sec-lead">過マンガン酸カリウムで酸化すると、側鎖は長さにかかわらず根もとの炭素1個だけが残って −COOH になります。</p></section>
 <p class="ref-p">ベンゼン環に炭化水素基が付いた化合物を過マンガン酸カリウム KMnO₄ で酸化すると、<b>ベンゼン環は変化せず、側鎖だけが酸化されてカルボキシ基 −COOH になります</b>。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅CH₃ ＋ 3［O］</span><span class="ref-rx-arrow"><span class="ref-rx-over">KMnO₄</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">C₆H₅COOH ＋ H₂O</span></div><p class="ref-note">トルエンのメチル基がカルボキシ基になって、安息香酸ができます。</p></div>
@@ -988,8 +1006,8 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 側鎖の酸化</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">o-キシレンと p-キシレンのどちらかである化合物 A・B がある。それぞれを KMnO₄ で酸化して得た酸を加熱すると、A から得た酸だけが脱水した。A・B はそれぞれどちらか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>A は o-キシレン、B は p-キシレン</b>です。o-キシレンからはフタル酸ができ、2個の −COOH が隣り合っているので、加熱すると分子内脱水して無水フタル酸になります。p-キシレンからできるテレフタル酸は、−COOH が離れているので脱水しません。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">エチルベンゼンを過マンガン酸カリウムで十分に酸化すると、何ができるか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>安息香酸 C₆H₅COOH</b> です。側鎖の長さにかかわらず、環に付いた根もとの炭素1個だけが −COOH になるので、トルエンを酸化したときと同じものができます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.sidechain-oxidation,org.aro.xylene-oxidation,org.aro.naphthalene-oxidation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-ortho-hbond"><summary class="ref-adv-sum"><h4 class="ref-sec-h">o- 体だけ性質が違うことがある<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">水素結合をつくれる置換基が隣り合う o- 体は、分子の中で水素結合をつくるので、m- 体・p- 体より沸点が低くなります。</p></summary><div class="ref-adv-body"><p class="ref-p">−OH や −COOH のように水素結合をつくれる置換基が隣り合っている o- 体は、<b>1つの分子の中で水素結合</b>をつくることができます。そのぶん<b>分子どうしの水素結合が減る</b>ので、m- 体や p- 体より<b>沸点や融点が低く、水に溶けにくく</b>なります。</p><p class="ref-p">たとえば o-ニトロフェノールは、分子内で −OH と −NO₂ が水素結合するので、p-ニトロフェノールより沸点が低くなります。サリチル酸でも同じことが起こります。</p><p class="ref-p"><b>この理由は覚えなくて構いませんが、「o- 体だけ沸点が低い」という結果を問題文で見たら、分子内水素結合を思い出せるようにしておきましょう。</b></p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-o-nitrophenol-hbond.png?h=58d0250a" alt="o-ニトロフェノールの構造式で、隣り合う −OH の H と −NO₂ の O が点線で結ばれ、「水素結合」と書いてある図" loading="lazy"><figcaption class="ref-figure-cap">o-ニトロフェノールでは、隣り合う <b>−OH の H</b> と <b>−NO₂ の O</b> が同じ分子の中で水素結合します（点線）。</figcaption></figure><p class="ref-link-row"><a class="ref-link" href="/reference/intermolecular-force/">水素結合と沸点の関係をもう少し詳しく</a></p><div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.ortho-hbond&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>トルエンを過マンガン酸カリウムで酸化すると、側鎖のメチル基がカルボキシ基になり安息香酸が生じる。ベンゼン環は酸化されない。</li><li>キシレンの酸化では2つのメチル基がともにカルボキシ基になり、o-キシレンからフタル酸、p-キシレンからテレフタル酸が生じる。</li><li>ナフタレンを酸化バナジウム(V) V₂O₅ を触媒として空気酸化すると、無水フタル酸が生じる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.sidechain-oxidation,org.aro.xylene-oxidation,org.aro.naphthalene-oxidation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-ortho-hbond"><summary class="ref-adv-sum"><h4 class="ref-sec-h">o- 体だけ性質が違うことがある<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">水素結合をつくれる置換基が隣り合う o- 体は、分子の中で水素結合をつくるので、m- 体・p- 体より沸点が低くなります。</p></summary><div class="ref-adv-body"><p class="ref-p">−OH や −COOH のように水素結合をつくれる置換基が隣り合っている o- 体は、<b>1つの分子の中で水素結合</b>をつくることができます。そのぶん<b>分子どうしの水素結合が減る</b>ので、m- 体や p- 体より<b>沸点や融点が低く、水に溶けにくく</b>なります。</p><p class="ref-p">たとえば o-ニトロフェノールは、分子内で −OH と −NO₂ が水素結合するので、p-ニトロフェノールより沸点が低くなります。サリチル酸でも同じことが起こります。</p><p class="ref-p"><b>この理由は覚えなくて構いませんが、「o- 体だけ沸点が低い」という結果を問題文で見たら、分子内水素結合を思い出せるようにしておきましょう。</b></p><figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-homologs-o-nitrophenol-hbond.png?h=58d0250a" alt="o-ニトロフェノールの構造式で、隣り合う −OH の H と −NO₂ の O が点線で結ばれ、「水素結合」と書いてある図" loading="lazy"><figcaption class="ref-figure-cap">o-ニトロフェノールでは、隣り合う <b>−OH の H</b> と <b>−NO₂ の O</b> が同じ分子の中で水素結合します（点線）。</figcaption></figure><p class="ref-link-row"><a class="ref-link" href="/reference/intermolecular-force/">水素結合と沸点の関係をもう少し詳しく</a></p><div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>−OH と、その H を受け取れる O をもつ置換基（−NO₂・−COOH・−CHO など）が隣り合った o- 体は、分子内で水素結合をつくれる。そのぶん分子どうしの水素結合が減るので、m- 体や p- 体より沸点が低く水に溶けにくい。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aro.ortho-hbond&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
 </div>
 </div>
 
@@ -1174,6 +1192,7 @@ function refAdvSetup(root) {
 }
 refAdvSetup(document);
 </script>
+
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

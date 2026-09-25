@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">「淡黄色で水より重い油状の液体」のような問題文の書きぶりから物質を名指しするための対応表。沸点・融点で決まるもの、見た目・においで決まるもの、位置だけが違う異性体を沸点で分ける型まで。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">有機化合物のきほん</span><span class="unit-label">元素分析と構造式の決定</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-bp-mp" data-ref-anchor="bp-mp">沸点・融点・状態で名指しできるもの</a></li><li><a href="#ref-sec-look-smell" data-ref-anchor="look-smell">見た目・においで名指しできるもの</a></li><li><a href="#ref-sec-position" data-ref-anchor="position">位置だけが違う異性体は、沸点で分かれることがある</a></li><li><a href="#ref-sec-why" data-ref-anchor="why">なぜその物性になるか</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -951,7 +969,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/amino-acid/">アミノ酸の双性イオンと融点はアミノ酸のページへ</a></p>
 <h5 class="ref-h5">例題 —— 沸点・融点・状態で名指しできるもの</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">分子式 C₄H₁₀O の化合物 B は、ナトリウムを加えても変化がなく、沸点は 34℃ であった。B の構造を示性式で書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>Na と反応しないので −OH をもたず、C₄H₁₀O の7通りのうちエーテルの3通りに絞られます。沸点34℃ からジエチルエーテルに決まり、B は <b>C₂H₅OC₂H₅</b>（CH₃CH₂−O−CH₂CH₃）です。手がかりの順番のページの例題1と同じ分子式で、分かれ道だけが違います。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.clue.diethyl-ether-bp,org.clue.acetic-mp,org.clue.formaldehyde-gas,org.clue.amino-acid-mp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>沸点が34℃と与えられたら、高校で名前の出る有機化合物ではジエチルエーテル。</li><li>融点が約17℃（冬に凍る液体）と与えられたら酢酸。純度の高いものを氷酢酸という。</li><li>常温で気体のアルデヒドはホルムアルデヒドだけ。</li><li>分子量のわりに融点が非常に高く、水に溶けて有機溶媒には溶けない固体、と書いてあればアミノ酸。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.clue.diethyl-ether-bp,org.clue.acetic-mp,org.clue.formaldehyde-gas,org.clue.amino-acid-mp&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-look-smell"><h4 class="ref-sec-h">見た目・においで名指しできるもの</h4><p class="ref-sec-lead">淡黄色で水より重いニトロベンゼン、空気中で褐色になるアニリン、昇華するナフタレン、果実のにおいのエステル。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">見た目・においで名指しできる物質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">問題文の書きぶり</th><th style="text-align: left;">物質</th><th style="text-align: left;">ひとこと</th></tr></thead><tbody><tr><td style="text-align: left;"><b>淡黄色</b>で<b>水より重い</b>油状の液体、特有のにおい</td><td style="text-align: left;"><b>ニトロベンゼン</b> C₆H₅NO₂</td><td style="text-align: left;">水より重いので、水と混ぜると下の層になる</td></tr><tr><td style="text-align: left;">無色の油状の液体で、空気中に置くと<b>しだいに褐色</b>になる</td><td style="text-align: left;"><b>アニリン</b> C₆H₅NH₂</td><td style="text-align: left;">空気中で酸化されて色が付く</td></tr><tr><td style="text-align: left;"><b>昇華しやすい</b>無色の<b>板状結晶</b>で、防虫剤に使われる</td><td style="text-align: left;"><b>ナフタレン</b> C₁₀H₈</td><td style="text-align: left;">固体から直接気体になる</td></tr><tr><td style="text-align: left;"><b>果実のような芳香</b>をもつ、水に溶けにくい<b>中性</b>の液体</td><td style="text-align: left;"><b>エステル</b></td><td style="text-align: left;">物質名ではなく<b>分類</b>が決まる</td></tr></tbody></table></div>
 <p class="ref-p">エステルの行だけは、決まるのが物質名ではなく分類です。低分子量のエステルは果実のにおいをもち、酢酸エチルや酢酸ペンチルのように、どれか1つに決めるには別の条件が要ります。</p>
@@ -961,7 +979,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/ester/">エステルのにおいと性質はエステルのページへ</a></p>
 <h5 class="ref-h5">例題 —— 見た目・においで名指しできるもの</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の記述に当てはまる物質の名称を答えよ。<b>(1) 淡黄色で水より重い油状の液体である　(2) 無色の油状の液体で、空気中に置くとしだいに褐色になる　(3) 昇華しやすい無色の板状結晶で、防虫剤に使われる　(4) 冬に凍ることがある、刺激臭をもつ無色の液体である</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) ニトロベンゼン　(2) アニリン　(3) ナフタレン　(4) 酢酸（純度の高いものは氷酢酸）</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.clue.nitrobenzene-look,org.clue.aniline-look,org.clue.naphthalene-sublime,org.clue.ester-smell&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>淡黄色で水より重い油状の液体、と書いてあればニトロベンゼン。</li><li>無色の油状の液体で、空気中に置くとしだいに褐色になる、と書いてあればアニリン。</li><li>昇華する無色の板状結晶（防虫剤）といえばナフタレン。</li><li>果実のような芳香をもつ中性の液体、と書いてあればエステル。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.clue.nitrobenzene-look,org.clue.aniline-look,org.clue.naphthalene-sublime,org.clue.ester-smell&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-position"><h4 class="ref-sec-h">位置だけが違う異性体は、沸点で分かれることがある</h4><p class="ref-sec-lead">1-プロパノールと2-プロパノールは、分類でも分子式でも分かれませんが、沸点が違います。</p></section>
 <p class="ref-p">官能基の<b>位置</b>だけが違う異性体は、「分類 → 数」の段では分かれません。そのとき物性が最後の決め手になることがあります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">C₃H₈O のアルコール2種の沸点</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">示性式</th><th style="text-align: right;">沸点</th></tr></thead><tbody><tr><td style="text-align: left;"><b>1-プロパノール</b></td><td style="text-align: left;">CH₃CH₂CH₂OH</td><td style="text-align: right;">97℃</td></tr><tr><td style="text-align: left;"><b>2-プロパノール</b></td><td style="text-align: left;">CH₃CH(OH)CH₃</td><td style="text-align: right;">82℃</td></tr></tbody></table></div>
@@ -1103,6 +1121,7 @@ window.addEventListener('message', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

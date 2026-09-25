@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">核酸はヌクレオチドが多数つながった天然高分子です。ヌクレオチドの3つの部品（五炭糖・リン酸・塩基）、糖とリン酸がつながった鎖のつくり、DNA と RNA の違い、A と T・G と C の塩基の対を1枚にしました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">天然高分子</span><span class="unit-label">核酸</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-nucleotide" data-ref-anchor="nucleotide">ヌクレオチド</a></li><li><a href="#ref-sec-chain" data-ref-anchor="chain">核酸の鎖のつくり</a></li><li><a href="#ref-sec-dna-rna" data-ref-anchor="dna-rna">DNA と RNA の違い</a></li><li><a href="#ref-sec-base-pair" data-ref-anchor="base-pair">塩基の対と二重らせん</a></li><li><a href="#ref-sec-flow" data-ref-anchor="flow">遺伝情報の流れ</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
 <div class="ref-scope">
@@ -950,14 +968,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-deoxyribose.png?h=4de7265e" alt="デオキシリボースの鎖状構造式。炭素5個の鎖の一端がホルミル基 CHO、反対の端が CH2OH で、間の炭素のうち2個に OH が付き、ホルミル基の隣の炭素には OH が付いていない" loading="lazy"><figcaption class="ref-figure-cap">DNA の五炭糖の<b>デオキシリボース</b> C₅H₁₀O₄（鎖状の形）。ホルミル基の隣の炭素に −OH が無く、リボース C₅H₁₀O₅ より酸素原子が1個少なくなっています。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-nucleotide.png?h=03fdb587" alt="ヌクレオチドの模式図。左から、円で表したリン酸、五角形で表した五炭糖、角の丸い四角で表した塩基が横一列に結合でつながっている。五角形の下にデオキシリボースとリボース、四角の下に A・T・G・C と添えてあり、全体を下の括弧が囲んでいる" loading="lazy"><figcaption class="ref-figure-cap">部品の並びは<b>リン酸 — 五炭糖 — 塩基</b>で、塩基は必ず糖に付きます。この図の五角形（糖）と円（リン酸）が、次の鎖の図の背骨になります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/saccharide/">糖の環状構造そのものは単糖類のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.nucleotide&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>核酸は、五炭糖・リン酸・塩基が1個ずつ結合したヌクレオチドが多数つながった高分子化合物で、五炭糖の部分とリン酸が交互にエステル結合してできた鎖から、塩基が枝のように出た構造をとる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.nucleotide&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-chain"><h4 class="ref-sec-h">核酸の鎖のつくり</h4><p class="ref-sec-lead">ヌクレオチドの糖とリン酸が交互にエステル結合でつながって長い鎖になり、その鎖から塩基が枝のように出ています。</p></section>
 <p class="ref-p">ヌクレオチドどうしは、<b>一方の糖の −OH と、もう一方のリン酸</b>の間で水がとれてつながります。これは、リン酸と糖の −OH からできる<b>エステル結合</b>です。</p>
 <p class="ref-p">こうして<b>糖とリン酸が交互につながった長い鎖</b>ができ、それぞれの糖から<b>塩基が枝のように</b>出ています。ヌクレオチドが多数つながったこの鎖を<b>ポリヌクレオチド</b>といい、核酸はポリヌクレオチドでできています。</p>
 <p class="ref-p"><b>「背骨は糖とリン酸、枝が塩基」</b>と覚えましょう。どの糖のどの位置の炭素でつながっているか（3′位・5′位）は覚えなくて構いません。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-backbone.png?h=7eff9b20" alt="ポリヌクレオチドの鎖の模式図。横一列に、リン酸を表す円と糖を表す五角形が交互につながって左右に続いている。それぞれの五角形からは下に線が伸び、A・T・G・C と書いた四角がぶら下がっている" loading="lazy"><figcaption class="ref-figure-cap">左右に続く横の一列が鎖の本体で、塩基は<b>そこからぶら下がっているだけ</b>です。塩基の並ぶ順序が、DNA ごとに違う情報になります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/ester/">カルボン酸以外の酸（リン酸・硝酸）もエステルをつくる話はエステルのページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.nucleic-linkage&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ヌクレオチドは、五炭糖とリン酸の間・五炭糖と塩基の間で水が1分子ずつとれてできる（塩基は必ず五炭糖に付く）。ヌクレオチドどうしは、一方の五炭糖の −OH ともう一方のリン酸の間で水がとれたエステル結合でつながり、ポリヌクレオチドになる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.nucleic-linkage&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-dna-rna"><h4 class="ref-sec-h">DNA と RNA の違い</h4><p class="ref-sec-lead">DNA と RNA は、五炭糖の種類・塩基の1つ・鎖の本数が違います。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">DNA と RNA の違い</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">DNA</th><th style="text-align: left;">RNA</th></tr></thead><tbody><tr><td style="text-align: left;">五炭糖</td><td style="text-align: left;">デオキシリボース C₅H₁₀O₄</td><td style="text-align: left;">リボース C₅H₁₀O₅</td></tr><tr><td style="text-align: left;">塩基</td><td style="text-align: left;">A・G・C・<b>T（チミン）</b></td><td style="text-align: left;">A・G・C・<b>U（ウラシル）</b></td></tr><tr><td style="text-align: left;">鎖の本数</td><td style="text-align: left;">2本（<b>二重らせん</b>）</td><td style="text-align: left;">ふつう1本</td></tr><tr><td style="text-align: left;">おもなはたらき</td><td style="text-align: left;">遺伝情報を保存する</td><td style="text-align: left;">タンパク質の合成にはたらく</td></tr></tbody></table></div>
 <p class="ref-p"><b>この表の4行は暗記してください。</b>特に、糖の「デオキシ（酸素が1個少ない）」と、塩基の「DNA は T、RNA は U」の2か所が問われます。塩基の構造式を覚える必要はありません。</p>
@@ -965,7 +983,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— DNA と RNA の違い</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">DNA と RNA の違いを、構成する五炭糖と塩基の2点について答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>五炭糖は、DNA が<b>デオキシリボース</b>、RNA が<b>リボース</b>。塩基は、DNA が A・G・C・<b>T（チミン）</b>、RNA が A・G・C・<b>U（ウラシル）</b>です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.dna-rna,org.bio.dna-rna-parts,org.bio.nucleic-role&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>DNA は五炭糖がデオキシリボース、塩基がアデニン(A)・グアニン(G)・シトシン(C)・チミン(T) で、2本の鎖が二重らせん構造をとる。RNA は五炭糖がリボース、チミンの代わりにウラシル(U) をもち、ふつう1本鎖である。</li><li>DNA の五炭糖デオキシリボース C₅H₁₀O₄ は、RNA の五炭糖リボース C₅H₁₀O₅ より酸素原子が1個少ない（鎖状の形で、ホルミル基の隣の炭素原子に −OH が無い）。DNA の塩基チミンからメチル基を除いた形が、RNA の塩基ウラシルである。</li><li>核酸は生物の細胞の核などに含まれ、遺伝情報を担う天然高分子である。DNA（デオキシリボ核酸）はおもに遺伝情報を保存し、RNA（リボ核酸）はおもにタンパク質の合成にはたらく。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.dna-rna,org.bio.dna-rna-parts,org.bio.nucleic-role&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-base-pair"><h4 class="ref-sec-h">塩基の対と二重らせん</h4><p class="ref-sec-lead">DNA の2本の鎖は、塩基どうしが水素結合で対をつくってつながり、二重らせんになっています。対になるのは A と T、G と C です。</p></section>
 <p class="ref-p">DNA の2本のポリヌクレオチドは、向かい合った塩基どうしが<b>水素結合</b>で対をつくってつながっています。対になる相手は決まっていて、<b>アデニン（A）とチミン（T）</b>、<b>グアニン（G）とシトシン（C）</b>です。このような決まった組み合わせの対を<b>相補的塩基対</b>といいます。</p>
 <p class="ref-p">2本の鎖は、この対をはさんでねじれ、<b>二重らせん</b>になっています。</p>
@@ -977,8 +995,8 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 塩基の対と二重らせん</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ある DNA の一方の鎖の塩基の並び順が A−T−G−C−C−A であるとき、これと対をつくるもう一方の鎖の塩基の並び順を、向かい合う順に書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>T−A−C−G−G−T</b>。A の相手は T、G の相手は C です。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">2本鎖の DNA にふくまれるアデニンの数が、全塩基の数の30%であった。グアニンは全塩基の何%か。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>A ＝ T なので、A と T を合わせて 60%。残りの 40% を G と C が半分ずつ分けるので、グアニンは <b>20%</b> です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.base-pair,org.bio.base-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-flow"><summary class="ref-adv-sum"><h4 class="ref-sec-h">遺伝情報の流れ<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">DNA の塩基の並び順が RNA に写しとられ、RNA の塩基の並び順にしたがってアミノ酸がつながり、タンパク質ができます。</p></summary><div class="ref-adv-body"><p class="ref-p">DNA の<b>塩基の並び順</b>が遺伝情報です。この並び順が、塩基の対の決まりにしたがって RNA に写しとられ、RNA の塩基3個の並びごとに1つのアミノ酸が決まって、タンパク質の<b>一次構造</b>（アミノ酸の並び順）ができます。</p><p class="ref-p"><b>DNA → RNA → タンパク質</b>という情報の向きだけ知っておけば十分です。写しとる仕組みの名前や、どの塩基の並びがどのアミノ酸になるかは、化学では覚える必要はありません。</p><p class="ref-link-row"><a class="ref-link" href="/reference/protein/">タンパク質の一次構造（アミノ酸の並び順）はタンパク質のページへ</a></p><div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.genetic-flow&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>DNA の2本の鎖は、アデニン(A)とチミン(T)、グアニン(G)とシトシン(C) が水素結合で対をつくって結びつき、二重らせん構造をつくる。RNA が相手のときは A の相手がウラシル(U) になる。</li><li>2本鎖の DNA では A と T、G と C が対をつくるので、A の数 ＝ T の数、G の数 ＝ C の数になる。たとえば A が全塩基の 20% なら T も 20% で、残りの 60% を G と C が半分ずつ分けて 30% ずつになる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.base-pair,org.bio.base-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-flow"><summary class="ref-adv-sum"><h4 class="ref-sec-h">遺伝情報の流れ<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">DNA の塩基の並び順が RNA に写しとられ、RNA の塩基の並び順にしたがってアミノ酸がつながり、タンパク質ができます。</p></summary><div class="ref-adv-body"><p class="ref-p">DNA の<b>塩基の並び順</b>が遺伝情報です。この並び順が、塩基の対の決まりにしたがって RNA に写しとられ、RNA の塩基3個の並びごとに1つのアミノ酸が決まって、タンパク質の<b>一次構造</b>（アミノ酸の並び順）ができます。</p><p class="ref-p"><b>DNA → RNA → タンパク質</b>という情報の向きだけ知っておけば十分です。写しとる仕組みの名前や、どの塩基の並びがどのアミノ酸になるかは、化学では覚える必要はありません。</p><p class="ref-link-row"><a class="ref-link" href="/reference/protein/">タンパク質の一次構造（アミノ酸の並び順）はタンパク質のページへ</a></p><div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>遺伝情報は DNA の塩基の並び順である。この並び順が塩基の対の決まりにしたがって RNA に写しとられ、RNA の塩基3個の並びごとに1つのアミノ酸が決まって、タンパク質の一次構造（アミノ酸の並び順）ができる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.genetic-flow&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
 </div>
 </div>
 
@@ -1146,6 +1164,7 @@ function refAdvSetup(root) {
 }
 refAdvSetup(document);
 </script>
+
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

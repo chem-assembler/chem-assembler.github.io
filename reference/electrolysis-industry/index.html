@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">水酸化ナトリウムの製造（イオン交換膜法）、純銅の製造（銅の電解精錬）、アルミニウムの製造（溶融塩電解）の3つは、どれも電気分解の優先順位で説明できます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">電気化学</span><span class="unit-label">電気分解</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-membrane" data-ref-anchor="membrane">イオン交換膜法 —— 水酸化ナトリウムの製造</a></li><li><a href="#ref-sec-copper" data-ref-anchor="copper">銅の電解精錬 —— 粗銅から純銅へ</a></li><li><a href="#ref-sec-molten" data-ref-anchor="molten">溶融塩電解 —— アルミニウムの製造</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -952,7 +970,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2NaCl ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2NaOH ＋ H₂ ＋ Cl₂</span></div><p class="ref-note">全体の反応。陽極の式と陰極の式を足して、2Na⁺ を両辺に加えたものです。</p></div>
 <p class="ref-p">生じた H₂ と Cl₂ を反応させると、塩化水素もつくれます（H₂ ＋ Cl₂ → 2HCl）。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkali-metal/">水酸化ナトリウムの性質はアルカリ金属のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.ion-exchange-membrane&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>イオン交換膜法は、炭素電極で塩化ナトリウム水溶液を電気分解し、陽イオン交換膜で Na⁺ だけを陰極側へ通して、Cl⁻ を含まない NaOH をつくる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.ion-exchange-membrane&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-copper"><h4 class="ref-sec-h">銅の電解精錬 —— 粗銅から純銅へ</h4><p class="ref-sec-lead">粗銅を陽極、純銅を陰極にして硫酸銅(Ⅱ)水溶液を電気分解すると、陰極に純度の高い銅だけが析出します。</p></section>
 <p class="ref-p">鉱石からつくった銅は、金・銀・鉄・亜鉛などの不純物を含んでいて、純度は約99％です。これを<b>粗銅</b>といいます。粗銅を陽極、純銅を陰極にして、硫酸酸性の硫酸銅(Ⅱ)水溶液を低い電圧で電気分解すると、純度99.99％以上の<b>純銅</b>が得られます。これを<b>銅の電解精錬</b>といいます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cu²⁺ ＋ 2e⁻</span></div><p class="ref-note">陽極（粗銅）。電極の Cu が Cu²⁺ になって溶けだし、陽極板は小さくなります。</p></div>
@@ -966,7 +984,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/copper-silver/">銅の単体と化合物の性質は銅と銀のページへ</a></p>
 <h5 class="ref-h5">例題 —— 銅の電解精錬</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">銅の電解精錬で、粗銅に不純物として含まれていた Ag と Zn は、それぞれどうなるか。理由とともに答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>Ag は Cu よりイオン化傾向が小さいので陽イオンにならず、固体のまま陽極の下に落ちて陽極泥になる。Zn は Cu よりイオン化傾向が大きいので Cu より先に Zn²⁺ となって溶けだすが、Cu²⁺ より e⁻ を受け取る力が弱いので陰極には析出せず、水溶液中にとどまる。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.copper-refining&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>銅の電解精錬は、粗銅を陽極、純銅を陰極にして硫酸酸性の硫酸銅(Ⅱ)水溶液を電気分解する。Cu よりイオン化傾向の小さい Au・Ag は陽極泥になり、大きい Fe・Zn・Ni は水溶液中にとどまる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.copper-refining&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-molten"><h4 class="ref-sec-h">溶融塩電解 —— アルミニウムの製造</h4><p class="ref-sec-lead">水があると Al³⁺ は還元できないので、水を使わず、融解した塩を電気分解します。</p></section>
 <p class="ref-p">イオン化傾向が Al 以上に大きい金属の陽イオン（Al³⁺・Na⁺・Ca²⁺ など）は、水溶液の中では還元されません。Al³⁺ より H₂O のほうが e⁻ を受け取る力が強く、陰極では水が反応して H₂ が出るだけだからです。</p>
 <p class="ref-p">そこで、<b>水の無い環境で電気分解</b>します。イオン結晶は、水に溶かす（溶解）か、高温で融かす（融解）かすればイオンが動けるようになり、電気を通します。このように、塩を高温で融かした液にそのまま電流を通すやり方が<b>溶融塩電解</b>（融解塩電解）です。</p>
@@ -978,7 +996,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/amphoteric-metal/">アルミニウムの単体と化合物の性質は両性金属のページへ</a></p>
 <h5 class="ref-h5">例題 —— 3つの工業的な電気分解の反応式</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の電気分解で、陽極と陰極で起こる反応を e⁻ を含むイオン反応式で書け。<b>(1) 炭素電極を用いた塩化ナトリウム水溶液の電気分解（イオン交換膜法）　(2) 粗銅を陽極、純銅を陰極とした硫酸銅(Ⅱ)水溶液の電気分解　(3) 炭素電極を用いた酸化アルミニウムの溶融塩電解（陽極は CO₂ ができるものとする）</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 陽極 2Cl⁻ → Cl₂ ＋ 2e⁻／陰極 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻　(2) 陽極 Cu → Cu²⁺ ＋ 2e⁻／陰極 Cu²⁺ ＋ 2e⁻ → Cu　(3) 陽極 C ＋ 2O²⁻ → CO₂ ＋ 4e⁻／陰極 Al³⁺ ＋ 3e⁻ → Al</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.molten-salt&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>Al³⁺ など Al 以上にイオン化傾向の大きい金属の陽イオンは水溶液では還元できないので、水を使わずに融解した塩を電気分解する（溶融塩電解）。アルミニウムは氷晶石に Al₂O₃ を溶かして炭素電極で電気分解する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.molten-salt&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">3つの製法の両極の式と、イオン交換膜・陽極泥・氷晶石がそれぞれ何のためにあるかを覚えます。</p></section>
 <p class="ref-p"><b>イオン交換膜法・銅の電解精錬・アルミニウムの溶融塩電解の、両極の反応式は必ず書けるようにしてください。</b>どれも優先順位から出るので、「なぜその極でその物質が反応するか」を言えるようにしておくと忘れません。</p>
 <p class="ref-p">装置については、<b>陽イオン交換膜は Na⁺ だけを通す／陽極泥は Cu よりイオン化傾向の小さい金属／氷晶石は Al₂O₃ を低い温度で融かすため</b>、の3点をおさえましょう。電解精錬の電圧や、陽極の CO₂ と CO の割合は覚えなくても構いません。</p>
@@ -1088,6 +1106,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

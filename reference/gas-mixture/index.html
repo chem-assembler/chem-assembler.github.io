@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">混合気体の全圧は成分気体の分圧の和で、分圧は物質量に比例します。成分気体はどれも混合気体と同じ体積を共有します。コックを開く問題の全圧や平均分子量は、「多い方に近い」てんびんで加重平均として求められます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">状態変化と気体</span><span class="unit-label">混合気体と分圧</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-partial" data-ref-anchor="partial">ドルトンの分圧の法則</a></li><li><a href="#ref-sec-mole-ratio" data-ref-anchor="mole-ratio">分圧は物質量に比例する</a></li><li><a href="#ref-sec-volume" data-ref-anchor="volume">成分気体の体積は、混合気体の体積と同じ</a></li><li><a href="#ref-sec-cock" data-ref-anchor="cock">コックを開く問題 —— 分圧を出して足す</a></li><li><a href="#ref-sec-balance" data-ref-anchor="balance">てんびんで加重平均を求める</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -946,7 +964,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">混合気体全体の圧力を<b>全圧</b>、成分気体がそれぞれ単独で容器全体を占めたときに示す圧力を<b>分圧</b>といいます。気体 A と B からなる混合気体の全圧 P は、A の分圧 P_A と B の分圧 P_B の和になります。これを<b>ドルトンの分圧の法則</b>といいます。</p>
 <p class="ref-p"><b>P ＝ P_A ＋ P_B</b> となるのは、気体の圧力が、分子が壁にぶつかって押す力だからです。A と B の混合気体では、A の分子も B の分子も壁を押すので、全体で壁を押す力は A の分と B の分の合計になります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-mixture-partial-pressure.png?h=b0cb9f2f" alt="3つの容器を「＋」と「＝」でつないだ図。気体 A の分子だけが入った容器では A が壁を押す力が P_A、気体 B の分子だけが入った容器では B が壁を押す力が P_B。両方の分子が入った容器では、A と B の混合気体が壁を押す力が P になる。どの容器も右の壁に分子がぶつかる矢印が描かれている" loading="lazy"><figcaption class="ref-figure-cap">混合気体では、A の分子も B の分子もそれぞれ壁にぶつかるので、壁を押す力は2つの合計になります。</figcaption></figure>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.partial-pressure&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>分圧は成分気体が単独で容器全体を占めたときの圧力で、混合気体の全圧は成分気体の分圧の和になる（ドルトンの分圧の法則）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.partial-pressure&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-mole-ratio"><h4 class="ref-sec-h">分圧は物質量に比例する</h4><p class="ref-sec-lead">同じ容器の中では温度 T と体積 V が共通なので、分圧は物質量に比例します。</p></section>
 <p class="ref-p">同じ容器の中にある気体は、どれも同じ温度 T・同じ体積 V です。PV ＝ nRT の ＝ の逆側にある P と n は比例するので、<b>分圧の比は物質量の比に等しく</b>なります。</p>
 <p class="ref-p"><b>P : P_A : P_B ＝ n : n_A : n_B</b>（n は全体の物質量で n ＝ n_A ＋ n_B）です。</p>
@@ -954,21 +972,21 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>（分圧）＝（モル分率）×（全圧）</b>になります。</p>
 <p class="ref-p">具体例で確かめます。A 2mol と B 3mol の混合気体の全圧が 1.0×10⁵Pa なら、全体は 5mol で、A のモル分率は 2/5 ＝ 0.4、B のモル分率は 3/5 ＝ 0.6 です。分圧は P_A ＝ 0.4 × 1.0×10⁵Pa ＝ 0.4×10⁵Pa、P_B ＝ 0.6 × 1.0×10⁵Pa ＝ 0.6×10⁵Pa で、足すと全圧の 1.0×10⁵Pa に戻ります。</p>
 <p class="ref-p"><b>入試では、モル分率の定義を知らないと解けない問題はまれです。</b>ただし、定期試験では「モル分率を求めよ」とそのまま問われることがあるので、「全体を1としたときの mol の割合」という定義は言えるようにしておきましょう。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.mole-fraction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>同じ容器の中では温度と体積が共通なので分圧は物質量に比例し、（分圧）＝（モル分率）×（全圧）となる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.mole-fraction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-volume"><h4 class="ref-sec-h">成分気体の体積は、混合気体の体積と同じ</h4><p class="ref-sec-lead">気体はすき間だらけなので、混合気体の成分は同じ体積を共有しています。成分ごとの体積を分けて考えません。</p></section>
 <p class="ref-p">N₂ と O₂ を物質量の比 4 : 1 で混ぜた混合気体が 10L あるとき、N₂ と O₂ の体積はそれぞれ何 L でしょうか。</p>
 <p class="ref-p">「N₂ が 8L、O₂ が 2L」と答えたくなりますが、正しくは <b>N₂ も O₂ も 10L</b> です。気体はすき間だらけで、どちらの分子も容器全体に広がって飛び回っているので、成分気体はどれも混合気体と同じ体積を共有しています。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">N₂ : O₂ ＝ 4 : 1 の混合気体 10L の中の N₂ は 8L、O₂ は 2L</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">N₂ も O₂ も 10L です。成分気体の体積は、混合気体の体積と同じです。4 : 1 に分かれるのは、体積ではなく物質量と分圧です。</span></p><p class="ref-mistake-why">液体を混ぜるときのように、成分がそれぞれの場所を占めていると考えてしまうためです。気体は、すべての成分が容器全体に広がっています。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-mixture-volume.png?h=755515ef" alt="同じ大きさの容器を3つ並べ、「N₂ と O₂ の混合気体 10L」＝「O₂ 10L」＋「N₂ 10L」と書いた図。O₂ の分子（少ない）も N₂ の分子（多い）も、それぞれ容器全体に散らばっている" loading="lazy"><figcaption class="ref-figure-cap">分子の数は N₂ が多く O₂ が少なくても、どちらも容器全体に広がっているので、体積はどちらも 10L です。</figcaption></figure>
 <p class="ref-p">なお、「空気の体積の 21% が O₂」のような体積百分率は、同じ温度・同じ圧力で成分を別々に取り出したときの体積の割合で、物質量の割合（モル分率）と同じ値になります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.component-volume&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>気体はすき間だらけで、成分気体の分子はどれも容器全体に広がっているので、成分気体の体積は混合気体の体積と同じである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.component-volume&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-cock"><h4 class="ref-sec-h">コックを開く問題 —— 分圧を出して足す</h4><p class="ref-sec-lead">2つの容器をつなぐと、それぞれの気体は容器全体に広がります。広がった後の分圧を反比例で出し、足せば全圧です。</p></section>
 <p class="ref-p">コックでつながった2つの容器に別々の気体を入れ、コックを開く問題は、次の順に解きます。</p>
 <ol class="ref-list"><li>コックを開いた後の体積（2つの容器の合計）を出す。</li><li>それぞれの気体について、体積が何倍になったかを書く。</li><li>P と V は反比例なので、分圧は体積の倍率の逆数倍になる。<div class="ref-li-hang">温度も変わるなら、P と T は比例なので温度の倍率も掛けます。</div></li><li>分圧を足して全圧にする。</li></ol>
 <p class="ref-p">具体例で、容器 A（2.0L）に 1.5×10⁵Pa の N₂、容器 B（3.0L）に 2.5×10⁵Pa の H₂ を入れてコックを開いたときの全圧を求めます（温度は一定）。</p>
 <div class="ref-table-wrap"><div class="ref-cap">コックを開いたときの分圧（温度一定）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">気体</th><th style="text-align: right;">開く前の圧力</th><th style="text-align: right;">体積の変化</th><th style="text-align: right;">圧力に掛ける倍率（反比例）</th><th style="text-align: right;">開いた後の分圧</th></tr></thead><tbody><tr><td style="text-align: left;">N₂</td><td style="text-align: right;">1.5×10⁵Pa</td><td style="text-align: right;">2L → 5L（×5/2）</td><td style="text-align: right;">×2/5</td><td style="text-align: right;">0.6×10⁵Pa</td></tr><tr><td style="text-align: left;">H₂</td><td style="text-align: right;">2.5×10⁵Pa</td><td style="text-align: right;">3L → 5L（×5/3）</td><td style="text-align: right;">×3/5</td><td style="text-align: right;">1.5×10⁵Pa</td></tr><tr><td style="text-align: left;">全圧</td><td style="text-align: right;">——</td><td style="text-align: right;">——</td><td style="text-align: right;">——</td><td style="text-align: right;">2.1×10⁵Pa</td></tr></tbody></table></div>
 <p class="ref-p">全圧は 0.6×10⁵ ＋ 1.5×10⁵ ＝ <b>2.1×10⁵Pa</b> です。★ 計算の途中では 0.6×10⁵Pa のまま置いておき、6.0×10⁴Pa のように桁を直さないようにしましょう。直すと手間が増えるうえ、比例関係が見えにくくなります。有効数字の形に直すのは最後だけです。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.mixing-gases&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>コックを開いて気体を混ぜると、各気体は全体に広がって分圧が体積の倍率の逆数倍になり、全圧はそれらの和で、てんびんで見ると混ぜる前の体積の大きい方の圧力に近い。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.mixing-gases&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-balance"><h4 class="ref-sec-h">てんびんで加重平均を求める</h4><p class="ref-sec-lead">全圧は、2つの圧力の間を「存在比の逆の比」に内分する点です。合言葉は「多い方に近い」です。</p></section>
 <p class="ref-p">上の具体例は、てんびんでも解けます。圧力 1.5×10⁵Pa の N₂ が 2L、圧力 2.5×10⁵Pa の H₂ が 3L あるので、全圧は <b>1.5 と 2.5 の間を、存在比 2 : 3 の逆の比 3 : 2 に内分する点</b>になります。1.5 と 2.5 の差は 1.0 なので、1.5 から 0.6 進んだ（2.5 から 0.4 戻った）<b>2.1×10⁵Pa</b> です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/gas-mixture-balance.png?h=35973dea" alt="数直線の左端に N₂（1.5×10⁵Pa）、右端に H₂（2.5×10⁵Pa）。左端から 2L、右端から 3L のおもりの札が、それぞれ反対側のウデの長さ 2 と 3 に矢印で結ばれている。支点は 2.1×10⁵Pa で、左のウデは 3（0.6）、右のウデは 2（0.4）。「多い方に近い」の注記つき" loading="lazy"><figcaption class="ref-figure-cap">おもりの 2L と 3L を、それぞれ反対側のウデの長さにします。支点の 2.1×10⁵Pa は、多い H₂ の側に寄っています。</figcaption></figure>
@@ -1090,6 +1108,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

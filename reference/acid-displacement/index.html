@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">弱酸の塩に強酸を加えると弱酸が、弱塩基の塩に強塩基を加えると弱塩基が遊離します。原因は「弱酸の陰イオンが H⁺ とくっつきたがる」ことで、塩の加水分解と同じ仕組みです。不揮発性の酸で揮発性の酸を追い出す反応も同じ型で書けます。気体の製法の多くがここに入ります。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸と塩基</span><span class="unit-label">中和反応と塩</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-weak-acid" data-ref-anchor="weak-acid">弱酸の遊離</a></li><li><a href="#ref-sec-gases" data-ref-anchor="gases">弱酸の遊離で気体が出る反応</a></li><li><a href="#ref-sec-weak-base" data-ref-anchor="weak-base">弱塩基の遊離</a></li><li><a href="#ref-sec-same-mechanism" data-ref-anchor="same-mechanism">遊離と加水分解は同じ仕組み</a></li><li><a href="#ref-sec-volatile" data-ref-anchor="volatile">揮発性の酸の遊離</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -950,7 +968,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">「強酸が強いから追い出す」のではない</h5>
 <p class="ref-p">弱酸の遊離は「強酸が強いから弱酸を追い出す」と説明されることがありますが、原因は逆側にあります。<b>弱酸の陰イオン（CH₃COO⁻）が H⁺ とくっつきたがる</b>ことが原因です。弱酸はほとんど電離しないので、H⁺ を渡されれば喜んで受け取って分子に戻ります。</p>
 <p class="ref-p">「<b>酸・塩基は、あとから加えても強いものから反応する</b>」と覚えておきましょう。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.weak-acid-displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>弱酸の塩に強酸を加えると弱酸が生じる（弱酸の遊離・CH₃COONa ＋ HCl → CH₃COOH ＋ NaCl）。弱酸の陰イオンが H⁺ とくっつきやすいことが原因。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.weak-acid-displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-gases"><h4 class="ref-sec-h">弱酸の遊離で気体が出る反応</h4><p class="ref-sec-lead">弱酸が気体（H₂S・CO₂・SO₂）なら、遊離した弱酸はそのまま気体として出ていきます。気体の実験室的製法の多くがこの型です。</p></section>
 <p class="ref-p">弱酸が気体として出ていく反応は、気体の製法としてよく登場します。<b>どれも「弱酸 ＋ 塩基の塩」＋「強酸」の型</b>です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">FeS ＋ H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">FeSO₄ ＋ H₂S↑</span></div><p class="ref-note">硫化鉄(Ⅱ)に希硫酸を加える。硫化水素の製法。S²⁻ ＋ 2H⁺ → H₂S が芯です。</p></div>
@@ -961,7 +979,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>FeS ＋ H₂SO₄、Na₂SO₃ ＋ H₂SO₄、CaCO₃ ＋ 2HCl の3本は必ず書けるようにしてください。</b>反応物さえ覚えていれば、生成物と係数は型から出せます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/sulfur/">硫化水素・二酸化硫黄の性質は、硫黄のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">二酸化炭素とケイ酸の性質は、炭素とケイ素のページへ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.gas-by-displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>弱酸の遊離で気体が出る反応は気体の製法になる：FeS ＋ H₂SO₄ → FeSO₄ ＋ H₂S、Na₂SO₃ ＋ H₂SO₄ → Na₂SO₄ ＋ H₂O ＋ SO₂、CaCO₃ ＋ 2HCl → CaCl₂ ＋ H₂O ＋ CO₂。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.gas-by-displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-weak-base"><h4 class="ref-sec-h">弱塩基の遊離</h4><p class="ref-sec-lead">弱塩基の塩に強塩基を加えると、弱塩基が生じます。アンモニアの製法がこの型です。</p></section>
 <p class="ref-p">酸と塩基を入れ替えても同じことが起こります。弱塩基の塩（NH₄Cl）に強塩基を加えると、NH₄⁺ が OH⁻ に H⁺ を渡して NH₃ に戻ります。これを<b>弱塩基の遊離</b>といいます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NH₄Cl ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O ＋ NH₃</span></div><p class="ref-note">強酸 ＋ 弱塩基の塩　＋　強塩基　→　強酸 ＋ 強塩基の塩　＋　弱塩基。芯は NH₄⁺ ＋ OH⁻ → NH₃ ＋ H₂O です。</p></div>
@@ -970,7 +988,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 弱塩基の遊離</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を化学反応式で書け。(1) 酢酸ナトリウム水溶液に塩酸を加えた　(2) 塩化アンモニウム水溶液に水酸化ナトリウム水溶液を加えた　(3) 硫化鉄(Ⅱ)に希硫酸を加えた　(4) 塩化アンモニウムと水酸化カルシウムを混合して加熱した</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) CH₃COO⁻ ＋ H⁺ → CH₃COOH の両辺に Na⁺ と Cl⁻ を足して <b>CH₃COONa ＋ HCl → CH₃COOH ＋ NaCl</b>　(2) NH₄⁺ ＋ OH⁻ → NH₃ ＋ H₂O の両辺に Cl⁻ と Na⁺ を足して <b>NH₄Cl ＋ NaOH → NaCl ＋ H₂O ＋ NH₃</b>　(3) S²⁻ ＋ 2H⁺ → H₂S の両辺に Fe²⁺ と SO₄²⁻ を足して <b>FeS ＋ H₂SO₄ → FeSO₄ ＋ H₂S</b>　(4) 2NH₄⁺ ＋ 2OH⁻ → 2NH₃ ＋ 2H₂O の両辺に 2Cl⁻ と Ca²⁺ を足して <b>2NH₄Cl ＋ Ca(OH)₂ → CaCl₂ ＋ 2H₂O ＋ 2NH₃</b></p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.weak-base-displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>弱塩基の塩に強塩基を加えると弱塩基が生じる（弱塩基の遊離）。塩化アンモニウムと水酸化カルシウムを混ぜて加熱するとアンモニアが発生する（2NH₄Cl ＋ Ca(OH)₂ → CaCl₂ ＋ 2H₂O ＋ 2NH₃）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.weak-base-displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-same-mechanism"><h4 class="ref-sec-h">遊離と加水分解は同じ仕組み</h4><p class="ref-sec-lead">弱酸の遊離も、弱酸の塩の加水分解も、弱酸の陰イオンが H⁺ とくっつく「弱酸の電離の逆反応」です。H⁺ をくれる相手が強酸か水かだけが違います。</p></section>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acid-displacement-hydrolysis.png?h=c7b562ec" alt="左は CH₃COONa の水溶液に HCl を加えると、HCl がすべて電離して H⁺ を渡し CH₃COOH が遊離する様子。右は CH₃COONa の水溶液で、CH₃COO⁻ が水を分解して H⁺ を受け取り、OH⁻ が余って塩基性になる様子。下に両方の反応式" loading="lazy"><figcaption class="ref-figure-cap"><b>弱酸の遊離も加水分解も、CH₃COO⁻ が H⁺ とくっつく反応</b>。H⁺ をくれるのが HCl なら遊離（ほぼ 100 ％進む）、H₂O なら加水分解（ごく一部しか起こらない可逆反応）です。</figcaption></figure>
 <p class="ref-p">どちらも、<b>弱酸の電離の逆反応 CH₃COO⁻ ＋ H⁺ → CH₃COOH</b> が芯です。違うのは H⁺ をくれる相手だけです。</p>
@@ -997,7 +1015,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">NaNO₃ ＋ H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaHSO₄ ＋ HNO₃</span></div><p class="ref-note">硝酸ナトリウムに濃硫酸を加えて加熱すると、揮発性の硝酸が蒸気になって出てきます（冷やして液体にする）。</p></div>
 <h5 class="ref-h5">例題 —— 揮発性の酸の遊離</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を化学反応式で書け。(1) 亜硫酸ナトリウムに希硫酸を加えた　(2) 石灰石（CaCO₃）に希塩酸を加えた　(3) 塩化ナトリウムに濃硫酸を加えて加熱した</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>Na₂SO₃ ＋ H₂SO₄ → Na₂SO₄ ＋ H₂O ＋ SO₂</b>（遊離した H₂SO₃ を H₂O と SO₂ に分ける）　(2) <b>CaCO₃ ＋ 2HCl → CaCl₂ ＋ H₂O ＋ CO₂</b>　(3) <b>NaCl ＋ H₂SO₄ → NaHSO₄ ＋ HCl</b>（Na₂SO₄ ではない）</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.volatile-acid&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>揮発性の酸（HCl・HF など）の塩に不揮発性の濃硫酸を加えて加熱すると、揮発性の酸が気体として出ていく（NaCl ＋ H₂SO₄ → NaHSO₄ ＋ HCl）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.volatile-acid&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1101,6 +1119,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

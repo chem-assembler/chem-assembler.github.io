@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">2つの炭化水素基が酸素をはさんでつながったのがエーテルです。アルコールと同じ一般式なのに性質がまるで違う理由、慣用名の付け方、金属ナトリウムによる判別、そして C₄H₁₀O のエーテルが3種類しかないことの数え方をまとめました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">脂肪族化合物</span><span class="unit-label">アルコールとエーテル</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-formula" data-ref-anchor="formula">一般式はアルコールと同じ CₙH₂ₙ₊₂O</a></li><li><a href="#ref-sec-naming" data-ref-anchor="naming">エーテルの命名</a></li><li><a href="#ref-sec-props" data-ref-anchor="props">エーテルの性質</a></li><li><a href="#ref-sec-distinguish" data-ref-anchor="distinguish">アルコールとの判別</a></li><li><a href="#ref-sec-prep" data-ref-anchor="prep">エーテルのつくり方 —— アルコールの分子間脱水</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -954,14 +972,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ether-naming.png?h=822ba3c0" alt="ジメチルエーテル・エチルメチルエーテル・ジエチルエーテルの構造式に、両側のアルキル基の名前と命名の注意を書き添えた図" loading="lazy"><figcaption class="ref-figure-cap">まん中の例は、エチル（ethyl）とメチル（methyl）を<b>アルファベット順</b>に並べて「エチルメチルエーテル」です。炭素の数の順ではありません。</figcaption></figure>
 <p class="ref-p"><b>ジエチルエーテル C₂H₅OC₂H₅ は、名称も示性式も必ず暗記してください。</b>エーテルのうち出題されるのはほとんどがこれです。</p>
 <p class="ref-p"><b>エトキシエタン・メトキシメタンといった規則どおりの名称のほうは、覚える必要はありません。</b></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.ether-naming&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>エーテルの慣用名は、結合した2つのアルキル基名をアルファベット順に並べ語尾にエーテルを付ける（同じなら「ジ○○エーテル」）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.ether-naming&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-props"><h4 class="ref-sec-h">エーテルの性質</h4><p class="ref-sec-lead">反応しない・沸点が低い・水に溶けにくい・引火しやすい。どれも「−O−H をもたない」ことから出てきます。</p></section>
 <p class="ref-p">エーテルは常温では安定で、高校化学の範囲では<b>反応を起こしません</b>。そのため<b>有機溶媒</b>として使われます。</p>
 <p class="ref-p">エーテルは<b>沸点が低く</b>、<b>水に溶けにくい</b>という性質をもちます。どちらも、エーテルには −O−H が無いので<b>分子どうしが水素結合をつくれない</b>ためです。同じ分子式のアルコールとは、ここが決定的に違います。</p>
 <p class="ref-p"><b>ジエチルエーテルの沸点は 34℃ です。</b>問題文にこの数字が出てきたらジエチルエーテルだと決まるので、<b>この数字は必ず暗記してください。</b>「酢酸の融点 17℃ のちょうど2倍」「体温で沸騰する」と結び付けておくと忘れにくくなります。</p>
 <p class="ref-p">エーテルは<b>発火点が低く、引火しやすい</b>ので、火の近くで扱えません。蒸発しやすいうえ蒸気が空気より重く、机の上にたまりやすいことも、引火事故が起こりやすい理由です。</p>
 <p class="ref-p">ジエチルエーテルには<b>麻酔作用</b>があります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.ether-props,org.alcohol.ether-diethyl&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>エーテルは常温で安定・有機溶媒に使う・ナトリウムと反応しない・分子間で水素結合をつくらないため沸点が低い・引火しやすい。</li><li>最もよく登場するエーテルはジエチルエーテル。沸点34℃と低く、引火しやすく、麻酔作用がある。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.ether-props,org.alcohol.ether-diethyl&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-distinguish"><h4 class="ref-sec-h">アルコールとの判別</h4><p class="ref-sec-lead">分子式が同じでも、金属ナトリウムを加えれば1回で分かれます。反応するのがアルコール、しないのがエーテルです。</p></section>
 <p class="ref-p">アルコールは金属ナトリウム Na と反応して水素 H₂ を発生しますが、<b>エーテルはこの反応を起こしません。</b>エーテルには −O−H が無く、ナトリウムと入れ替わる水素原子がないためです。</p>
 <p class="ref-p">だから<b>金属ナトリウムを加えて水素が発生すればアルコール、しなければエーテル</b>と判別できます。<b>この判別は必ず暗記してください。</b>構造決定の問題文では、ほとんどいつもこの一手から始まります。</p>
@@ -1107,6 +1125,7 @@ window.addEventListener('message', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

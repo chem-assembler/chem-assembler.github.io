@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">単量体・重合体・繰り返し単位・重合度の4語と、平均分子量から重合度を出す計算。重合を「つなぐときに何が出ていくか」で付加・縮合・開環に分け、共重合と、融点をもたず膨潤してから溶ける高分子の性質までを1枚にしました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">高分子のきほん</span><span class="unit-label">高分子とは</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（9節）</summary><ul><li><a href="#ref-sec-what" data-ref-anchor="what">単量体と重合体</a></li><li><a href="#ref-sec-average-mw" data-ref-anchor="average-mw">重合度と平均分子量</a></li><li><a href="#ref-sec-end-group" data-ref-anchor="end-group">末端基から鎖の本数を数える</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li><li><a href="#ref-sec-addition" data-ref-anchor="addition">重合の型① 付加重合</a></li><li><a href="#ref-sec-condensation" data-ref-anchor="condensation">重合の型② 縮合重合</a></li><li><a href="#ref-sec-ring-opening" data-ref-anchor="ring-opening">重合の型③ 開環重合</a></li><li><a href="#ref-sec-compare" data-ref-anchor="compare">重合の型を並べる</a></li><li><a href="#ref-sec-copolymer" data-ref-anchor="copolymer">共重合</a></li><li><a href="#ref-sec-property" data-ref-anchor="property">高分子はどんな物質か</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -949,7 +967,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-polyethylene.png?h=153f132c" alt="ポリエチレンの鎖の一部の構造式。CH₂ が6個一列につながり、両端の価標の先の「…」で、鎖がさらに続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ポリエチレンの鎖の一部。CH₂−CH₂ の<b>繰り返し単位が3つ</b>並んでいて、両端の「…」の先にも同じ単位が続きます。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-repeat-unit.png?h=f358f011" alt="ポリエチレンの鎖の一部の構造式で、まん中の CH₂−CH₂ 2個ぶんだけが破線の四角で囲まれ、繰り返し単位と書かれている図" loading="lazy"><figcaption class="ref-figure-cap">囲んだ <b>CH₂−CH₂ の2個ぶん</b>が繰り返し単位です。この単位が n 回くり返されて1本の鎖になります。</figcaption></figure>
 <p class="ref-p"><b>単量体・重合体・繰り返し単位・重合度の4語は必ず暗記してください。</b>以降のページはすべてこの4語で書いてあります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.monomer-polymer,org.poly.polymer-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>重合体（ポリマー）は単量体（モノマー）が多数結合してできた分子量の大きな化合物で、単量体に由来する繰り返し単位が連なっている。1分子中の繰り返し単位の数を重合度という。</li><li>分子量がおよそ1万を超える大きな分子を高分子化合物という。ポリエチレン ［CH₂−CH₂］ₙ では、単量体エチレン1個ぶんに当たる CH₂−CH₂ が繰り返し単位で、n はエチレンが何個つながったかを表す。「ポリ」は「たくさんの」という意味である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.monomer-polymer,org.poly.polymer-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-average-mw"><h4 class="ref-sec-h">重合度と平均分子量</h4><p class="ref-sec-lead">高分子は重合度の違う分子の混ざりものなので、分子量は平均分子量で表します。平均分子量は、繰り返し単位の式量に重合度をかけたものです。</p></section>
 <p class="ref-p">同じポリエチレンでも、つながった数が1000個の分子もあれば1200個の分子もあります。<b>高分子は重合度の違う分子の混合物</b>なので、分子量が1つに決まりません。そこで<b>平均分子量</b>で表します。</p>
 <p class="ref-p">「平均分子量 ＝ 繰り返し単位の式量 × 平均重合度」と覚えましょう。両端の構造は鎖全体に比べてごくわずかなので、ふつうは無視します。</p>
@@ -958,8 +976,8 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 重合度と平均分子量</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">平均分子量が 1.4×10⁵ のポリ塩化ビニルの平均重合度を求めよ。原子量は H＝1.0、C＝12、Cl＝35.5 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>2240</b>。繰り返し単位 ［CH₂−CHCl］ の式量は 12×2 ＋ 1.0×3 ＋ 35.5 ＝ 62.5 です。140000 ÷ 62.5 ＝ 2240 になります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.average-mw&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-end-group"><summary class="ref-adv-sum"><h4 class="ref-sec-h">末端基から鎖の本数を数える<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">鎖1本あたりの末端基の数は決まっているので、末端基の物質量から鎖の本数が分かり、平均分子量が出せます。</p></summary><div class="ref-adv-body"><p class="ref-p">鎖状の高分子は、<b>1本の鎖に端が2つ</b>あります。端にある基（<b>末端基</b>）の物質量を滴定などで求めれば、鎖の本数が分かります。</p><p class="ref-p">たとえば、両端にカルボキシ基が1個ずつある鎖状の高分子 1.0 g を中和するのに NaOH が 2.0×10⁻⁴ mol 要ったとします。鎖の本数は 1.0×10⁻⁴ mol なので、平均分子量は 1.0 ÷ (1.0×10⁻⁴) ＝ 1.0×10⁴ です。</p><p class="ref-p">鎖1本に末端基が何個あるか（両端とも同じ基か、片方だけか）は、<b>問題文が与えます。</b>手順も与えられることが多いので、考え方だけ分かっていれば十分でしょう。</p><div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.end-group&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>高分子化合物は重合度の異なる分子の混合物なので分子量は一定の値にならず、平均分子量で表す。平均分子量は繰り返し単位の式量に平均重合度をかけたものにほぼ等しい。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.average-mw&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-end-group"><summary class="ref-adv-sum"><h4 class="ref-sec-h">末端基から鎖の本数を数える<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">鎖1本あたりの末端基の数は決まっているので、末端基の物質量から鎖の本数が分かり、平均分子量が出せます。</p></summary><div class="ref-adv-body"><p class="ref-p">鎖状の高分子は、<b>1本の鎖に端が2つ</b>あります。端にある基（<b>末端基</b>）の物質量を滴定などで求めれば、鎖の本数が分かります。</p><p class="ref-p">たとえば、両端にカルボキシ基が1個ずつある鎖状の高分子 1.0 g を中和するのに NaOH が 2.0×10⁻⁴ mol 要ったとします。鎖の本数は 1.0×10⁻⁴ mol なので、平均分子量は 1.0 ÷ (1.0×10⁻⁴) ＝ 1.0×10⁴ です。</p><p class="ref-p">鎖1本に末端基が何個あるか（両端とも同じ基か、片方だけか）は、<b>問題文が与えます。</b>手順も与えられることが多いので、考え方だけ分かっていれば十分でしょう。</p><div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>高分子1本の端にだけある基（末端基）を定量すると、その物質量から高分子の本数（物質量）が数えられる。試料の全質量をその物質量で割れば平均分子量が求まる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.end-group&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
 <section class="ref-sec" id="ref-sec-addition"><h4 class="ref-sec-h">重合の型① 付加重合</h4><p class="ref-sec-lead">C=C が開いて、そのまま次々につながります。何も出ていかないので、繰り返し単位の組成は単量体と同じです。</p></section>
 <p class="ref-p">二重結合 C=C をもつ単量体が、付加反応をくり返してつながる重合を<b>付加重合</b>といいます。<b>つなぐときに何も出ていきません。</b></p>
 <div class="ref-rx ref-rx-has-img"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-fig"><div class="ref-figure-scroll"><img class="ref-figure-img ref-rx-img ref-figure-img-scroll" src="/reference-img/rx-0a92c338.png?h=460fbad0" alt="構造式の反応式: n CH₂=CHCl → ［CH₂−CHCl］ₙ" loading="lazy" style="width:100.0%"></div></div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CHCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CHCl］ₙ</span></div><div class="embed embed-app"><div class="embed-run"><button type="button" data-embed="/assembler/?summon=%E5%A1%A9%E5%8C%96%E3%83%93%E3%83%8B%E3%83%AB&amp;reagent=addition_polymerization&amp;from=reference&amp;page=polymer-basics&amp;embed=1" data-embed-title="▶ ここで反応を試す">▶ ここで反応を試す</button></div><a class="alt" href="/assembler/?summon=%E5%A1%A9%E5%8C%96%E3%83%93%E3%83%8B%E3%83%AB&amp;reagent=addition_polymerization&amp;from=reference&amp;page=polymer-basics">▶ 大きな画面で開く</a></div><p class="ref-note">塩化ビニル → ポリ塩化ビニル。原子の出入りがないので、繰り返し単位の分子式は単量体と同じ C₂H₃Cl です。</p></div>
@@ -977,13 +995,13 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/synthetic-fiber/">縮合重合でできる繊維（ナイロン66・アラミド）</a></p>
 <h5 class="ref-h5">例題 —— 縮合重合</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">テレフタル酸とエチレングリコールを縮合重合させ、平均重合度 n ＝ 100 のポリエチレンテレフタラートをつくった。このとき、鎖1本あたり何個の水分子がとれたと考えられるか。鎖の端の構造は無視してよい。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>200個</b>。繰り返し単位1つの中にエステル結合が2か所あり、1か所つなぐごとに水が1個とれるので、2 × 100 ＝ 200 個です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.condensation-water-count&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>縮合重合では1か所つなぐごとに水が1分子とれる。ポリエチレンテレフタラートは繰り返し単位1つの中にエステル結合が2か所あるので、n HOOC−C₆H₄−COOH ＋ n HO−CH₂CH₂−OH → ［CO−C₆H₄−CO−O−CH₂CH₂−O］ₙ ＋ 2n H₂O となり、重合度 n の鎖1本で水が 2n 分子とれる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.condensation-water-count&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-ring-opening"><h4 class="ref-sec-h">重合の型③ 開環重合</h4><p class="ref-sec-lead">環状の単量体の環が1か所ほどけて、次々につながります。何も出ていかないので、組成は単量体と同じです。</p></section>
 <p class="ref-p">環状の構造をもつ単量体が、環を開きながらつながる重合を<b>開環重合</b>といいます。付加重合と同じく、<b>何も出ていきません。</b></p>
 <p class="ref-p">具体例は、ε-カプロラクタム C₆H₁₁NO からできる<b>ナイロン6</b>です。</p>
 <div class="ref-rx ref-rx-has-img"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-fig"><div class="ref-figure-scroll"><img class="ref-figure-img ref-rx-img ref-figure-img-scroll" src="/reference-img/rx-2261f8e5.png?h=9b2cfa59" alt="構造式の反応式: n C₆H₁₁NO（ε-カプロラクタム） → ［NH−(CH₂)₅−CO］ₙ" loading="lazy" style="width:100.0%"></div></div><div class="ref-rx-eq"><span class="ref-rx-side">n C₆H₁₁NO（ε-カプロラクタム）</span><span class="ref-rx-arrow"><span class="ref-rx-over">少量の水</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">［NH−(CH₂)₅−CO］ₙ</span></div><div class="embed embed-app"><div class="embed-run"><button type="button" data-embed="/assembler/?summon=%CE%B5-%E3%82%AB%E3%83%97%E3%83%AD%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%A0&amp;reagent=ring_opening_polymerization&amp;from=reference&amp;page=polymer-basics&amp;embed=1" data-embed-title="▶ ここで反応を試す">▶ ここで反応を試す</button></div><a class="alt" href="/assembler/?summon=%CE%B5-%E3%82%AB%E3%83%97%E3%83%AD%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%A0&amp;reagent=ring_opening_polymerization&amp;from=reference&amp;page=polymer-basics">▶ 大きな画面で開く</a></div><p class="ref-note">環の中のアミド結合が1か所切れて鎖になり、次の分子とつながります。水はきっかけとして働くだけなので、反応式の両辺には出てきません。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-nylon6.png?h=59cd4e37" alt="ナイロン6の鎖の一部の構造式。NH、(CH₂)₅、C=O の順に並んだ単位が3つ一列につながり、両端の価標の先の「…」で、鎖がさらに続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ナイロン6の鎖の一部（繰り返し単位3つぶん）。1単位は ε-カプロラクタムの<b>環をほどいて一直線に伸ばした形</b>です。</figcaption></figure>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.ring-opening&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>環状構造をもつ単量体の環が開いて次々に結合していく重合を開環重合という。原子の出入りがないので、繰り返し単位の組成は単量体と同じになる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.ring-opening&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-compare"><h4 class="ref-sec-h">重合の型を並べる</h4><p class="ref-sec-lead">付加・縮合・開環の3つは「何が出ていくか」で見分けます。フェノール樹脂などの付加縮合は、付加と縮合をくり返す別の型です。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">重合の型</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">型</th><th style="text-align: left;">単量体に要るもの</th><th style="text-align: left;">出ていくもの</th><th style="text-align: left;">代表例</th></tr></thead><tbody><tr><td style="text-align: left;">付加重合</td><td style="text-align: left;">C=C（二重結合）</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ポリエチレン・ポリ塩化ビニル・ポリスチレン</td></tr><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">反応できる官能基が1分子に2つ</td><td style="text-align: left;"><b>水など</b></td><td style="text-align: left;">ポリエチレンテレフタラート・ナイロン66</td></tr><tr><td style="text-align: left;">開環重合</td><td style="text-align: left;">環状の構造</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ナイロン6</td></tr><tr><td style="text-align: left;">付加縮合</td><td style="text-align: left;">付加と縮合を交互にくり返せる組み合わせ</td><td style="text-align: left;"><b>水</b></td><td style="text-align: left;">フェノール樹脂・尿素樹脂・メラミン樹脂</td></tr></tbody></table></div>
 <p class="ref-p"><b>付加・縮合・開環の3つの名前と、「何が出ていくか」は必ず暗記してください。</b>「付加と開環は何も出ない、縮合は水が出る」と対にして覚えるのが確実です。</p>
@@ -992,13 +1010,13 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">ナイロン6 は、ナイロン66 と同じ縮合重合でできる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">ナイロン6 は<b>開環重合</b>でできます。ε-カプロラクタムの環が開くだけで、水はとれません。</span></p><p class="ref-mistake-why">「ナイロン＝アミド結合＝縮合」と結合の種類から型を決めてしまうためです。★ 型は結合の種類ではなく「つなぐときに何が出ていくか」で決まります。</p></div>
 <h5 class="ref-h5">例題 —— 重合の型の見分け方</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の繰り返し単位をもつ高分子は、それぞれ何重合でできたか。また単量体の名称を答えよ。(1) ［CH₂−CH(CN)］ₙ　(2) ［NH−(CH₂)₅−CO］ₙ</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>付加重合</b>、単量体は<b>アクリロニトリル</b> CH₂=CHCN。繰り返し単位の C−C を1本 C=C に戻せば単量体になります。(2) <b>開環重合</b>、単量体は <b>ε-カプロラクタム</b>。組成が繰り返し単位と同じで、鎖の両端をつなげば環に戻ります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.addition-vs-condensation,org.poly.monomer-from-repeat-unit&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>二重結合が開いて単量体がそのまま連なる重合を付加重合、単量体どうしから水などの小さい分子が取れながら連なる重合を縮合重合という。</li><li>付加重合と開環重合では何も出ていかないので、繰り返し単位と単量体の組成は同じである。付加重合なら主鎖の C−C を1本 C=C に戻すと単量体になり（［CH₂−CH(CN)］→ アクリロニトリル CH₂=CHCN）、開環重合なら鎖の両端をつなげて環に戻すと単量体になる（［NH−(CH₂)₅−CO］→ ε-カプロラクタム）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.addition-vs-condensation,org.poly.monomer-from-repeat-unit&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-copolymer"><h4 class="ref-sec-h">共重合</h4><p class="ref-sec-lead">2種類以上の単量体をまぜて重合させると、1本の鎖に両方の単位が入った共重合体ができます。混ぜる比で性質を調節できます。</p></section>
 <p class="ref-p">2種類以上の単量体を混ぜて重合させることを<b>共重合</b>、できた重合体を<b>共重合体</b>といいます。<b>単量体の種類と混ぜる割合を変えることで、材料の硬さや弾性を調節できます。</b></p>
 <p class="ref-p">具体例は、スチレンと 1,3-ブタジエンからできる<b>スチレン-ブタジエンゴム（SBR）</b>です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CH−C₆H₅ ＋ m CH₂=CH−CH=CH₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CH(C₆H₅)］ₙ［CH₂−CH=CH−CH₂］ₘ</span></div><p class="ref-note">2種類の単位が1本の鎖の中に混ざって並びます。式では2つに分けて書きますが、実際にはこの順にかたまって並ぶわけではありません。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/rubber/">SBR をはじめとする合成ゴムの単量体と性質</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.copolymer&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>2種類以上の単量体を混ぜて重合させることを共重合といい、得られた重合体を共重合体という。単量体の種類と混合比で材料の性質を調節できる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.copolymer&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-property"><h4 class="ref-sec-h">高分子はどんな物質か</h4><p class="ref-sec-lead">鎖がそろった結晶部分と、乱れた非晶部分が混ざっています。はっきりした融点がなく、加熱するとだんだんやわらかくなります。</p></section>
 <p class="ref-p">高分子の固体の中では、鎖が規則正しく並んだ<b>結晶部分</b>と、鎖が不規則にからみ合った<b>非晶部分</b>が混ざっています。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-crystal-amorphous.png?h=8a48a0f5" alt="固体の中の高分子の鎖の模式図。左では5本の鎖がそろって並び、右では同じ鎖がうねって交差している" loading="lazy"><figcaption class="ref-figure-cap">別々の粒が混ざっているのではなく、<b>1本の鎖が両方にまたがって</b>います。次の段落の「一斉に融けない」は、この形から来ます。</figcaption></figure>
@@ -1007,7 +1025,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">結晶部分の多さで硬さが変わる例 —— 高密度ポリエチレンと低密度ポリエチレン</a></p>
 <p class="ref-p">高分子を溶媒に入れると、すぐには溶けず、溶媒の分子がまず鎖のすき間に入り込んで<b>ふくらみます（膨潤）</b>。そのあと溶けると、分子1個がコロイド粒子ほどの大きさなので<b>コロイド溶液</b>になります。</p>
 <p class="ref-p">「融点ではなく軟化点」「溶ける前に膨潤」の2つは覚えておきましょう。<b>軟化点の具体的な温度は覚えなくて構いません。</b></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.crystalline-amorphous&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>高分子は鎖が規則的に並んだ結晶部分と乱れた非晶部分からなり、明確な融点を示さず加熱すると徐々に軟化する（その温度が軟化点）。溶媒はまず非晶部分に入り込み、膨潤したのち溶けてコロイド溶液になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.crystalline-amorphous&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1192,6 +1210,7 @@ function refAdvSetup(root) {
 }
 refAdvSetup(document);
 </script>
+
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

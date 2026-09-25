@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">アミノ酸は1つの分子の中にアミノ基とカルボキシ基、つまり塩基と酸を両方もちます。α-アミノ酸の一般式と側鎖による分類、不斉炭素原子、双性イオン、pH で入れかわる3つの形、等電点と電気泳動までを1枚にしました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">天然高分子</span><span class="unit-label">アミノ酸</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（9節）</summary><ul><li><a href="#ref-sec-general" data-ref-anchor="general">α-アミノ酸の一般式</a></li><li><a href="#ref-sec-sidechain" data-ref-anchor="sidechain">側鎖による分類</a></li><li><a href="#ref-sec-chirality" data-ref-anchor="chirality">不斉炭素原子</a></li><li><a href="#ref-sec-zwitterion" data-ref-anchor="zwitterion">両性の化合物と双性イオン</a></li><li><a href="#ref-sec-crystal" data-ref-anchor="crystal">アミノ酸の結晶の性質</a></li><li><a href="#ref-sec-ph" data-ref-anchor="ph">pH で3つの形が入れかわる</a></li><li><a href="#ref-sec-isoelectric" data-ref-anchor="isoelectric">等電点と電気泳動</a></li><li><a href="#ref-sec-ninhydrin" data-ref-anchor="ninhydrin">アミノ酸の検出</a></li><li><a href="#ref-sec-polyprotic" data-ref-anchor="polyprotic">酸性・塩基性アミノ酸の電離と、片方だけ反応させる手</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
 <div class="ref-scope">
@@ -949,12 +967,12 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-glycine.png?h=e12f0014" alt="グリシンの構造式。アミノ基 NH2 が付いた炭素に、カルボキシ基 COOH が付いている" loading="lazy"><figcaption class="ref-figure-cap">いちばん簡単なアミノ酸の<b>グリシン</b>。側鎖 R が H です。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-alanine.png?h=0929ccfa" alt="アラニンの構造式。アミノ基とカルボキシ基が付いた炭素に、メチル基 CH3 も付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>アラニン</b>。側鎖 R が CH₃ です。</figcaption></figure>
 <div class="ref-example"><h4>例題：アラニン をつくる</h4><p class="ref-p" style="margin: 0px;">アラニンを組んで、1つの炭素に −NH₂ と −COOH と −CH₃ が付く形を手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.bio.amino-acid-def&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=amino-acid">▶ アラニンを組んでみる</a><p class="ref-note">まん中の炭素には、H・NH₂・COOH・CH₃ の4つの違うものが付いています。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>分子内にアミノ基 −NH₂ とカルボキシ基 −COOH をあわせもつ化合物をアミノ酸といい、同じ1個の炭素原子に両方が結合したものを α-アミノ酸という。一般式は R−CH(NH₂)−COOH で、R を側鎖という。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-sidechain"><h4 class="ref-sec-h">側鎖による分類</h4><p class="ref-sec-lead">側鎖に −COOH をもつものを酸性アミノ酸、−NH₂ をもつものを塩基性アミノ酸、どちらももたないものを中性アミノ酸といいます。</p></section>
 <p class="ref-p">α-アミノ酸は、どれも −NH₂ と −COOH を1個ずつもっています。そこに<b>側鎖にもう1個 −COOH があれば酸性アミノ酸</b>、<b>もう1個 −NH₂ があれば塩基性アミノ酸</b>、どちらも無ければ<b>中性アミノ酸</b>です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">代表的な α-アミノ酸</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">側鎖 R</th><th style="text-align: left;">分類</th><th style="text-align: left;">覚えどころ</th></tr></thead><tbody><tr><td style="text-align: left;">グリシン</td><td style="text-align: left;">−H</td><td style="text-align: left;">中性</td><td style="text-align: left;">不斉炭素原子をもたない</td></tr><tr><td style="text-align: left;">アラニン</td><td style="text-align: left;">−CH₃</td><td style="text-align: left;">中性</td><td style="text-align: left;">いちばん簡単な不斉なアミノ酸</td></tr><tr><td style="text-align: left;">システイン</td><td style="text-align: left;">−CH₂−SH</td><td style="text-align: left;">中性</td><td style="text-align: left;"><b>硫黄</b>をもつ</td></tr><tr><td style="text-align: left;">フェニルアラニン</td><td style="text-align: left;">−CH₂−C₆H₅</td><td style="text-align: left;">中性</td><td style="text-align: left;"><b>ベンゼン環</b>をもつ</td></tr><tr><td style="text-align: left;">チロシン</td><td style="text-align: left;">−CH₂−C₆H₄−OH</td><td style="text-align: left;">中性</td><td style="text-align: left;">ベンゼン環とフェノール性の −OH をもつ</td></tr><tr><td style="text-align: left;">グルタミン酸</td><td style="text-align: left;">−(CH₂)₂−COOH</td><td style="text-align: left;"><b>酸性</b></td><td style="text-align: left;">側鎖に −COOH</td></tr><tr><td style="text-align: left;">リシン</td><td style="text-align: left;">−(CH₂)₄−NH₂</td><td style="text-align: left;"><b>塩基性</b></td><td style="text-align: left;">側鎖に −NH₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>この7つは、名前と側鎖の特徴（硫黄・ベンゼン環・余分な −COOH や −NH₂）まで暗記してください。</b>タンパク質の呈色反応でどれが陽性になるかに、そのままつながります。天然のタンパク質をつくるおよそ20種のアミノ酸を、すべて覚える必要はありません。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-sidechain&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>α-アミノ酸を側鎖 R の酸性・塩基性で分類すると、側鎖にカルボキシ基を余分にもつものを酸性アミノ酸、アミノ基を余分にもつものを塩基性アミノ酸、どちらももたないものを中性アミノ酸という。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-sidechain&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-chirality"><h4 class="ref-sec-h">不斉炭素原子</h4><p class="ref-sec-lead">α位の炭素には H・NH₂・COOH・R の4つが付くので、R が H でなければ不斉炭素原子になります。グリシンだけが例外です。</p></section>
 <p class="ref-p">α-アミノ酸の α位の炭素には、<b>H・−NH₂・−COOH・R</b> の4つが結合しています。R が H 以外なら4つがすべて違うので、この炭素は<b>不斉炭素原子</b>になり、<b>鏡像異性体</b>が存在します。</p>
 <p class="ref-p">グリシンは R が H なので、H が2個付くことになり、不斉炭素原子をもちません。<b>「α-アミノ酸のうち、不斉炭素原子をもたないのはグリシンだけ」</b>と覚えましょう。</p>
@@ -962,7 +980,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-alanine-asymmetric.png?h=f8df47b4" alt="左にアラニン、右にグリシンの構造式。アラニンの α位の炭素（不斉炭素原子）が破線の丸で囲まれている。グリシンの α位の炭素には H が2個付いている" loading="lazy"><figcaption class="ref-figure-cap">左の<b>アラニン</b>は α位の炭素に H・−NH₂・−COOH・−CH₃ の4つの違うものが付くので不斉炭素原子（囲み）。右の<b>グリシン</b>は H が2個なので、不斉炭素原子がありません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/stereoisomers/">不斉炭素原子と鏡像異性体そのものは立体異性体のページへ</a></p>
 <div class="ref-example"><h4>例題：グリシン をつくる</h4><p class="ref-p" style="margin: 0px;">グリシンを組んで、不斉炭素原子をもたないことを手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.bio.amino-acid-def&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=amino-acid">▶ グリシンを組んでみる</a><p class="ref-note">まん中の炭素には H が2個付いているので、4つが全部違うものにはなりません。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-chirality&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>α-アミノ酸の α 位の炭素原子にはアミノ基・カルボキシ基・水素原子・側鎖 R が結合する。側鎖が水素原子であるグリシンを除けば、この4つが互いに異なるので α 位の炭素原子は不斉炭素原子になり、鏡像異性体が存在する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-chirality&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-zwitterion"><h4 class="ref-sec-h">両性の化合物と双性イオン</h4><p class="ref-sec-lead">アミノ酸は酸とも塩基とも反応して塩をつくります。結晶中や水溶液中では、−COO⁻ と −NH₃⁺ を1分子にあわせもつ双性イオンになっています。</p></section>
 <p class="ref-p">アミノ酸の −NH₂ は塩基、−COOH は酸としてはたらきます。だからアミノ酸は、<b>塩酸とも水酸化ナトリウムとも反応して塩をつくります</b>。</p>
 <p class="ref-p">具体例としてグリシンで書きます。塩酸とは −NH₂ が、水酸化ナトリウムとは −COOH が反応します。</p>
@@ -972,7 +990,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">さらに、1つの分子の中でも −COOH の H⁺ が −NH₂ に移ります。こうしてできた、<b>−COO⁻ と −NH₃⁺ をあわせもつイオン</b>を<b>双性イオン</b>といいます。アミノ酸は、結晶中でも中性付近の水溶液中でも、おもにこの形でいます。</p>
 <p class="ref-p">グリシンの双性イオンは H₃N⁺−CH₂−COO⁻ です。全体では正と負が1つずつなので、電荷の合計は0になります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-zwitterion.png?h=90b307d5" alt="左にグリシンの中性の形 H2N-CH2-COOH を書き、その上に右端から左端へ向かう曲がった赤い矢印で H+ が移ることを示し、右向きの矢印の先に双性イオン H3N+-CH2-COO- を書いた図" loading="lazy"><figcaption class="ref-figure-cap">外から酸や塩基を加えなくても、<b>同じ分子の中で</b> H⁺ が移ります。移ったあとも原子の数は変わりません。</figcaption></figure>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-amphoteric&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アミノ酸は酸性のカルボキシ基と塩基性のアミノ基を分子内にあわせもつため、強酸とも強塩基とも反応して塩をつくる両性の化合物である。結晶中や水溶液中では −COO⁻ と −NH₃⁺ をあわせもつ双性イオンとして存在する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-amphoteric&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-crystal"><h4 class="ref-sec-h">アミノ酸の結晶の性質</h4><p class="ref-sec-lead">双性イオンどうしが静電気の力で引き合うので、分子量が同じくらいの有機化合物にくらべて融点が高く、水に溶けやすく、有機溶媒に溶けにくくなります。</p></section>
 <p class="ref-p">アミノ酸の結晶は、双性イオンの −COO⁻ と −NH₃⁺ が<b>静電気の力で引き合った、イオン結晶に近い</b>つくりになっています。</p>
 <p class="ref-p">そのため、分子量が同じくらいの有機化合物にくらべて<b>融点が高く</b>（融点に達する前に分解するものが多い）、<b>水に溶けやすく、有機溶媒には溶けにくい</b>性質を示します。</p>
@@ -980,7 +998,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— アミノ酸の結晶の性質</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">アミノ酸の結晶が、分子量が同じくらいのほかの有機化合物にくらべて融点が高く、水に溶けやすいのはなぜか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>結晶中で<b>双性イオン</b>になっていて、正と負の電荷が静電気の力で引き合う、<b>イオン結晶に近いつくり</b>をしているためです。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-crystal&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アミノ酸の結晶は、アミノ酸が双性イオンになっているため、イオン結晶に近い構造と性質をもつ。そのため分子量が同程度の有機化合物に比べて融点が高く、水に溶けやすい。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-crystal&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-ph"><h4 class="ref-sec-h">pH で3つの形が入れかわる</h4><p class="ref-sec-lead">酸性の水溶液中では陽イオン、塩基性の水溶液中では陰イオン、その間では双性イオンが多くなります。</p></section>
 <p class="ref-p">アミノ酸の水溶液に酸を加えて<b>酸性</b>にすると、−COO⁻ が H⁺ を受け取って<b>陽イオン</b>が多くなります。塩基を加えて<b>塩基性</b>にすると、−NH₃⁺ が H⁺ を失って<b>陰イオン</b>が多くなります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−CH(NH₃⁺)−COOH（陽イオン）</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−CH(NH₃⁺)−COO⁻（双性イオン） ＋ H⁺</span></div><p class="ref-note">1段目の電離。−COOH のほうが先に H⁺ を手放します。酸性にすると左へ寄ります。</p></div>
@@ -990,7 +1008,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-three-forms.png?h=8175caa9" alt="左から陽イオン、双性イオン、陰イオンの3つの示性式を横一列に並べ、となりどうしを両向きの矢印で結んだ図。右へ行くほど H+ を放し、左へ行くほど H+ を受け取る。下には左が酸性側、右が塩基性側の pH の矢印と、等電点の目盛りがあり、いちばん下に電気泳動でどちらの電極へ動くかを書いてある" loading="lazy"><figcaption class="ref-figure-cap">3つの形は1本につながっていて、<b>pH で左右にずれるだけ</b>です。図の左右と、電気泳動で動く向きがそのまま対応します。</figcaption></figure>
 <h5 class="ref-h5">例題 —— pH で3つの形が入れかわる</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">アラニンの水溶液に (1) 塩酸を十分に加えたとき (2) 水酸化ナトリウム水溶液を十分に加えたとき、アラニンはおもにどのような形で存在するか。示性式で書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) CH₃−CH(NH₃⁺)−COOH（陽イオン）　(2) CH₃−CH(NH₂)−COO⁻（陰イオン）。(1) では −COO⁻ も H⁺ を受け取って −COOH に戻っています。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.zwitterion-ph&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アミノ酸の水溶液中では陽イオン・双性イオン・陰イオンの3種類のイオンが平衡状態で共存し、pH が小さいほど陽イオン R−CH(NH₃⁺)−COOH が、pH が大きいほど陰イオン R−CH(NH₂)−COO⁻ が多くなる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.zwitterion-ph&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-isoelectric"><h4 class="ref-sec-h">等電点と電気泳動</h4><p class="ref-sec-lead">陽イオン・双性イオン・陰イオンの電荷の合計が全体として0になる pH を等電点といいます。等電点では、電圧をかけてもアミノ酸はどちらの電極にも移動しません。</p></section>
 <p class="ref-p">水溶液の pH を変えていくと、ある pH で、陽イオン・双性イオン・陰イオンの<b>電荷の合計が全体として0</b>になります。この pH をそのアミノ酸の<b>等電点</b>といいます。等電点では、ほとんどが双性イオンになっています。</p>
 <p class="ref-p">アミノ酸の水溶液に電圧をかけると、陽イオンは陰極へ、陰イオンは陽極へ移動します。これを<b>電気泳動</b>といいます。等電点では電荷の合計が0なので、<b>どちらの電極にも移動しません</b>。</p>
@@ -1002,12 +1020,12 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-electrophoresis.png?h=675368bc" alt="電気泳動の装置の模式図。横長の容器の左端に陰極、右端に陽極を差し込み、上で電源につないである。容器の中央に置いたアミノ酸の水溶液から、左へ向かう矢印に陽イオン、右へ向かう矢印に陰イオンと書かれ、双性イオンは動かないと添えてある" loading="lazy"><figcaption class="ref-figure-cap">中央に置いたアミノ酸は、<b>陽イオンなら左（陰極）へ、陰イオンなら右（陽極）へ</b>動きます。動いた向きから、その pH でどの形だったかが分かります。</figcaption></figure>
 <h5 class="ref-h5">例題 —— 等電点と電気泳動</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">グリシン（等電点 6.0）・グルタミン酸（等電点 3.2）・リシン（等電点 9.7）の混合水溶液を pH 6.0 に保って電気泳動した。それぞれ陽極・陰極のどちらに移動するか。移動しないものは「移動しない」と答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>グリシンは等電点なので<b>移動しない</b>。グルタミン酸は pH が等電点より大きいので陰イオンが多くなり<b>陽極</b>へ。リシンは pH が等電点より小さいので陽イオンが多くなり<b>陰極</b>へ移動します。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.isoelectric-point&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アミノ酸の正負の電荷がつりあって全体として0になり、双性イオンの割合が最大になる pH を等電点という。等電点では電圧をかけてもどちらの電極にも移動しない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.isoelectric-point&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-ninhydrin"><h4 class="ref-sec-h">アミノ酸の検出</h4><p class="ref-sec-lead">ニンヒドリン水溶液を加えて温め、青紫〜赤紫色に変われば、アミノ酸がある目印です。</p></section>
 <p class="ref-p">アミノ酸の水溶液に<b>ニンヒドリン</b>の水溶液を加えて温めると、<b>青紫色〜赤紫色</b>になります。これを<b>ニンヒドリン反応</b>といい、アミノ基 −NH₂ を検出する反応です。</p>
 <p class="ref-p"><b>「ニンヒドリン反応はアミノ酸の検出、色は青紫〜赤紫」は暗記してください。</b>ほかの呈色反応といっしょに、タンパク質のページで表にまとめています。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/protein/">ビウレット反応・キサントプロテイン反応など、呈色反応の表はタンパク質のページへ</a></p>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-polyprotic"><summary class="ref-adv-sum"><h4 class="ref-sec-h">酸性・塩基性アミノ酸の電離と、片方だけ反応させる手<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">酸性アミノ酸と塩基性アミノ酸は3段階に電離します。また、−COOH と −NH₂ のどちらか片方だけを反応させることもできます。</p></summary><div class="ref-adv-body"><p class="ref-p">中性アミノ酸は、上の2本の式のとおり<b>2段階</b>に電離します。側鎖にも −COOH や −NH₂ をもつ酸性アミノ酸・塩基性アミノ酸は、それが1つ増えるので<b>3段階</b>に電離します。</p><p class="ref-p">たとえばグルタミン酸は、強い酸性では陽イオン、pH を上げていくと双性イオン、さらに側鎖の −COOH も H⁺ を失って陰イオン、最後に −NH₃⁺ も H⁺ を失って2価の陰イオンになります。等電点を電離定数から計算する問題は、式が与えられる前提で解ければ十分です。</p><p class="ref-p">アミノ酸の −COOH だけ、あるいは −NH₂ だけを反応させることもできます。塩化水素を触媒にしてエタノールと反応させると −COOH だけがエステルに、無水酢酸と反応させると −NH₂ だけがアセチル化されます。</p><div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂N−CH₂−COOH ＋ C₂H₅OH</span><span class="ref-rx-arrow"><span class="ref-rx-over">塩化水素</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂N−CH₂−COOC₂H₅ ＋ H₂O</span></div><p class="ref-note">−COOH がふさがるので、残った −NH₂ によって全体として塩基性の物質になります。</p></div><div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂N−CH₂−COOH ＋ (CH₃CO)₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₃CO−NH−CH₂−COOH ＋ CH₃COOH</span></div><p class="ref-note">−NH₂ がふさがるので、残った −COOH によって全体として酸性の物質になります。</p></div><p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">エステル化の一般形はこちら</a></p><p class="ref-link-row"><a class="ref-link" href="/reference/aniline/">アミノ基のアセチル化（アニリンの例）は芳香族のアミンのページへ</a></p><div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-polyprotic&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-polyprotic"><summary class="ref-adv-sum"><h4 class="ref-sec-h">酸性・塩基性アミノ酸の電離と、片方だけ反応させる手<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">酸性アミノ酸と塩基性アミノ酸は3段階に電離します。また、−COOH と −NH₂ のどちらか片方だけを反応させることもできます。</p></summary><div class="ref-adv-body"><p class="ref-p">中性アミノ酸は、上の2本の式のとおり<b>2段階</b>に電離します。側鎖にも −COOH や −NH₂ をもつ酸性アミノ酸・塩基性アミノ酸は、それが1つ増えるので<b>3段階</b>に電離します。</p><p class="ref-p">たとえばグルタミン酸は、強い酸性では陽イオン、pH を上げていくと双性イオン、さらに側鎖の −COOH も H⁺ を失って陰イオン、最後に −NH₃⁺ も H⁺ を失って2価の陰イオンになります。等電点を電離定数から計算する問題は、式が与えられる前提で解ければ十分です。</p><p class="ref-p">アミノ酸の −COOH だけ、あるいは −NH₂ だけを反応させることもできます。塩化水素を触媒にしてエタノールと反応させると −COOH だけがエステルに、無水酢酸と反応させると −NH₂ だけがアセチル化されます。</p><div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂N−CH₂−COOH ＋ C₂H₅OH</span><span class="ref-rx-arrow"><span class="ref-rx-over">塩化水素</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂N−CH₂−COOC₂H₅ ＋ H₂O</span></div><p class="ref-note">−COOH がふさがるので、残った −NH₂ によって全体として塩基性の物質になります。</p></div><div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂N−CH₂−COOH ＋ (CH₃CO)₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₃CO−NH−CH₂−COOH ＋ CH₃COOH</span></div><p class="ref-note">−NH₂ がふさがるので、残った −COOH によって全体として酸性の物質になります。</p></div><p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">エステル化の一般形はこちら</a></p><p class="ref-link-row"><a class="ref-link" href="/reference/aniline/">アミノ基のアセチル化（アニリンの例）は芳香族のアミンのページへ</a></p><div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>中性アミノ酸は二段階の電離平衡を示すが、側鎖に余分なカルボキシ基やアミノ基をもつ酸性・塩基性アミノ酸は三段階の電離平衡を示す。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.amino-acid-polyprotic&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div></div></details>
 </div>
 </div>
 
@@ -1175,6 +1193,7 @@ function refAdvSetup(root) {
 }
 refAdvSetup(document);
 </script>
+
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

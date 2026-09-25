@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">質量保存の法則・定比例の法則から原子説が生まれ、原子説で倍数比例の法則が説明されました。気体反応の法則は原子説と食い違い、それを解いたのがアボガドロの分子説です。どの法則がどの考えにつながったかの順で覚えます。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">物質量と化学反応式</span><span class="unit-label">化学反応の量的関係・化学の基本法則</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-mass" data-ref-anchor="mass">質量保存の法則と定比例の法則</a></li><li><a href="#ref-sec-atom" data-ref-anchor="atom">原子説と倍数比例の法則</a></li><li><a href="#ref-sec-gas" data-ref-anchor="gas">気体反応の法則と、原子説との食い違い</a></li><li><a href="#ref-sec-molecule" data-ref-anchor="molecule">分子説とアボガドロの法則</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -958,14 +976,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">定比例の法則は「一定組成の法則」、倍数比例の法則は「倍数組成の法則」とも呼ばれます。どちらの名前で出ても同じ法則です。</p>
 <h5 class="ref-h5">例題 —— 原子説と倍数比例の法則</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">窒素の酸化物 A・B がある。A は窒素 7.0g と酸素 4.0g、B は窒素 7.0g と酸素 16g からなる。(1) 一定質量の窒素と結びつく酸素の質量の比（A : B）を求めよ。(2) この関係を表す法則の名前を答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 4.0 : 16 ＝ 1 : 4。(2) 倍数比例の法則。窒素の質量をそろえてから酸素の質量を比べると、簡単な整数比になっています（A は N₂O、B は NO₂ にあたります）。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.definite-multiple,theo.mole.atomic-theory&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>定比例の法則は1つの化合物の中の質量比が一定という法則、倍数比例の法則は同じ2元素からなる化合物どうしで、一定質量の一方と結びつく他方の質量が簡単な整数比になるという法則である。</li><li>ドルトンの原子説は、物質はそれ以上分けられない原子からなり、化合物は異なる原子が一定の数の割合で結びついたもので、化学変化では原子の組み合わせが変わるだけで原子は生じたり消えたりしない、という考えである。原子が消えないことで質量保存の法則が、原子の数の割合が決まっていることで定比例の法則が説明できた。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.definite-multiple,theo.mole.atomic-theory&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-gas"><h4 class="ref-sec-h">気体反応の法則と、原子説との食い違い</h4><p class="ref-sec-lead">気体どうしの反応では、反応・生成する気体の体積が簡単な整数比になります（気体反応の法則）。ところが原子説のままだと、この事実を説明しようとすると原子が割れてしまいます。</p></section>
 <p class="ref-p">「<b>気体どうしが反応するとき、同温・同圧で測った反応・生成する気体の体積は、簡単な整数比になる</b>」。これを<b>気体反応の法則</b>といいます（1808年、ゲーリュサック）。例えば、水素 1 体積と塩素 1 体積から、塩化水素が 2 体積できます。</p>
 <p class="ref-p">ここで、「同じ体積には同じ数の<b>原子</b>が含まれる」と考えてみます。水素原子 1 個と塩素原子 1 個から、塩化水素の粒子が 2 個できることになり、<b>1 個の塩化水素の粒子に水素原子が半分ずつ入る</b>ことになってしまいます。原子はそれ以上分けられないはずなので、原子説と食い違います。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/chemical-laws-gas-volumes.png?h=0886fa48" alt="同じ大きさの箱を並べた図。上の段は原子だけで考えた場合で、水素原子1個と塩素原子1個から2つの箱をつくるため、どちらの箱にも半分に割れた原子が入っている。下の段は分子で考えた場合で、H₂ 1個と Cl₂ 1個から HCl 1個ずつが入った箱が2つできて、割れた粒子は出てこない" loading="lazy"><figcaption class="ref-figure-cap">同じ体積の箱に同じ数の粒子が入る、と決めて数えた図です。上の段で<b>半分の原子</b>が出てしまうことが、分子を考えなければならない理由でした。</figcaption></figure>
 <h5 class="ref-h5">例題 —— 気体反応の法則</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の (1)〜(3) に最も関係の深い法則の名前を答えよ。(1) 同温・同圧で、窒素 1 体積と水素 3 体積から、アンモニアが 2 体積できる。(2) 水を電気分解してつくった水素と酸素、天然の水の成分を調べたものは、どちらも水素と酸素の質量の比が 1 : 8 である。(3) 密閉した容器の中でスチールウールを燃やしても、容器全体の質量は変わらない。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 気体反応の法則（体積が 1 : 3 : 2 の簡単な整数比）。(2) 定比例の法則（1つの化合物 H₂O の中の質量の比が、つくり方によらず一定）。(3) 質量保存の法則。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.law-identify&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>身近な事実がどの基本法則にあたるかを見分ける。密閉した容器の中で物を燃やしても全体の質量が変わらないのは質量保存の法則、どの方法でつくった水でも水素と酸素の質量の比が 1 : 8 なのは定比例の法則、同温・同圧で窒素1体積と水素3体積からアンモニア2体積ができるのは気体反応の法則で説明される。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.law-identify&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-molecule"><h4 class="ref-sec-h">分子説とアボガドロの法則</h4><p class="ref-sec-lead">アボガドロは、気体は原子がいくつか結びついた分子からなり、同温・同圧・同体積の気体には同じ数の分子が含まれると考えました。これで気体反応の法則と原子説の食い違いが解けました。</p></section>
 <p class="ref-p">アボガドロは 1811 年に、「<b>気体は、いくつかの原子が結びついた分子という粒子からなる</b>」と考えました。これを<b>分子説</b>といいます。</p>
 <p class="ref-p">水素と塩素を、原子2個が結びついた分子 H₂・Cl₂ と考えると、H₂ 1 個と Cl₂ 1 個が反応するとき、分子が割れて原子になり、HCl が 2 個できます。<b>割れるのは分子で、原子は割れない</b>ので、原子説と食い違いません。</p>
@@ -975,7 +993,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-table-wrap"><div class="ref-cap">化学の基本法則と、原子説・分子説のつながり（発見の順）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">年</th><th style="text-align: left;">法則・説</th><th style="text-align: left;">人</th><th style="text-align: left;">中身（ひとことで）</th><th style="text-align: left;">何につながったか</th></tr></thead><tbody><tr><td style="text-align: left;">1774</td><td style="text-align: left;">質量保存の法則</td><td style="text-align: left;">ラボアジエ</td><td style="text-align: left;">反応の前後で総質量は変わらない</td><td style="text-align: left;">原子説の根拠</td></tr><tr><td style="text-align: left;">1799</td><td style="text-align: left;">定比例の法則</td><td style="text-align: left;">プルースト</td><td style="text-align: left;">1つの化合物の元素の質量比は一定</td><td style="text-align: left;">原子説の根拠</td></tr><tr><td style="text-align: left;">1803</td><td style="text-align: left;">原子説</td><td style="text-align: left;">ドルトン</td><td style="text-align: left;">物質は分けられない原子からなる</td><td style="text-align: left;">2つの法則を説明</td></tr><tr><td style="text-align: left;">1803</td><td style="text-align: left;">倍数比例の法則</td><td style="text-align: left;">ドルトン</td><td style="text-align: left;">化合物どうしで、結びつく質量が整数比</td><td style="text-align: left;">原子説から予言</td></tr><tr><td style="text-align: left;">1808</td><td style="text-align: left;">気体反応の法則</td><td style="text-align: left;">ゲーリュサック</td><td style="text-align: left;">気体の体積が簡単な整数比</td><td style="text-align: left;">原子説と食い違う</td></tr><tr><td style="text-align: left;">1811</td><td style="text-align: left;">分子説・アボガドロの法則</td><td style="text-align: left;">アボガドロ</td><td style="text-align: left;">気体は分子からなる／同温同圧同体積で同数の分子</td><td style="text-align: left;">食い違いを解消</td></tr></tbody></table></div>
 <h5 class="ref-h5">例題 —— 分子説とアボガドロの法則</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">「同温・同圧で水素と塩素を 1 体積ずつ反応させると、塩化水素が 2 体積できる」という事実が、ドルトンの原子説だけでは説明できない理由と、アボガドロがそれをどう解決したかを説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>同じ体積に同じ数の原子があると考えると、水素原子 1 個と塩素原子 1 個から塩化水素の粒子が 2 個でき、1 個の粒子に水素原子が半分ずつ入ることになる。原子は分けられないので原子説と食い違う。アボガドロは、気体は原子が結びついた分子（H₂・Cl₂）からなり、同温・同圧・同体積には同数の分子があると考えた。反応で割れるのは分子で、H₂ ＋ Cl₂ → 2HCl となるので、原子を割らずに体積比 1 : 1 : 2 が説明できる。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.basic-laws,theo.mole.gas-reaction-molecule&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>質量保存の法則（ラボアジエ）・定比例の法則（プルースト）・倍数比例の法則（ドルトン）・気体反応の法則（ゲーリュサック）・アボガドロの法則（アボガドロ）の名前と中身と人名を対応させる。</li><li>気体反応の法則は原子説のままでは原子が割れる矛盾を生んだが、アボガドロが気体は分子からなり、同温・同圧・同体積に同数の分子を含むと考えて解決した。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.mole.basic-laws,theo.mole.gas-reaction-molecule&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">5つの法則と2つの説の、名前・中身・人名の対応を覚えます。年号は覚えなくて構いません。</p></section>
 <p class="ref-p"><b>法則の名前と中身の対応は必ず覚えてください。</b>特に、定比例の法則（1つの化合物の中）と倍数比例の法則（化合物どうし）の違いと、気体反応の法則が分子説を必要とした理由は、文章で説明できるようにしておきましょう。</p>
 <p class="ref-p">人名は、ラボアジエ（質量保存）・プルースト（定比例）・ドルトン（原子説・倍数比例）・ゲーリュサック（気体反応）・アボガドロ（分子説）の組み合わせを覚えておけば十分です。</p>
@@ -1083,6 +1101,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

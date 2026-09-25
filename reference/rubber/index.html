@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">天然ゴム（ポリイソプレン）の構造と、主鎖に C=C が残る 1,4-付加重合、シス形とトランス形（グタペルカ）、加硫とエボナイト、劣化、合成ゴム（ブタジエン・クロロプレン・SBR・シリコーン）までを1枚にしました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">合成高分子</span><span class="unit-label">ゴム</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（7節）</summary><ul><li><a href="#ref-sec-natural" data-ref-anchor="natural">天然ゴム</a></li><li><a href="#ref-sec-why-cc" data-ref-anchor="why-cc">なぜ主鎖に C=C が残るのか</a></li><li><a href="#ref-sec-cis-trans" data-ref-anchor="cis-trans">シス形とトランス形</a></li><li><a href="#ref-sec-vulcanization" data-ref-anchor="vulcanization">加硫</a></li><li><a href="#ref-sec-aging" data-ref-anchor="aging">ゴムの劣化</a></li><li><a href="#ref-sec-synthetic" data-ref-anchor="synthetic">合成ゴム</a></li><li><a href="#ref-sec-summary" data-ref-anchor="summary">おもなゴムの一覧</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -951,7 +969,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 天然ゴム</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">平均分子量 3.4×10⁵ の天然ゴムには、イソプレン単位が平均何個つながっているか。原子量は H＝1.0、C＝12 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>5000個</b>。繰り返し単位はイソプレンと同じ組成の C₅H₈ で、式量は 12×5 ＋ 1.0×8 ＝ 68 です。340000 ÷ 68 ＝ 5000 になります。★ 付加重合は原子が出入りしないので、繰り返し単位の式量は単量体の分子量と同じです。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.natural-rubber&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>天然ゴム（生ゴム）はゴムノキの樹液（ラテックス）に酸を加えて凝固させたもので、主成分はイソプレン C₅H₈ が付加重合したポリイソプレンである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.natural-rubber&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-why-cc"><h4 class="ref-sec-h">なぜ主鎖に C=C が残るのか</h4><p class="ref-sec-lead">イソプレンは C=C を2本もち、両端の1番と4番の炭素でつながります。そのため、2番と3番の炭素の間に新しく C=C ができます。</p></section>
 <p class="ref-p">イソプレンのように、単結合をはさんで C=C が2本並んだ化合物を<b>共役ジエン</b>といいます。</p>
 <p class="ref-p">共役ジエンが付加重合するときは、<b>両端の1番と4番の炭素</b>が次の分子と結合します。両端の C=C がそれぞれ開いてできた電子が、<b>真ん中の2番と3番の炭素の間で新しい C=C</b> になります。この重合を「<b>1,4-付加重合</b>」といいます。</p>
@@ -969,7 +987,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">シス－トランス異性体</a></p>
 <h5 class="ref-h5">例題 —— シス形とトランス形</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">天然ゴムは弾性を示すが、同じポリイソプレンであるグタペルカはほとんど弾性を示さない。その理由を、C=C の立体配置にふれて簡潔に説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>天然ゴムは主鎖の C=C が<b>すべてシス形</b>で、鎖が折れ曲がって<b>不規則に丸まっている</b>ので、伸ばしても元に戻ろうとする。一方、グタペルカは<b>トランス形</b>で鎖がまっすぐに近く、<b>規則正しく並んで結晶化しやすい</b>ため、硬く弾性に乏しい。★ 「シスかトランスか」と「丸まるか、そろって並ぶか」の2点を必ず書きます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.rubber-cis-trans&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>天然ゴムのポリイソプレンは主鎖の C=C がすべてシス形で、鎖が丸まった形をとるため弾性を示す。同じポリイソプレンでもトランス形のものはグタペルカとよばれ、鎖がまっすぐ並ぶので硬く弾性に乏しい。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.rubber-cis-trans&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-vulcanization"><h4 class="ref-sec-h">加硫</h4><p class="ref-sec-lead">生ゴムに数%の硫黄を加えて加熱すると、硫黄が鎖と鎖の間に橋をかけ、弾性と強度が増します。30〜40%加えると硬いエボナイトになります。</p></section>
 <p class="ref-p">生ゴムは、引っぱると鎖どうしがずれてしまい、元に戻りにくいうえに、温度が上がるとやわらかくべたつきます。</p>
 <p class="ref-p">そこで、生ゴムに<b>数%の硫黄</b>を加えて加熱します。すると、硫黄原子が<b>主鎖の C=C のまわりで鎖と鎖の間に橋をかけ（架橋）</b>、鎖どうしがずれなくなります。この操作を<b>加硫</b>といいます。<b>加硫したゴムは、弾性・強度・耐熱性が大きくなります。</b></p>
@@ -979,13 +997,13 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">橋かけで網目にする合成樹脂（熱硬化性樹脂）</a></p>
 <h5 class="ref-h5">例題 —— 加硫</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">天然ゴム 100 g に硫黄 3.2 g を加えて加硫した。硫黄原子はすべて、2本の鎖のイソプレン単位を1個ずつつなぐ −S− の橋になったとする。イソプレン単位のうち何%が橋かけに使われたか。原子量は H＝1.0、C＝12、S＝32 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>約 14%</b>。イソプレン単位は 100 ÷ 68 ＝ 1.47 mol、硫黄原子は 3.2 ÷ 32 ＝ 0.10 mol です。橋1本（S 原子1個）がイソプレン単位を<b>2個</b>使うので、使われた単位は 0.10 × 2 ＝ 0.20 mol。0.20 ÷ 1.47 × 100 ＝ 13.6 ≒ 14% です。★ 「硫黄の物質量 → 橋の本数 → 使われた単位の数」の順に進めます。橋が何個の硫黄原子でできているかは、問題文の設定に従ってください。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.vulcanization&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>生ゴムに数%の硫黄を加えて加熱すると、硫黄原子が鎖と鎖の間を橋かけ（架橋）し、弾性と強度が増す。この操作を加硫という。硫黄を30〜40%加えて長時間加熱すると硬い黒色のエボナイトになる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.vulcanization&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-aging"><h4 class="ref-sec-h">ゴムの劣化</h4><p class="ref-sec-lead">主鎖に残った C=C が、空気中の酸素やオゾン・光によって酸化されると、ゴムは弾性を失ってもろくなります。</p></section>
 <p class="ref-p">ゴム製品を長く空気中に置いておくと、ひび割れてもろくなります。これを<b>ゴムの劣化</b>といいます（老化ともいいます）。<b>主鎖に残った C=C が、酸素やオゾン、紫外線によって酸化され、鎖が切れたりするため</b>です。</p>
 <p class="ref-p">防ぐために、ゴムには<b>老化防止剤</b>が加えられています。</p>
 <p class="ref-p">C=C が酸化されやすいのは、アルケンのオゾン分解と同じ理由です。「<b>C=C が残っているから、加硫もできるし劣化もする</b>」とまとめておきましょう。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">C=C がオゾンや過マンガン酸カリウムで切れる反応</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.rubber-aging&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ゴムの主鎖には C=C 二重結合が残っているため、空気中の酸素やオゾン・紫外線によって酸化されて弾性を失い、もろくなる（ゴムの劣化）。老化防止剤を加えて防ぐ。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.rubber-aging&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-synthetic"><h4 class="ref-sec-h">合成ゴム</h4><p class="ref-sec-lead">1,3-ブタジエンやクロロプレンを 1,4-付加重合させたもの、スチレンと共重合させたものなどがあります。主鎖に C=C が残るので、加硫して使えます。</p></section>
 <p class="ref-p">天然ゴムに似た構造の高分子を人工的につくったものが<b>合成ゴム</b>です。どれも共役ジエンを単量体に使うので、<b>主鎖に C=C が残り、加硫して使えます。</b></p>
 <h5 class="ref-h5">ブタジエンゴム</h5>
@@ -1007,7 +1025,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/rubber-silicone.png?h=20043ecd" alt="シリコーンの鎖の一部の構造式。ケイ素原子 Si と酸素原子 O が交互に一列につながり、どのケイ素にもメチル基が上下に1つずつ付き、両端の価標の先の「…」で、鎖がさらに続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">主鎖は <b>−Si−O−Si−O−</b> で、炭素を含みません。炭素はケイ素に付いたメチル基 −CH₃ にだけあります。</figcaption></figure>
 <p class="ref-p">シリコーンゴムは、ジクロロジメチルシランを加水分解してできる化合物を<b>縮合重合</b>させてつくります。<b>主鎖に C=C が無いので硫黄では加硫できず、</b>別の方法で橋かけします。</p>
 <p class="ref-p">「<b>シリコーンゴムは主鎖に炭素が無い</b>」の一点で十分でしょう。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.butadiene-rubber,org.poly.chloroprene-rubber,org.poly.sbr-copolymer,org.poly.silicone-rubber&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>1,3-ブタジエン CH₂=CH−CH=CH₂ を付加重合させるとブタジエンゴムが得られる。天然ゴムと同じく主鎖に C=C が残るので、加硫して使うことができる。</li><li>クロロプレン（2-クロロ-1,3-ブタジエン）を付加重合させるとクロロプレンゴムが得られる。塩素原子をもつため耐油性・耐候性にすぐれ、ホースやベルトなどに使われる。</li><li>2種類以上の単量体をいっしょに重合させることを共重合という。スチレンと1,3-ブタジエンを共重合させたスチレン-ブタジエンゴムは、摩耗に強く自動車のタイヤに使われる。</li><li>シリコーンゴムはケイ素原子と酸素原子が交互に並ぶ主鎖をもち、主鎖に炭素原子を含まない。耐熱性・耐寒性が高く化学的に安定なので、医療用チューブや調理器具に使われる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.poly.butadiene-rubber,org.poly.chloroprene-rubber,org.poly.sbr-copolymer,org.poly.silicone-rubber&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-summary"><h4 class="ref-sec-h">おもなゴムの一覧</h4><p class="ref-sec-lead">ゴムを、単量体・重合の型・特徴で並べます。シリコーンゴム以外はどれも主鎖に C=C が残ります。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">おもなゴム</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">ゴム</th><th style="text-align: left;">単量体</th><th style="text-align: left;">重合の型</th><th style="text-align: left;">特徴・用途</th></tr></thead><tbody><tr><td style="text-align: left;">天然ゴム</td><td style="text-align: left;">イソプレン</td><td style="text-align: left;">1,4-付加重合</td><td style="text-align: left;">シス形で弾性。加硫して使う</td></tr><tr><td style="text-align: left;">グタペルカ</td><td style="text-align: left;">イソプレン</td><td style="text-align: left;">1,4-付加重合</td><td style="text-align: left;">トランス形で硬い</td></tr><tr><td style="text-align: left;">ブタジエンゴム</td><td style="text-align: left;">1,3-ブタジエン</td><td style="text-align: left;">1,4-付加重合</td><td style="text-align: left;">弾性が大きい。タイヤ</td></tr><tr><td style="text-align: left;">クロロプレンゴム</td><td style="text-align: left;">クロロプレン</td><td style="text-align: left;">1,4-付加重合</td><td style="text-align: left;">油・薬品・天候に強い。ホース・ベルト</td></tr><tr><td style="text-align: left;">スチレン-ブタジエンゴム</td><td style="text-align: left;">スチレン ＋ 1,3-ブタジエン</td><td style="text-align: left;">共重合</td><td style="text-align: left;">すり減りにくい。自動車のタイヤ</td></tr><tr><td style="text-align: left;">シリコーンゴム</td><td style="text-align: left;">ジクロロジメチルシラン由来の化合物</td><td style="text-align: left;">縮合重合</td><td style="text-align: left;">主鎖に炭素が無い。熱・寒さに強い</td></tr></tbody></table></div>
 <p class="ref-p"><b>単量体と名前の対応は必ず暗記してください。</b>特徴・用途は「クロロプレンは Cl を含むので油に強い」「SBR はタイヤ」「シリコーンは主鎖に炭素が無い」の3つを押さえておけば十分でしょう。</p>
@@ -1134,6 +1152,7 @@ window.addEventListener('message', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

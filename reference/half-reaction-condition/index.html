@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">中・塩基性の水溶液には H⁺ が存在しないので、半反応式の H⁺ を OH⁻ で打ち消して H₂O に書き換えます。水の4本の式、オゾン・過酸化水素・過マンガン酸イオンの塩基性での式まで。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸化と還元</span><span class="unit-label">酸化剤と還元剤</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-why" data-ref-anchor="why">なぜ書き換えるのか —— H⁺ と OH⁻ は共存しない</a></li><li><a href="#ref-sec-method" data-ref-anchor="method">書き換えの手順 —— 両辺に OH⁻ を足して打ち消す</a></li><li><a href="#ref-sec-shortcut" data-ref-anchor="shortcut">楽な道 —— 陰極は H⁺ の式から、陽極は 2H₂O から直接</a></li><li><a href="#ref-sec-examples" data-ref-anchor="examples">塩基性で書く、酸化剤の半反応式</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -962,7 +980,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">4OH⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O ＋ O₂↑ ＋ 4e⁻</span></div><p class="ref-note">塩基性。陽極で OH⁻ が e⁻ を失って O₂ が発生します。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">O₂↑ ＋ 4H⁺ ＋ 4e⁻</span></div><p class="ref-note">中・酸性。上の式の両辺に 4H⁺ を足すと、左辺が 4H₂O、右辺が 2H₂O ＋ O₂ ＋ 4e⁻ になるので、両辺の 2H₂O を消して導きます。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/half-reaction-condition-water.png?h=74625216" alt="陽極の2本（2H₂O → 4H⁺ ＋ O₂ ＋ 4e⁻ と 4OH⁻ → 2H₂O ＋ O₂ ＋ 4e⁻）と、陰極の2本（2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻ と 2H⁺ ＋ 2e⁻ → H₂）を上下に並べ、＋H⁺・＋OH⁻ の矢印で行き来できることを示した図" loading="lazy"><figcaption class="ref-figure-cap">水関係の4本の式。<b>＋H⁺・＋OH⁻ で互いに行き来できます</b>。陽極は中・酸性なら H₂O が、塩基性なら OH⁻ が e⁻ を失って O₂。陰極は中・塩基性なら H₂O が、酸性なら H⁺ が e⁻ を受け取って H₂。</figcaption></figure>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.basic-rewrite&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>中・塩基性の水溶液中には H⁺ がほぼ存在しないので、酸性で書いた式の H⁺ と同じ数の OH⁻ を両辺に足し、H⁺ ＋ OH⁻ を H₂O にまとめて書き換える。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.basic-rewrite&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-shortcut"><h4 class="ref-sec-h">楽な道 —— 陰極は H⁺ の式から、陽極は 2H₂O から直接</h4><p class="ref-sec-lead">陰極の H₂O の式は H⁺ の式から導き、陽極の H₂O の式は 2H₂O → O₂ を直接つくるのが楽です。</p></section>
 <p class="ref-p">陰極の H₂O の式は、簡単に書ける H⁺ の式（金属の陽イオンと同じ要領）から導くのが楽です。</p>
 <p class="ref-p">陽極は OH⁻ の式がつくりづらいので、<b>H₂O の式を直接つくります</b>。</p>
@@ -970,7 +988,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>電気分解の反応式に登場する H₂O の係数はすべて2</b>、<b>発生する気体 H₂・O₂ の係数は1</b>と覚えておきましょう。この2つを覚えていれば、水関係の4本はどれも素早く書けます。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">水の電気分解だから、2H₂O → 2H₂ ＋ O₂ と書けばよい</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">電極ごとに<b>半反応式</b>で書きます。陰極は 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻、陽極は 2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻ です。</span></p><p class="ref-mistake-why">書き方がわからないときに、<b>むやみに右辺に単体をつくらない</b>ことが大切です。単体は高エネルギーで不安定な物質なので、知識として生じることを知っている場合以外は右辺につくりません。逆に H₂O や CO₂ のような酸化物を右辺につくるのは問題ありません。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/electrolysis-equations/">電極で何が反応するかの判定と、電気分解の反応式は「電気分解の反応式」で <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.water-half&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>水が関わる電極の式は4本: 陰極は 2H⁺ ＋ 2e⁻ → H₂（酸性）と 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻（中・塩基性）、陽極は 2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻（中・酸性）と 4OH⁻ → 2H₂O ＋ O₂ ＋ 4e⁻（塩基性）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.water-half&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-examples"><h4 class="ref-sec-h">塩基性で書く、酸化剤の半反応式</h4><p class="ref-sec-lead">オゾン・過酸化水素・過マンガン酸イオンを、中・塩基性で書き換えた形です。</p></section>
 <h5 class="ref-h5">オゾン O₃</h5>
 <p class="ref-p">O₃ は極めて強い2価の酸化剤で、酸性では次の式ではたらきます。</p>
@@ -993,7 +1011,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 塩基性で書く、酸化剤の半反応式</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">水で湿らせたヨウ化カリウムデンプン紙をオゾンにさらすと、紙が青紫色に変わった。<b>この反応の化学反応式を書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>O₃ ＋ 2KI ＋ H₂O → I₂ ＋ 2KOH ＋ O₂</b> です。酸を加えていないので、O₃ は中・塩基性の式 O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ ではたらきます。還元剤の式 2I⁻ → I₂ ＋ 2e⁻ と足すと O₃ ＋ 2I⁻ ＋ H₂O → I₂ ＋ 2OH⁻ ＋ O₂。両辺に 2K⁺ を加えて KI と KOH に組みます。生じた I₂ がデンプンと反応して青〜青紫色になります。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">リン酸形燃料電池の正極の式 O₂ ＋ 4H⁺ ＋ 4e⁻ → 2H₂O を、<b>電解液が KOH 水溶液（アルカリ形）の場合の式に書き換えよ。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>O₂ ＋ 2H₂O ＋ 4e⁻ → 4OH⁻</b> です。左辺の H⁺ の数だけ両辺に 4OH⁻ を足すと O₂ ＋ 4H₂O ＋ 4e⁻ → 2H₂O ＋ 4OH⁻ になり、両辺にある 2H₂O を消します。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.ozone-half,theo.redox.mno4-neutral&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>オゾン O₃ は2価の酸化剤で、中・塩基性の式 O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ ではたらく。湿らせたヨウ化カリウムデンプン紙を青変させる。</li><li>MnO₄⁻ は硫酸酸性では Mn²⁺ まで還元されるが、中性・塩基性では MnO₂ までしか還元されない（MnO₄⁻ ＋ 2H₂O ＋ 3e⁻ → MnO₂ ＋ 4OH⁻）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.ozone-half,theo.redox.mno4-neutral&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 </div>
 </div>
 
@@ -1097,6 +1115,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

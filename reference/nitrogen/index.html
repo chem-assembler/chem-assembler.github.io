@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">窒素 N₂・アンモニア NH₃・一酸化窒素 NO・二酸化窒素 NO₂・硝酸 HNO₃ の性質と製法です。アンモニアはハーバー・ボッシュ法、硝酸はオストワルト法でつくり、硝酸は酸と酸化剤の2つの顔をもちます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">非金属元素</span><span class="unit-label">15族（窒素・リン）</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-n2" data-ref-anchor="n2">窒素 N₂</a></li><li><a href="#ref-sec-ammonia" data-ref-anchor="ammonia">アンモニア NH₃</a></li><li><a href="#ref-sec-nox" data-ref-anchor="nox">一酸化窒素 NO と二酸化窒素 NO₂</a></li><li><a href="#ref-sec-nitric-acid" data-ref-anchor="nitric-acid">硝酸 HNO₃ —— 強酸であり、酸化剤でもある</a></li><li><a href="#ref-sec-industry" data-ref-anchor="industry">アンモニアと硝酸の工業的製法</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">工業的には液体空気の分留で得られます。沸点は −196℃ で、液体窒素は冷却剤に使われます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">NH₄NO₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">N₂ ＋ 2H₂O</span></div><p class="ref-note">実験室での製法（亜硝酸アンモニウムの分解）。NH₄⁺ の N（−3）と NO₂⁻ の N（+3）が同じ酸化数 0 にそろう酸化還元です。</p></div>
 <p class="ref-p"><b>窒素の単体の製法は覚えなくても構いません。</b>窒素そのものは「安定で反応しにくい」「空気の約78%」の2つを押さえておけば十分です。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.nitrogen-gas&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>窒素 N₂ は空気の体積の約78%を占める無色・無臭の気体で、水にほとんど溶けず、三重結合が非常に切れにくいので常温ではほとんど反応しない。工業的には液体空気の分留で得られ、液体窒素（沸点 −196℃）は冷却剤に使われる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.nitrogen-gas&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-ammonia"><h4 class="ref-sec-h">アンモニア NH₃</h4><p class="ref-sec-lead">高校化学でただ1つの塩基性の気体です。弱塩基の遊離でつくり、上方置換で集めます。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">アンモニアの性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">アンモニア NH₃</th></tr></thead><tbody><tr><td style="text-align: left;">色・におい</td><td style="text-align: left;">無色・刺激臭</td></tr><tr><td style="text-align: left;">分子量</td><td style="text-align: left;">17（空気より軽い）</td></tr><tr><td style="text-align: left;">水への溶けやすさ</td><td style="text-align: left;">非常によく溶ける</td></tr><tr><td style="text-align: left;">捕集法</td><td style="text-align: left;">上方置換</td></tr><tr><td style="text-align: left;">水溶液の液性</td><td style="text-align: left;">弱い塩基性</td></tr><tr><td style="text-align: left;">乾燥剤</td><td style="text-align: left;">ソーダ石灰（濃硫酸・塩化カルシウムは使えない）</td></tr><tr><td style="text-align: left;">検出</td><td style="text-align: left;">濃塩酸をつけたガラス棒を近づけると白煙（NH₄Cl）</td></tr></tbody></table></div>
 <p class="ref-p">アンモニアは、<b>水に溶けて塩基性を示す、高校化学でただ1つの気体</b>です。水によく溶けて空気より軽いので、上方置換で集めます。</p>
@@ -970,7 +988,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2NH₃ ＋ H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">(NH₄)₂SO₄</span></div><p class="ref-note">硫酸アンモニウム（硫安）は窒素肥料として使われます。</p></div>
 <h5 class="ref-h5">例題 —— アンモニア NH₃</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">アンモニアの乾燥に、濃硫酸と塩化カルシウムを使えない理由をそれぞれ答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>濃硫酸は酸なので、塩基の NH₃ と中和してしまうためです。塩化カルシウムは NH₃ と結びついた化合物をつくって、NH₃ を吸収してしまうためです。アンモニアの乾燥にはソーダ石灰を使います。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.ammonia&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アンモニアは水溶液が塩基性を示すただ1つの気体で、NH₄Cl と Ca(OH)₂ の加熱でつくって上方置換で集め、塩化水素と NH₄Cl の白煙をつくることで検出する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.ammonia&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-nox"><h4 class="ref-sec-h">一酸化窒素 NO と二酸化窒素 NO₂</h4><p class="ref-sec-lead">どちらも銅と硝酸の反応でつくります。希硝酸なら NO、濃硝酸なら NO₂ です。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">一酸化窒素と二酸化窒素</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">一酸化窒素 NO</th><th style="text-align: left;">二酸化窒素 NO₂</th></tr></thead><tbody><tr><td style="text-align: left;">色・におい</td><td style="text-align: left;">無色・無臭</td><td style="text-align: left;"><b>赤褐色</b>・刺激臭（有毒）</td></tr><tr><td style="text-align: left;">水への溶けやすさ</td><td style="text-align: left;">溶けにくい</td><td style="text-align: left;">よく溶ける（溶けて硝酸になる）</td></tr><tr><td style="text-align: left;">捕集法</td><td style="text-align: left;">水上置換</td><td style="text-align: left;">下方置換</td></tr><tr><td style="text-align: left;">実験室的製法</td><td style="text-align: left;">銅 ＋ 希硝酸</td><td style="text-align: left;">銅 ＋ 濃硝酸</td></tr><tr><td style="text-align: left;">空気中で</td><td style="text-align: left;">すぐに酸化されて NO₂ になる</td><td style="text-align: left;">一部が無色の N₂O₄ になる</td></tr></tbody></table></div>
 <p class="ref-p">一酸化窒素は、空気に触れるとすぐに酸化されて赤褐色の二酸化窒素に変わります。無色の気体が赤褐色になることで、NO があったと分かります。空気と混ぜると変わってしまうので、水上置換で集めます。</p>
@@ -978,7 +996,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">二酸化窒素は、一部が無色の四酸化二窒素 N₂O₄ と平衡の状態にあります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2NO₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">N₂O₄</span></div><p class="ref-note">赤褐色の NO₂ と無色の N₂O₄ の平衡です。化学平衡の単元で、温度を変えると色が変わる例としてよく登場します。</p></div>
 <p class="ref-p">一酸化窒素は、エンジンの中のような高温で窒素と酸素が直接反応しても生じます。NO や NO₂ などをまとめて NOₓ（ノックス）と呼び、大気汚染や酸性雨の原因になります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.no-no2,inorg.nonmetal.no2-n2o4,inorg.nonmetal.nox&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>一酸化窒素は銅と希硝酸でつくる無色で水に溶けにくい気体で、空気中ですぐ赤褐色の NO₂ になり、二酸化窒素は銅と濃硝酸でつくる赤褐色で水によく溶ける気体である。</li><li>赤褐色の二酸化窒素 NO₂ は、一部が無色の四酸化二窒素 N₂O₄ と 2NO₂ ⇄ N₂O₄ の平衡の状態にあり、温度を変えると色の濃さが変わる例として化学平衡でよく登場する。</li><li>一酸化窒素はエンジンの中のような高温で窒素と酸素が直接反応しても生じ、NO・NO₂ などの窒素酸化物をまとめて NOₓ（ノックス）とよび、大気汚染や酸性雨の原因になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.no-no2,inorg.nonmetal.no2-n2o4,inorg.nonmetal.nox&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-nitric-acid"><h4 class="ref-sec-h">硝酸 HNO₃ —— 強酸であり、酸化剤でもある</h4><p class="ref-sec-lead">硝酸は3つの強酸の1つで、さらに H⁺ より強い酸化力をもつ「酸化力のある酸」です。</p></section>
 <p class="ref-p">硝酸は、塩酸 HCl・硫酸 H₂SO₄ とならぶ<b>強酸</b>です。「強酸は3つ覚える」の1つにあたります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/acid-base-strength/">強酸・弱酸の見分けと電離の式のページへ</a></p>
@@ -999,7 +1017,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-callout ref-callout-skip"><b class="ref-callout-tag">覚えなくてよい</b><p class="ref-callout-text">王水が金を溶かすのは、酸化力が強いからだけではありません。塩化物イオンが金のイオンと安定な錯イオン [AuCl₄]⁻ をつくることが効いています。この仕組みは覚えなくても構いません。</p></div>
 <h5 class="ref-h5">例題 —— 硝酸 HNO₃</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を化学反応式で書け。<b>(1) 塩化アンモニウムに水酸化カルシウムを混ぜて熱した　(2) 銅に希硝酸を加えた　(3) 銅に濃硝酸を加えた　(4) 一酸化窒素が空気に触れて赤褐色になった　(5) 二酸化窒素を温水に吸収させた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 2NH₄Cl ＋ Ca(OH)₂ → CaCl₂ ＋ 2H₂O ＋ 2NH₃　(2) 3Cu ＋ 8HNO₃ → 3Cu(NO₃)₂ ＋ 4H₂O ＋ 2NO　(3) Cu ＋ 4HNO₃ → Cu(NO₃)₂ ＋ 2H₂O ＋ 2NO₂　(4) 2NO ＋ O₂ → 2NO₂　(5) 3NO₂ ＋ H₂O → 2HNO₃ ＋ NO</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.nitric-acid,inorg.nonmetal.passivation-aqua-regia&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>硝酸は強酸で、さらに NO₃⁻ が H⁺ より強い酸化剤としてはたらくので Cu・Ag も溶かし、希硝酸は NO、濃硝酸は NO₂ になる。</li><li>Al・Fe・Ni は濃硝酸に不動態となって溶けず、硝酸は光で分解しやすいので褐色びんで保存し、濃硝酸と濃塩酸を体積比 1：3 で混ぜた王水は金や白金も溶かす。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.nitric-acid,inorg.nonmetal.passivation-aqua-regia&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-industry"><h4 class="ref-sec-h">アンモニアと硝酸の工業的製法</h4><p class="ref-sec-lead">窒素と水素からアンモニアをつくり（ハーバー・ボッシュ法）、そのアンモニアを酸化して硝酸をつくります（オストワルト法）。</p></section>
 <h5 class="ref-h5">ハーバー・ボッシュ法</h5>
 <p class="ref-p">アンモニアは、四酸化三鉄 Fe₃O₄ を主成分とする触媒を使い、窒素と水素から直接合成します。これを<b>ハーバー・ボッシュ法</b>といいます。</p>
@@ -1017,7 +1035,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">オストワルト法の3本の式を足せば、そのまま全体の式になる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">3本をそのまま足すと NO と NO₂ が残ります。<b>3段目で出た NO を2段目にもどして使い切る</b>と考え、NO と NO₂ が両辺から消えるように係数を選んで足します。</span></p><p class="ref-mistake-why">工程が「循環」していることを式に入れ忘れるためです。★ まとめた式 NH₃ ＋ 2O₂ → HNO₃ ＋ H₂O で、N が1個ずつ受け渡されていることを確かめましょう。</p></div>
 <h5 class="ref-h5">例題 —— アンモニアと硝酸の工業的製法</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">オストワルト法で、アンモニア 34 kg から得られる硝酸は最大で何 kg か。原子量は H＝1.0、N＝14、O＝16 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>まとめた式 NH₃ ＋ 2O₂ → HNO₃ ＋ H₂O より、NH₃ と HNO₃ の物質量の比は 1：1 です。NH₃ ＝ 17 g/mol なので 34 kg は 2.0×10³ mol、HNO₃ ＝ 63 g/mol なので 2.0×10³ mol × 63 g/mol ＝ 1.26×10⁵ g、<b>約 126 kg</b>（有効数字2桁なら 1.3×10² kg）です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.haber-ostwald&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アンモニアは Fe₃O₄ を主成分とする触媒で N₂ と H₂ から合成し（ハーバー・ボッシュ法）、硝酸はアンモニアを Pt 触媒で酸化する3段階でつくる（オストワルト法・NH₃ 1 mol から HNO₃ 1 mol）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.haber-ostwald&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">NH₃ の製法と検出、硝酸の半反応式2本、工業的製法2つが中心です。</p></section>
 <p class="ref-p"><b>★★★ の式は、物質名から書けるようにしてください。</b>とくに次の3つは、無機のほかのページでもくり返し出てきます。</p>
 <ul class="ref-list"><li>アンモニアの製法（NH₄Cl ＋ Ca(OH)₂）と検出（NH₃ ＋ HCl → NH₄Cl の白煙）</li><li>希硝酸と濃硝酸の半反応式（生成物は NO と NO₂）</li><li>オストワルト法の3本と、まとめた1本</li></ul>
@@ -1126,6 +1144,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

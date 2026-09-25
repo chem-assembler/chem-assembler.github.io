@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">酸化剤と還元剤の場所を離して、e⁻ の流れを外に取り出すのが電池です。銅樹ができる反応とダニエル電池が同じ反応式であることと、素焼き板の2つの役割をまとめました。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸化と還元</span><span class="unit-label">酸化還元反応の応用（電池・電気分解）</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-principle" data-ref-anchor="principle">電池は酸化剤と還元剤の場所を離した装置</a></li><li><a href="#ref-sec-tree" data-ref-anchor="tree">金属樹の反応を引き離すとダニエル電池になる</a></li><li><a href="#ref-sec-daniell" data-ref-anchor="daniell">ダニエル電池の仕組み</a></li><li><a href="#ref-sec-plate" data-ref-anchor="plate">素焼き板の2つの役割</a></li><li><a href="#ref-sec-positive" data-ref-anchor="positive">どちらが正極になるか</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -949,13 +967,13 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">電池の中で実際に e⁻ をやりとりしている主役の物質を<b>活物質</b>とよびます。負極で e⁻ を手放す還元剤が<b>負極活物質</b>、正極で e⁻ を受け取る酸化剤が<b>正極活物質</b>です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">電池の負極と正極</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: center;">負極</th><th style="text-align: center;">正極</th></tr></thead><tbody><tr><td style="text-align: left;">はたらく物質</td><td style="text-align: center;">還元剤（負極活物質）</td><td style="text-align: center;">酸化剤（正極活物質）</td></tr><tr><td style="text-align: left;">e⁻</td><td style="text-align: center;">放出する（出ていく）</td><td style="text-align: center;">受け取る（入ってくる）</td></tr><tr><td style="text-align: left;">起こる反応</td><td style="text-align: center;">酸化される反応</td><td style="text-align: center;">還元される反応</td></tr></tbody></table></div>
 <p class="ref-p"><b>「負極は還元剤、正極は酸化剤」「e⁻ は負極から出て正極にもどる」の2つは必ず覚えてください。</b>電池のどの問題も、ここから考え始めます。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.cell-poles&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>電池は酸化剤と還元剤の場所を離した装置で、還元剤がはたらく電極が負極、酸化剤がはたらく電極が正極。e⁻ は負極から導線を通って正極へ流れる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.cell-poles&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-tree"><h4 class="ref-sec-h">金属樹の反応を引き離すとダニエル電池になる</h4><p class="ref-sec-lead">亜鉛板を Cu²⁺ の水溶液に入れると銅が析出します。この反応の酸化剤と還元剤を別の容器に分けたものがダニエル電池です。</p></section>
 <p class="ref-p">亜鉛板を硫酸銅(Ⅱ)水溶液に入れると、Zn が e⁻ を失って Zn²⁺ として溶けだし、Cu²⁺ が亜鉛板の上で e⁻ を受け取って Cu が析出します（銅樹）。イオン化傾向が Zn ＞ Cu なので、Zn のほうが陽イオンになりやすく、Cu のほうが単体になりやすいためです。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Zn</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Zn²⁺ ＋ 2e⁻</span></div><p class="ref-note">還元剤。亜鉛板から水溶液中へ溶けだします。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu²⁺ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cu</span></div><p class="ref-note">酸化剤。水溶液中の Cu²⁺ が、板の上で Cu になって析出します。</p></div>
 <p class="ref-p">銅樹では、この2つの反応が<b>同じ亜鉛板の上</b>で起こっています。還元剤の Zn と酸化剤の Cu²⁺ を別々の容器に分け、導線でつなぐと、e⁻ は導線を通って流れるしかなくなります。これが<b>ダニエル電池</b>です。<b>銅樹の生成とダニエル電池は、同じ反応式で書ける同じ原理の反応です。</b></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.cell-principle&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>酸化剤と還元剤を直接ふれさせると、e⁻ はその場で受け渡されて熱になるだけだが、2つの場所を離して導線でつなぐと、e⁻ は導線を通って還元剤から酸化剤へ流れ、電流として取り出せる。亜鉛板を硫酸銅(Ⅱ)水溶液に入れる反応（銅樹）とダニエル電池は、同じ反応式で書ける同じ原理の反応である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.cell-principle&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-daniell"><h4 class="ref-sec-h">ダニエル電池の仕組み</h4><p class="ref-sec-lead">硫酸亜鉛水溶液に亜鉛板、硫酸銅(Ⅱ)水溶液に銅板を浸し、素焼き板で仕切ります。負極活物質は Zn、正極活物質は Cu²⁺ です。</p></section>
 <p class="ref-p">ダニエル電池は、硫酸亜鉛 ZnSO₄ 水溶液に亜鉛板を、硫酸銅(Ⅱ) CuSO₄ 水溶液に銅板を浸し、2つの水溶液を素焼き板で仕切った電池です。電池のつくりは、左から負極・電解液・正極の順に化学式で書き、これを電池の構成といいます。</p>
 <p class="ref-p">ダニエル電池の構成は <b>（−）Zn｜ZnSO₄aq｜CuSO₄aq｜Cu（＋）</b> です。負極の Zn が溶けだし、正極の銅板の上に Cu が析出します。</p>
@@ -963,7 +981,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">放電を続けると、負極側では Zn²⁺ が増え、正極側では Cu²⁺ が減ります。負極側で余った正の電荷と、正極側で余った負の電荷を打ち消すように、主に SO₄²⁻ が素焼き板を通って正極側から負極側へ移動します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/cell-basics-app-daniell.png?h=ecff2221" alt="アプリ「イオンでみる化学反応式」の電池の画面。硫酸亜鉛水溶液に亜鉛板、硫酸銅(Ⅱ)水溶液に銅板が浸され、間に素焼き板がある。どちらの板が溶けるかを予想する前の状態" loading="lazy"><figcaption class="ref-figure-cap">どちらの板が溶けるかを予想してからつなぐと、e⁻ とイオンの動きが見られます。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/battery.html?s=b1&amp;from=reference&amp;page=cell-basics">ダニエル電池を組み立てて、どちらの板が溶けるか予想する</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.daniell&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ダニエル電池（−）Zn｜ZnSO₄aq｜CuSO₄aq｜Cu（＋）は、負極で Zn → Zn²⁺ ＋ 2e⁻、正極で Cu²⁺ ＋ 2e⁻ → Cu が起こる。銅樹の反応の酸化剤と還元剤を引き離したもの。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.daniell&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-plate"><h4 class="ref-sec-h">素焼き板の2つの役割</h4><p class="ref-sec-lead">素焼き板は電解液が混ざるのを防ぎ、同時にイオンを通して回路をつくります。</p></section>
 <p class="ref-p">素焼き板には、細かい穴が無数に空いています。この穴のおかげで、素焼き板は次の2つの役割を同時に果たします。</p>
 <ol class="ref-list"><li>2つの電解液が混ざるのを（ある程度）防ぐ。<div class="ref-li-hang">混ざると Cu²⁺ が亜鉛板の上で直接 e⁻ を受け取るようになり、電流を取り出せなくなります（金属樹に逆戻り）。</div></li><li>イオンを通して回路をつくる。<div class="ref-li-hang">イオンが通れないと、負極側に陽イオン、正極側に陰イオンが余り、その反発ですぐに反応が止まります。</div></li></ol>
@@ -972,14 +990,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">素焼き板は、2つの電解液を完全に分けるための仕切りである</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">素焼き板は<b>イオンを通す</b>仕切りです。混ざるのを防ぐ役割と、イオンの通り道になって回路をつくる役割の両方があります。</span></p><p class="ref-mistake-why">「仕切り」という見た目から、1つ目の役割だけを覚えてしまうためです。★ ガラス板に替えると電流が止まる、と1つ具体例で覚えておけば、2つ目の役割を忘れません。</p></div>
 <h5 class="ref-h5">例題 —— 素焼き板の2つの役割</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ダニエル電池の負極と正極で起こる反応を、e⁻ を含むイオン反応式でそれぞれ書け。また、素焼き板をガラス板に替えると電流がすぐに流れなくなる理由を説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>負極：Zn → Zn²⁺ ＋ 2e⁻　正極：Cu²⁺ ＋ 2e⁻ → Cu　ガラス板はイオンを通さないので、負極側に Zn²⁺（正の電荷）、正極側に SO₄²⁻（負の電荷）が余り、その反発で反応が止まるためです。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.porous-plate,theo.electro.charge-balance&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ダニエル電池の素焼き板は、2つの電解液が混ざるのを防ぐ役割と、イオンを通して回路をつくる役割の2つをもつ。</li><li>ダニエル電池の放電中、負極側では Zn²⁺ が増えて正の電荷が、正極側では Cu²⁺ が減って SO₄²⁻ の負の電荷が余ろうとする。これを打ち消すように、主に SO₄²⁻ が素焼き板を通って正極側から負極側へ移動する。イオンを通さないガラス板で仕切ると、余った電荷の反発で反応がすぐに止まる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.porous-plate,theo.electro.charge-balance&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-positive"><h4 class="ref-sec-h">どちらが正極になるか</h4><p class="ref-sec-lead">イオン化傾向が小さい金属（e⁻ を受け取る力が強い側）が正極になります。</p></section>
 <p class="ref-p">2種類の金属でつくった電池では、<b>イオン化傾向が大きい金属が負極、小さい金属が正極</b>になります。イオン化傾向が大きい金属の単体は e⁻ を放出しやすく（還元剤として強い）、イオン化傾向が小さい金属の陽イオンは e⁻ を受け取りやすい（酸化剤として強い）ためです。</p>
 <p class="ref-p">具体例で確かめます。イオン化傾向は Zn ＞ Ni ＞ Cu ＞ Ag なので、Cu と Zn の組み合わせでは Cu が、Cu と Ag の組み合わせでは Ag が、Zn と Ni の組み合わせでは Ni が正極になります。</p>
 <p class="ref-p">ちなみに、亜鉛板と銅板を希硫酸に浸した電池を<b>ボルタ電池</b>といい、構成は（−）Zn｜H₂SO₄aq｜Cu（＋）と書きます。正極では Cu²⁺ ではなく H⁺ が e⁻ を受け取って H₂ が発生します。<b>ボルタ電池は構成が書ければ十分です。</b></p>
 <h5 class="ref-h5">例題 —— どちらが正極になるか</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">素焼き板で仕切った容器の片側に電極Aと水溶液A、もう片側に電極Bと水溶液Bを入れて電池をつくった。次の①〜③で、正極になるのはA・Bのどちらか答えよ。<b>①A：Cu と CuSO₄aq、B：Zn と ZnSO₄aq　②A：Cu と CuSO₄aq、B：Ag と Ag₂SO₄aq　③A：Zn と ZnSO₄aq、B：Ni と NiSO₄aq</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>①A　②B　③B　イオン化傾向は Zn ＞ Ni ＞ Cu ＞ Ag で、<b>イオン化傾向が小さい（e⁻ を受け取る力が強い）金属のほうが正極</b>になります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.which-positive,theo.electro.voltaic,theo.electro.positive-reason&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>2種類の金属でつくった電池では、イオン化傾向が大きい金属が負極、小さい金属が正極になる。</li><li>亜鉛板と銅板を希硫酸に浸した電池をボルタ電池といい、構成は（−）Zn｜H₂SO₄aq｜Cu（＋）と書く。負極では亜鉛が Zn²⁺ となって溶けだし、正極の銅板の上では Cu²⁺ ではなく H⁺ が e⁻ を受け取って H₂ が発生する。</li><li>2種類の金属でつくった電池でイオン化傾向が大きい金属が負極、小さい金属が正極になるのは、イオン化傾向が大きい金属の単体ほど e⁻ を放出しやすく（還元剤として強い）、イオン化傾向が小さい金属の陽イオンほど e⁻ を受け取りやすい（酸化剤として強い）からである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.electro.which-positive,theo.electro.voltaic,theo.electro.positive-reason&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">負極・正極と還元剤・酸化剤の対応、ダニエル電池の構成と両極の反応式、素焼き板の2つの役割を覚えます。</p></section>
 <p class="ref-p"><b>ダニエル電池の構成（−）Zn｜ZnSO₄aq｜CuSO₄aq｜Cu（＋）と、両極の反応式2本は必ず書けるようにしてください。</b>反応式は、銅樹の反応式と同じです。</p>
 <p class="ref-p">素焼き板は「混ざるのを防ぐ」「イオンを通して回路をつくる」の2つをセットで説明できるようにしましょう。電池の起電力の値や、標準電極電位の数値は覚えなくても構いません。</p>
@@ -1087,6 +1105,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

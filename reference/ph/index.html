@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">[H⁺] ＝ 10⁻ᵖᴴ mol/L、[OH⁻] ＝ 10⁻ᵖᴼᴴ mol/L、水のイオン積から pH ＋ pOH ＝ 14。強酸・強塩基の pH の出し方と、薄めたときに pH がどう動くか（7 を越えない）まで。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸と塩基</span><span class="unit-label">水の電離と pH</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-definition" data-ref-anchor="definition">pH と pOH の定義</a></li><li><a href="#ref-sec-kw" data-ref-anchor="kw">水のイオン積と pH ＋ pOH ＝ 14</a></li><li><a href="#ref-sec-scale" data-ref-anchor="scale">酸性・中性・塩基性と pH</a></li><li><a href="#ref-sec-dilution" data-ref-anchor="dilution">薄めたときの pH の変化</a></li><li><a href="#ref-sec-log" data-ref-anchor="log">pH ＝ −log₁₀[H⁺]</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -947,7 +965,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <ul class="ref-list"><li><b>[H⁺] ＝ 10⁻ᵖᴴ mol/L</b></li><li><b>[OH⁻] ＝ 10⁻ᵖᴼᴴ mol/L</b></li></ul>
 <p class="ref-p">具体例として、[H⁺] ＝ 0.10 mol/L なら 0.10 ＝ 10⁻¹ なので <b>pH ＝ 1</b>、[OH⁻] ＝ 0.0010 mol/L なら 0.0010 ＝ 10⁻³ なので <b>pOH ＝ 3</b> です。0.00…010 の「1 が小数点から何桁目にあるか」がそのまま pH（pOH）になります。</p>
 <p class="ref-p"><b>この2つの式は必ず暗記してください。</b>pH の問題はすべてここから始まります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.poh-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>水酸化物イオンのモル濃度を [OH⁻] ＝ 10⁻ᵖᴼᴴ mol/L と表したときの肩の数の符号を変えたものが pOH である。例えば [OH⁻] ＝ 0.0010 mol/L なら pOH ＝ 3 で、25 ℃ では pH ＝ 14 − 3 ＝ 11 になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.poh-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-kw"><h4 class="ref-sec-h">水のイオン積と pH ＋ pOH ＝ 14</h4><p class="ref-sec-lead">水の中では [H⁺][OH⁻] ＝ 1.0 × 10⁻¹⁴ (mol/L)² がいつも成り立ちます（25 ℃）。ここから pH ＋ pOH ＝ 14 が出ます。</p></section>
 <p class="ref-p">水の中では、[H⁺] と [OH⁻] の積がいつも一定の値になります。この積を<b>水のイオン積</b>といい、<b>Kw</b> で表します。</p>
 <ul class="ref-list"><li>Kw ＝ [H⁺][OH⁻] ＝ 1.0 × 10⁻¹⁴ (mol/L)²（25 ℃）</li></ul>
@@ -961,7 +979,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) 0.010 mol/L の塩酸の pH を整数で求めよ。(2) 0.10 mol/L の水酸化ナトリウム水溶液の pH を整数で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 塩酸は1価の強酸なので [H⁺] ＝ 0.010 ＝ 10⁻² mol/L、<b>pH ＝ 2</b>。(2) NaOH は1価の強塩基なので [OH⁻] ＝ 0.10 ＝ 10⁻¹ mol/L、pOH ＝ 1、pH ＝ 14 − 1 ＝ <b>13</b>。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) 0.050 mol/L の硫酸の pH を整数で求めよ。(2) 0.0050 mol/L の水酸化カルシウム水溶液の pH を整数で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 硫酸は2価の強酸なので [H⁺] ＝ 2 × 0.050 ＝ 0.10 ＝ 10⁻¹ mol/L、<b>pH ＝ 1</b>。(2) Ca(OH)₂ は2価の強塩基なので [OH⁻] ＝ 2 × 0.0050 ＝ 0.010 ＝ 10⁻² mol/L、pOH ＝ 2、pH ＝ 14 − 2 ＝ <b>12</b>。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">5.0 × 10⁻⁴ mol/L の水酸化カルシウム水溶液の pH を整数で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>Ca(OH)₂ は2価の強塩基なので [OH⁻] ＝ 2 × 5.0 × 10⁻⁴ ＝ 1.0 × 10⁻³ mol/L、pOH ＝ 3、pH ＝ 14 − 3 ＝ <b>11</b>。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.water-ion-product,theo.acid-base.kw-meaning&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>水の中では [H⁺][OH⁻] ＝ Kw ＝ 1.0 × 10⁻¹⁴ (mol/L)²（25 ℃）が成り立ち、pH ＋ pOH ＝ 14 となる。</li><li>水のイオン積 [H⁺][OH⁻] ＝ 1.0 × 10⁻¹⁴ (mol/L)²（25 ℃）はほとんど 0 で、H⁺ と OH⁻ は水の中で共存できず、出会うとすぐに反応して H₂O になることを意味している。[H⁺] が大きくなれば、そのぶん [OH⁻] は小さくなる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.water-ion-product,theo.acid-base.kw-meaning&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-scale"><h4 class="ref-sec-h">酸性・中性・塩基性と pH</h4><p class="ref-sec-lead">[H⁺] ＞ [OH⁻] なら酸性で pH ＜ 7、等しければ中性で pH ＝ 7、[H⁺] ＜ [OH⁻] なら塩基性で pH ＞ 7 です。pH が1増えると [H⁺] は 1/10 倍になります。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">pH・pOH と [H⁺]・[OH⁻] の対応（25 ℃）</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">pH</th><th style="text-align: center;">pOH</th><th style="text-align: center;">[H⁺]（mol/L）</th><th style="text-align: center;">[OH⁻]（mol/L）</th><th style="text-align: left;">液性</th></tr></thead><tbody><tr><td style="text-align: center;">0</td><td style="text-align: center;">14</td><td style="text-align: center;">10⁰ ＝ 1</td><td style="text-align: center;">10⁻¹⁴</td><td style="text-align: left;">強い酸性</td></tr><tr><td style="text-align: center;">1</td><td style="text-align: center;">13</td><td style="text-align: center;">10⁻¹</td><td style="text-align: center;">10⁻¹³</td><td style="text-align: left;">強い酸性</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: center;">11</td><td style="text-align: center;">10⁻³</td><td style="text-align: center;">10⁻¹¹</td><td style="text-align: left;">弱い酸性</td></tr><tr><td style="text-align: center;">7</td><td style="text-align: center;">7</td><td style="text-align: center;">10⁻⁷</td><td style="text-align: center;">10⁻⁷</td><td style="text-align: left;">中性</td></tr><tr><td style="text-align: center;">11</td><td style="text-align: center;">3</td><td style="text-align: center;">10⁻¹¹</td><td style="text-align: center;">10⁻³</td><td style="text-align: left;">弱い塩基性</td></tr><tr><td style="text-align: center;">13</td><td style="text-align: center;">1</td><td style="text-align: center;">10⁻¹³</td><td style="text-align: center;">10⁻¹</td><td style="text-align: left;">強い塩基性</td></tr><tr><td style="text-align: center;">14</td><td style="text-align: center;">0</td><td style="text-align: center;">10⁻¹⁴</td><td style="text-align: center;">10⁰ ＝ 1</td><td style="text-align: left;">強い塩基性</td></tr></tbody></table></div>
 <ul class="ref-list"><li>酸性　[H⁺] ＞ [OH⁻]　⇒　pH ＜ 7</li><li>中性　[H⁺] ＝ [OH⁻]　⇒　pH ＝ 7</li><li>塩基性　[H⁺] ＜ [OH⁻]　⇒　pH ＞ 7</li></ul>
@@ -969,7 +987,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">強酸・強塩基の pH の出し方</h5>
 <ol class="ref-list"><li>価数と濃度から [H⁺]（塩基なら [OH⁻]）を出す。</li><li>10 の何乗かに直して pH（pOH）を読む。</li><li>塩基なら pH ＝ 14 − pOH で pH にする。</li></ol>
 <p class="ref-p">具体例として、0.0050 mol/L の水酸化カルシウム水溶液は2価の強塩基なので [OH⁻] ＝ 2 × 0.0050 ＝ 0.010 ＝ 10⁻² mol/L、pOH ＝ 2、pH ＝ 14 − 2 ＝ <b>12</b> です。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.ph-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>[H⁺] ＝ 10⁻ᵖᴴ mol/L で、pH ＜ 7 は酸性、pH ＝ 7 は中性、pH ＞ 7 は塩基性。pH が1増えると [H⁺] は 1/10 倍になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.ph-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-dilution"><h4 class="ref-sec-h">薄めたときの pH の変化</h4><p class="ref-sec-lead">酸性の水溶液を 10ⁿ 倍に薄めると pH は n 増え、塩基性の水溶液では n 減ります。ただしどちらも 7 を越えては動きません。</p></section>
 <p class="ref-p">酸性の水溶液を 10 倍に薄めると [H⁺] は 1/10 倍になるので、<b>pH は1増えます</b>（中性の 7 に近づく）。このとき [OH⁻] は 10 倍になり、pOH は1減ります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ph-dilution-acid.png?h=65788efe" alt="pH・pOH・[H⁺]・[OH⁻] を4段に並べた表に、10倍ずつ希釈するごとに pH が +1、pOH が −1、[H⁺] が 1/10 倍、[OH⁻] が 10 倍になる矢印を描き、pH 7 のところで止まることを示した図" loading="lazy"><figcaption class="ref-figure-cap">酸性の水溶液を 10 倍ずつ薄めると <b>pH は1ずつ増えて 7 に近づき、7 を越えません</b>。[H⁺][OH⁻] ＝ 10⁻¹⁴ と pH ＋ pOH ＝ 14 はいつも保たれます。</figcaption></figure>
@@ -981,12 +999,12 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">酸の濃度が 10⁻⁶ mol/L くらいより薄くなると、水の電離で生じる H⁺ が無視できなくなります。1.0×10⁻⁸ mol/L の塩酸を、水の電離の H⁺ も足して正確に求めると pH ≒ 6.98 で、7 よりわずかに小さい値です。整数で答える問題では、上のとおり pH ＝ 7 と答えて問題ありません。log の値が与えられて小数まで求める問題では、水の電離の分を足して計算します。</p>
 <h5 class="ref-h5">例題 —— 薄めたときの pH の変化</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) pH ＝ 1 の塩酸を 1000 倍に薄めた水溶液の pH を整数で求めよ。(2) pH ＝ 12 の水酸化カルシウム水溶液を 1000 倍に薄めた水溶液の pH を整数で求めよ。(3) pH ＝ 4 の塩酸を 10000 倍に薄めた水溶液の pH を整数で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 1000 ＝ 10³ なので酸の pH は3大きくなり、pH ＝ 1 ＋ 3 ＝ <b>4</b>。(2) 塩基の pH は3小さくなり、pH ＝ 12 − 3 ＝ <b>9</b>。(3) 10000 ＝ 10⁴ なので 4 ＋ 4 ＝ 8 となりますが、pH は 7 を越えないので <b>pH ＝ 7</b>。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.ph-dilution,theo.acid-base.dilution-oh&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>酸性の水溶液を10ⁿ倍に薄めると pH は n 増え、塩基性の水溶液では n 減るが、どちらも pH ＝ 7 を越えては動かない。</li><li>酸性の水溶液を 10 倍に薄めると、[H⁺] は 1/10 倍になって pH は1増え、同時に [OH⁻] は 10 倍になって pOH は1減る。薄めても [H⁺][OH⁻] ＝ 1.0 × 10⁻¹⁴ (mol/L)² と pH ＋ pOH ＝ 14 は保たれる（25 ℃）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.ph-dilution,theo.acid-base.dilution-oh&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-log"><h4 class="ref-sec-h">pH ＝ −log₁₀[H⁺]</h4><p class="ref-sec-lead">[H⁺] が 10 のちょうど何乗かで書けないときは、常用対数を使って pH ＝ −log₁₀[H⁺] で求めます。</p></section>
 <p class="ref-p">pH の定義を対数で書くと <b>pH ＝ −log₁₀[H⁺]</b> です。[H⁺] ＝ 10⁻ᵖᴴ と同じことを言っています。</p>
 <p class="ref-p">具体例として、[H⁺] ＝ 0.020 mol/L の水溶液は、log₁₀2 ＝ 0.30 を使って、pH ＝ −log₁₀(2 × 10⁻²) ＝ 2 − log₁₀2 ＝ 2 − 0.30 ＝ <b>1.7</b> です。</p>
 <p class="ref-p"><b>計算では log₁₀2 ＝ 0.30、log₁₀3 ＝ 0.48 が与えられることが多いので、式の変形（積は和になる）だけ使えれば十分です。</b></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.ph-log&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>pH は [H⁺] の常用対数の符号を変えた値で、[H⁺] が10のちょうど何乗かで書けないときは常用対数で求める（例 [H⁺] ＝ 0.020 mol/L なら pH ＝ 2 −（2 の常用対数 0.30）＝ 1.7）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.ph-log&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1090,6 +1108,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

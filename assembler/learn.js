@@ -6766,11 +6766,16 @@ class ReferenceBook {
            ⚠ 発展の小見出しを畳まない理由（上の注記）は「どこまでか」が器で言えないことだった ——
              `fold: true` は書き手が**畳む範囲を見出しで区切る**と約束したときだけ付ける */
         let hfold = null;
-        const put = (el) => { if (hfold) hfold.appendChild(el); else if (fold) fold.appendChild(el); else els.push(el); };
+        /* ★ 化学（科目）の範囲の器（`course: adv` の節・小見出し・I-0146・2026-09-26 ユーザー決定「札なしで先に公開」）。
+           既定は**開いている**（今までどおり全部見える）。面Aの「化学基礎まで」を選ぶと閉じる（中身は消さない）。
+           次の見出しか節の手前で終わる（発展の話を化学の器に巻き込まない） */
+        let cfold = null;
+        const put = (el) => { if (hfold) hfold.appendChild(el); else if (cfold) cfold.appendChild(el); else if (fold) fold.appendChild(el); else els.push(el); };
         const closeSec = () => { if (open) { put(this.renderSectionQa(open)); open = null; } };
         const closes = (b) => b.kind === 'section' || (b.kind === 'heading' && !b.advanced);
         (page.blocks || []).forEach(b => {
             if (hfold && (b.kind === 'section' || b.kind === 'heading')) hfold = null;
+            if (cfold && (b.kind === 'section' || b.kind === 'heading')) cfold = null;
             if (b.kind === 'section') closeSec();
             if (fold && closes(b)) fold = null;
             const starts = b.kind === 'section' && b.advanced;
@@ -6779,6 +6784,13 @@ class ReferenceBook {
                 els.push(det.wrap);
                 fold = det.body;
                 if (b.codes && b.codes.length) open = b;
+                return;
+            }
+            if ((b.kind === 'section' || b.kind === 'heading') && b.course === 'adv' && !b.advanced && !b.fold) {
+                const det = this.renderCourseFold(b);
+                put(det.wrap);
+                cfold = det.body;
+                if (b.kind === 'section' && b.codes && b.codes.length) open = b;
                 return;
             }
             if (b.kind === 'heading' && b.fold) {
@@ -6820,6 +6832,27 @@ class ReferenceBook {
          してしまうと、事典として引けなくなる）。
        ★ `<details>` は素の HTML なので **JS が1行も要らない**（`:::exercise` の解答隠しと同じ作り）＝
          焼いた面Aでも、アプリの面Bでも、同じ markup が同じように効く。 */
+    /* 化学（科目）の範囲の器（I-0146）。閉じても題と「化学で学ぶ内容」の一言は見える。
+       ⚠ 節なら id は `<details>` が持つ（目次・用語の索引の行き先を変えない ＝ 発展の器と同じ決め） */
+    renderCourseFold(block) {
+        const det = document.createElement('details');
+        det.className = 'ref-cfold';
+        det.open = true;
+        if (block.kind === 'section') det.id = REF_ANCHOR_PREFIX + block.anchor;
+        const sum = document.createElement('summary');
+        sum.className = 'ref-cfold-sum';
+        sum.appendChild(block.kind === 'section' ? this.renderSectionHead(block) : this.renderHeading(block));
+        const note = document.createElement('span');
+        note.className = 'ref-cfold-note';
+        note.textContent = '化学で学ぶ内容（化学基礎までの人は読み飛ばしてよい）';
+        sum.appendChild(note);
+        det.appendChild(sum);
+        const body = document.createElement('div');
+        body.className = 'ref-cfold-body';
+        det.appendChild(body);
+        return { wrap: det, body };
+    }
+
     /* 畳む小見出しの器（`fold: true`）。閉じていても見出しの題と「▶ 開く」は見える */
     renderHeadingFold(block) {
         const det = document.createElement('details');

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">硫黄の単体と、酸化数 −2 の硫化水素 H₂S・+4 の二酸化硫黄 SO₂ と亜硫酸のまとめ。同素体の表、H₂S の【酸】【還元剤】【沈殿】、SO₂ の【酸性酸化物】【還元剤】【酸化剤】を役割ごとに並べ、硫化物の沈殿とイオン化傾向の関係を1枚にしました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">非金属元素</span><span class="unit-label">硫黄</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（3節）</summary><ul><li><a href="#ref-sec-allotrope" data-ref-anchor="allotrope">硫黄の単体 —— 3つの同素体</a></li><li><a href="#ref-sec-h2s" data-ref-anchor="h2s">硫化水素 —— 腐卵臭の弱酸で、強い還元剤</a></li><li><a href="#ref-sec-so2" data-ref-anchor="so2">二酸化硫黄 —— 基本は還元剤、H₂S が相手のときだけ酸化剤</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -947,7 +965,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">斜方硫黄と単斜硫黄は小さい S₈ 分子の分子結晶なので、無極性溶媒の CS₂ に溶けます。ゴム状硫黄は巨大な鎖状分子なので CS₂ に溶けません。</p>
 <p class="ref-p"><b>覚えるのは表の2点（常温で安定なのは斜方硫黄、ゴム状硫黄のつくり方）だけで十分です。</b>ほかの欄は理由から出せます。</p>
 <p class="ref-p">硫黄を空気中で燃やすと、二酸化硫黄 SO₂ ができます（S ＋ O₂ → SO₂）。空気中の燃焼では S の酸化数は +4 で止まります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.sulfur-allotrope,inorg.nonmetal.sulfur-molecule&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>硫黄の同素体には斜方硫黄・単斜硫黄・ゴム状硫黄があり、常温で安定なのは斜方硫黄、ゴム状硫黄は融かした硫黄を水中で急冷してつくる。</li><li>斜方硫黄と単斜硫黄は環状の S₈ 分子の分子結晶なので二硫化炭素 CS₂ に溶け、ゴム状硫黄は多数の S 原子が鎖状につながった巨大な分子 Sₙ なので CS₂ に溶けない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.sulfur-allotrope,inorg.nonmetal.sulfur-molecule&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-h2s"><h4 class="ref-sec-h">硫化水素 —— 腐卵臭の弱酸で、強い還元剤</h4><p class="ref-sec-lead">H₂S は無色・腐卵臭の有毒な気体です。水溶液は2価の弱酸、単体の S になる強い還元剤で、S²⁻ は多くの金属イオンと黒色沈殿をつくります。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">硫化水素 H₂S の性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">硫化水素 H₂S</th><th style="text-align: left;">理由・補足</th></tr></thead><tbody><tr><td style="text-align: left;">色・におい</td><td style="text-align: left;">無色・腐卵臭</td><td style="text-align: left;">腐った卵のようなにおい</td></tr><tr><td style="text-align: left;">分子量</td><td style="text-align: left;">34</td><td style="text-align: left;">空気（平均分子量 28.8）より重い</td></tr><tr><td style="text-align: left;">水への溶解</td><td style="text-align: left;">よく溶ける</td><td style="text-align: left;">極性分子で、しかも酸</td></tr><tr><td style="text-align: left;">捕集法</td><td style="text-align: left;">下方置換</td><td style="text-align: left;">水によく溶け、空気より重い</td></tr><tr><td style="text-align: left;">水溶液の液性</td><td style="text-align: left;">酸性（弱酸）</td><td style="text-align: left;">2価の弱酸</td></tr><tr><td style="text-align: left;">酸化剤／還元剤</td><td style="text-align: left;">強い還元剤</td><td style="text-align: left;">−</td></tr></tbody></table></div>
 <p class="ref-p">H₂S は H₂O と同じ折れ線形の極性分子です。</p>
@@ -973,7 +991,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/precipitate/">陰イオンごとに沈む相手と沈殿の色の一覧はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/muki/tree.html?from=reference&amp;page=sulfur">硫化物で分ける系統分離の樹を試す</a></p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfur-sulfide-ionization.png?h=0eeefb84" alt="イオン化列 Li＞K＞Ca＞Na＞Mg＞Al＞Zn＞Fe＞Ni＞Sn＞Pb＞H₂＞Cu＞Hg＞Ag＞Pt＞Au の上に、Al〜Ni を「中・塩基性で沈殿（酸性では沈殿しない）」、Sn〜Ag を「酸性溶液中でも沈殿」と囲み、Li〜Mg は「S²⁻ で沈殿しない」と示した図" loading="lazy"><figcaption class="ref-figure-cap">イオン化傾向が小さいほど、陽イオンが S²⁻ と沈殿をつくりやすくなります。Al だけは Al(OH)₃ として沈みます。</figcaption></figure>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.h2s,inorg.nonmetal.sulfide-precipitate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>硫化水素は無色・腐卵臭の有毒な気体で、FeS に希硫酸を加えてつくり、水溶液は2価の弱酸、H₂S → S ＋ 2H⁺ ＋ 2e⁻ の強い還元剤としてはたらく。</li><li>硫化物の沈殿は多くが黒色で（ZnS 白・CdS 黄・SnS 褐・MnS 淡赤が例外）、イオン化傾向が小さい金属のイオンほど酸性でも沈殿し、Zn・Fe・Ni は中性・塩基性でだけ沈殿する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.h2s,inorg.nonmetal.sulfide-precipitate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-so2"><h4 class="ref-sec-h">二酸化硫黄 —— 基本は還元剤、H₂S が相手のときだけ酸化剤</h4><p class="ref-sec-lead">SO₂ は無色・刺激臭の気体です。水に溶けて弱酸性を示す酸性酸化物で、ふつうは SO₄²⁻ になる還元剤、H₂S が相手のときだけ S になる酸化剤です。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">二酸化硫黄 SO₂ の性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">二酸化硫黄 SO₂</th><th style="text-align: left;">理由・補足</th></tr></thead><tbody><tr><td style="text-align: left;">色・におい</td><td style="text-align: left;">無色・刺激臭</td><td style="text-align: left;">−</td></tr><tr><td style="text-align: left;">分子量</td><td style="text-align: left;">64</td><td style="text-align: left;">空気（平均分子量 28.8）より重い</td></tr><tr><td style="text-align: left;">水への溶解</td><td style="text-align: left;">よく溶ける</td><td style="text-align: left;">極性分子で、しかも酸性酸化物</td></tr><tr><td style="text-align: left;">捕集法</td><td style="text-align: left;">下方置換</td><td style="text-align: left;">水によく溶け、空気より重い</td></tr><tr><td style="text-align: left;">水溶液の液性</td><td style="text-align: left;">酸性（弱酸）</td><td style="text-align: left;">水に溶けてオキソ酸（亜硫酸）になる</td></tr><tr><td style="text-align: left;">酸化剤／還元剤</td><td style="text-align: left;">還元剤</td><td style="text-align: left;">基本は還元剤。H₂S が相手のときだけ酸化剤</td></tr></tbody></table></div>
 <p class="ref-p">SO₂ は折れ線形の極性分子で、構造式の中に配位結合を含みます。</p>
@@ -1008,7 +1026,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の反応式を書け。<b>(1) 硫化鉄(Ⅱ)に希硫酸を加えた　(2) 硫化水素が2段階に電離した（イオンを含む2本の反応式で）　(3) 硫化水素が還元剤としてはたらいた（イオンと e⁻ を含む反応式で）　(4) 硫化水素水に二酸化硫黄を吹き込んだ</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) FeS ＋ H₂SO₄ → FeSO₄ ＋ H₂S↑　(2) H₂S ⇄ H⁺ ＋ HS⁻、HS⁻ ⇄ H⁺ ＋ S²⁻　(3) H₂S → S ＋ 2H⁺ ＋ 2e⁻　(4) 2H₂S ＋ SO₂ → 3S ＋ 2H₂O　すべて★★★です。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の反応式を書け。<b>(1) 亜硫酸ナトリウムに希硫酸を加えた　(2) 銅が熱濃硫酸に溶解した　(3) 二酸化硫黄が水に溶けて酸性を示した（イオンを含む反応式で）　(4) 水酸化カルシウム水溶液に二酸化硫黄を吹き込んだ　(5) 銀イオンを含む水溶液に硫化水素を吹き込んだ（イオンを含む反応式で）</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) Na₂SO₃ ＋ H₂SO₄ → Na₂SO₄ ＋ H₂O ＋ SO₂↑　(2) Cu ＋ 2H₂SO₄ → CuSO₄ ＋ 2H₂O ＋ SO₂↑　(3) SO₂ ＋ H₂O ⇄ H⁺ ＋ HSO₃⁻　(4) SO₂ ＋ Ca(OH)₂ → CaSO₃ ＋ H₂O　(5) 2Ag⁺ ＋ S²⁻ → Ag₂S↓　すべて★★★です。(4) は H₂SO₃ ＋ Ca(OH)₂ → CaSO₃ ＋ 2H₂O の両辺から H₂O を1つ引いたものです。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の反応式を書け。<b>(1) 二酸化硫黄が酸化剤としてはたらいた　(2) 二酸化硫黄が還元剤としてはたらいた　(3) 過酸化水素水に二酸化硫黄を吹き込んだ　(4) 二酸化硫黄が水に溶けて2段階に電離した（イオンを含む2本の反応式で）　(5) 亜硫酸ナトリウムが還元剤としてはたらいた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) SO₂ ＋ 4H⁺ ＋ 4e⁻ → S ＋ 2H₂O　(2) SO₂ ＋ 2H₂O → SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻　(3) H₂O₂ ＋ SO₂ → H₂SO₄　(4) SO₂ ＋ H₂O ⇄ H⁺ ＋ HSO₃⁻、HSO₃⁻ ⇄ H⁺ ＋ SO₃²⁻　(5) SO₃²⁻ ＋ H₂O → SO₄²⁻ ＋ 2H⁺ ＋ 2e⁻　すべて★★★です。(1) と (2) で、SO₂ が酸化剤なら S、還元剤なら SO₄²⁻ になることを確かめましょう。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.so2-redox,inorg.nonmetal.so2-props,inorg.nonmetal.sulfite-reductant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>二酸化硫黄はふつう SO₄²⁻ になる2価の還元剤としてはたらくが、還元力が極めて強い H₂S が相手のときだけ S になる4価の酸化剤としてはたらく。</li><li>二酸化硫黄 SO₂ は無色・刺激臭の気体で、水によく溶けて弱い酸性を示し、空気より重い（分子量64）ので下方置換で捕集する。実験室では亜硫酸ナトリウムに希硫酸を加えてつくる（Na₂SO₃ ＋ H₂SO₄ → Na₂SO₄ ＋ H₂O ＋ SO₂、弱酸の遊離）。</li><li>亜硫酸ナトリウム Na₂SO₃ の亜硫酸イオン SO₃²⁻ も SO₂ と同じく2価の還元剤で、SO₃²⁻ ＋ H₂O → SO₄²⁻ ＋ 2H⁺ ＋ 2e⁻ のように S の酸化数が +4 から +6 になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.so2-redox,inorg.nonmetal.so2-props,inorg.nonmetal.sulfite-reductant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 </div>
 </div>
 
@@ -1112,6 +1130,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

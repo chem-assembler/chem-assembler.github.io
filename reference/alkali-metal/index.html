@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">1族の金属（Li・Na・K）の単体と、NaOH・Na₂CO₃・NaHCO₃ の性質と反応、アンモニアソーダ法の5本の式のまとめです。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">金属元素</span><span class="unit-label">アルカリ金属</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-element" data-ref-anchor="element">単体の性質 —— 水と激しく反応する</a></li><li><a href="#ref-sec-compounds" data-ref-anchor="compounds">ナトリウムの化合物 —— NaOH・Na₂CO₃・NaHCO₃</a></li><li><a href="#ref-sec-solvay" data-ref-anchor="solvay">アンモニアソーダ法（ソルベー法）</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -958,7 +976,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">4Na ＋ O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Na₂O</span></div></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Na₂O ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2NaOH</span></div><p class="ref-note">塩基性酸化物と水の反応です。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/oxoacid/">酸化物の分類（酸性・塩基性・両性）と水との反応は酸化物とオキソ酸のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.alkali-water,inorg.metal.alkali-storage-prep,inorg.metal.alkali-reactivity&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アルカリ金属の単体は常温の水と反応して水素を発生し、水溶液は強塩基性になる（2Na ＋ 2H₂O → 2NaOH ＋ H₂）。</li><li>アルカリ金属はイオン化傾向がとても大きいので、単体は石油（灯油）中に保存し、塩化ナトリウムなどの溶融塩電解でつくる。</li><li>アルカリ金属の反応性は Li ＜ Na ＜ K の順に大きい。原子番号が大きいほど原子半径が大きく、最外殻の電子を放出しやすいため。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.alkali-water,inorg.metal.alkali-storage-prep,inorg.metal.alkali-reactivity&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-compounds"><h4 class="ref-sec-h">ナトリウムの化合物 —— NaOH・Na₂CO₃・NaHCO₃</h4><p class="ref-sec-lead">3つを並べると、液性の強さ・加熱したときの変化・空気中での変化（潮解と風解）が違います。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">ナトリウムの化合物の比較</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">観点</th><th style="text-align: left;">水酸化ナトリウム NaOH</th><th style="text-align: left;">炭酸ナトリウム Na₂CO₃</th><th style="text-align: left;">炭酸水素ナトリウム NaHCO₃</th></tr></thead><tbody><tr><td style="text-align: left;">別名</td><td style="text-align: left;">苛性ソーダ</td><td style="text-align: left;">ソーダ灰</td><td style="text-align: left;">重曹</td></tr><tr><td style="text-align: left;">水溶液の液性</td><td style="text-align: left;">強塩基性</td><td style="text-align: left;">塩基性</td><td style="text-align: left;">弱塩基性</td></tr><tr><td style="text-align: left;">加熱すると</td><td style="text-align: left;">変化しない</td><td style="text-align: left;">変化しない</td><td style="text-align: left;">分解して CO₂ を出す</td></tr><tr><td style="text-align: left;">空気中に置くと</td><td style="text-align: left;">水分を吸って溶ける（<b>潮解</b>）・CO₂ を吸収する</td><td style="text-align: left;">十水和物が水和水を失って粉末になる（<b>風解</b>）</td><td style="text-align: left;">——</td></tr><tr><td style="text-align: left;">用途</td><td style="text-align: left;">セッケンの製造など</td><td style="text-align: left;">ガラスの原料</td><td style="text-align: left;">ベーキングパウダー・胃腸薬</td></tr></tbody></table></div>
 <p class="ref-p"><b>「潮解は NaOH、風解は Na₂CO₃・10H₂O」は組にして覚えてください。</b>どちらも空気中に置いたときの変化ですが、向きが逆です。潮解は水を<b>吸って</b>溶けること、風解は水和水を<b>失って</b>崩れることです。</p>
@@ -983,7 +1001,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">Na₂CO₃・10H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Na₂CO₃・H₂O ＋ 9H₂O</span></div><p class="ref-note">風解。式を書かせる問題はほとんど出ないので、「十水和物 → 一水和物」の名前だけで十分です。</p></div>
 <h5 class="ref-h5">例題 —— ナトリウムの化合物</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を化学反応式で書け。<b>(1) ナトリウムを水に入れると気体が発生した　(2) 水酸化ナトリウムの固体を空気中に置くと、二酸化炭素を吸収した　(3) 炭酸水素ナトリウムを加熱した　(4) 炭酸ナトリウムに希塩酸を加えた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 2Na ＋ 2H₂O → 2NaOH ＋ H₂　(2) 2NaOH ＋ CO₂ → Na₂CO₃ ＋ H₂O　(3) 2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂　(4) Na₂CO₃ ＋ 2HCl → 2NaCl ＋ H₂O ＋ CO₂</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.deliquescence-efflorescence,inorg.metal.carbonate-bicarbonate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>NaOH の固体は空気中で水分を吸って溶け（潮解）、CO₂ も吸収して Na₂CO₃ になる。Na₂CO₃・10H₂O は空気中で水和水を失って一水和物の粉末になる（風解）。</li><li>NaHCO₃ は加熱すると分解して CO₂ を出す（2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂）が、Na₂CO₃ は加熱しても分解しない。どちらも強酸を加えると CO₂ を出す。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.deliquescence-efflorescence,inorg.metal.carbonate-bicarbonate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-solvay"><h4 class="ref-sec-h">アンモニアソーダ法（ソルベー法）</h4><p class="ref-sec-lead">塩化ナトリウムと石灰石から炭酸ナトリウムをつくる工業的製法で、CO₂ と NH₃ を回収して使い回します。</p></section>
 <p class="ref-p">原料は<b>塩化ナトリウム NaCl（飽和水溶液）と石灰石 CaCO₃</b> の2つだけです。途中で使う NH₃ と CO₂ は、工程の中で回収して再び使います。</p>
 <ol class="ref-list"><li>NaCl の飽和水溶液に NH₃ を十分に吸収させ、そこへ CO₂ を通じる。溶解度の比較的小さい NaHCO₃ が沈殿する。<div class="ref-li-hang">NaCl ＋ H₂O ＋ NH₃ ＋ CO₂ → NaHCO₃ ＋ NH₄Cl</div></li><li>沈殿した NaHCO₃ を取り出して加熱し、Na₂CO₃ にする。出てきた CO₂ は ① へもどす。<div class="ref-li-hang">2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂</div></li><li>CO₂ の不足分は、石灰石を熱分解してつくる。<div class="ref-li-hang">CaCO₃ → CaO ＋ CO₂</div></li><li>できた CaO に水を加えて Ca(OH)₂ にする。<div class="ref-li-hang">CaO ＋ H₂O → Ca(OH)₂</div></li><li>Ca(OH)₂ と ① でできた NH₄Cl から NH₃ を回収し、① へもどす。<div class="ref-li-hang">Ca(OH)₂ ＋ 2NH₄Cl → CaCl₂ ＋ 2H₂O ＋ 2NH₃</div></li></ol>
@@ -995,7 +1013,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/solvay-flow.png?h=73dbb1a3" alt="アンモニアソーダ法の流れ図。左の列は NaCl の飽和水溶液から ①②を経て Na₂CO₃ へ、右の列は石灰石 CaCO₃ から ③④⑤を経て CaCl₂ へ進む。②と③で出た CO₂、⑤で追い出した NH₃、①でできた NH₄Cl は点線の矢印で工程の中を戻っている" loading="lazy"><figcaption class="ref-figure-cap">実線をたどると、入っていくのは <b>NaCl と CaCO₃ だけ</b>、出てくるのは <b>Na₂CO₃ と CaCl₂ だけ</b>です。点線の分が両辺で消えるので、全体の式が 2NaCl ＋ CaCO₃ → Na₂CO₃ ＋ CaCl₂ になります。</figcaption></figure>
 <h5 class="ref-h5">例題 —— アンモニアソーダ法（ソルベー法）</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">アンモニアソーダ法の5つの反応 ① NaCl ＋ H₂O ＋ NH₃ ＋ CO₂ → NaHCO₃ ＋ NH₄Cl　② 2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂　③ CaCO₃ → CaO ＋ CO₂　④ CaO ＋ H₂O → Ca(OH)₂　⑤ Ca(OH)₂ ＋ 2NH₄Cl → CaCl₂ ＋ 2H₂O ＋ 2NH₃ を1つの式にまとめよ。また、Na₂CO₃ を 1.06 kg つくるのに必要な NaCl は何 kg か（式量 NaCl ＝ 58.5、Na₂CO₃ ＝ 106）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>① を2倍して ②〜⑤ を足すと、途中の物質が消えて <b>2NaCl ＋ CaCO₃ → Na₂CO₃ ＋ CaCl₂</b> が残ります。係数の比 ＝ mol の比なので NaCl : Na₂CO₃ ＝ 2 : 1 です。Na₂CO₃ 1.06 kg は 1.06×10³ ÷ 106 ＝ 10 mol なので、NaCl は 20 mol ＝ 20 × 58.5 ＝ 1170 g ＝ <b>1.17 kg</b> です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.solvay&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アンモニアソーダ法は NaCl（飽和水溶液）と CaCO₃ から Na₂CO₃ をつくる工業的製法で、全体の式は 2NaCl ＋ CaCO₃ → Na₂CO₃ ＋ CaCl₂。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.solvay&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">単体と水の反応、NaOH と CO₂、炭酸塩・炭酸水素塩の3本、アンモニアソーダ法の3本です。</p></section>
 <h5 class="ref-h5">必ず覚えるもの（★★★）</h5>
 <ul class="ref-list"><li>2Na ＋ 2H₂O → 2NaOH ＋ H₂</li><li>2NaOH ＋ CO₂ → Na₂CO₃ ＋ H₂O</li><li>Na₂CO₃ ＋ 2HCl → 2NaCl ＋ H₂O ＋ CO₂</li><li>2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂（加熱）</li><li>アンモニアソーダ法の ①・② と全体の式</li></ul>
@@ -1106,6 +1124,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

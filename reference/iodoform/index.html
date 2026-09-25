@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">ヨウ素と水酸化ナトリウム水溶液を加えて加熱すると、黄色のヨードホルム CHI₃ が沈殿します。示す構造はアセチル基 −COCH₃ と、酸化するとそれになる CH₃CH(OH)− の2つだけ。示さないものとその理由も並べました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">脂肪族化合物</span><span class="unit-label">アルデヒドとケトン</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（2節）</summary><ul><li><a href="#ref-sec-structure" data-ref-anchor="structure">ヨードホルム反応を示す構造</a></li><li><a href="#ref-sec-equation" data-ref-anchor="equation">ヨードホルム反応の反応式</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -955,7 +973,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— ヨードホルム反応を示す構造</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の物質のうち、ヨードホルム反応を示すものをすべて選べ。<b>(1) CH₃CHO　(2) HCHO　(3) CH₃CH₂CHO　(4) CH₃COOH　(5) CH₃CH₂OH　(6) CH₃OH　(7) (CH₃)₃COH　(8) CH₃CH(OH)CH₃</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>示すのは <b>(1) と (5) と (8)</b> です。(1) アセトアルデヒドはアセチル基をもつ唯一のアルデヒド。(5) エタノールは酸化されるとアセトアルデヒドになるので示す唯一の第1級アルコール。(8) 2-プロパノールは酸化されるとアセトンになる第2級アルコールです。示さないほうも理由を言えるようにしておきましょう —— (4) 酢酸はアセチル基をもちますがカルボン酸なので示しません。(7) は第3級アルコールで、そもそも酸化されないので示しません。(2)(3)(6) はアセチル基もその手前の構造ももちません。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.iodoform,org.carbonyl.iodoform-carbonyl&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ヒドロキシ基が付いた炭素原子にメチル基が結合したアルコール（CH₃CH(OH)−）はヨードホルム反応を示し、黄色の CHI₃ が沈殿する。</li><li>アセチル基 CH₃CO− が水素原子または炭化水素基に結合した化合物（アセトアルデヒド・アセトンなど）はヨードホルム反応を示す。ホルムアルデヒド・酢酸は示さない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.iodoform,org.carbonyl.iodoform-carbonyl&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-equation"><h4 class="ref-sec-h">ヨードホルム反応の反応式</h4><p class="ref-sec-lead">ヨウ素を酸化剤、相手を還元剤とする酸化還元反応です。アルコールから始めるとヨウ素が1分子ぶん多く要ります。</p></section>
 <p class="ref-p">ヨードホルム反応の化学反応式は、ヨウ素を酸化剤、カルボニル化合物を還元剤とする酸化還元反応として組み立てます。メチル基が切り離されてカルボン酸になる、という結果だけは暗記が必要です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">R−CO−CH₃ ＋ 3I₂ ＋ 4NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−COONa ＋ CHI₃ ＋ 3NaI ＋ 3H₂O</span></div><p class="ref-note">塩基性なので、生じたカルボン酸は中和されて<b>ナトリウム塩 R−COONa</b> の形で書きます。</p></div>
@@ -1073,6 +1091,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">マンガン（MnO₄⁻・MnO₂・Mn²⁺）とクロム（Cr₂O₇²⁻・CrO₄²⁻・Cr³⁺）の化合物を、酸化数と色で並べたまとめです。酸化剤としての半反応式と、クロム酸イオンと二クロム酸イオンの平衡も扱います。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">金属元素</span><span class="unit-label">クロムとマンガン</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-colors" data-ref-anchor="colors">酸化数と色の表</a></li><li><a href="#ref-sec-manganese" data-ref-anchor="manganese">マンガンの化合物 —— KMnO₄ と MnO₂</a></li><li><a href="#ref-sec-chromium" data-ref-anchor="chromium">クロムの化合物 —— Cr₂O₇²⁻ と CrO₄²⁻</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -946,7 +964,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-table-wrap"><div class="ref-cap">マンガンとクロムの化合物の酸化数と色</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">元素</th><th style="text-align: center;">酸化数</th><th style="text-align: left;">化学式</th><th style="text-align: left;">名前</th><th style="text-align: left;">色</th></tr></thead><tbody><tr><td style="text-align: center;">Mn</td><td style="text-align: center;">＋7</td><td style="text-align: left;">MnO₄⁻（KMnO₄）</td><td style="text-align: left;">過マンガン酸イオン（過マンガン酸カリウム）</td><td style="text-align: left;"><b>赤紫色</b>（結晶は黒紫色）</td></tr><tr><td style="text-align: center;">Mn</td><td style="text-align: center;">＋4</td><td style="text-align: left;">MnO₂</td><td style="text-align: left;">酸化マンガン(Ⅳ)（二酸化マンガン）</td><td style="text-align: left;"><b>黒褐色</b></td></tr><tr><td style="text-align: center;">Mn</td><td style="text-align: center;">＋2</td><td style="text-align: left;">Mn²⁺</td><td style="text-align: left;">マンガン(Ⅱ)イオン</td><td style="text-align: left;"><b>淡桃色</b>（うすいとほぼ無色）</td></tr><tr><td style="text-align: center;">Cr</td><td style="text-align: center;">＋6</td><td style="text-align: left;">Cr₂O₇²⁻（K₂Cr₂O₇）</td><td style="text-align: left;">二クロム酸イオン（二クロム酸カリウム）</td><td style="text-align: left;"><b>橙赤色</b></td></tr><tr><td style="text-align: center;">Cr</td><td style="text-align: center;">＋6</td><td style="text-align: left;">CrO₄²⁻（K₂CrO₄）</td><td style="text-align: left;">クロム酸イオン（クロム酸カリウム）</td><td style="text-align: left;"><b>黄色</b></td></tr><tr><td style="text-align: center;">Cr</td><td style="text-align: center;">＋3</td><td style="text-align: left;">Cr³⁺</td><td style="text-align: left;">クロム(Ⅲ)イオン</td><td style="text-align: left;"><b>緑色</b></td></tr></tbody></table></div>
 <p class="ref-p">酸化数は、O を −2、K を ＋1 として計算します。KMnO₄ なら、Mn の酸化数を x として (＋1) ＋ x ＋ (−2)×4 ＝ 0 より x ＝ ＋7 です。K₂Cr₂O₇ なら (＋1)×2 ＋ 2x ＋ (−2)×7 ＝ 0 より x ＝ ＋6 です。</p>
 <p class="ref-p"><b>MnO₄⁻ 赤紫 → Mn²⁺ ほぼ無色、Cr₂O₇²⁻ 橙赤 → Cr³⁺ 緑、の2つの色の変化は必ず覚えてください。</b>酸化還元滴定や、還元剤の検出の問題で「色が変わった」と書かれるのはこの2つです。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.mn-cr-colors&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>硫酸酸性で酸化剤としてはたらくと、MnO₄⁻（赤紫色）は Mn²⁺（ほぼ無色）に、Cr₂O₇²⁻（橙赤色）は Cr³⁺（緑色）に変わる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.mn-cr-colors&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-manganese"><h4 class="ref-sec-h">マンガンの化合物 —— KMnO₄ と MnO₂</h4><p class="ref-sec-lead">KMnO₄ は硫酸酸性で強い酸化剤になり、赤紫色が消えます。MnO₂ は触媒としても酸化剤としても使われます。</p></section>
 <h5 class="ref-h5">過マンガン酸カリウム KMnO₄【酸化剤】</h5>
 <p class="ref-p">過マンガン酸カリウムの固体は、黒っぽい紫色の結晶です。水に溶かすと MnO₄⁻ ができ、液は赤紫色になります。<b>硫酸で酸性にした水溶液</b>の中で、強い酸化剤としてはたらきます。</p>
@@ -972,7 +990,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/chlorine/">塩素の製法と洗気瓶は塩素と塩化水素のページへ</a></p>
 <h5 class="ref-h5">例題 —— マンガンの化合物</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の (1)(2) で、酸化マンガン(Ⅳ) はどのようなはたらきをしているか。また、それぞれの化学反応式を書け。<b>(1) 過酸化水素水に酸化マンガン(Ⅳ) を加えると気体が発生した　(2) 酸化マンガン(Ⅳ) に濃塩酸を加えて加熱すると気体が発生した</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>触媒</b>。2H₂O₂ → 2H₂O ＋ O₂　(2) <b>酸化剤</b>。MnO₂ ＋ 4HCl → MnCl₂ ＋ 2H₂O ＋ Cl₂　(1) では MnO₂ が式に入らず、(2) では Mn²⁺（MnCl₂）に変わっているところで区別できます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.permanganate,inorg.metal.mno2-roles&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>KMnO₄ は硫酸酸性の水溶液で強い酸化剤としてはたらき、MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O と変化する。</li><li>MnO₂ は過酸化水素水の分解では触媒（2H₂O₂ → 2H₂O ＋ O₂）、濃塩酸との加熱では酸化剤（MnO₂ ＋ 4HCl → MnCl₂ ＋ 2H₂O ＋ Cl₂）としてはたらく。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.permanganate,inorg.metal.mno2-roles&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-chromium"><h4 class="ref-sec-h">クロムの化合物 —— Cr₂O₇²⁻ と CrO₄²⁻</h4><p class="ref-sec-lead">二クロム酸カリウムは硫酸酸性で酸化剤になり、橙赤色から緑色に変わります。二クロム酸イオンとクロム酸イオンは、液性だけで行き来します。</p></section>
 <p class="ref-p">クロムの単体は銀白色の硬い金属で、さびにくいので<b>めっき</b>やステンレス鋼に使われます。</p>
 <h5 class="ref-h5">二クロム酸カリウム K₂Cr₂O₇【酸化剤】</h5>
@@ -993,7 +1011,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/amphoteric-metal/">水酸化物が過剰の強塩基に溶ける仕組みは両性金属のページへ</a></p>
 <h5 class="ref-h5">例題 —— クロムの化合物</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q"><b>(1)</b> 硫酸酸性の過マンガン酸カリウム水溶液が酸化剤としてはたらくときの半反応式を書け。また、反応の前後で水溶液の色はどう変わるか。<b>(2)</b> 硫酸酸性の二クロム酸カリウム水溶液が酸化剤としてはたらくときの半反応式を書け。また、色はどう変わるか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O。赤紫色 → ほぼ無色（淡桃色）。(2) Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O。橙赤色 → 緑色。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.chromate-dichromate,inorg.metal.chromate-precipitate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>黄色の CrO₄²⁻ は酸性で橙赤色の Cr₂O₇²⁻ になり、塩基性で黄色にもどる（2CrO₄²⁻ ＋ 2H⁺ ⇄ Cr₂O₇²⁻ ＋ H₂O）。Cr の酸化数はどちらも ＋6 で、酸化還元反応ではない。</li><li>CrO₄²⁻ は Ag⁺ と赤褐色の Ag₂CrO₄、Pb²⁺ と黄色の PbCrO₄、Ba²⁺ と黄色の BaCrO₄ の沈殿をつくる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.chromate-dichromate,inorg.metal.chromate-precipitate&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">酸化数と色の表、MnO₄⁻ と Cr₂O₇²⁻ の半反応式、MnO₂ の2つの役割です。</p></section>
 <h5 class="ref-h5">必ず覚えるもの（★★★）</h5>
 <ul class="ref-list"><li>MnO₄⁻ 赤紫 → Mn²⁺ ほぼ無色、Cr₂O₇²⁻ 橙赤 → Cr³⁺ 緑、CrO₄²⁻ 黄</li><li>MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O</li><li>Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O</li><li>KMnO₄・K₂Cr₂O₇ は硫酸酸性で使う</li><li>2H₂O₂ → 2H₂O ＋ O₂（MnO₂ 触媒）、MnO₂ ＋ 4HCl → MnCl₂ ＋ 2H₂O ＋ Cl₂</li></ul>
@@ -1101,6 +1119,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

@@ -55,6 +55,61 @@ const PORT = (args.find(a => a.startsWith('--port=')) || '--port=8486').split('=
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 /* URL に載せる `&`（HTML 属性なので実体参照にする） */
 const amp = (s) => String(s).replace(/&/g, '&amp;');
+/* ★ 節の「まとめ」（I-0146・2026-09-25 ユーザー「最後の覚える範囲は まとめ として、箇条書きで qa で問う内容を並べる」）。
+   中身は qa の知識項目（knowledge）そのもの ＝ 原稿に書き写さない（qa を直せば、焼き直したときにまとめも直る）。
+   ⚠ 段階の札（必須・有利・覚えなくてよい）はまだ出さない（2026-09-26 ユーザー決定「札なしで先に公開」・値は入試の判定のあと） */
+/* ★★ 読む人の目標の切り替え（I-0146・2026-09-26 ユーザー決定「札なしで先に公開」）。
+   化学（科目）の範囲の器（.ref-cfold）を持つページだけに出す。「化学基礎まで」を選ぶと器を閉じ、「化学まで」で開く。
+   ⚠ ボタンだけ（上下の説明文は置かない・ユーザー「上下の文章は削ってボタンのみ」）。幅は本文の欄と同じ（main.wrap > div の規則に乗る）。
+   ⚠ 段階の札・一問一答の絞り込みはまだ出さない（値は入試の判定のあと）。設定はこの端末のブラウザに覚える（ログインなしが前提） */
+const GOAL_BAR = `<style>
+.goal-card{margin:12px 0 20px}
+.goal-seg{display:flex;gap:8px;flex-wrap:wrap}
+.goal-seg button{flex:1 1 180px;text-align:left;padding:10px 14px;border:2px solid #9cc7bd;border-radius:10px;background:#fff;color:#20242b;cursor:pointer;font:inherit}
+.goal-seg button b{display:block;font-size:17px}
+.goal-seg button small{display:block;font-size:14px;color:#4e5765;margin-top:2px}
+.goal-seg button[aria-pressed="true"]{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.goal-seg button[aria-pressed="true"] small{color:#e3f2ee}
+.goal-seg button[aria-pressed="true"] b::before{content:'✓ '}
+.goal-chip{position:fixed;left:12px;bottom:12px;z-index:50;padding:8px 14px;border-radius:20px;border:2px solid #2f7d6d;background:#fff;color:#1d4d43;font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+html[data-goal="basic"] .ref-scope .ref-cfold:not([open]){background:#f4f5f7;border-left-color:#b8bec8;padding:6px 10px;border-radius:0 8px 8px 0}
+</style>
+<div class="goal-card" id="goal-card">
+<div class="goal-seg" role="group" aria-label="読む人の目標">
+<button type="button" data-goal="basic" aria-pressed="false"><b>化学基礎まで</b><small>共通テストの「化学基礎」だけ</small></button>
+<button type="button" data-goal="adv" aria-pressed="false"><b>化学まで</b><small>「化学」も受ける（共通テスト・2次）</small></button>
+</div>
+</div>
+<button type="button" class="goal-chip" hidden></button>`;
+const GOAL_JS = `<script>
+(function () {
+  var KEY = 'slz.readerGoal';
+  function apply(g) {
+    if (g) document.documentElement.setAttribute('data-goal', g); else document.documentElement.removeAttribute('data-goal');
+    document.querySelectorAll('button[data-goal]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-goal') === g)); });
+    document.querySelectorAll('details.ref-cfold').forEach(function (d) { d.open = g !== 'basic'; });
+    var chip = document.querySelector('.goal-chip');
+    if (chip) { chip.hidden = !g; chip.textContent = '目標: ' + (g === 'basic' ? '化学基礎まで' : '化学まで') + '（変える）'; }
+  }
+  var g = null; try { g = localStorage.getItem(KEY); } catch (e) {}
+  if (g !== 'basic' && g !== 'adv') g = null;
+  apply(g);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('.goal-chip')) { document.getElementById('goal-card').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    var b = e.target.closest ? e.target.closest('button[data-goal]') : null;
+    if (!b) return;
+    g = b.getAttribute('data-goal');
+    try { localStorage.setItem(KEY, g); } catch (e2) {}
+    apply(g);
+  });
+})();
+</script>`;
+const QA_BY = new Map(JSON.parse(readFileSync(path.join(ROOT, 'qa', 'questions.json'), 'utf8')).patterns.map(p => [p.code, p]));
+function sectionSummary(codes) {
+    const items = codes.map(c => QA_BY.get(c)).filter(Boolean)
+        .map(q => '<li>' + esc(String(q.knowledge || '')).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>') + '</li>').join('');
+    return items ? `<div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul>${items}</ul></div>` : '';
+}
 
 /* ============================================================================
  * 原稿を読む（★ 並びを決めるのは ORDER.txt だけ ＝ 面Aは順を発明しない・R-3）
@@ -291,6 +346,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -443,6 +504,8 @@ footer a:hover{color:var(--brand)}
 
 /* ★ 明るい地で**読み替えた**もの（LIGHT_CSS がその class を実際に触っていることまで見る） */
 const LIGHT_OVERRIDE = [
+    /* ★ 化学（科目）の範囲の器（I-0146）。暗い地の橙 #ffb74d は明るい地で読めないので読み替える */
+    'ref-cfold', 'ref-cfold-note',
     'ref-table', 'ref-mech-table', 'ref-map-table', 'ref-mech-play', 'ref-try',
     'ref-example', 'ref-sec-h', 'ref-toc', 'ref-rx', 'ref-rx-lv1',
     'ref-hand-table', 'ref-callout', 'ref-callout-caution', 'ref-callout-memorize',
@@ -473,6 +536,10 @@ const LIGHT_KEEP = {
 };
 
 const LIGHT_CSS = `
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -912,7 +979,9 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
     /* ★★ 節の一問一答（I-0143）を、ページ末の一問一答の箱と同じ部品に（押すまで iframe を作らない・高さもページ末の箱と同じ） */
     blocks = blocks.replace(/<div data-qa-embed="([^"]+)" data-qa-label="([^"]*)"><\/div>/g, (m, h, label) => {
         const href = h.replace(/&amp;/g, '&');
-        return `<div class="embed"><div class="embed-run"><button type="button" data-embed="${amp(href)}" data-embed-title="${label}">${label}</button></div></div>`;
+        const secCodes = decodeURIComponent((href.match(/[?&]codes=([^&]*)/) || [])[1] || '').split(',').filter(Boolean);
+        // ★ まとめは一問一答の箱の**中の先頭**に置く（1つの部品 ＝ 面Bの「この節の一問一答」1つに当たる。押すと釦だけが iframe に替わる）
+        return `<div class="embed">${sectionSummary(secCodes)}<div class="embed-run"><button type="button" data-embed="${amp(href)}" data-embed-title="${label}">${label}</button></div></div>`;
     });
     let rxEmbeds = 0;
     blocks = blocks.replace(/<div data-rx-embed="([^"]+)"><\/div>/g, (m, h) => {
@@ -954,6 +1023,7 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
 <p class="lede">${esc(p.summary)}</p>
 <div><span class="unit-label course-${home.course}">${esc(course)}</span><span class="unit-label">${esc(home.part)}</span><span class="unit-label">${esc(home.section)}</span></div>
 ${video}
+${blocks.indexOf('ref-cfold') >= 0 ? GOAL_BAR : ''}
 <div class="ref-layout">
 ${tocHtml || ''}
 <div class="ref-scope">
@@ -976,7 +1046,8 @@ ${EMBED_JS}
 ${(embedLinks.length || rxEmbeds) ? EMBED_MSG_JS : ''}
 ${tocHtml ? TOC_JS : ''}
 ${blocks.indexOf('ref-figure-img') >= 0 ? ZOOM_JS : ''}
-${(p.blocks || []).some(b => b.kind === 'section' && b.advanced) ? advJs() : ''}`;
+${(p.blocks || []).some(b => b.kind === 'section' && b.advanced) ? advJs() : ''}
+${blocks.indexOf('ref-cfold') >= 0 ? GOAL_JS : ''}`;
 
     return { crumb, body, utm, foot: isOrg ? FOOT_ORG : '' };
 }

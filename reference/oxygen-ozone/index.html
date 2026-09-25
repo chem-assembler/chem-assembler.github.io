@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">酸素を含む3つの物質のまとめ。O₂ の性質表と酸化剤としての反応、実験室的製法3通り、過酸化水素 H₂O₂ の「酸化剤にも還元剤にもなる」2つの顔、オゾン O₃ の性質と、酸性・塩基性での半反応式の書き分け、ヨウ化カリウムデンプン紙での検出を1枚にしました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">非金属元素</span><span class="unit-label">酸素とオゾン</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（3節）</summary><ul><li><a href="#ref-sec-oxygen" data-ref-anchor="oxygen">酸素 —— 空気中で 4価の酸化剤</a></li><li><a href="#ref-sec-hydrogen-peroxide" data-ref-anchor="hydrogen-peroxide">過酸化水素 —— 酸化剤にも還元剤にもなる</a></li><li><a href="#ref-sec-ozone" data-ref-anchor="ozone">オゾン —— O₂ より不安定で、酸化力が極めて強い</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -964,7 +982,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 酸素</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化学反応式を書け。<b>(1) 空気中で酸素が酸化剤としてはたらいた（e⁻ とイオンを含む反応式で）　(2) 空気中で酸素が銅を酸化した　(3) 空気中で酸素がナトリウムを酸化した　(4) メタンを完全燃焼した　(5) メタノール CH₃OH を完全燃焼した</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) O₂ ＋ 4e⁻ → 2O²⁻　(2) 2Cu ＋ O₂ → 2CuO　(3) 4Na ＋ O₂ → 2Na₂O　(4) CH₄ ＋ 2O₂ → CO₂ ＋ 2H₂O　(5) 2CH₃OH ＋ 3O₂ → 2CO₂ ＋ 4H₂O　すべて★★★です。(3) は Na が1価の Na⁺ になることから Na₂O と決まります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.oxygen-oxidant,inorg.nonmetal.oxygen-prep&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>空気中の O₂ は O₂ ＋ 4e⁻ → 2O²⁻ の4価の酸化剤としてはたらき、金属を酸化物にし、炭素化合物を完全燃焼で CO₂ と H₂O にする。</li><li>酸素は、過酸化水素水に MnO₂ を触媒として加えるか、KClO₃ と MnO₂ の混合物を加熱してつくり、どちらも自己酸化還元反応である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.oxygen-oxidant,inorg.nonmetal.oxygen-prep&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-hydrogen-peroxide"><h4 class="ref-sec-h">過酸化水素 —— 酸化剤にも還元剤にもなる</h4><p class="ref-sec-lead">H₂O₂ の O は酸化数 −1。ふつうは −2 になる酸化剤、KMnO₄ や K₂Cr₂O₇ のような極めて強い酸化剤が相手のときだけ 0 になる還元剤です。</p></section>
 <p class="ref-p">過酸化水素 H₂O₂ は無色の液体で、ふつうは水溶液（過酸化水素水）として使います。約3%の水溶液は<b>オキシドール</b>とよばれ、消毒に使われます。傷口に塗ると泡が出るのは、H₂O₂ が分解して O₂ が発生するためです。</p>
 <p class="ref-p">H₂O₂ の O 原子の酸化数は −1 です。H₂O₂ は不安定なので、安定な H₂O（O の酸化数 −2）になろうとする、比較的強い<b>2価の酸化剤</b>です。</p>
@@ -980,7 +998,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/sulfur/">二酸化硫黄が還元剤としてはたらく反応はこちら</a></p>
 <h5 class="ref-h5">例題 —— 過酸化水素</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化学反応式を書け。<b>(1) 過酸化水素水に酸化マンガン(Ⅳ)を加えた　(2) 塩素酸カリウムと酸化マンガン(Ⅳ)の混合物を加熱した　(3) 過酸化水素が酸化剤としてはたらいた（e⁻ とイオンを含む反応式で）　(4) 過酸化水素が還元剤としてはたらいた（e⁻ とイオンを含む反応式で）　(5) 過酸化水素水に二酸化硫黄を吹き込んだ</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 2H₂O₂ → 2H₂O ＋ O₂↑　(2) 2KClO₃ → 2KCl ＋ 3O₂↑　(3) H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O　(4) H₂O₂ → O₂↑ ＋ 2H⁺ ＋ 2e⁻　(5) H₂O₂ ＋ SO₂ → H₂SO₄　(2) だけ★★☆、ほかは★★★です。(1) は (3) と (4) を足したものです。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.h2o2-dual&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>過酸化水素（O の酸化数 −1）はふつう H₂O になる2価の酸化剤で、KMnO₄ や K₂Cr₂O₇ のような極めて強い酸化剤が相手のときだけ O₂ になる還元剤としてはたらく。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.h2o2-dual&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-ozone"><h4 class="ref-sec-h">オゾン —— O₂ より不安定で、酸化力が極めて強い</h4><p class="ref-sec-lead">O₃ は淡青色・特異臭の気体で、O₂ の無声放電でできます。中・塩基性で使う半反応式は O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ です。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">オゾン O₃ の性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">オゾン O₃</th><th style="text-align: left;">理由・補足</th></tr></thead><tbody><tr><td style="text-align: left;">色・におい</td><td style="text-align: left;">淡青色・特異臭</td><td style="text-align: left;">「オゾン臭」としか言えないにおい</td></tr><tr><td style="text-align: left;">分子量</td><td style="text-align: left;">48</td><td style="text-align: left;">−</td></tr><tr><td style="text-align: left;">水への溶解</td><td style="text-align: left;">少し溶ける</td><td style="text-align: left;">極性分子なので O₂ より水に溶けやすい</td></tr><tr><td style="text-align: left;">酸化剤／還元剤</td><td style="text-align: left;">強い酸化剤</td><td style="text-align: left;">O₂ より不安定（反応しやすい）で、殺菌・消毒・漂白に使われる</td></tr></tbody></table></div>
 <p class="ref-p">O₃ は折れ線形の極性分子で、構造式の中に<b>配位結合</b>を1つ含みます。O₂ と O₃ は同じ元素 O からなる単体どうしで、互いに<b>同素体</b>です。</p>
@@ -1002,7 +1020,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/halogen/">ヨウ素とヨウ化物イオンの半反応式・ヨウ素デンプン反応はこちら</a></p>
 <h5 class="ref-h5">例題 —— オゾン</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化学反応式を書け。<b>(1) 空気中で無声放電した　(2) オゾンが酸性条件で酸化剤としてはたらいた（e⁻ とイオンを含む反応式で）　(3) オゾンが塩基性条件で酸化剤としてはたらいた（e⁻ とイオンを含む反応式で）　(4) オゾンが湿らせたヨウ化カリウムデンプン紙を青変させた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 3O₂ ⇄ 2O₃　(2) O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂↑ ＋ H₂O　(3) O₃ ＋ H₂O ＋ 2e⁻ → O₂↑ ＋ 2OH⁻　(4) O₃ ＋ 2KI ＋ H₂O → I₂ ＋ 2KOH ＋ O₂↑　4本とも★★☆です。(3) は (2) の両辺に OH⁻ を2個ずつ足して導けます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.ozone,inorg.nonmetal.ozone-half&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>オゾン O₃ は淡青色・特異臭の気体で O₂ の同素体であり、酸素中の無声放電でつくられ、強い酸化剤として湿らせたヨウ化カリウムデンプン紙を青変させる。</li><li>O₃ は O₂ になる2価の酸化剤で、実際に使われる中・塩基性では O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ の半反応式を使う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.nonmetal.ozone,inorg.nonmetal.ozone-half&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 </div>
 </div>
 
@@ -1106,6 +1124,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

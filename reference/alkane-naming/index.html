@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">直鎖アルカン10種の名称と、枝分かれしたアルカンを「何が」「何個」「どこに」で名づける手順。2,3-ジメチルペンタンを最後まで追う具体例と、紙に書く例題2つつき。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">脂肪族化合物</span><span class="unit-label">アルカンとシクロアルカン</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（2節）</summary><ul><li><a href="#ref-sec-straight" data-ref-anchor="straight">枝分かれの無いアルカンの名前</a></li><li><a href="#ref-sec-branched" data-ref-anchor="branched">枝分かれしたアルカンの名前</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -952,7 +970,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-hexane.png?h=d1ac4c99" alt="ヘキサンの構造式。炭素6個が横一直線に並び、両端の炭素に水素が3個ずつ、間の4個の炭素に水素が2個ずつついている" loading="lazy"><figcaption class="ref-figure-cap">ヘキサン C₆H₁₄。炭素が増えても、つなぎ方は1通りしかありません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane-isomers/">同じ分子式で何種類の分子ができるか（構造異性体の数え方）は「同じ分子式で、別の分子」で</a></p>
 <div class="ref-example"><h4>例題：ヘキサン をつくる</h4><p class="ref-p" style="margin: 0px;">ひとつ作ってみましょう。<b>表を閉じてから</b>、炭素を6個つないでヘキサンを組みます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.ali.alkane-names&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=alkane-naming">▶ ヘキサンを組んでみる</a><p class="ref-note">組み上がりの判定は、いつものパズルと同じお題（アルカン（直鎖）の6問目）がそのまま受け持ちます。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkane-names,org.ali.formula-alkane&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>直鎖アルカン：メタン・エタン・プロパン…デカン（C1〜10）。</li><li>アルカン（鎖式飽和炭化水素）の一般式は CₙH₂ₙ₊₂。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkane-names,org.ali.formula-alkane&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-branched"><h4 class="ref-sec-h">枝分かれしたアルカンの名前</h4><p class="ref-sec-lead">主鎖と同じ炭素数のアルカンを基準に、「何が」「何個」「どこに」を読み取って、後ろから順に組み立てます。</p></section>
 <p class="ref-p">枝分かれがあるアルカンの名称は以下の手順で<b>後ろから順に</b>決めます。</p>
 <ol class="ref-list"><li>一番長い鎖（主鎖）を探し、炭素の数を数えて対応するアルカンの名称を末尾に置く。<div class="ref-li-hang">主鎖の炭素数が4なら「<span class="ref-blank">○○</span>ブタン」、5なら「<span class="ref-blank">○○</span>ペンタン」</div></li><li>主鎖に付いている枝（側鎖）を探し、アルキル基の種類と数を数えアルカンの名称の前に置く。<div class="ref-li-hang">数はギリシャ語の接頭辞（1：モノ、2：ジ、3：トリ、4：テトラ）を使って表します。</div><div class="ref-li-hang">アルキル基の名称は、対応する炭素数のアルカンの名称の語尾を <b>-yl（イル）</b>に変化させます。</div><div class="ref-li-hang">メチル基が1個付いたブタンなら「<span class="ref-blank">○○</span>メチルブタン」（「モノ」は省略します）、メチル基が2個付いたペンタンなら「<span class="ref-blank">○○</span>ジメチルペンタン」となります。</div></li><li>側鎖が主鎖のどの炭素原子に付いているか（端から数えて何番目の炭素原子に付いているか）を調べ数字で表す。<div class="ref-li-hang">主鎖の端から2番目の炭素原子にメチル基が1個付いたブタンなら「2-メチルブタン」、主鎖の端から2番目と3番目の炭素原子に1個ずつメチル基が付いたペンタンなら「2,3-ジメチルペンタン」となります。</div></li></ol>
@@ -979,7 +997,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">ここからは紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物の構造式を書け。<b>2,3-ジメチルブタン</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>基準は<b>ブタン</b>なので、まず炭素を4個つないで主鎖にします。そこへ<b>メチル基</b>を2個、端から数えて2番目と3番目の炭素に1つずつ付けます。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex1-answer.png?h=4c104bf1" alt="2,3-ジメチルブタンの構造式。CH₃−CH−CH−CH₃ の主鎖に端から1・2・3・4の番号が振ってあり、2番目と3番目の CH の上にメチル基 CH₃ が1つずつ付いている。" loading="lazy"></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物を命名せよ。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-prompt.png?h=a9b3a6c5" alt="構造式。左から CH₃−CH−C−CH₃ と並び、CH の上にメチル基 CH₃ が1つ、C の上にメチル基 CH₃ が1つ、C の下に CH₃−CH₂ が1つ付いている。番号は振っていない。" loading="lazy"><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>2,3,3-トリメチルペンタン</b>。いちばん長い鎖は炭素5個なので基準はペンタンで、メチル基が3個、端から2・3・3番目の炭素に付いています。主鎖は左右にまっすぐ並んでいる4個ではなく、右下へ折れて5個つながるほうです。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-answer.png?h=912a6ad9" alt="同じ構造式に主鎖の番号を振った図。左端の CH₃ が1、CH が2、C が3、そこから下へ折れた CH₂ が4、その先の CH₃ が5で、炭素5個の主鎖が右下へ折れている。" loading="lazy"></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.name-mainchain,org.ali.name-numbering,org.ali.name-substituent-order&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>命名は最長の炭素鎖（主鎖）を基準に、置換基を「何が・何個・どこに」で表し逆から読む。</li><li>主鎖の番号は、名称中の数字ができるだけ小さくなるように振る。</li><li>複数の置換基はアルファベット順に書く（エチル→メチル、ブロモ→クロロ）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.name-mainchain,org.ali.name-numbering,org.ali.name-substituent-order&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 </div>
 </div>
 
@@ -1086,6 +1104,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

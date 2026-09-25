@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">グルコースが多数つながった天然高分子が多糖です。α形がつながるとデンプン、β形がつながるとセルロース。ヨウ素デンプン反応、段階的な加水分解、グリコーゲン、セルロースの −OH 3個から始まる誘導体の計算までを1枚にしました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">天然高分子</span><span class="unit-label">多糖</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（9節）</summary><ul><li><a href="#ref-sec-definition" data-ref-anchor="definition">多糖とは</a></li><li><a href="#ref-sec-starch" data-ref-anchor="starch">デンプン</a></li><li><a href="#ref-sec-iodine" data-ref-anchor="iodine">ヨウ素デンプン反応</a></li><li><a href="#ref-sec-hydrolysis" data-ref-anchor="hydrolysis">デンプンの加水分解</a></li><li><a href="#ref-sec-glycogen" data-ref-anchor="glycogen">グリコーゲン</a></li><li><a href="#ref-sec-cellulose" data-ref-anchor="cellulose">セルロース</a></li><li><a href="#ref-sec-cellulose-oh" data-ref-anchor="cellulose-oh">セルロースの −OH は1単位に3個</a></li><li><a href="#ref-sec-nitrocellulose" data-ref-anchor="nitrocellulose">ニトロセルロースとアセチルセルロース</a></li><li><a href="#ref-sec-fiber" data-ref-anchor="fiber">再生繊維と半合成繊維</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -947,7 +965,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">多糖は還元性も甘味もほとんど示しません。環が開ける末端は分子の端に1つあるだけで、分子全体から見るとごくわずかなためです。</p>
 <p class="ref-p"><b>「多糖は (C₆H₁₀O₅)<sub>n</sub>、繰り返し単位の式量は162」は暗記してください。</b></p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">(C₆H₁₀O₅)ₙ ＋ nH₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">酸または酵素</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">nC₆H₁₂O₆</span></div><p class="ref-note">多糖を最後まで加水分解するとグルコースになります。デンプンでもセルロースでも同じ式です。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.polysaccharide-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>多糖類は多数の単糖が縮合した高分子で、分子式は (C₆H₁₀O₅)ₙ。還元性を示す末端が分子全体に占める割合がごくわずかなので、還元性を示さない。甘味もない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.polysaccharide-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-starch"><h4 class="ref-sec-h">デンプン</h4><p class="ref-sec-lead">α-グルコースが縮合したものです。枝分かれの無いアミロースと、枝分かれの多いアミロペクチンからなります。</p></section>
 <p class="ref-p"><b>デンプン</b>は、<b>α-グルコース</b>が多数縮合した多糖です。α形でつながると鎖が少しずつ曲がり、<b>らせん状</b>に巻きます。</p>
 <p class="ref-p">デンプンは2種類の成分からなります。枝分かれの無いものを<b>アミロース</b>、枝分かれの多いものを<b>アミロペクチン</b>といいます。アミロースは温水に溶けやすく、アミロペクチンは溶けにくい成分です。</p>
@@ -955,13 +973,13 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">α-グルコース2分子がつながった形は、二糖のマルトースそのものです。デンプンはこの形がずっと続いたものと見られます。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-maltose-unit.png?h=a9d488de" alt="マルトースの構造式を直交で描いた図。α-グルコースの六員環2つが、酸素原子1個をはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap">デンプンの部分構造にあたる<b>マルトース</b>。α-グルコースどうしがつながっています。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-amylose-amylopectin.png?h=4117d379" alt="グルコース1個を丸で表した鎖の模式図を2つ並べた図。左は丸がひとつながりに並んでばねのように巻いていて、枝分かれが無い。右は横に伸びた鎖の途中から、別の鎖が何本も枝のように分かれている" loading="lazy"><figcaption class="ref-figure-cap">どちらもグルコースだけでできていて、違うのは<b>枝分かれがあるかどうか</b>です。</figcaption></figure>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.starch&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>デンプンは α形のグルコースが多数縮合した多糖で、枝分かれがほとんどない直鎖状のアミロースと、枝分かれの多いアミロペクチンからなる。鎖はらせん状に巻いている。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.starch&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-iodine"><h4 class="ref-sec-h">ヨウ素デンプン反応</h4><p class="ref-sec-lead">デンプンがあるかどうかは、ヨウ素液を垂らすだけで確かめられます。青紫色に染まり、温めると消え、冷ますと戻ります。</p></section>
 <p class="ref-p">デンプンを見分けるには、<b>ヨウ素ヨウ化カリウム水溶液（ヨウ素液）</b>を少し垂らします。デンプンがあれば、液が<b>青紫色</b>に染まります。この色の変化が<b>ヨウ素デンプン反応</b>です。</p>
 <p class="ref-p">色が出るのは、デンプンのらせんの中にヨウ素が入り込むためです。<b>加熱するとらせんがゆるんで色が消え、冷やすとまた青紫色に戻ります。</b></p>
 <div class="ref-table-wrap"><div class="ref-cap">多糖とヨウ素の呈色</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">もとの単糖</th><th style="text-align: left;">枝分かれ</th><th style="text-align: left;">ヨウ素の呈色</th></tr></thead><tbody><tr><td style="text-align: left;">アミロース</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">なし（らせん）</td><td style="text-align: left;">濃い青色</td></tr><tr><td style="text-align: left;">アミロペクチン</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">多い</td><td style="text-align: left;">赤紫色</td></tr><tr><td style="text-align: left;">グリコーゲン</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">さらに多い</td><td style="text-align: left;">赤褐色</td></tr><tr><td style="text-align: left;">セルロース</td><td style="text-align: left;">β-グルコース</td><td style="text-align: left;">なし（まっすぐ伸びる）</td><td style="text-align: left;">呈色しない</td></tr></tbody></table></div>
 <p class="ref-p"><b>「デンプンは青紫色、加熱で消えて冷やすと戻る」は必ず暗記してください。</b>アミロースとアミロペクチンの色の違いは、余裕があれば覚える程度で構いません。呈色の仕組みは覚える必要はありません。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.starch-iodine&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>デンプン水溶液にヨウ素ヨウ化カリウム水溶液を加えると青紫色になる（ヨウ素デンプン反応）。加熱すると色が消え、冷やすと再び現れる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.starch-iodine&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-hydrolysis"><h4 class="ref-sec-h">デンプンの加水分解</h4><p class="ref-sec-lead">アミラーゼでデキストリンを経てマルトースまで、マルターゼでグルコースまで分解されます。</p></section>
 <p class="ref-p">デンプンは、酵素<b>アミラーゼ</b>のはたらきで、少し短くなった<b>デキストリン</b>を経て、二糖の<b>マルトース</b>まで分解されます。マルトースは酵素<b>マルターゼ</b>でグルコースになります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2(C₆H₁₀O₅)ₙ ＋ nH₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">アミラーゼ</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">nC₁₂H₂₂O₁₁（マルトース）</span></div><p class="ref-note">デンプンを途中まで分解した形。二糖は単位2個ぶんなので、左辺に係数2が付きます。</p></div>
@@ -971,11 +989,11 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— デンプンの加水分解</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">デンプン 81.0 g を完全に加水分解して得られるグルコースの質量を求めよ。H ＝ 1、C ＝ 12、O ＝ 16 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>81.0 ÷ 162 ＝ 0.500 mol 分の繰り返し単位。(C₆H₁₀O₅)<sub>n</sub> ＋ nH₂O → nC₆H₁₂O₆ より、グルコースも 0.500 mol なので、180 × 0.500 ＝ <b>90.0 g</b> です。水が加わるぶん、質量が増えます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.starch-hydrolysis&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>デンプンは酵素アミラーゼによってデキストリンを経てマルトースまで加水分解され、さらに酵素マルターゼによってグルコースになる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.starch-hydrolysis&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-glycogen"><h4 class="ref-sec-h">グリコーゲン</h4><p class="ref-sec-lead">動物がたくわえる多糖で、アミロペクチンよりさらに枝分かれが多く、ヨウ素で赤褐色になります。</p></section>
 <p class="ref-p"><b>グリコーゲン</b>は、動物の肝臓や筋肉にたくわえられる多糖です。デンプンと同じく α-グルコースからなり、<b>アミロペクチンよりさらに枝分かれが多い</b>ものです。ヨウ素液では<b>赤褐色</b>になります。</p>
 <p class="ref-p"><b>グリコーゲンは「動物のデンプン」、ヨウ素で赤褐色、の2点だけ覚えておけば十分です。</b></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.glycogen&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>グリコーゲン（動物デンプン）は動物の肝臓や筋肉に蓄えられる貯蔵多糖で、アミロペクチンよりさらに枝分かれが多い。ヨウ素ヨウ化カリウム水溶液で赤褐色を呈する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.glycogen&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-cellulose"><h4 class="ref-sec-h">セルロース</h4><p class="ref-sec-lead">β-グルコースが縮合したものです。まっすぐ伸びた鎖が束になり、丈夫な繊維になります。ヒトは消化できません。</p></section>
 <p class="ref-p"><b>セルロース</b>は、<b>β-グルコース</b>が多数縮合した多糖で、植物の細胞壁の主成分です。β形でつながると、鎖は<b>まっすぐ</b>伸びます。まっすぐな鎖どうしが水素結合で束になるので、<b>丈夫な繊維</b>になり、水にも溶けません。</p>
 <p class="ref-p">セルロースは酵素<b>セルラーゼ</b>で二糖の<b>セロビオース</b>に、さらに<b>セロビアーゼ</b>でグルコースに分解されます。ヒトの体はセルラーゼをつくれないので、食べたセルロースはグルコースまで分解されないまま通り過ぎます。</p>
@@ -985,12 +1003,12 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>「α形ならデンプン、β形ならセルロース」</b>と覚えましょう。この表の残りの行は、ほとんどこの1行から理由をつけて出せます。</p>
 <h5 class="ref-h5">例題 —— セルロース</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">デンプンとセルロースは、どちらも分子式 (C₆H₁₀O₅)<sub>n</sub> で表される。この2つの構造上の違いと、それによって生じる性質の違いを書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>デンプンは <b>α-グルコース</b>が縮合してらせん状に巻き、セルロースは <b>β-グルコース</b>が縮合してまっすぐ伸び、束になります。そのためデンプンはヨウ素デンプン反応を示し、セルロースは丈夫な繊維になって呈色しません。ヒトはセルロースを分解する酵素をもたないので、セルロースを消化できません。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.cellulose&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>セルロースは β形のグルコースが直鎖状に多数縮合した多糖で、植物の細胞壁の主成分。分子がまっすぐ伸びて束になり丈夫な繊維をつくる。ヒトはこれを加水分解する酵素をもたないので消化できない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.cellulose&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-cellulose-oh"><h4 class="ref-sec-h">セルロースの −OH は1単位に3個</h4><p class="ref-sec-lead">繰り返し単位 C₆H₁₀O₅ には −OH が3個あるので、[C₆H₇O₂(OH)₃]<sub>n</sub> と書けます。誘導体の計算はすべてここから始まります。</p></section>
 <p class="ref-p">セルロースの繰り返し単位 C₆H₁₀O₅ には、<b>−OH が3個</b>残っています。−OH を外に出して書くと <b>[C₆H₇O₂(OH)₃]<sub>n</sub></b> です。</p>
 <p class="ref-p">一度数えて確かめます。C₆H₇O₂ に (OH)₃ を足すと、C は6、H は 7 ＋ 3 ＝ 10、O は 2 ＋ 3 ＝ 5 で、ちゃんと C₆H₁₀O₅ に戻ります。</p>
 <p class="ref-p"><b>「セルロースは [C₆H₇O₂(OH)₃]<sub>n</sub>」と書けるようにしてください。</b>この3個の −OH をどう変えたかで、次の節の誘導体がすべて決まります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.cellulose-oh&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>セルロースの鎖の中では、グルコース単位1個あたりヒドロキシ基が3個残っており、繰り返し単位は [C₆H₇O₂(OH)₃]ₙ と書ける。誘導体の量的な扱いはすべてこの3個が出発点になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.cellulose-oh&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-nitrocellulose"><h4 class="ref-sec-h">ニトロセルロースとアセチルセルロース</h4><p class="ref-sec-lead">−OH を濃硝酸でエステルにするとニトロセルロース、無水酢酸でエステルにするとアセチルセルロースになります。</p></section>
 <p class="ref-p">セルロースに<b>濃硝酸と濃硫酸の混合物</b>を作用させると、−OH が硝酸エステル −ONO₂ に変わります。3個とも変わったものが<b>トリニトロセルロース</b>で、<b>無煙火薬</b>の原料です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">[C₆H₇O₂(OH)₃]ₙ ＋ 3nHNO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">[C₆H₇O₂(ONO₂)₃]ₙ ＋ 3nH₂O</span></div><p class="ref-note">−OH の H と硝酸の OH から水がとれる<b>エステル化</b>です。−O−NO₂ と、炭素と窒素の間に酸素が1個はさまっています。</p></div>
@@ -1002,13 +1020,13 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">エステル化と加水分解の一般形はこちら</a></p>
 <h5 class="ref-h5">例題 —— ニトロセルロースとアセチルセルロース</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">セルロース 162 g のヒドロキシ基をすべて硝酸エステルにしたとき、得られるトリニトロセルロースの質量を求めよ。H ＝ 1、C ＝ 12、N ＝ 14、O ＝ 16 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>繰り返し単位 C₆H₁₀O₅ の式量は162なので、単位 1.00 mol 分。生成物の繰り返し単位 C₆H₇O₂(ONO₂)₃ の式量は <b>297</b> なので、<b>297 g</b> です。−OH 3個が −ONO₂ 3個に変わると、1単位あたり 3 × (62 − 17) ＝ 135 増える、と数えても出せます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.nitrocellulose&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>セルロースに濃硝酸と濃硫酸の混合物を作用させると、ヒドロキシ基が硝酸エステルに変わったニトロセルロースが生じる。3個すべてがエステル化したトリニトロセルロースは無煙火薬に用いる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.nitrocellulose&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-fiber"><h4 class="ref-sec-h">再生繊維と半合成繊維</h4><p class="ref-sec-lead">セルロースをいったん溶かして紡ぎ直したものが再生繊維、−OH を化学的に変えて紡いだものが半合成繊維です。</p></section>
 <p class="ref-p">木材パルプなどの短いセルロースは、そのままでは衣料の糸になりません。そこで、化学の力で長い繊維に作り直します。</p>
 <div class="ref-table-wrap"><div class="ref-cap">セルロースから作る繊維</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">分類</th><th style="text-align: left;">作り方</th></tr></thead><tbody><tr><td style="text-align: left;">ビスコースレーヨン</td><td style="text-align: left;"><b>再生繊維</b></td><td style="text-align: left;">NaOH と二硫化炭素 CS₂ で溶かし、希硫酸中に押し出して紡ぎ直す</td></tr><tr><td style="text-align: left;">銅アンモニアレーヨン（キュプラ）</td><td style="text-align: left;"><b>再生繊維</b></td><td style="text-align: left;">シュワイツァー試薬に溶かし、希硫酸中に押し出して紡ぎ直す</td></tr><tr><td style="text-align: left;">アセテート繊維</td><td style="text-align: left;"><b>半合成繊維</b></td><td style="text-align: left;">−OH の一部を酢酸エステルに変えてから紡ぐ</td></tr></tbody></table></div>
 <p class="ref-p"><b>「再生繊維か半合成繊維か」の区別と、代表例3つの名前は暗記してください。</b>溶かすのに使う薬品の名前（シュワイツァー試薬の中身など）は、覚えなくて構いません。問題文に与えられることがほとんどです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/synthetic-fiber/">合成繊維も含めた繊維の分類と用途は合成繊維のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.cellulose-fiber&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>セルロースをいったん溶かして繊維に紡ぎ直したものが再生繊維（ビスコースレーヨン・銅アンモニアレーヨン）、ヒドロキシ基を化学的に変えたものが半合成繊維（アセテート繊維）である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.bio.cellulose-fiber&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1115,6 +1133,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

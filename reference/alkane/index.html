@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">正四面体がつながった形、炭素が増えると沸点と状態がどう動くか、たった1つの反応（置換反応）、そしてメタンの製法まで。アルカンについて引きに来ることを1ページにまとめました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">脂肪族化合物</span><span class="unit-label">アルカンとシクロアルカン</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-structure" data-ref-anchor="structure">どんな形をしているか</a></li><li><a href="#ref-sec-formula" data-ref-anchor="formula">アルカンの一般式は CnH2n+2</a></li><li><a href="#ref-sec-list" data-ref-anchor="list">主なアルカンと、常温での姿</a></li><li><a href="#ref-sec-alkyl" data-ref-anchor="alkyl">アルキル基 —— アルカンから水素を1つ取ったもの</a></li><li><a href="#ref-sec-substitution" data-ref-anchor="substitution">アルカンの反応 —— 置換反応</a></li><li><a href="#ref-sec-methane" data-ref-anchor="methane">メタン CH₄</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-electron-pair.png?h=bf6437e5" alt="メタンの電子式。炭素のまわりの4組の共有電子対が、負の電荷でたがいに反発するので正四面体になることを示した図" loading="lazy"><figcaption class="ref-figure-cap">4組の電子対がたがいに反発して、いちばん遠い位置に散った結果が正四面体です。</figcaption></figure>
 <p class="ref-p">アルカンは、この正四面体が繰り返しつながった形です。<b>炭素間の単結合は自由に回転できる</b>ので、同じ分子でも変形することができ見え方は一定ではありません。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ethane-rotation.png?h=065d2652" alt="エタンの構造式。2個の炭素をつなぐ単結合のまわりで、片側の炭素についた水素が回せることを回転の矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap">エタンの炭素間の単結合。矢印のように回しても、別の分子になったわけではありません。</figcaption></figure>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkane-shape,org.ali.alkane-rotation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>メタンは正四面体形で、結合角は約109.5°。</li><li>アルカンの炭素間単結合は自由に回転できる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkane-shape,org.ali.alkane-rotation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">アルカンの一般式は CnH2n+2</h4><p class="ref-sec-lead">丸暗記もよいが、図形的に導けるようにしよう。</p></section>
 <p class="ref-p">枝分かれの無い直鎖のアルカンは、いくつかの<b>メチレン基 −CH₂− と、両端の水素2個</b>でできています。C原子の数を n 個とすると、水素原子はメチレン基の部分に 2n 個、両端の2個あるので合計 2n+2 個になります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-methylene-chain.png?h=5b977ea1" alt="直鎖アルカンの構造式。3個のメチレン基を1つずつ縦長の枠で囲み、両端の水素原子2個を丸で囲んで示した図" loading="lazy"><figcaption class="ref-figure-cap">縦の枠がメチレン基 −CH₂−、両端の丸が水素です。枠が n 個なら水素は 2n 個、これに両端の2個が足されます。</figcaption></figure>
@@ -969,7 +987,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">同じ炭素数でもアルコールの沸点がずっと高いのはなぜか</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/assembler/?open=isomer&amp;formula=C5H12">ペンタン C₅H₁₂ の異性体3つを自分で書き出してみる（沸点が違うのはこの3つ）</a></p>
 <p class="ref-p">無極性であることは、水への溶けかたにもそのまま出ます。<b>アルカンは水に溶けにくく、水より密度が小さい</b>ので、水と混ぜると上に分かれます。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkane-state,org.ali.alkane-bp,org.ali.alkane-branch-bp,org.ali.alkane-solubility&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>常温でC1〜4は気体、C5以上は液体、C18以上は固体。</li><li>分子量が大きいほど分子間力が強く、沸点が高い。</li><li>分子式が同じアルカンでは、枝分かれが多いほど沸点が低い。枝分かれで分子が球に近づき、分子どうしの接触面積が減ってファンデルワールス力が弱くなるため。</li><li>アルカンは無極性で水に溶けにくく、水より密度が小さい。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkane-state,org.ali.alkane-bp,org.ali.alkane-branch-bp,org.ali.alkane-solubility&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-alkyl"><h4 class="ref-sec-h">アルキル基 —— アルカンから水素を1つ取ったもの</h4><p class="ref-sec-lead">枝の名前はここから来ます。語尾の -ane を -yl に変えるだけです。</p></section>
 <p class="ref-p">アルカン C<sub>n</sub>H<sub>2n+2</sub> から水素原子を1個取り去った原子団を<b>アルキル基 −C<sub>n</sub>H<sub>2n+1</sub></b> といいます。分子ではなく、分子の一部（パーツ）です。名前は、もとのアルカンの語尾 <b>-ane を -yl（イル）に変える</b>だけです。</p>
 <ul class="ref-list"><li>メタン CH₄ → <b>メチル基</b> −CH₃</li><li>エタン C₂H₆ → <b>エチル基</b> −C₂H₅</li><li>プロパン C₃H₈ → <b>プロピル基</b> −C₃H₇（2種類）</li><li>ブタン C₄H₁₀ → <b>ブチル基</b> −C₄H₉（4種類）</li><li>ペンタン C₅H₁₂ → <b>ペンチル基</b> −C₅H₁₁（8種類）</li></ul>
@@ -977,7 +995,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>同じ分子式のアルカンを全部書き出す</b>ときも、この「主鎖を短くして、余った炭素を枝にする」考え方をそのまま使います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane-isomers/">異性体の書き出しの手順（アルカンが土台になります）はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/assembler/?open=practice">書き出し練習をひらく（分子式から異性体を全部たどる）</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkyl-count&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アルキル基の種類は炭素数3で2種（n-プロピル・イソプロピル）、炭素数4で4種（n-ブチル・sec-ブチル・イソブチル・tert-ブチル）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkyl-count&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-substitution"><h4 class="ref-sec-h">アルカンの反応 —— 置換反応</h4><p class="ref-sec-lead">アルカンが常温付近で起こす反応はこれ1つです。光を当てて、ハロゲンと水素を入れ替えます。</p></section>
 <p class="ref-p">アルカンは常温では反応性が低いのですが、<b>ハロゲンの単体と混ぜて光を当てる</b>と反応します。メタンと塩素なら、メタンの水素1個と塩素分子の塩素1個が<b>入れ替わって</b>、クロロメタンと塩化水素ができます。</p>
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text"><b>「反応しにくい」と「反応しない」は違います。</b> アルカンは常温では反応性が低いだけで、光を当てればハロゲンと置換反応を起こし、高温では燃焼します。「アルカンは安定だから何も起きない」と覚えると、この節の2つの反応が抜けます。</p></div>
@@ -994,7 +1012,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx ref-rx-has-img"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-fig"><div class="ref-figure-scroll"><img class="ref-figure-img ref-rx-img ref-figure-img-scroll" src="/reference-img/rx-6b8cc683.png?h=02f5adb2" alt="構造式の反応式: CH₄ ＋ 3Cl₂ → CHCl₃ ＋ 3HCl" loading="lazy" style="width:100.0%"></div></div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ 3Cl₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">光</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CHCl₃ ＋ 3HCl</span></div><div class="embed embed-app"><div class="embed-run"><button type="button" data-embed="/assembler/?summon=%E3%83%A1%E3%82%BF%E3%83%B3&amp;reagent=chlorinate_alkane&amp;from=reference&amp;page=alkane&amp;embed=1" data-embed-title="▶ ここで反応を試す">▶ ここで反応を試す</button></div><a class="alt" href="/assembler/?summon=%E3%83%A1%E3%82%BF%E3%83%B3&amp;reagent=chlorinate_alkane&amp;from=reference&amp;page=alkane">▶ 大きな画面で開く</a></div><p class="ref-note">塩素を3個入れたいので Cl₂ が3分子、外れた水素3個は HCl になって出ていきます。</p></div>
 <p class="ref-p">もう1つ、アルカンが起こす反応が<b>燃焼</b>です。高温ではアルカンは還元剤としてはたらき、多量の熱を出して燃えます。<b>燃料に使われるのはこのため</b>です。完全燃焼すれば、生成物は二酸化炭素と水だけになります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ 2O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">完全燃焼</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂ ＋ 2H₂O</span></div><p class="ref-note">炭素は CO₂ へ、水素は H₂O へ。他のアルカンでも、係数を合わせるだけで同じ形の式になります。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkane-substitution,org.ali.alkane-combustion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アルカンは反応性が小さく、主な反応は置換反応。</li><li>アルカンは燃焼して多量の熱を発し、燃料に使われる。完全燃焼で二酸化炭素と水。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.alkane-substitution,org.ali.alkane-combustion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-methane"><h4 class="ref-sec-h">メタン CH₄</h4><p class="ref-sec-lead">いちばん小さいアルカン。無色無臭の気体で水に溶けにくく、実験室では酢酸ナトリウムと水酸化ナトリウムを加熱してつくります。</p></section>
 <p class="ref-p">メタンは無色無臭の気体で、天然ガスの主成分です。C−H 結合には極性がありますが、<b>正四面体なので分子全体では打ち消し合い</b>、分子としては無極性になります。無極性だから水に溶けにくく<b>水上置換</b>で捕集します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-electron-dot.png?h=7d1cd82b" alt="メタンの電子式と、結合の極性δ+δ−を書き込んだ構造式。結合の極性が分子全体で打ち消されて無極性になることを示している" loading="lazy"><figcaption class="ref-figure-cap">結合1本ずつには極性がありますが、正四面体なので分子全体では打ち消されます。</figcaption></figure>
@@ -1002,7 +1020,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">実験室では、<b>酢酸ナトリウムと水酸化ナトリウムの混合物を加熱して</b>つくります。どちらも固体なので、加熱が要ります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₃COONa ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₄↑ ＋ Na₂CO₃</span></div><p class="ref-note">固体どうしの反応なので加熱します。出てきたメタンは水上置換で集めます。</p></div>
 <div class="ref-callout ref-callout-memorize"><b class="ref-callout-tag">丸暗記でよい</b><p class="ref-callout-text">この反応式は<b>丸暗記</b>でかまいません。係数はすべて 1 なので、反応物を暗記すればメタン CH₄ ができたあまりが炭酸ナトリウム Na₂CO₃ です。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.methane-props,org.ali.methane-prep&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>メタンは無色無臭の気体で、天然ガスの主成分。</li><li>メタン製法＝酢酸ナトリウムと水酸化ナトリウムの混合物を加熱。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.methane-props,org.ali.methane-prep&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 </div>
 </div>
 
@@ -1126,6 +1144,7 @@ window.addEventListener('message', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

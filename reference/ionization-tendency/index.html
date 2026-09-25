@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">水溶液の中で、金属がどれだけ陽イオンになりたがるか。その度合いがイオン化傾向です。イオン化列、金属樹と希酸への溶解が同じしくみであること、水・酸との反応の表、不動態と王水まで。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸化と還元</span><span class="unit-label">金属のイオン化傾向</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-series" data-ref-anchor="series">イオン化傾向とイオン化列</a></li><li><a href="#ref-sec-reversible" data-ref-anchor="reversible">単体は還元剤、陽イオンは酸化剤</a></li><li><a href="#ref-sec-tree" data-ref-anchor="tree">金属樹と、金属が希酸に溶ける反応</a></li><li><a href="#ref-sec-reactivity" data-ref-anchor="reactivity">水・酸との反応</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -951,7 +969,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">イオン化傾向は、イオン化エネルギーが小さい順に並べたものである</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">イオン化傾向は、<b>水溶液中で</b>金属が陽イオンになるなりやすさです。気体の原子から e⁻ を取り去るのに要するイオン化エネルギーとは別の量です。</span></p><p class="ref-mistake-why">どちらも「イオン化」と名前が似ているので混同しやすいところです。例えば Li はイオン化エネルギーはアルカリ金属の中で最も大きいのに、イオン化傾向は最も大きい金属です。</p></div>
 <h5 class="ref-h5 ref-h5-advanced">Li のイオン化傾向がいちばん大きいわけ<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">金属が水溶液中で陽イオンになるには、固体の金属をばらばらの原子にする・原子から e⁻ を取り去る・できたイオンが水分子に囲まれる（水和）、の3段階を通ります。Li はイオン化エネルギーは大きいものの、Li⁺ はイオンが小さいので水分子を強く引きつけ、水和で大きく安定になります。3段階を合わせると、Li がいちばん陽イオンになりやすくなります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.ionization-series&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>イオン化列: Li ＞ K ＞ Ca ＞ Na ＞ Mg ＞ Al ＞ Zn ＞ Fe ＞ Ni ＞ Sn ＞ Pb ＞ (H₂) ＞ Cu ＞ Hg ＞ Ag ＞ Pt ＞ Au。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.ionization-series&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-reversible"><h4 class="ref-sec-h">単体は還元剤、陽イオンは酸化剤</h4><p class="ref-sec-lead">金属の単体と陽イオンは可逆的に変化します。イオン化傾向が大きい金属は単体が、小さい金属は陽イオンが強くはたらきます。</p></section>
 <p class="ref-p">金属の単体は e⁻ を放出して陽イオンになるので<b>還元剤</b>、金属の陽イオンは e⁻ を受け取って単体になるので<b>酸化剤</b>です。2つの反応は逆向きの関係にあり、1本にまとめて書けます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cu²⁺ ＋ 2e⁻</span></div><p class="ref-note">右向きは単体 Cu が還元剤、左向きは Cu²⁺ が酸化剤としてはたらく反応です。</p></div>
@@ -960,7 +978,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">具体例</h5>
 <p class="ref-p">Na はイオン化傾向が非常に大きいので、単体の還元力が非常に強く、水とも激しく反応します。逆に Na⁺ が酸化剤としてはたらくことは通常はありません（溶融塩電解で e⁻ を無理に押し付けると、Na⁺ を還元できます）。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/electrolysis-industry/">溶融塩電解で、イオン化傾向の大きい金属の単体をつくる方法は「電気分解の工業的利用」で <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.ionization-meaning&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>イオン化傾向は、金属の単体が水溶液中で e⁻ を失って陽イオンになる起こりやすさ。大きい金属ほど単体の還元力が強く、小さい金属ほど陽イオンの酸化力が強い。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.ionization-meaning&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-tree"><h4 class="ref-sec-h">金属樹と、金属が希酸に溶ける反応</h4><p class="ref-sec-lead">どちらも同じしくみです。生じる単体が金属の固体か、非金属の気体かの違いしかありません。</p></section>
 <p class="ref-p">イオン化傾向が大きい金属の単体（還元剤）と、イオン化傾向が小さい金属の陽イオン（酸化剤）が出会うと、酸化還元反応が起こります。</p>
 <h5 class="ref-h5">金属樹の生成</h5>
@@ -972,7 +990,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Zn ＋ 2H⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Zn²⁺ ＋ H₂↑</span></div><p class="ref-note">化学反応式では Zn ＋ 2HCl → ZnCl₂ ＋ H₂（希塩酸）、Zn ＋ H₂SO₄ → ZnSO₄ ＋ H₂（希硫酸）。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ionization-tendency-tree.png?h=e9e24199" alt="左は硫酸銅(Ⅱ)水溶液に亜鉛板を入れ、亜鉛が e⁻ を渡して Zn²⁺ になり、Cu²⁺ が受け取って銅樹になる図。右は希酸に亜鉛板を入れ、H⁺ が e⁻ を受け取って H₂ が発生する図。それぞれに2本の半反応式と、足し合わせた式を添えている" loading="lazy"><figcaption class="ref-figure-cap">金属樹の生成（左）と、金属が希酸に溶解する反応（右）は<b>同じしくみ</b>です。生じた単体が「金属の固体」か「非金属の気体」かの違いしかありません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/cell-basics/">亜鉛と銅(Ⅱ)イオンの反応の、酸化剤と還元剤の場所を引き離したものがダニエル電池（「電池の仕組み」）</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.metal-tree&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>イオン化傾向が大きい金属の単体を、小さい金属の陽イオンの水溶液に入れると、単体が溶けて陽イオンが金属として析出する（金属樹）。金属が希酸に溶けて H₂ が出る反応も同じしくみ。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.metal-tree&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-reactivity"><h4 class="ref-sec-h">水・酸との反応</h4><p class="ref-sec-lead">イオン化列の左にある金属ほど、水や酸と反応しやすくなります。</p></section>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ionization-tendency-table.png?h=6e5d172a" alt="イオン化列を Li K Ca Na／Mg／Al Zn Fe／Ni Sn Pb／H₂／Cu Hg Ag／Pt Au に区切った表。水との反応は、常温の水と反応・熱水と反応・高温の水蒸気と反応・反応しない。酸との反応は、希酸と反応・酸化力のある酸と反応・王水と反応" loading="lazy"><figcaption class="ref-figure-cap">イオン化列の区切りと、水・酸との反応。<b>区切りの位置まで含めて暗記</b>します。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">イオン化傾向と金属の単体の反応</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">金属</th><th style="text-align: left;">水との反応</th><th style="text-align: left;">酸との反応</th></tr></thead><tbody><tr><td style="text-align: left;">Li・K・Ca・Na</td><td style="text-align: left;">常温の水と反応</td><td style="text-align: left;">希酸（希塩酸・希硫酸）と反応</td></tr><tr><td style="text-align: left;">Mg</td><td style="text-align: left;">熱水と反応</td><td style="text-align: left;">希酸と反応</td></tr><tr><td style="text-align: left;">Al・Zn・Fe</td><td style="text-align: left;">高温の水蒸気と反応</td><td style="text-align: left;">希酸と反応</td></tr><tr><td style="text-align: left;">Ni・Sn・Pb</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">希酸と反応</td></tr><tr><td style="text-align: left;">Cu・Hg・Ag</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">酸化力のある酸と反応</td></tr><tr><td style="text-align: left;">Pt・Au</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">王水と反応</td></tr></tbody></table></div>
@@ -995,7 +1013,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/redox.html?rxn=r4&amp;from=reference&amp;page=ionization-tendency">アルミニウム × 銅(Ⅱ)イオン（2:3）</a></p>
 <h5 class="ref-h5">例題 —— 水・酸との反応</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">A〜E は、ナトリウム・亜鉛・銅・銀・白金の単体のいずれかである。(ア) A〜E を希塩酸に入れたところ、B・C が溶けた。(イ) A〜E を希硝酸に入れたところ、A のみが溶けなかった。(ウ) A〜E を常温の水に入れたところ、B のみが溶けた。(エ) D のイオンを含む水溶液に E の小片を入れると、表面に D が析出した。<b>(1) A〜E を元素記号で答えよ。(2) (エ)の反応をイオン反応式で書け。(3) B が水に溶ける反応を化学反応式で書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(1) A：Pt　B：Na　C：Zn　D：Ag　E：Cu　(2) Cu ＋ 2Ag⁺ → Cu²⁺ ＋ 2Ag　(3) 2Na ＋ 2H₂O → 2NaOH ＋ H₂</b> です。(ア) 希塩酸に溶けるのは水素よりイオン化傾向が大きい Na・Zn なので B・C が Na か Zn。(イ) 希硝酸にも溶けないのは Pt だけなので A は Pt。(ウ) 常温の水に溶けるのは Na なので B が Na、C が Zn。残る D・E は Cu か Ag で、(エ) E が D のイオンに e⁻ を渡しているのでイオン化傾向は E ＞ D。よって E が Cu、D が Ag です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.metal-water-acid,theo.redox.passivation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>Li・K・Ca・Na は常温の水、Mg は熱水、Al・Zn・Fe は高温の水蒸気と反応する。H₂ より左は希酸に溶け、Cu・Hg・Ag は酸化力のある酸、Pt・Au は王水にだけ溶ける。</li><li>イオン化列の例外: Pb は表面の PbCl₂・PbSO₄ のため塩酸・希硫酸にほとんど溶けない。Al・Fe・Ni は濃硝酸で不動態になる。Pt・Au は王水（濃硝酸：濃塩酸 ＝ 1：3）に溶ける。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.redox.metal-water-acid,theo.redox.passivation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 </div>
 </div>
 
@@ -1099,6 +1117,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

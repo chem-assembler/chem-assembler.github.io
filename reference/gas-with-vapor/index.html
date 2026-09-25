@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">水を含む気体の計算は、まず水がすべて気体だと仮定した分圧を出し、飽和蒸気圧と比べます。超えていれば超えた分は液体で、水蒸気の分圧は飽和蒸気圧に等しくなります。同じ容器の反応は、mol の代わりに Pa で3行の表を書けます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">状態変化と気体</span><span class="unit-label">混合気体と分圧</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-pascal-table" data-ref-anchor="pascal-table">同じ容器の反応は Pa で3行の表を書く</a></li><li><a href="#ref-sec-compare" data-ref-anchor="compare">仮の分圧を飽和蒸気圧と比べる</a></li><li><a href="#ref-sec-water-displacement" data-ref-anchor="water-displacement">水上置換で集めた気体</a></li><li><a href="#ref-sec-reverse" data-ref-anchor="reverse">逆向きの問題 —— 全圧から飽和蒸気圧を求める</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -949,7 +967,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">具体例で、300K で容器 A（3.0L）に 3.0×10⁵Pa の O₂、容器 B（6.0L）に 1.2×10⁵Pa の H₂ を入れ、コックを開いて完全に燃焼させ、再び 300K にした場合を考えます。コックを開くと体積は 9L になり、O₂ は 3L → 9L で分圧 1/3倍の 1.0×10⁵Pa、H₂ は 6L → 9L で分圧 2/3倍の 0.8×10⁵Pa です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">燃焼の3行の表（単位は ×10⁵Pa、300K）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分圧</th><th style="text-align: right;">2H₂</th><th style="text-align: right;">O₂</th><th style="text-align: right;">2H₂O</th></tr></thead><tbody><tr><td style="text-align: left;">反応前</td><td style="text-align: right;">0.8</td><td style="text-align: right;">1.0</td><td style="text-align: right;">0</td></tr><tr><td style="text-align: left;">変化量</td><td style="text-align: right;">−0.8</td><td style="text-align: right;">−0.4</td><td style="text-align: right;">＋0.8</td></tr><tr><td style="text-align: left;">反応後</td><td style="text-align: right;">0</td><td style="text-align: right;">0.6</td><td style="text-align: right;">0.8（すべて気体と仮定）</td></tr></tbody></table></div>
 <p class="ref-p">H₂ がすべて反応し、O₂ が 0.6×10⁵Pa 残ります。H₂O の 0.8×10⁵Pa は、<b>生じた水がすべて気体だと仮定したときの分圧</b>です。本当にすべて気体かどうかは、次の節の手順で確かめます。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.pressure-table&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>同じ容器の中の気体の反応は、温度と体積が共通で分圧が物質量に比例するので、分圧〔Pa〕のまま3行の表を書け、生じた水の分圧はすべて気体と仮定した値として出る。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.pressure-table&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-compare"><h4 class="ref-sec-h">仮の分圧を飽和蒸気圧と比べる</h4><p class="ref-sec-lead">すべて気体と仮定した水の分圧が飽和蒸気圧を超えていれば、超えた分は液体になり、水蒸気の分圧は飽和蒸気圧に等しくなります。</p></section>
 <p class="ref-p">水蒸気を含む問題は、次の順に解きます。</p>
 <ol class="ref-list"><li>水がすべて気体だと仮定して、水蒸気の分圧（仮の分圧）を求める。</li><li>仮の分圧を、その温度の飽和蒸気圧と比べる。</li><li>仮の分圧 ＞ 飽和蒸気圧 なら、超えた分は液体になり、水蒸気の分圧は飽和蒸気圧に等しい。</li><li>仮の分圧 ≦ 飽和蒸気圧 なら、水はすべて気体で、水蒸気の分圧は仮の分圧のまま。</li><li>ほかの気体の分圧と足して、全圧を求める。</li></ol>
@@ -962,7 +980,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">生じた水の分圧は、3行の表で求めた 0.8×10⁵Pa である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">3行の表の 0.8×10⁵Pa は「すべて気体と仮定した」値です。飽和蒸気圧（0.036×10⁵Pa）を超えているので、実際の水蒸気の分圧は 0.036×10⁵Pa です。</span></p><p class="ref-mistake-why">3行の表を書いた時点で答えが出たと思い、飽和蒸気圧と比べる段を飛ばしてしまうためです。水ができる反応では、表のあとに必ず比べる段を入れましょう。</p></div>
 <h5 class="ref-h5">例題 —— 仮の分圧を飽和蒸気圧と比べる</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">300K で、容器 A（1.0L）に 1.8×10⁵Pa の O₂、容器 B（2.0L）に 2.7×10⁵Pa の H₂ を入れ、コックを開いて 400K に保ったところ、全圧は 3.2×10⁵Pa（O₂ 0.8×10⁵Pa・H₂ 2.4×10⁵Pa）になった。この混合気体を完全に反応させた。水の飽和蒸気圧は 300K で 3.6×10³Pa、400K で 2.5×10⁵Pa、液体の水の体積は無視できるとして、有効数字2桁で答えよ。(1) 容器を 400K に保ったときの全圧。(2) 容器を 300K に保ったときの全圧。(3) (2) のとき、生じた水のうち液体として存在する割合〔%〕。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 2.4×10⁵Pa。400K で Pa の3行を書くと、2H₂ ＋ O₂ → 2H₂O で H₂ 2.4 − 1.6 ＝ 0.8、O₂ 0.8 − 0.8 ＝ 0、H₂O ＋1.6（×10⁵Pa）。仮の分圧 1.6×10⁵Pa ＜ 飽和蒸気圧 2.5×10⁵Pa なので水はすべて気体。全圧 0.8 ＋ 1.6 ＝ 2.4×10⁵Pa。(2) 6.4×10⁴Pa。400K → 300K で T が 3/4倍なので、すべて気体と仮定すると H₂ 0.6×10⁵Pa・H₂O 1.2×10⁵Pa。1.2×10⁵Pa ＞ 0.036×10⁵Pa なので水蒸気の分圧は飽和蒸気圧。全圧 0.6×10⁵ ＋ 0.036×10⁵ ＝ 0.636×10⁵ ≒ 6.4×10⁴Pa。(3) 97%。水の物質量は分圧に比例するので (1.200 − 0.036)/1.200 × 100 ≒ 97%。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.vapor-assume&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>水蒸気を含む問題は、水がすべて気体と仮定した分圧を飽和蒸気圧と比べ、超えていれば水蒸気の分圧は飽和蒸気圧、以下ならすべて気体として、ほかの気体の分圧と足す。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.vapor-assume&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-water-displacement"><h4 class="ref-sec-h">水上置換で集めた気体</h4><p class="ref-sec-lead">水上置換で集めた気体には、飽和蒸気圧の水蒸気が混ざっています。集めた気体の分圧は、大気圧から水の飽和蒸気圧を引いた値です。</p></section>
 <p class="ref-p">水上置換では、気体を水の上に集めるので、容器の中には液体の水と接した空間ができます。「液体の水があれば、上の空間は飽和蒸気圧」なので、集めた気体は<b>飽和蒸気圧の水蒸気との混合気体</b>です。</p>
 <p class="ref-p">容器の中の水面を外の水槽の水面にそろえると、容器の中の全圧が大気圧に等しくなります。したがって、集めた気体の分圧は次のとおりです。</p>
@@ -973,7 +991,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>「液面を水槽の液面にそろえて、容器内の圧力を大気圧に等しくする」は、実験の手順としても問われます。</b>理由まで説明できるようにしておきましょう。</p>
 <h5 class="ref-h5">例題 —— 水上置換で集めた気体</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">27℃・9.96×10⁴Pa のもとで、発生させた O₂ を水上置換で集めたところ、体積は 166mL であった。水の飽和蒸気圧を 3.6×10³Pa として、集めた O₂ の物質量を有効数字2桁で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>6.4×10⁻³mol。O₂ の分圧は 9.96×10⁴ − 0.36×10⁴ ＝ 9.6×10⁴Pa。27℃ ＝ 300K なので準標準状態（1.0×10⁵Pa・24.9L）を基準に、P ×96/100（比）、V ×166/24900（比）。n ＝ 1mol × 96/100 × 166/24900 ≒ 6.4×10⁻³mol。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.water-displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>水上置換で集めた気体は飽和蒸気圧の水蒸気との混合気体で、捕集容器の液面を水槽の液面にそろえると全圧が大気圧に等しくなるので、集めた気体の分圧は大気圧 − 水の飽和蒸気圧となる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.water-displacement&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-reverse"><h4 class="ref-sec-h">逆向きの問題 —— 全圧から飽和蒸気圧を求める</h4><p class="ref-sec-lead">実際の全圧が、すべて気体と仮定した全圧より小さければ、水の一部が液体になっています。全圧からほかの気体の分圧を引けば、飽和蒸気圧が求められます。</p></section>
 <p class="ref-p">問題文に「水滴が生じた」とあれば、それだけで水蒸気が飽和蒸気圧に達していると読めます。書かれていなくても、<b>すべて気体と仮定した全圧と、実際の全圧を比べる</b>と分かります。実際の全圧の方が小さければ、その差の分の水が液体になっています。</p>
 <p class="ref-p">このとき、（水の飽和蒸気圧）＝（実際の全圧）−（水以外の気体の分圧）で求められます。この型は、下の例題の2問目で扱います。</p>
@@ -1085,6 +1103,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

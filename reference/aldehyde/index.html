@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">鎖の端にカルボニル基があるのがアルデヒドです。一般式 CₙH₂ₙO がどこから出てくるか、3つの慣用名、還元性とその検出（銀鏡反応・フェーリング液の還元）、ホルムアルデヒドとアセトアルデヒドの製法までを1枚にまとめました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">脂肪族化合物</span><span class="unit-label">アルデヒドとケトン</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-formula" data-ref-anchor="formula">アルデヒドとケトンの一般式は CₙH₂ₙO</a></li><li><a href="#ref-sec-naming" data-ref-anchor="naming">アルデヒドの命名</a></li><li><a href="#ref-sec-reduce" data-ref-anchor="reduce">アルデヒドの還元性と、その検出</a></li><li><a href="#ref-sec-each" data-ref-anchor="each">ホルムアルデヒドとアセトアルデヒド</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/carbonyl-from-alkane.png?h=16928c25" alt="アルカンの構造式から矢印が伸び、端のメチレン基をカルボニル基に変えるとアルデヒド、端以外のメチレン基を変えるとケトンになることを示した2段の図" loading="lazy"><figcaption class="ref-figure-cap">取り替えるのが<b>鎖の端</b>のメチレン基ならアルデヒド、<b>端以外</b>ならケトンです。アルデヒドとケトンの構造上の違いは、カルボニル基が鎖の端にあるかどうか、ただ1つです。</figcaption></figure>
 <p class="ref-p"><b>一般式 C<sub>n</sub>H<sub>2n</sub>O は必ず暗記してください。</b>分子式 C₃H₆O を見た瞬間に「アルデヒドかケトン」と言えると、構造決定で候補がすぐ絞れます。</p>
 <p class="ref-p">アルキル基 −C<sub>m</sub>H<sub>2m+1</sub> にホルミル基が結合しているところから同じ式を計算で導くこともできますが、<b>この計算のほうは覚える必要はありません。</b>結果が同じ式になることを一度見ておけば十分です。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.formyl&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アルデヒドの官能基はホルミル基 −CHO。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.formyl&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-naming"><h4 class="ref-sec-h">アルデヒドの命名</h4><p class="ref-sec-lead">対応するアルカンの語尾 -ane を -anal に変えるのが規則ですが、高校化学では3つの慣用名のほうを使います。</p></section>
 <p class="ref-p">規則どおりの名称は、対応するアルカンの語尾「-ane（アン）」を「-anal（アナール）」に変えたものです。炭素1個のメタンなら「メタナール」、2個のエタンなら「エタナール」になります。</p>
 <p class="ref-p">ただし高校化学でこの名前を見かけることはまずないので、<b>覚えるのは慣用名のほう</b>です。</p>
@@ -980,7 +998,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— アルデヒドの還元性と、その検出</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次のイオン反応式を書け。<b>(1) アセトアルデヒドがフェーリング液を還元した　(2) アセトアルデヒドが銀鏡反応を起こした</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>酸化剤と還元剤の半反応式を組み合わせ、塩基性条件に合わせて両辺の酸性の物質を OH⁻ で中和させます。<b>(1) CH₃CHO ＋ 2Cu²⁺ ＋ 5OH⁻ → CH₃COO⁻ ＋ Cu₂O ＋ 3H₂O</b>。<b>(2) CH₃CHO ＋ 2[Ag(NH₃)₂]⁺ ＋ 3OH⁻ → CH₃COO⁻ ＋ 2Ag ＋ 2H₂O ＋ 4NH₃</b>。どちらも塩基性なので、右辺のカルボン酸は中和されて <b>CH₃COO⁻</b> の形になります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.aldehyde-oxidation,org.carbonyl.silver-mirror,org.carbonyl.fehling,org.carbonyl.reduction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アルデヒドは酸化されやすく、酸化されるとカルボン酸になる。自身が酸化されやすいぶん相手を還元する＝還元性を示す。</li><li>アルデヒドにアンモニア性硝酸銀水溶液を加えて温めると、銀イオンが還元されて銀が器壁に鏡のように析出する（銀鏡反応）。</li><li>還元性を示す物質にフェーリング液を加えて加熱すると、銅(II)イオンが還元されて酸化銅(I) Cu₂O の赤色沈殿が生じる。アルデヒドの検出に使うが、陽性になるのはアルデヒドだけではない。</li><li>還元はアルコールの酸化を逆にたどる反応で、アルデヒドからは第一級アルコールが、ケトンからは第二級アルコールが得られる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.aldehyde-oxidation,org.carbonyl.silver-mirror,org.carbonyl.fehling,org.carbonyl.reduction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-each"><h4 class="ref-sec-h">ホルムアルデヒドとアセトアルデヒド</h4><p class="ref-sec-lead">アルデヒドで各論として出るのはこの2つ。どちらも「どうやってつくるか」が問われます。</p></section>
 <p class="ref-p"><b>ホルムアルデヒド HCHO</b> は無色で刺激臭のある<b>気体</b>で、水によく溶けます。その約37パーセント水溶液が<b>ホルマリン</b>で、消毒剤や防腐剤に使われます。シックハウス症候群の原因物質になることについて言及されることもあります。</p>
 <p class="ref-p">ホルムアルデヒドは、1級アルコールであるメタノールを酸化してつくります。空気中で銅線を加熱すると黒色の酸化銅(II) ができ、熱いうちにメタノールの蒸気に触れさせるとホルムアルデヒドが生じます。</p>
@@ -998,7 +1016,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/ketone/">還元性を示さないほうのカルボニル化合物（ケトン）はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/iodoform/">アセトアルデヒドだけが示す反応 —— ヨードホルム反応はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">ホルミル基・カルボニル基など、官能基そのものの一覧はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.formaldehyde,org.carbonyl.formaldehyde-prep,org.carbonyl.acetaldehyde-prep&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>ホルムアルデヒド HCHO は無色・刺激臭の気体で、水によく溶ける。水溶液はホルマリンといい、生物標本の防腐剤に使う。</li><li>ホルムアルデヒドはメタノール（第一級アルコール）の酸化でつくる。熱した銅を触媒として空気中の酸素で酸化する。</li><li>アセトアルデヒドは、実験室ではエタノールの酸化、工業的にはエチレンを塩化パラジウム(II)・塩化銅(II)を触媒として酸素で酸化してつくる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.carbonyl.formaldehyde,org.carbonyl.formaldehyde-prep,org.carbonyl.acetaldehyde-prep&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 </div>
 </div>
 
@@ -1122,6 +1140,7 @@ window.addEventListener('message', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

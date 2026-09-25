@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">鉄の製錬（溶鉱炉と転炉）、単体と酸の反応、Fe²⁺ と Fe³⁺ の色・沈殿・検出反応の見分け方、還元剤としての Fe²⁺ のまとめです。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">金属元素</span><span class="unit-label">鉄</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-smelting" data-ref-anchor="smelting">鉄の製錬 —— 溶鉱炉と転炉</a></li><li><a href="#ref-sec-element" data-ref-anchor="element">単体 —— 希酸に溶けると Fe²⁺</a></li><li><a href="#ref-sec-ions" data-ref-anchor="ions">Fe²⁺ と Fe³⁺ の見分け方</a></li><li><a href="#ref-sec-reductant" data-ref-anchor="reductant">Fe²⁺ は還元剤 —— 酸化されて Fe³⁺ になる</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Fe₂O₃ ＋ 3CO</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Fe ＋ 3CO₂</span></div><p class="ref-note">CO が還元剤。途中の Fe₃O₄・FeO を経る段ごとの式は覚えなくて構いません。</p></div>
 <p class="ref-p">溶鉱炉から出る鉄を<b>銑鉄</b>といい、炭素を約4％含むので硬くてもろい性質があります。銑鉄を<b>転炉</b>に移して酸素を吹き込み、炭素を燃やして減らしたものが<b>鋼</b>（炭素 2％以下）で、ねばり強く、建材などに使われます。鉄にクロム Cr やニッケル Ni を混ぜた合金が<b>ステンレス鋼</b>で、さびにくくなります。</p>
 <p class="ref-p"><b>「鉄鉱石を還元するのは CO」「銑鉄は炭素が多く、転炉で鋼にする」の2点は必ず覚えてください。</b>段ごとの還元の式は、問題文に誘導があるのがふつうです。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.iron-smelting,inorg.metal.iron-ore&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>溶鉱炉では鉄鉱石（Fe₂O₃ など）をコークスからできた CO で還元して銑鉄をつくり、転炉で酸素を吹き込んで炭素を減らし鋼にする。</li><li>鉄は周期表の8族の遷移元素で、地殻中ではアルミニウムに次いで多い金属であり、化合物の中では ＋2 と ＋3 の酸化数をとる。鉄鉱石には赤鉄鉱（主成分 Fe₂O₃）や磁鉄鉱（主成分 Fe₃O₄）がある。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.iron-smelting,inorg.metal.iron-ore&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-element"><h4 class="ref-sec-h">単体 —— 希酸に溶けると Fe²⁺</h4><p class="ref-sec-lead">鉄は希塩酸・希硫酸に溶けて水素を出し、Fe³⁺ ではなく Fe²⁺ になります。濃硝酸では不動態になります。</p></section>
 <p class="ref-p">鉄はイオン化傾向が H₂ より大きいので、希塩酸や希硫酸に溶けて水素を発生します。このとき生じるのは <b>鉄(Ⅱ)イオン Fe²⁺</b> です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Fe ＋ H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">FeSO₄ ＋ H₂</span></div><p class="ref-note">希硫酸。塩酸なら Fe ＋ 2HCl → FeCl₂ ＋ H₂。</p></div>
@@ -956,7 +974,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">鉄は<b>濃硝酸には溶けません</b>。表面に緻密な酸化被膜ができる<b>不動態</b>になるためです（Al・Ni も同じ）。</p>
 <p class="ref-p">鉄は湿った空気中で酸化されて、<b>赤さび</b>（主成分は酸化水酸化鉄(Ⅲ) や Fe₂O₃ の水和物）を生じます。一方、鉄を空気中で強く熱すると、表面に黒色の Fe₃O₄（<b>黒さび</b>）ができます。黒さびは内部を守るので、鉄器の表面処理に使われます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/life-metal/">鉄を亜鉛やスズでめっきする理由（トタン・ブリキ）は暮らしの中の金属のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.iron-dilute-acid,inorg.metal.iron-rust,inorg.metal.fe3-oxidant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>鉄は希塩酸・希硫酸に溶けて水素を発生し、Fe³⁺ ではなく Fe²⁺ になる（Fe ＋ H₂SO₄ → FeSO₄ ＋ H₂）。</li><li>鉄は湿った空気中で酸化されて赤さび（主成分は酸化水酸化鉄(Ⅲ) や Fe₂O₃ の水和物）を生じ、空気中で強く熱すると表面に黒色の Fe₃O₄（黒さび）ができ、黒さびは内部を守るので鉄器の表面処理に使われる。</li><li>希塩酸・希硫酸の H⁺ は鉄を Fe²⁺ まで酸化する力しかなく、Fe²⁺ を Fe³⁺ にするには塩素・過酸化水素・硝酸などのもっと強い酸化剤が要る。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.iron-dilute-acid,inorg.metal.iron-rust,inorg.metal.fe3-oxidant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-ions"><h4 class="ref-sec-h">Fe²⁺ と Fe³⁺ の見分け方</h4><p class="ref-sec-lead">水溶液の色・水酸化物の色・3つの試薬（K₃[Fe(CN)₆]・K₄[Fe(CN)₆]・KSCN）で見分けます。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">Fe²⁺ と Fe³⁺ を見分ける</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">加えるもの</th><th style="text-align: left;">Fe²⁺（淡緑色の水溶液）</th><th style="text-align: left;">Fe³⁺（黄褐色の水溶液）</th></tr></thead><tbody><tr><td style="text-align: left;">NaOH 水溶液・アンモニア水</td><td style="text-align: left;">Fe(OH)₂ の<b>緑白色沈殿</b></td><td style="text-align: left;">FeO(OH) の<b>赤褐色沈殿</b></td></tr><tr><td style="text-align: left;">ヘキサシアニド鉄(Ⅲ)酸カリウム K₃[Fe(CN)₆]</td><td style="text-align: left;"><b>濃青色沈殿</b></td><td style="text-align: left;">褐色の溶液（沈殿しない）</td></tr><tr><td style="text-align: left;">ヘキサシアニド鉄(Ⅱ)酸カリウム K₄[Fe(CN)₆]</td><td style="text-align: left;">青白色沈殿</td><td style="text-align: left;"><b>濃青色沈殿</b></td></tr><tr><td style="text-align: left;">チオシアン酸カリウム KSCN</td><td style="text-align: left;">変化しない</td><td style="text-align: left;"><b>血赤色の溶液</b></td></tr><tr><td style="text-align: left;">硫化水素（酸性）</td><td style="text-align: left;">沈殿しない（塩基性なら FeS の黒色沈殿）</td><td style="text-align: left;">Fe²⁺ に還元され、S の淡黄色の濁り</td></tr></tbody></table></div>
 <p class="ref-p"><b>覚え方は「数字が違えば濃青色」です。</b>Fe²⁺ には鉄(Ⅲ)の K₃[Fe(CN)₆]、Fe³⁺ には鉄(Ⅱ)の K₄[Fe(CN)₆] を加えたときに濃青色沈殿ができます。KSCN で血赤色になるのは Fe³⁺ だけです。この3つの組は<b>必ず暗記してください。</b></p>
@@ -969,7 +987,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/muki/separation.html?from=reference&amp;page=iron">水溶液の色と沈殿で Fe³⁺ を見分ける</a></p>
 <h5 class="ref-h5">例題 —— Fe²⁺ と Fe³⁺ の見分け方</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q"><b>(1)</b> 鉄を希塩酸に溶かしたときの化学反応式を書け。<b>(2)</b> (1) の水溶液に水酸化ナトリウム水溶液を加えたときに生じる沈殿の化学式と色を答えよ。<b>(3)</b> ある水溶液にチオシアン酸カリウム水溶液を加えると血赤色になった。この水溶液に含まれる鉄のイオンを答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) Fe ＋ 2HCl → FeCl₂ ＋ H₂　(2) Fe(OH)₂、緑白色（Fe²⁺ なので、赤褐色ではありません）　(3) Fe³⁺</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.iron-ion-color,inorg.metal.iron-ion-test&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>Fe²⁺ の水溶液は淡緑色で塩基を加えると Fe(OH)₂ の緑白色沈殿、Fe³⁺ の水溶液は黄褐色で塩基を加えると FeO(OH) の赤褐色沈殿が生じる。</li><li>K₃[Fe(CN)₆] は Fe²⁺ と、K₄[Fe(CN)₆] は Fe³⁺ と濃青色沈殿をつくり、KSCN は Fe³⁺ と血赤色の溶液になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.iron-ion-color,inorg.metal.iron-ion-test&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-reductant"><h4 class="ref-sec-h">Fe²⁺ は還元剤 —— 酸化されて Fe³⁺ になる</h4><p class="ref-sec-lead">Fe²⁺ は e⁻ を1個出して Fe³⁺ になりやすく、過マンガン酸カリウムや二クロム酸カリウムの相手（還元剤）としてよく登場します。</p></section>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Fe²⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Fe³⁺ ＋ e⁻</span></div><p class="ref-note">還元剤の半反応式。e⁻ は1個です。</p></div>
 <p class="ref-p">Fe²⁺ の水溶液が空気中で黄褐色に変わっていくのは、溶けている酸素で Fe³⁺ に酸化されるためです。</p>
@@ -982,7 +1000,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/redox-equation/">半反応式から全体の式を組み立てる手順は酸化還元反応式のページへ</a></p>
 <h5 class="ref-h5">例題 —— Fe²⁺ は還元剤</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">硫酸酸性の二クロム酸カリウム水溶液と硫酸鉄(Ⅱ) 水溶液の反応を、イオン反応式で書け。また、Cr₂O₇²⁻ 0.010 mol とちょうど反応する Fe²⁺ は何 mol か。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O と、Fe²⁺ → Fe³⁺ ＋ e⁻ を6倍して足すと、<b>Cr₂O₇²⁻ ＋ 6Fe²⁺ ＋ 14H⁺ → 2Cr³⁺ ＋ 6Fe³⁺ ＋ 7H₂O</b> です。係数の比 ＝ mol の比なので、Cr₂O₇²⁻ : Fe²⁺ ＝ 1 : 6。Fe²⁺ は 0.010 × 6 ＝ <b>0.060 mol</b> です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.iron-fe2-reductant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>Fe²⁺ は電子を1個出して Fe³⁺ になりやすい還元剤で（Fe²⁺ → Fe³⁺ ＋ e⁻）、Cr₂O₇²⁻ 1個（e⁻ を6個受け取る）とは Fe²⁺ 6個が反応する。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.iron-fe2-reductant&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">製錬の還元剤、Fe と希硫酸、Fe²⁺・Fe³⁺ の見分け方の表、Fe²⁺ の半反応式です。</p></section>
 <h5 class="ref-h5">必ず覚えるもの（★★★）</h5>
 <ul class="ref-list"><li>鉄鉱石を還元するのは CO。銑鉄 → 転炉 → 鋼</li><li>Fe ＋ H₂SO₄ → FeSO₄ ＋ H₂（Fe²⁺ になる）</li><li>Fe²⁺ 淡緑色・Fe³⁺ 黄褐色、Fe(OH)₂ 緑白色・FeO(OH) 赤褐色</li><li>K₃[Fe(CN)₆] は Fe²⁺ と、K₄[Fe(CN)₆] は Fe³⁺ と濃青色沈殿。KSCN は Fe³⁺ で血赤色</li><li>Fe²⁺ → Fe³⁺ ＋ e⁻</li></ul>
@@ -1090,6 +1108,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

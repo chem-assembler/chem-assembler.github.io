@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">同じ分子式でも別の化合物があるので、有機化合物は分子式ではなく構造式や示性式で表すことが多くなります。分子式・構造式・簡略化した構造式・示性式の4つを酢酸とギ酸メチルで並べて比べ、示性式の書き方と使い分けまでを1枚にまとめました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">有機化合物のきほん</span><span class="unit-label">有機化合物の表し方</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-kinds" data-ref-anchor="kinds">4つの表し方を並べる</a></li><li><a href="#ref-sec-valence" data-ref-anchor="valence">構造式は原子価を確かめながら書く</a></li><li><a href="#ref-sec-rational" data-ref-anchor="rational">示性式の書き方</a></li><li><a href="#ref-sec-use" data-ref-anchor="use">どれをいつ使うか</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -952,7 +970,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>示性式</b>は、構造式の特徴を残しながら、<b>文章の中でも使えるように1行で表した</b>化学式です。酢酸は CH₃COOH、ギ酸メチルは HCOOCH₃ で、どちらも<b>官能基（−COOH・−COO−）がそのまま読める</b>ように書きます。示性式は分子式と違って、<b>2つの化合物を区別できます。</b></p>
 <p class="ref-p">なお、元素分析で求める<b>組成式</b>は、原子の数を<b>最も簡単な整数比</b>で表した式です。酢酸もギ酸メチルも組成式は CH₂O になります。組成式から分子式を出す手順は、元素分析のページで扱います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/elemental-analysis/">組成式から分子式を求める手順はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.formula-kinds&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>分子式は原子の種類と数、構造式は原子どうしの結合を価標ですべて表した式、簡略化した構造式は価標の一部（主に H につながる価標）を省いた式、示性式は官能基がわかるように構造式を1行にまとめた式。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.formula-kinds&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-valence"><h4 class="ref-sec-h">構造式は原子価を確かめながら書く</h4><p class="ref-sec-lead">C は4本、H は1本、O は2本、N は3本、Cl は1本。構造式を書いたら、どの原子からも決まった数の価標が出ているかを確かめます。</p></section>
 <p class="ref-p">構造式を書くときは、<b>必ず原子の結合の手の数（原子価）を確かめながら</b>書きます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">有機化合物によく出てくる元素の原子価</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">元素</th><th style="text-align: center;">C</th><th style="text-align: center;">H</th><th style="text-align: center;">O</th><th style="text-align: center;">N</th><th style="text-align: center;">Cl</th></tr></thead><tbody><tr><td style="text-align: left;"><b>原子価</b></td><td style="text-align: center;">4</td><td style="text-align: center;">1</td><td style="text-align: center;">2</td><td style="text-align: center;">3</td><td style="text-align: center;">1</td></tr></tbody></table></div>
@@ -960,7 +978,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">慣れないうちは、<b>省略せずにすべての価標を書く</b>ようにしましょう。<b>示性式を使いこなすには、その裏にある構造式が見えている必要があります。</b>原子価の確認を怠って示性式だけで覚えようとすると、正しい化学式を書く力が身に付きません。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/covalent-bond/">原子価と、構造式の書き方の基本（手と手をつなぐパズル）はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/assembler/?open=free">パズルでみる有機化学で、原子価どおりに手をつないで分子を組み立てる</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.structural-formula-valence&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>構造式は原子価（C 4・H 1・O 2・N 3・Cl 1）を確かめながら書き、二重結合 C=O は価標2本分と数える。アセトアルデヒド CH₃CHO の −CHO は、炭素原子に H 1個と O が二重結合で付いた形で、どの原子からも原子価の数だけ価標が出ている。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.structural-formula-valence&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-rational"><h4 class="ref-sec-h">示性式の書き方</h4><p class="ref-sec-lead">炭素骨格の部分はまとめて書き、官能基はそのまま見えるように書く。枝分かれした部分は（ ）でくくります。</p></section>
 <p class="ref-p">示性式は、次の2つを守って書きます。</p>
 <ol class="ref-list"><li><b>官能基はまとめず、そのまま書く。</b>−OH・−COOH・−CHO・−COO− などが読めるようにします（エタノール C₂H₅OH、酢酸 CH₃COOH）</li><li><b>枝分かれした部分は（ ）でくくって、付け根の原子のすぐ後ろに書く。</b>（2-プロパノール CH₃CH(OH)CH₃、2-メチルプロパン CH₃CH(CH₃)CH₃）</li></ol>
@@ -974,14 +992,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物の分子式と示性式を書け。<b>(1) エタノール　(2) ジメチルエーテル　(3) 酢酸　(4) ギ酸メチル</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 分子式 C₂H₆O、示性式 C₂H₅OH　(2) 分子式 C₂H₆O、示性式 CH₃OCH₃　(3) 分子式 C₂H₄O₂、示性式 CH₃COOH　(4) 分子式 C₂H₄O₂、示性式 HCOOCH₃。(1) と (2)、(3) と (4) はそれぞれ分子式が同じですが、示性式では区別できます。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の示性式で表される化合物の分子式を書き、分子式が同じものの組をすべて答えよ。<b>(ア) CH₃CH₂CH₂OH　(イ) CH₃CH(OH)CH₃　(ウ) CH₃OCH₂CH₃　(エ) CH₃COCH₃</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(ア) C₃H₈O　(イ) C₃H₈O　(ウ) C₃H₈O　(エ) C₃H₆O。分子式が同じ組は <b>(ア)・(イ)・(ウ)</b> の3つです。示性式を分子式に直すときは、C・H・O を元素ごとに数えます。(エ) は C=O をもつぶん H が2個少なくなっています。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">示性式 CH₃CHO で表される化合物（アセトアルデヒド）の構造式を、すべての価標を書いて表せ。書いたあと、各原子から出ている価標の数が原子価と合っているかを確かめよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>炭素原子2個を単結合でつなぎ、<b>左の C には H を3個</b>、<b>右の C には H を1個と O を二重結合で</b>付けます。数えると、左の C は H 3本と C 1本で4本、右の C は C 1本・H 1本・C=O の2本で4本、O は C=O の2本、H はどれも1本で、すべて原子価と合います。<b>−CHO は「C に H と =O が付いている」</b>と読みます。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.rational-formula,org.ali.formula-same-molecular,org.ali.rational-to-molecular&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>示性式は官能基をまとめずにそのまま書き（エタノール C₂H₅OH・酢酸 CH₃COOH・ギ酸メチル HCOOCH₃）、枝分かれした部分は（ ）でくくって付け根の原子の後ろに書く（2-プロパノール CH₃CH(OH)CH₃）。</li><li>分子式が同じでも別の化合物がある（C₂H₆O はエタノール C₂H₅OH とジメチルエーテル CH₃OCH₃）。分子式では区別できず、示性式や構造式なら区別できる。</li><li>示性式を分子式に直すには、（ ）の中も含めて C・H・O を元素ごとに数える。CH₃CH₂CH₂OH・CH₃CH(OH)CH₃・CH₃OCH₂CH₃ はどれも C₃H₈O で、分子式が同じ（互いに異性体）である。CH₃COCH₃ は C=O をもつぶん H が2個少ない C₃H₆O である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.rational-formula,org.ali.formula-same-molecular,org.ali.rational-to-molecular&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-use"><h4 class="ref-sec-h">どれをいつ使うか</h4><p class="ref-sec-lead">分子式は「原子の数」、示性式は「文中・反応式」、構造式は「つながり方を説明するとき」。場面で使い分けます。</p></section>
 <p class="ref-p">4つの表し方は、場面によって使い分けます。</p>
 <ul class="ref-list"><li><b>分子式</b> … 原子の数だけが要るとき。元素分析で分子量から決めるのは、まず分子式です</li><li><b>示性式</b> … 文章の中や化学反応式の中。官能基が見えるので、どんな反応をするかが読めます</li><li><b>構造式・簡略化した構造式</b> … 原子のつながり方そのものを説明するとき。異性体を書き分けるときや、反応でどの結合が切れるかを示すとき</li></ul>
 <p class="ref-p"><b>分子式が同じで構造が異なる化合物</b>を、たがいに<b>異性体</b>といいます。酢酸とギ酸メチル、エタノールとジメチルエーテルは、どちらも異性体の組です。異性体がたくさんあるからこそ、有機化合物は構造式や示性式で表す必要があるのです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane-isomers/">異性体の書き出し方はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">示性式で読み取る官能基の一覧はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.formula-use&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>分子式は原子の数だけが要るとき（元素分析で分子量から決めるのはまず分子式）、示性式は文章や化学反応式の中（官能基が見えるので反応が読める）、構造式は原子のつながり方を説明するとき（異性体を書き分ける・反応でどの結合が切れるかを示す）に使う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.ali.formula-use&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1088,6 +1106,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">アルコールの分け方は価数と級の2つです。価数は1分子がもつ −OH の数、級は −OH が付いた炭素に結合している炭素の数。数え方と、2つが別の軸であることを1枚にまとめました。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">脂肪族化合物</span><span class="unit-label">アルコールとエーテル</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（2節）</summary><ul><li><a href="#ref-sec-valence" data-ref-anchor="valence">アルコールの価数</a></li><li><a href="#ref-sec-class" data-ref-anchor="class">アルコールの級</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -950,7 +968,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>エチレングリコールとグリセリンは、慣用名と構造の両方を必ず暗記してください。</b>高校化学で出てくる多価アルコールはこの2つだけなので、覚える量は多くありません。一方、1,2-エタンジオール・1,2,3-プロパントリオールという規則どおりの名称のほうは、命名の手順から自分でつくれるので<b>覚える必要はありません</b>。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/fat/">グリセリンに高級脂肪酸が3つ結合してできる油脂はこちら</a></p>
 <p class="ref-p">炭素数の少ないアルコールを低級アルコール、多いものを高級アルコールという言い方もありますが、高校化学で扱うのは低級アルコールばかりです。<b>この2語は、そういう言い方があると知っていれば十分で、覚える必要はありません。</b></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.valence,org.alcohol.polyol&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アルコールの価数＝1分子中のヒドロキシ基の数。</li><li>代表的な2価アルコール＝エチレングリコール、3価＝グリセリン。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.valence,org.alcohol.polyol&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-class"><h4 class="ref-sec-h">アルコールの級</h4><p class="ref-sec-lead">−OH が付いた炭素のとなりに、ほかの炭素がいくつあるかで決まります。0個か1個で第1級、2個で第2級、3個で第3級。</p></section>
 <p class="ref-p">「ヒドロキシ基 −OH が結合している炭素原子に結合している炭素原子の数」を<b>アルコールの級</b>といいます。0個または1個なら<b>第1級</b>、2個なら<b>第2級</b>、3個なら<b>第3級</b>です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-class.png?h=78ba7b8b" alt="アルコールの級の図。ヒドロキシ基が付いた炭素を丸で囲み、その炭素に結合している炭素が1個なら1級、2個なら2級、3個なら3級と示している" loading="lazy"><figcaption class="ref-figure-cap">丸で囲んだ炭素に、<b>ほかの炭素がいくつ結合しているか</b>を数えるだけです。</figcaption></figure>
@@ -973,7 +991,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の4つのアルコールについて、<b>価数と級をそれぞれ答えよ。</b>（3価のものは −OH ごとに級を答えよ）<b>(1) 1-ブタノール CH₃CH₂CH₂CH₂OH　(2) 2-メチル-2-プロパノール (CH₃)₃COH　(3) エチレングリコール CH₂(OH)CH₂(OH)　(4) グリセリン CH₂(OH)CH(OH)CH₂(OH)</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(1) 1価の第1級</b>（−OH が1個。その炭素のとなりの炭素は1個）。<b>(2) 1価の第3級</b>（−OH が1個。その炭素のとなりの炭素は3個）。<b>(3) 2価で、2つとも第1級</b>（−OH が2個。どちらの炭素もとなりの炭素は1個）。<b>(4) 3価で、両端の2つが第1級、まん中が第2級</b>（−OH が3個。両端の炭素はとなりの炭素が1個、まん中の炭素はとなりの炭素が2個）。価数は −OH の個数、級は −OH が付いた炭素のとなりの炭素の個数で、<b>数える対象が違う</b>ことを確かめてください。</p></div></details></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/iodoform/">級と関わるもう1つの反応（ヨードホルム反応を示すのは第1級のエタノールと第2級の一部）はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">ヒドロキシ基そのものの位置づけ（同じ −OH でもベンゼン環に付けばフェノール類）はこちら</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.class&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>アルコールの級＝ヒドロキシ基が結合した炭素原子に結合している炭素原子の数（0〜1個=第一級、2個=第二級、3個=第三級）。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.alcohol.class&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1080,6 +1098,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

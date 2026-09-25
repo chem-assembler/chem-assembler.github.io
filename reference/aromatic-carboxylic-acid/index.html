@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">安息香酸とサリチル酸のまとめ。サリチル酸はカルボン酸でもありフェノール類でもあるので、無水酢酸なら −OH が、メタノールなら −COOH が反応して、2つの医薬品に分かれます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">芳香族化合物</span><span class="unit-label">芳香族カルボン酸</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（3節）</summary><ul><li><a href="#ref-sec-benzoic" data-ref-anchor="benzoic">安息香酸</a></li><li><a href="#ref-sec-salicylic" data-ref-anchor="salicylic">サリチル酸 —— 2つの性質をもつ</a></li><li><a href="#ref-sec-branch" data-ref-anchor="branch">どちらの基が反応するかで行き先が分かれる</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -948,7 +966,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅COOH ＋ NaHCO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅COONa ＋ H₂O ＋ CO₂↑</span></div><p class="ref-note">安息香酸ナトリウムができます。フェノールはこの反応を起こさないので、ここがフェノールとの見分けどころです。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">カルボン酸に共通の性質（炭酸より強い・弱酸の遊離）はカルボン酸のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-homologs/">トルエンを酸化して安息香酸をつくる（側鎖の酸化）</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.benzoic&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>安息香酸 C₆H₅COOH はベンゼン環にカルボキシ基が直接結合した化合物。白色の結晶で弱酸性を示し、防腐剤に使われる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.benzoic&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-salicylic"><h4 class="ref-sec-h">サリチル酸 —— 2つの性質をもつ</h4><p class="ref-sec-lead">−OH と −COOH が o の位置に並んだ化合物。1つの分子が、カルボン酸としてもフェノール類としてもふるまいます。</p></section>
 <p class="ref-p"><b>サリチル酸 C₆H₄(OH)COOH</b> は、ベンゼン環に<b>ヒドロキシ基 −OH とカルボキシ基 −COOH が隣り合って（o の位置に）</b>付いた化合物です。そのため、<b>カルボン酸の性質とフェノール類の性質を両方</b>示します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-salicylic.png?h=51423378" alt="サリチル酸の構造式。ベンゼン環の隣り合う2個の炭素に、ヒドロキシ基とカルボキシ基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>サリチル酸</b>。−OH（フェノール類の部分）と −COOH（カルボン酸の部分）が隣り合っています。</figcaption></figure>
@@ -958,7 +976,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— サリチル酸</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">サリチル酸の −OH と −COOH が隣り合っている（o の位置にある）ことは、融点にどう効くか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>−OH と −COOH が<b>分子内で水素結合</b>をつくるので、そのぶん分子どうしの水素結合が減り、p-ヒドロキシ安息香酸（p 体）より<b>融点が低く</b>なります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.salicylic,org.aroN.aromatic-acid-tests&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>サリチル酸は、ベンゼン環の隣り合う位置（o-）にヒドロキシ基とカルボキシ基が1つずつ付いた化合物。そのため、カルボン酸としてもフェノール類としてもふるまう。</li><li>炭酸水素ナトリウム水溶液には、−COOH をもつ安息香酸とサリチル酸が二酸化炭素を出して溶け、フェノールは反応しない。塩化鉄(III) 水溶液では、ベンゼン環に付いた −OH をもつフェノールとサリチル酸が呈色し、安息香酸は呈色しない。両方に応じるのはサリチル酸だけである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.salicylic,org.aroN.aromatic-acid-tests&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-branch"><h4 class="ref-sec-h">どちらの基が反応するかで行き先が分かれる</h4><p class="ref-sec-lead">無水酢酸では −OH がアセチル化されてアセチルサリチル酸に、メタノールでは −COOH がエステル化されてサリチル酸メチルになります。</p></section>
 <p class="ref-p">サリチル酸は反応できる基を2つもつので、<b>相手の試薬によって、反応する基が変わります</b>。どちらの場合もエステルができますが、エステルになった基が違います。</p>
 <p class="ref-p">サリチル酸に<b>無水酢酸</b>を作用させると、<b>−OH のほう</b>がアセチル化されて、<b>アセチルサリチル酸</b>になります。<b>アスピリン</b>の名で<b>解熱鎮痛剤</b>に使われます。</p>
@@ -975,7 +993,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">サリチル酸に無水酢酸を作用させて得られる化合物は、塩化鉄(III) 水溶液で呈色するか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>呈色しません。</b>アセチル化されたのは −OH のほうなので、フェノール性の −OH が残っていないためです。逆に、サリチル酸メチルは −OH が残っているので呈色します。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">サリチル酸メチルとアセチルサリチル酸を、炭酸水素ナトリウム水溶液で見分けられるか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>見分けられます。</b>アセチルサリチル酸は −COOH が残っているので CO₂ を出して溶けます。サリチル酸メチルは −COOH がエステルになっているので反応しません。</p></div></details></div>
 <div class="ref-example"><h4>例題：サリチル酸 をつくる</h4><p class="ref-p" style="margin: 0px;">サリチル酸を組んで、−OH と −COOH が隣り合っていることを手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.aroN.benzoic&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=aromatic-carboxylic-acid">▶ サリチル酸を組んでみる</a><p class="ref-note">2つの基を向かい合う位置に付けると、別の化合物（p-ヒドロキシ安息香酸）になります。</p></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.aspirin,org.aroN.methyl-salicylate,org.aroN.salicylic-derivatives-distinguish&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>サリチル酸に無水酢酸を作用させるとヒドロキシ基がアセチル化され、アセチルサリチル酸（アスピリン）が生じる。解熱鎮痛薬。</li><li>サリチル酸にメタノールと濃硫酸を作用させるとカルボキシ基がエステル化され、サリチル酸メチルが生じる。消炎鎮痛の塗り薬に使う。</li><li>アセチルサリチル酸はサリチル酸の −OH がアセチル化されて −COOH が残るので、炭酸水素ナトリウム水溶液で二酸化炭素を出して溶け、塩化鉄(III) 水溶液では呈色しない。サリチル酸メチルは −COOH がエステル化されて −OH が残るので、塩化鉄(III) 水溶液で呈色し、炭酸水素ナトリウム水溶液とは反応しない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=org.aroN.aspirin,org.aroN.methyl-salicylate,org.aroN.salicylic-derivatives-distinguish&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 </div>
 </div>
 
@@ -1099,6 +1117,7 @@ window.addEventListener('message', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。

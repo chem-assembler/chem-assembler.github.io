@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">半透膜を通って溶媒が溶液側へ移るのを止める圧力が浸透圧。ΠV ＝ nRT（Π ＝ cRT）は気体と同じ式なので、準標準状態（1 mol・24.9 L・1.0 × 10⁵ Pa）から比例・反比例で解ける。液面差の換算と分子量の決定まで。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">溶液</span><span class="unit-label">希薄溶液の性質</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-osmosis" data-ref-anchor="osmosis">半透膜と浸透</a></li><li><a href="#ref-sec-van-t-hoff" data-ref-anchor="van-t-hoff">ΠV ＝ nRT —— 気体と同じ式</a></li><li><a href="#ref-sec-proportion" data-ref-anchor="proportion">準標準状態を基準に比例で解く</a></li><li><a href="#ref-sec-height" data-ref-anchor="height">液面差と浸透圧</a></li><li><a href="#ref-sec-molar-mass" data-ref-anchor="molar-mass">浸透圧から分子量を求める</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -949,7 +967,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">この液面の差をなくすには、溶液側の液面に余分な圧力を加えなければなりません。<b>この圧力を溶液の浸透圧</b>といい、Π（パイ）で表します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/osmotic-pressure-utube.png?h=9772806c" alt="半透膜で真ん中を仕切った U 字管を3つ並べた図。左は純水、右は溶質の粒を描いた溶液。①は液面が同じ高さ、②は溶液側の液面が上がって差がつき、③は溶液側にピストンで圧力 Π を加えて液面をそろえている" loading="lazy"><figcaption class="ref-figure-cap">浸透圧は「溶液が吸い上げる力」ではなく、<b>上がろうとするのを押さえ込むのに要る圧力</b>です。③ のように液面をそろえたときの圧力で測ります。</figcaption></figure>
 <p class="ref-p">水が溶液側へ移るのは、半透膜の両側で<b>純水側から溶液側へ通り抜ける水分子のほうが、逆向きより多い</b>ためです。溶液側では、膜にぶつかる粒子の一部が通り抜けられない溶質なので、そのぶん水分子が出ていきにくくなります。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.solution.osmosis,theo.solution.semipermeable,theo.solution.osmosis-direction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>半透膜で純水と溶液を仕切ると水が溶液側へ移り（浸透）、それを止めて液面をそろえるのに溶液側へ加える圧力が浸透圧である。</li><li>溶液中のある成分（水のような小さい分子）は通し、ほかの成分（デンプンのような大きい分子）は通さない膜を半透膜といい、セロハン膜がその例である。</li><li>半透膜で純水と溶液を仕切ると水が溶液側へ移るのは、溶液側では膜にぶつかる粒子の一部が通り抜けられない溶質なので、純水側から溶液側へ通り抜ける水分子のほうが逆向きより多くなるためである。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.solution.osmosis,theo.solution.semipermeable,theo.solution.osmosis-direction&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（3問）">✏️ この節の一問一答（3問）</button></div></div>
 <section class="ref-sec" id="ref-sec-van-t-hoff"><h4 class="ref-sec-h">ΠV ＝ nRT —— 気体と同じ式</h4><p class="ref-sec-lead">希薄溶液の浸透圧 Π は、溶液の体積 V、溶質の物質量 n、絶対温度 T を使って ΠV ＝ nRT と書けます。R は気体定数そのものです。</p></section>
 <p class="ref-p">希薄溶液の浸透圧 Π〔Pa〕は、溶液の体積 V〔L〕、溶質の物質量 n〔mol〕、絶対温度 T〔K〕を使って、次の式で表されます。これを<b>ファントホッフの法則</b>といいます。</p>
 <ul class="ref-list"><li><b>ΠV ＝ nRT</b>　（R ＝ 8.3 × 10³ Pa·L/(K·mol)、気体定数と同じ値）</li><li>両辺を V で割ると、<b>Π ＝ (n/V)RT ＝ cRT</b>　（c：溶液のモル濃度 mol/L）</li></ul>
@@ -957,7 +975,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>気体の状態方程式と同じ形になるのは、溶液の中の溶質の粒子を、容器の中の気体分子と同じように見なせるため</b>です。気体では容器の壁にぶつかる分子が圧力をつくり、溶液では半透膜を通り抜けられない溶質の粒子が浸透圧をつくります。</p>
 <p class="ref-p"><b>「浸透圧は気体と同じ式」と覚えておけば、新しく覚えることはありません。</b>濃度は質量モル濃度ではなく、<b>モル濃度（溶液 1 L あたり）</b>を使うことだけ注意しましょう。沸点上昇・凝固点降下とは濃度の種類が違います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/colligative/">沸点上昇・凝固点降下（質量モル濃度を使う）へ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.solution.van-t-hoff,theo.solution.concentration-kind&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>希薄溶液の浸透圧は ΠV ＝ nRT（Π ＝ cRT）で表され、溶質粒子のモル濃度と絶対温度に比例し、R は気体定数と同じ値である（ファントホッフの法則）。</li><li>浸透圧 Π ＝ cRT の c はモル濃度（溶液 1 L あたりの溶質の mol）で、沸点上昇・凝固点降下の Δt ＝ K·m の m は質量モル濃度（溶媒 1 kg あたりの溶質の mol）である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.solution.van-t-hoff,theo.solution.concentration-kind&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-proportion"><h4 class="ref-sec-h">準標準状態を基準に比例で解く</h4><p class="ref-sec-lead">気体と同じく、「300 K・1.0 × 10⁵ Pa で 1 mol が 24.9 L」を基準にすれば、浸透圧も公式に代入せずに比例・反比例で求められます。</p></section>
 <p class="ref-p">気体のページでは、状態方程式に代入するかわりに、<b>300 K・1.0 × 10⁵ Pa で 1 mol が 24.9 L</b>という基準から、比例と反比例で答えを出しました。浸透圧も同じ式なので、同じ基準が使えます。</p>
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">「準標準状態」（300 K・1.0 × 10⁵ Pa・24.9 L）は、化学レンズでの呼び名です。教科書の用語ではないので、答案には書かないでください。</p></div>
@@ -984,7 +1002,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>高分子の分子量は浸透圧で求める、と覚えておきましょう。</b></p>
 <h5 class="ref-h5">例題 —— 浸透圧から分子量を求める</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">あるタンパク質 2.0 g を水に溶かして 100 mL にした水溶液の浸透圧は、27 ℃ で 830 Pa であった。このタンパク質の分子量を有効数字2桁で求めよ。タンパク質は非電解質とし、気体定数は 8.3 × 10³ Pa·L/(K·mol) とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>準標準状態（1 mol・24.9 L・1.0 × 10⁵ Pa・300 K）から n を求めます。Π が 1.0 × 10⁵ → 830 Pa で ×8.3 × 10⁻³（比）、V が 24.9 → 0.10 L で ×0.10/24.9（比。n と V は＝の逆側）。n ＝ 1 × 8.3 × 10⁻³ × 0.10/24.9。24.9 ＝ 8.3 × 3 で約分すると n ＝ 1.0 × 10⁻⁴/3 ≒ 3.3 × 10⁻⁵ mol。1 mol は 2.0 ÷ (1.0 × 10⁻⁴/3) ＝ 2.0 × 3 × 10⁴ ＝ 6.0 × 10⁴ g。分子量は <b>6.0 × 10⁴</b>。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.solution.osmotic-molar-mass&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>高分子の分子量は、凝固点降下より大きく測りやすい浸透圧から求め、液面差の液柱の圧力は浸透圧とつり合う。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.solution.osmotic-molar-mass&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1088,6 +1106,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

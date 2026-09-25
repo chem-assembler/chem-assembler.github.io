@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">2族の単体の反応と、カルシウムの化合物（石灰石・生石灰・消石灰・セッコウ）のつながり、硫酸塩と炭酸塩の沈殿のまとめです。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">金属元素</span><span class="unit-label">2族元素</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-element" data-ref-anchor="element">単体の性質 —— Mg と Ca・Sr・Ba の違い</a></li><li><a href="#ref-sec-calcium" data-ref-anchor="calcium">カルシウムの化合物 —— 石灰石から始めて石灰石にもどる</a></li><li><a href="#ref-sec-sulfate" data-ref-anchor="sulfate">硫酸塩と炭酸塩 —— 沈殿でイオンを見分ける</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -955,7 +973,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2Mg ＋ O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2MgO</span></div></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Mg ＋ 2HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">MgCl₂ ＋ H₂</span></div><p class="ref-note">イオン化傾向が H₂ より大きい金属と、酸の H⁺ の反応です。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/ionization-tendency/">水や酸と反応する金属の境目はイオン化傾向のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.alkaline-earth-def,inorg.metal.mg-vs-ca&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>2族の元素（Be・Mg・Ca・Sr・Ba・Ra）はすべてアルカリ土類金属とよばれ、原子は価電子を2個もち、2価の陽イオンになりやすい。</li><li>Mg は Ca・Sr・Ba と違い、常温の水とはほとんど反応せず（熱水と反応）、炎色反応を示さず、水酸化物は弱塩基で、硫酸塩は水に溶ける。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.alkaline-earth-def,inorg.metal.mg-vs-ca&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-calcium"><h4 class="ref-sec-h">カルシウムの化合物 —— 石灰石から始めて石灰石にもどる</h4><p class="ref-sec-lead">CaCO₃ → CaO → Ca(OH)₂ → CaCO₃ → Ca(HCO₃)₂ と、CO₂ と水の出入りだけで次々に変わります。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">カルシウムの化合物の呼び名</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化学式</th><th style="text-align: left;">名前</th><th style="text-align: left;">別名・主な形</th><th style="text-align: left;">性質・用途</th></tr></thead><tbody><tr><td style="text-align: left;">CaCO₃</td><td style="text-align: left;">炭酸カルシウム</td><td style="text-align: left;">石灰石・大理石・貝殻</td><td style="text-align: left;">水に溶けにくい。セメントの原料</td></tr><tr><td style="text-align: left;">CaO</td><td style="text-align: left;">酸化カルシウム</td><td style="text-align: left;"><b>生石灰</b></td><td style="text-align: left;">水と反応して発熱する。乾燥剤・発熱剤</td></tr><tr><td style="text-align: left;">Ca(OH)₂</td><td style="text-align: left;">水酸化カルシウム</td><td style="text-align: left;"><b>消石灰</b>（飽和水溶液は<b>石灰水</b>）</td><td style="text-align: left;">強塩基。しっくい・土壌の中和</td></tr><tr><td style="text-align: left;">Ca(HCO₃)₂</td><td style="text-align: left;">炭酸水素カルシウム</td><td style="text-align: left;">——</td><td style="text-align: left;">水に溶ける（水溶液中で Ca²⁺ と HCO₃⁻）</td></tr><tr><td style="text-align: left;">CaCl₂</td><td style="text-align: left;">塩化カルシウム</td><td style="text-align: left;">——</td><td style="text-align: left;">水に溶ける。乾燥剤</td></tr></tbody></table></div>
 <p class="ref-p">5本の式を、石灰石を焼くところから順に見ていきます。</p>
@@ -969,7 +987,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">白濁した石灰水に CO₂ を通じ続けると、沈殿がさらに増えて白濁が濃くなる。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">CO₂ を通じ続けると、CaCO₃ は炭酸水素カルシウム Ca(HCO₃)₂ になって<b>溶け、無色透明にもどります</b>。</span></p><p class="ref-mistake-why">炭酸水素カルシウムは水に溶けるためです。有機の元素の確認でも、この「白濁してから透明にもどる」が出てきます。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/element-detection/">石灰水の白濁で炭素を確かめる操作は元素の確認のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/acid-displacement/">炭酸塩に強酸を加えて CO₂ が出る理由は弱酸の遊離のページへ</a></p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.calcium-compounds,inorg.metal.limewater-co2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>石灰石 CaCO₃ を強熱すると生石灰 CaO になり（CaCO₃ → CaO ＋ CO₂）、生石灰に水を加えると発熱して消石灰 Ca(OH)₂ になる。</li><li>石灰水に CO₂ を通じると CaCO₃ の白色沈殿で白濁し、さらに通じ続けると Ca(HCO₃)₂ になって溶け、無色透明にもどる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.calcium-compounds,inorg.metal.limewater-co2&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-sulfate"><h4 class="ref-sec-h">硫酸塩と炭酸塩 —— 沈殿でイオンを見分ける</h4><p class="ref-sec-lead">Ba²⁺ と Ca²⁺ は SO₄²⁻ や CO₃²⁻ と白色沈殿をつくります。Mg²⁺ は SO₄²⁻ とは沈殿しません。</p></section>
 <p class="ref-p">硫酸イオン SO₄²⁻ は、Ba²⁺・Ca²⁺・Pb²⁺ と白色の沈殿をつくります。電荷が合うようにイオンを組み合わせれば、式はそのまま書けます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Ba²⁺ ＋ SO₄²⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">BaSO₄↓</span></div><p class="ref-note">白色沈殿。水にも酸にも溶けません。</p></div>
@@ -987,7 +1005,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 硫酸塩と炭酸塩</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を化学反応式で書け。<b>(1) カルシウムを水に入れた　(2) 石灰石を強熱した　(3) 生石灰に水を加えた　(4) 石灰水に二酸化炭素を通じると白濁し、(5) さらに通じ続けると透明になった　(6) 塩化バリウム水溶液に希硫酸を加えた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) Ca ＋ 2H₂O → Ca(OH)₂ ＋ H₂　(2) CaCO₃ → CaO ＋ CO₂　(3) CaO ＋ H₂O → Ca(OH)₂　(4) Ca(OH)₂ ＋ CO₂ → CaCO₃ ＋ H₂O　(5) CaCO₃ ＋ CO₂ ＋ H₂O → Ca(HCO₃)₂　(6) BaCl₂ ＋ H₂SO₄ → BaSO₄ ＋ 2HCl（イオン反応式なら Ba²⁺ ＋ SO₄²⁻ → BaSO₄）</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">塩化マグネシウム水溶液と塩化カルシウム水溶液がある。どちらかを見分ける操作を2つ答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>① <b>炎色反応</b>を見る：橙赤色なら CaCl₂、色がつかなければ MgCl₂ です。② <b>希硫酸（または硫酸ナトリウム水溶液）を加える</b>：白色沈殿 CaSO₄ が生じれば CaCl₂、変化がなければ MgCl₂ です（MgSO₄ は水に溶けるため）。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.barium-sulfate,inorg.metal.gypsum&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>Ba²⁺ と SO₄²⁻ は水にも酸にも溶けない BaSO₄ の白色沈殿をつくる。BaSO₄ は胃や腸の X 線造影剤に使われる。</li><li>セッコウは CaSO₄・2H₂O で、約140℃に加熱すると半水和物の焼きセッコウ CaSO₄・½H₂O になり、焼きセッコウを水で練ると固まってセッコウにもどる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=inorg.metal.barium-sulfate,inorg.metal.gypsum&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（2問）">✏️ この節の一問一答（2問）</button></div></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">Ca と水、カルシウムの化合物の5本、Ba²⁺・Ca²⁺ と SO₄²⁻ の沈殿、炎色の3色です。</p></section>
 <h5 class="ref-h5">必ず覚えるもの（★★★）</h5>
 <ul class="ref-list"><li>Ca ＋ 2H₂O → Ca(OH)₂ ＋ H₂</li><li>カルシウムの化合物の5本（CaCO₃ の熱分解・CaO と水・石灰水と CO₂・Ca(HCO₃)₂ の生成・CaCO₃ と塩酸）</li><li>Ba²⁺ ＋ SO₄²⁻ → BaSO₄、Ca²⁺ ＋ SO₄²⁻ → CaSO₄</li><li>生石灰・消石灰・石灰石・セッコウ・焼きセッコウの化学式</li><li>炎色反応 Ca 橙赤色・Sr 紅色・Ba 黄緑色</li></ul>
@@ -1095,6 +1113,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

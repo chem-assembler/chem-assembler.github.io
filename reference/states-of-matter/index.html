@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">物質をつくる粒子はいつも熱運動していて、固体・液体・気体のどれになるかは、粒子どうしが引き合う力と熱運動の大小で決まります。三態のちがい、状態変化の6つの名前、加熱したときに温度が止まる区間をまとめます。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">物質の分類と三態</span><span class="unit-label">熱運動と物質の三態</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-motion" data-ref-anchor="motion">熱運動と拡散</a></li><li><a href="#ref-sec-three-states" data-ref-anchor="three-states">三態 —— 引き合う力と熱運動の綱引き</a></li><li><a href="#ref-sec-change" data-ref-anchor="change">状態変化の6つの名前</a></li><li><a href="#ref-sec-heating-curve" data-ref-anchor="heating-curve">加熱曲線 —— 温度が止まる区間を読む</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -950,7 +968,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/temperature-pressure/">温度の下限（絶対零度）と絶対温度、同じ温度でも速さがばらばらであること（化学）はこちら <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">例題 —— 熱運動と拡散</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(1)〜(3)の文の正誤を答えよ。(1) 温度を上げると、粒子の熱運動は激しくなる。(2) 静かに置いた水にインクを落とすと、かき混ぜない限りインクは広がらない。(3) 固体の粒子は、決まった位置にとどまっていて、まったく動いていない。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 正。温度が高いほど熱運動は激しくなります。(2) 誤。粒子は熱運動しているので、かき混ぜなくてもインクはひとりでに広がります（拡散）。(3) 誤。固体の粒子も、決まった位置のまわりで振動しています（熱運動は止まっていません）。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.diffusion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>粒子が熱運動によってひとりでに広がり、全体に混ざっていく現象を拡散という。赤褐色の臭素と無色の窒素を仕切りの両側に入れて仕切りを外すと、しばらくすると全体が同じ色になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.diffusion&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-three-states"><h4 class="ref-sec-h">三態 —— 引き合う力と熱運動の綱引き</h4><p class="ref-sec-lead">粒子は引き合う力で集まろうとし、熱運動で散らばろうとします。引き合う力が勝つと固体、熱運動が勝つと気体です。</p></section>
 <p class="ref-p">固体・液体・気体の3つの状態を<b>物質の三態</b>といいます。粒子は引き合う力で集まろうとし、熱運動で散らばろうとします。どの状態になるかは、この2つの大小で決まります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-lego-model.png?h=32a01145" alt="レゴブロックで三態を表した絵。固体はブロックがすき間なく組み上がって、その場で小さく震えている。液体はビーカーの中にブロックが集まっているが、組まれずに位置を入れかえている。気体はブロックに羽が生えて、ばらばらに飛び回っている" loading="lazy"><figcaption class="ref-figure-cap">固体はブロックが組み上がったまま、その場で震えるだけ。液体は集まったまま位置を入れかえ、気体はばらばらに飛び回ります。</figcaption></figure>
@@ -959,7 +977,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-ice-floats.png?h=b451d5d1" alt="左のビーカーでは一般の物質の固体が液体の底に沈み、右のビーカーでは氷が水に浮いている。虫めがねで氷を拡大すると、水分子が水素結合でつながったすき間の多い構造が見える。下に「一般の物質の密度：固体＞液体＞＞＞気体」「水の密度：液体＞固体＞＞＞気体」とある" loading="lazy"><figcaption class="ref-figure-cap">一般の物質は固体 ＞ 液体 ＞ 気体の順に密度が大きいのに対し、<b>水は液体 ＞ 固体</b>です。氷はすき間の多い構造をもつからです。</figcaption></figure>
 <h5 class="ref-h5">例題 —— 三態</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) 液体の粒子のようすとして正しいものを選べ。ア 決まった位置で振動するだけ　イ 集まったまま位置を入れかえる　ウ ばらばらに飛び回る　(2) 氷が水に浮くのはなぜか。「密度」という語を使って説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) イ。液体では、引き合う力と熱運動が同じくらいなので、粒子は集まったまま位置を入れかえます。(2) 氷の密度が液体の水の密度より小さいため。氷の中では水分子が水素結合でつながって、すき間の多い構造をつくっているので、同じ質量でも体積が大きくなります。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.three-states&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>物質の状態は、粒子どうしが引き合う力と熱運動の大小で決まり、引き合う力が勝てば固体、熱運動が勝てば気体になる。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.three-states&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-change"><h4 class="ref-sec-h">状態変化の6つの名前</h4><p class="ref-sec-lead">三態の間の変化を状態変化といいます。変化の向きごとに名前があり、向きが逆の2つが対になっています。</p></section>
 <p class="ref-p">温度を上げると熱運動が激しくなるので、固体 → 液体 → 気体の向きに変化し、温度を下げるとその逆向きに変化します。三態の間の変化を<b>状態変化</b>といい、6つの向きにそれぞれ名前があります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/states-change-triangle.png?h=e9e8c17f" alt="三角形の頂点に固体・液体・気体の絵があり、2つの状態の間を行きと帰りの2本の矢印が結んでいる。三角形の中では「分子間力」と「熱運動」が綱引きをしている" loading="lazy"><figcaption class="ref-figure-cap">熱運動が勝つ向き（赤）と、分子間力が勝つ向き（青）で、2つの状態の間に名前が1つずつあります。</figcaption></figure>
@@ -969,7 +987,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">状態変化は、物質そのものは変わらず、粒子の集まり方だけが変わる変化です。このような変化を<b>物理変化</b>といい、別の物質ができる化学変化と区別します。</p>
 <h5 class="ref-h5">例題 —— 状態変化の名前</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(1)〜(4)の現象に当たる状態変化の名前を答えよ。(1) ぬれた道路が、晴れると乾く。(2) 冷えた缶ジュースの表面に水滴がつく。(3) 衣装ケースに入れた防虫剤（ナフタレン）が小さくなる。(4) 寒い朝、窓ガラスの内側に霜がつく。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 蒸発（液体 → 気体）。(2) 凝縮（気体 → 液体）。空気中の水蒸気が冷やされて水になります。(3) 昇華（固体 → 気体）。(4) 凝華（気体 → 固体）。空気中の水蒸気が、液体を経ずに氷になります。★ (3) と (4) は向きが逆の対です。</p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.phase-change,theo.state.melting-boiling-point,theo.state.physical-change,theo.state.phase-change-example&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>状態変化の名前は、融解（固→液）・凝固（液→固）・蒸発（液→気）・凝縮（気→液）・昇華（固→気）・凝華（気→固）の6つである。</li><li>融解が起こる温度を融点、凝固が起こる温度を凝固点といい、純物質では融点と凝固点は等しい。液体が沸騰する温度を沸点という。</li><li>状態変化は、物質そのものは変わらず、粒子の集まり方だけが変わる変化で、物理変化という。別の物質ができる化学変化とは区別する。</li><li>身のまわりの状態変化の例：洗濯物が乾くのは蒸発、冷たいコップの外側に水滴がつくのは凝縮、ドライアイス・ヨウ素・ナフタレンが常温で気体になるのは昇華、氷が融けて水になるのは融解である。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.state.phase-change,theo.state.melting-boiling-point,theo.state.physical-change,theo.state.phase-change-example&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（4問）">✏️ この節の一問一答（4問）</button></div></div>
 <section class="ref-sec" id="ref-sec-heating-curve"><h4 class="ref-sec-h">加熱曲線 —— 温度が止まる区間を読む</h4><p class="ref-sec-lead">氷に一定の割合で熱を加え続けても、融解している間は 0℃、沸騰している間は 100℃ のまま、温度が上がりません。</p></section>
 <p class="ref-p">1.013×10⁵Pa（ふだんの大気の圧力）のもとで、氷に一定の割合で熱を加え続けたときの温度の変化を、次の順に読みます。</p>
 <ol class="ref-list"><li>氷（固体）の温度が上がる。</li><li>0℃ で融解が始まる。<b>氷がすべて融けて水だけになるまで、温度は 0℃ のまま</b>。<div class="ref-li-hang">氷が残っている間は、氷の温度は融点の 0℃ を超えません。</div></li><li>水（液体）の温度が 0℃ から 100℃ まで上がる。</li><li>100℃ で沸騰が始まる。<b>水がすべて水蒸気になるまで、温度は 100℃ のまま</b>。<div class="ref-li-hang">水が残っている間は、水の温度は沸点の 100℃ を超えません。</div></li><li>水蒸気（気体）の温度が上がる。</li></ol>
@@ -1088,6 +1106,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

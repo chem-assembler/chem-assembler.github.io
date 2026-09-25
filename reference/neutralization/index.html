@@ -125,6 +125,12 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
    ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
      素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+/* 節の「まとめ」（I-0146）: 一問一答の箱の中の先頭。qa の知識項目の箇条書き */
+.ref-summary{margin:0 0 4px}
+.ref-summary-h{font-weight:700;font-size:16px;margin:0 0 6px}
+.ref-summary ul{margin:0;padding-left:1.2em}
+.ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
+.ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
 .embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
@@ -697,6 +703,13 @@ footer a:hover{color:var(--brand)}
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 化学（科目）の範囲の器（I-0146・2026-09-26）。既定は開いている。面Aの「化学基礎まで」で閉じる */
+.ref-cfold { border-left: 3px solid rgba(255, 183, 77, 0.6); padding-left: 10px; margin: 0 0 16px; }
+.ref-cfold-sum { cursor: pointer; list-style: none; }
+.ref-cfold-sum::-webkit-details-marker { display: none; }
+.ref-cfold-note { display: block; font-size: 14px; color: #ffb74d; margin: 2px 0 8px; }
+.ref-cfold:not([open]) .ref-cfold-note::before { content: '▶ 開く ／ '; }
+.ref-cfold-body { padding-top: 2px; }
 /* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
 .ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
 .ref-hfold-sum { cursor: pointer; list-style: none; }
@@ -824,6 +837,10 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+/* 化学（科目）の範囲の器（I-0146） */
+.ref-scope .ref-cfold{border-left-color:#e0a24a}
+.ref-scope .ref-cfold-note{color:#9a5b00}
+
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -937,6 +954,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="lede">中和は H⁺ と OH⁻ が結びついて H₂O になり、残ったイオンが塩になる「イオンの組み換え」。酸と塩基は価数の逆の比で完全に中和するので、反応式は係数ごと左から順に書けます。濃度・体積からの計算と、気体を吸収させてから滴定する逆滴定まで。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸と塩基</span><span class="unit-label">中和反応と塩</span></div>
 
+
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-mechanism" data-ref-anchor="mechanism">中和反応の仕組み —— イオンの組み換え</a></li><li><a href="#ref-sec-ratio" data-ref-anchor="ratio">中和の量的関係 —— 価数の逆の比</a></li><li><a href="#ref-sec-equation" data-ref-anchor="equation">完全に中和する反応式の書き方</a></li><li><a href="#ref-sec-calculation" data-ref-anchor="calculation">中和の計算</a></li><li><a href="#ref-sec-back-titration" data-ref-anchor="back-titration">逆滴定</a></li></ul></details></nav>
 <div class="ref-scope">
@@ -949,14 +967,14 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCl ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O</span></div><p class="ref-note">反応しているのは H⁺ ＋ OH⁻ → H₂O の部分だけで、Na⁺ と Cl⁻ は水溶液中ではイオンのまま残ります。水を蒸発させると塩 NaCl が取り出せます。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s1&amp;from=reference&amp;page=neutralization">塩酸と水酸化ナトリウムを反応させ、傍観イオンが残るのを見る</a></p>
 <p class="ref-p">「<b>中和は H⁺ と OH⁻ が結びついて H₂O になる反応、残りが塩</b>」と覚えましょう。</p>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.neutralization-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>中和反応は、酸の H⁺ と塩基の OH⁻ が結びついて H₂O ができる反応で、残った塩基の陽イオンと酸の陰イオンからなる物質を塩という。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.neutralization-def&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-ratio"><h4 class="ref-sec-h">中和の量的関係 —— 価数の逆の比</h4><p class="ref-sec-lead">酸の出す H⁺ の数と塩基の出す OH⁻ の数が等しいとき、ちょうど完全に中和します。a 価の酸と b 価の塩基は b mol : a mol で完全に中和します。</p></section>
 <p class="ref-p">H⁺ と OH⁻ は同じ数（mol）どうしで反応するので、完全に中和する条件は次の1つです。</p>
 <ul class="ref-list"><li><b>（酸の放出した H⁺ の mol）＝（塩基の放出した OH⁻ の mol）</b></li><li>（酸の価数）×（酸の mol）＝（塩基の価数）×（塩基の mol）</li></ul>
 <p class="ref-p">具体例として、1価の酸2個と1価の塩基2個、2価の酸1個と1価の塩基2個は、どちらも H⁺ と OH⁻ が2個ずつなので完全に中和します。3価の酸と2価の塩基なら、最小公倍数の6個ずつにそろえて、<b>3価の酸2個と2価の塩基3個</b>で完全に中和します。</p>
 <p class="ref-p">つまり、<b>酸と塩基は価数の逆の比で完全に中和します</b>。a 価の酸と b 価の塩基は <b>b mol : a mol</b> です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">価数の組と、完全に中和する物質量の比</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">酸の価数</th><th style="text-align: center;">塩基の価数</th><th style="text-align: center;">酸 : 塩基（mol）</th><th style="text-align: left;">具体例</th></tr></thead><tbody><tr><td style="text-align: center;">1</td><td style="text-align: center;">1</td><td style="text-align: center;">1 : 1</td><td style="text-align: left;">HCl と NaOH</td></tr><tr><td style="text-align: center;">1</td><td style="text-align: center;">2</td><td style="text-align: center;">2 : 1</td><td style="text-align: left;">HCl と Ca(OH)₂</td></tr><tr><td style="text-align: center;">2</td><td style="text-align: center;">1</td><td style="text-align: center;">1 : 2</td><td style="text-align: left;">H₂SO₄ と NaOH</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: center;">2</td><td style="text-align: center;">2 : 3</td><td style="text-align: left;">H₃PO₄ と Ca(OH)₂</td></tr></tbody></table></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.neutralization-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>酸の出す H⁺ の mol と塩基の出す OH⁻ の mol が等しいとき完全に中和し、a 価の酸と b 価の塩基は b mol : a mol（価数の逆の比）で反応する。中和の量的関係は酸・塩基の強弱に関係しない。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.neutralization-ratio&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-equation"><h4 class="ref-sec-h">完全に中和する反応式の書き方</h4><p class="ref-sec-lead">価数の逆の比で反応することを使って、係数も含めて左から順に書きます。あとから数合わせをしません。</p></section>
 <p class="ref-p">★ 中和の反応式は、<b>係数も含めて左から順に書く</b>のがこの書き方の要点です。</p>
 <ol class="ref-list"><li>酸と塩基の価数を確かめる。<div class="ref-li-hang">「1価の酸と2価の塩基」なら係数は 2 : 1、「3価の酸と2価の塩基」なら 2 : 3</div></li><li>左辺に、価数の逆の比の係数をつけて酸と塩基を書く。</li><li>左辺のイオンを組み替えて、右辺に塩を書く（塩基の陽イオン＋酸の陰イオン）。</li><li>右辺に H₂O を書く。係数は左辺の H⁺（＝ OH⁻）の数。</li></ol>
@@ -972,7 +990,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <h5 class="ref-h5">例題 —— 完全に中和する反応式の書き方</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の酸と塩基が完全に中和するときの反応式を書け。(1) 硫酸と水酸化カリウム　(2) 塩酸と水酸化バリウム　(3) リン酸と水酸化カルシウム</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 2価と1価なので 1 : 2。<b>H₂SO₄ ＋ 2KOH → K₂SO₄ ＋ 2H₂O</b>　(2) 1価と2価なので 2 : 1。<b>2HCl ＋ Ba(OH)₂ → BaCl₂ ＋ 2H₂O</b>　(3) 3価と2価なので 2 : 3。<b>2H₃PO₄ ＋ 3Ca(OH)₂ → Ca₃(PO₄)₂ ＋ 6H₂O</b></p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.neutralization-equation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>中和の反応式は、価数の逆の比の係数で酸と塩基を書き、塩（塩基の陽イオン＋酸の陰イオン）と、中和した H⁺ の数だけ H₂O を書く。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.neutralization-equation&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-calculation"><h4 class="ref-sec-h">中和の計算</h4><p class="ref-sec-lead">「価数 × mol/L × 体積」を酸と塩基で等しいとおく式を1本立てれば、濃度・体積が求まります。</p></section>
 <p class="ref-p">水溶液どうしの中和では、酸の H⁺ の mol と塩基の OH⁻ の mol を、それぞれ次の形で書いて等しいとおきます。</p>
 <ul class="ref-list"><li>（酸の価数）×（酸の mol/L）×（体積 L）＝（塩基の価数）×（塩基の mol/L）×（体積 L）</li></ul>
@@ -988,7 +1006,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">気体の酸・塩基は、体積から mol を出します。標準状態（0℃・1.013×10⁵Pa）なら 1mol が 22.4L なので、体積を 22.4L で割ります。気体の塩基のアンモニアは、多くの場合、次の逆滴定の形で出てきます。</p>
 <h5 class="ref-h5">例題 —— 中和の計算</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0.024 mol/L の塩酸 20 mL と、ある濃度の水酸化カルシウム水溶液 15 mL がちょうど中和した。水酸化カルシウム水溶液の濃度を有効数字2桁で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>濃度を c mol/L とすると、1 × 0.024 × 20 ＝ 2 × c × 15。c ＝ 0.48 ÷ 30 ＝ <b>0.016 mol/L</b></p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.neutralization-calc&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>水溶液どうしの中和では（酸の価数）×（酸の mol/L）×（体積）＝（塩基の価数）×（塩基の mol/L）×（体積）とおく。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.neutralization-calc&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 <section class="ref-sec" id="ref-sec-back-titration"><h4 class="ref-sec-h">逆滴定</h4><p class="ref-sec-lead">気体の塩基（NH₃ など）は直接滴定できないので、多めの酸にいったん吸収させ、残った酸を塩基で滴定して差し引きで求めます。</p></section>
 <p class="ref-p">アンモニアのような気体は、そのままでは滴定できません。そこで、<b>量のわかった多めの酸に吸収させて中和させ、余った酸を別の塩基で滴定</b>します。このような滴定を<b>逆滴定</b>といいます。</p>
 <p class="ref-p">★ 式は「酸の H⁺ の mol ＝ 吸収させた塩基の OH⁻ の mol ＋ 滴定に使った塩基の OH⁻ の mol」の1本です。</p>
@@ -997,7 +1015,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p"><b>逆滴定は「足し算の式」を1本立てられれば十分です。</b></p>
 <h5 class="ref-h5">例題 —— 逆滴定</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ある量のアンモニアを 0.10 mol/L の塩酸 30.0 mL にすべて吸収させた。残った塩酸は、0.10 mol/L の水酸化ナトリウム水溶液 18.0 mL で過不足なく中和された。吸収させたアンモニアの物質量を求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>アンモニアを y mol とすると、1 × 0.10 × 30.0/1000 ＝ 1 × y ＋ 1 × 0.10 × 18.0/1000。3.0 × 10⁻³ ＝ y ＋ 1.8 × 10⁻³ より <b>y ＝ 1.2 × 10⁻³ mol</b></p></div></details></div>
-<div class="embed"><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.back-titration&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
+<div class="embed"><div class="ref-summary"><p class="ref-summary-h">まとめ</p><ul><li>逆滴定では、気体の塩基（NH₃ など）を量のわかった多めの酸に吸収させ、残った酸を塩基で滴定して、「酸の H⁺ の mol ＝ 吸収させた塩基の OH⁻ の mol ＋ 滴定に使った塩基の OH⁻ の mol」とおく。</li></ul></div><div class="embed-run"><button type="button" data-embed="/qa/?codes=theo.acid-base.back-titration&amp;mode=choice&amp;from=reference&amp;scope=section" data-embed-title="✏️ この節の一問一答（1問）">✏️ この節の一問一答（1問）</button></div></div>
 </div>
 </div>
 
@@ -1101,6 +1119,7 @@ document.addEventListener('click', function (e) {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>
+
 
 </main>
 <footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
