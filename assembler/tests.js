@@ -45120,11 +45120,22 @@
             { name: 'メタノール', e: ['C', 'O'], b: [[0, 1]], want: false },
             { name: 'ホルムアルデヒド', e: ['C', 'O'], b: [[0, 1, 2]], want: false },
             { name: '1-プロパノール', e: ['C', 'C', 'C', 'O'], b: [[0, 1], [1, 2], [2, 3]], want: false },
+            // ★ I-0054: CH3-CO- を持っていても、相手が O・N なら陰性（入試DB の検算で矛盾の原因だった）
+            { name: '酢酸', e: ['C', 'C', 'O', 'O'], b: [[0, 1], [1, 2, 2], [1, 3]], want: false },
+            { name: '酢酸メチル', e: ['C', 'C', 'O', 'O', 'C'], b: [[0, 1], [1, 2, 2], [1, 3], [3, 4]], want: false },
+            { name: 'アセトアミド', e: ['C', 'C', 'O', 'N'], b: [[0, 1], [1, 2, 2], [1, 3]], want: false },
+            { name: '2-ブタノン', e: ['C', 'C', 'O', 'C', 'C'], b: [[0, 1], [1, 2, 2], [1, 3], [3, 4]], want: true },
+            { name: '2-プロパノール', e: ['C', 'C', 'O', 'C'], b: [[0, 1], [1, 2], [1, 3]], want: true },
         ];
         CASES.forEach((t) => {
             const got = W.NW.iodoform(nwMol(W, t));
             assert(got === t.want, `${t.name} が ${got ? '陽性' : '陰性'} と判定されました（期待: ${t.want ? '陽性' : '陰性'}）`);
         });
+        // ★ I-0157: 「酸化するとアルデヒドが得られた」（ox1）はメタノールも含む（→ ホルムアルデヒド）。否定対照: 2-プロパノールは含まない
+        const ox1 = W.NARROW_CARDS.find((x) => x.id === 'ox1');
+        assert(ox1.test(nwMol(W, { e: ['C', 'O'], b: [[0, 1]] })), 'メタノールが「酸化するとアルデヒド」（ox1）に入らない');
+        assert(ox1.test(nwMol(W, { e: ['C', 'C', 'O'], b: [[0, 1], [1, 2]] })), 'エタノールが ox1 に入らない');
+        assert(!ox1.test(nwMol(W, { e: ['C', 'C', 'O', 'C'], b: [[0, 1], [1, 2], [1, 3]] })), '否定対照: 2-プロパノールが ox1 に入った');
     });
 
     test('NW2: C4H10O は 7 通りで、アルコール4・エーテル3に割れる', async (c) => {
@@ -46566,8 +46577,8 @@
             // カードの定義を動かした（環の大きさを push から配列の中へ）ので、
             // **枚数・id・順に依存した効き**が変わっていないことをここで固定する。
             // ⚠ v1505 で 58 → 65（M12 の加水分解生成物 7枚）。**枚数を固定してあるので気づける**
-            assert(W.NARROW_CARDS.length === 65, `カードが ${W.NARROW_CARDS.length} 枚（期待 65）`);
-            assert(new Set(W.NARROW_CARDS.map((x) => x.id)).size === 65, 'カードの id が重複しています');
+            assert(W.NARROW_CARDS.length === 66, `カードが ${W.NARROW_CARDS.length} 枚（期待 66・v1671 で hyd-enol を足した）`);
+            assert(new Set(W.NARROW_CARDS.map((x) => x.id)).size === 66, 'カードの id が重複しています');
             [3, 4, 5, 6, 7, 8].forEach((n) => {
                 const r = W.NARROW_CARDS.find((x) => x.id === `ring${n}`);
                 assert(r && r.row === '環の大きさ' && r.cell === `${n}員`,
@@ -55355,8 +55366,9 @@
         const n = (id) => pool.filter((m) => card(id).test(m)).length;
         assert(n('hyd-acid-formic') === 4 && n('hyd-acid-formic-no') === 5,
             `ギ酸/ギ酸でない が ${n('hyd-acid-formic')}/${n('hyd-acid-formic-no')}（期待 4/5 ＝ エステル9種）`);
-        assert(n('hyd-alc-1') === 4 && n('hyd-alc-2') === 2 && n('hyd-alc-3') === 1,
-            `アルコールの級が ${n('hyd-alc-1')}/${n('hyd-alc-2')}/${n('hyd-alc-3')}（期待 4/2/1）`);
+        // ★ I-0157（2026-09-25）: メタノールも「酸化するとアルデヒド」に入る ＝ メチルエステル2種（酪酸メチル・イソ酪酸メチル）が1級側へ（4 → 6）
+        assert(n('hyd-alc-1') === 6 && n('hyd-alc-2') === 2 && n('hyd-alc-3') === 1,
+            `アルコールの級が ${n('hyd-alc-1')}/${n('hyd-alc-2')}/${n('hyd-alc-3')}（期待 6/2/1）`);
         assert(n('hyd-alc-iodoform') === 3, `ヨードホルム陽性が ${n('hyd-alc-iodoform')}（期待 3）`);
         assert(n('hyd-alc-chiral') === 1, `不斉をもつアルコールが ${n('hyd-alc-chiral')}（期待 1）`);
         // ★否定対照 —— 7枚とも「0 でも全部でもない」＝ 置く意味がある

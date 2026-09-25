@@ -70,7 +70,8 @@ const RING_SIZE_CARDS = [3, 4, 5, 6, 7, 8].map((n) => ({
 const NARROW_CARDS = [
     { id: 'na', say: ['ナトリウムを加えると水素が発生した'], mean: '−OH をもつ', row: '−OH', cell: '○', test: (m) => NW.hydroxy(m) },
     { id: 'na-no', say: ['ナトリウムを加えても変化がなかった'], mean: '−OH をもたない', row: '−OH', cell: '×', test: (m) => !NW.hydroxy(m) },
-    { id: 'ox1', say: ['酸化するとアルデヒドが得られた'], mean: '第一級アルコール', row: 'アルコールの級', cell: '1級', test: (m) => NW.groups(m).includes('alcohol1') },
+    // ★ I-0157: メタノール（alcohol0）も酸化するとアルデヒド（ホルムアルデヒド）になる ＝ 高校の扱いでは第一級に含める
+    { id: 'ox1', say: ['酸化するとアルデヒドが得られた'], mean: '第一級アルコール', row: 'アルコールの級', cell: '1級', test: (m) => NW.primaryAlcohol(m) },
     { id: 'ox2', say: ['酸化するとケトンが得られた'], mean: '第二級アルコール', row: 'アルコールの級', cell: '2級', test: (m) => NW.groups(m).includes('alcohol2') },
     { id: 'ox3', say: ['酸化されなかった'], mean: '第三級アルコール', row: 'アルコールの級', cell: '3級', test: (m) => NW.groups(m).includes('alcohol3') },
     { id: 'iodo', say: ['ヨウ素と水酸化ナトリウムで黄色の沈殿が生じた'], mean: 'ヨードホルム陽性（CH3-CO- か CH3-CH(OH)-）', row: 'ヨードホルム', cell: '○', test: (m) => NW.iodoform(m) },
@@ -133,11 +134,15 @@ const NARROW_CARDS = [
      */
     { id: 'hyd-acid-formic', say: ['加水分解して得られたカルボン酸が銀鏡反応を示した'], mean: '加水分解で出る酸がギ酸', row: '加水分解生成物', cell: '酸＝ギ酸', test: (m) => NW.hydAcidIsFormic(m) },
     { id: 'hyd-acid-formic-no', say: ['加水分解して得られたカルボン酸は銀鏡反応を示さなかった'], mean: '加水分解で出る酸はギ酸でない', row: '加水分解生成物', cell: '酸≠ギ酸', test: (m) => NW.hydrolysis(m).pairs.length > 0 && !NW.hydAcidIsFormic(m) },
-    { id: 'hyd-alc-1', say: ['加水分解して得られたアルコールを酸化するとアルデヒドになった'], mean: '加水分解で出るアルコールが第一級', row: '加水分解生成物', cell: 'アルコール1級', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.groups(p.alc).includes('alcohol1')) },
+    { id: 'hyd-alc-1', say: ['加水分解して得られたアルコールを酸化するとアルデヒドになった'], mean: '加水分解で出るアルコールが第一級', row: '加水分解生成物', cell: 'アルコール1級', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.primaryAlcohol(p.alc)) },
     { id: 'hyd-alc-2', say: ['加水分解して得られたアルコールを酸化するとケトンになった'], mean: '加水分解で出るアルコールが第二級', row: '加水分解生成物', cell: 'アルコール2級', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.groups(p.alc).includes('alcohol2')) },
     { id: 'hyd-alc-3', say: ['加水分解して得られたアルコールは酸化されなかった'], mean: '加水分解で出るアルコールが第三級', row: '加水分解生成物', cell: 'アルコール3級', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.groups(p.alc).includes('alcohol3')) },
     { id: 'hyd-alc-iodoform', say: ['加水分解して得られたアルコールがヨードホルム反応を示した'], mean: '加水分解で出るアルコールが CH3-CH(OH)-', row: '加水分解生成物', cell: 'アルコールがヨード陽性', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.iodoform(p.alc)) },
     { id: 'hyd-alc-chiral', say: ['加水分解して得られたアルコールに光学異性体が存在した'], mean: '加水分解で出るアルコールが不斉炭素をもつ', row: '加水分解生成物', cell: 'アルコールに不斉', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.chiral(p.alc) >= 1) },
+    /* ★ 加水分解で出る「アルコール」が C=C に −OH の付いたエノール ＝ すぐアルデヒド・ケトンに変わる（ビニルエステル。
+     *   酢酸ビニル → 酢酸 ＋ アセトアルデヒド）。熊本大 前3 の D の決め手（2026-09-25・I-0054 を直したら、ここを iodo で
+     *   代用していたことが露出した。問題文にヨードホルムの記述は無い） */
+    { id: 'hyd-enol', say: ['加水分解するとアルデヒドまたはケトンが得られた'], mean: '加水分解で出るアルコールがエノール（すぐアルデヒド・ケトンに変わる）', row: '加水分解生成物', cell: 'エノール→C=O', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.groups(p.alc).includes('enol')) },
     // カルボニルの数。二価アルデヒド（熊本大 前3 の A）のように「2つもつ」が決め手になる
     { id: 'carbonyl2', say: ['還元すると二価のアルコールが得られた'], mean: 'カルボニルを2つもつ', row: 'C=O', cell: '2つ', test: (m) => NW.carbonylCount(m) === 2 },
     { id: 'ketone-no', say: ['還元すると第一級アルコールだけが得られた'], mean: 'ケトンをもたない', row: 'C=O', cell: 'ケトン×', test: (m) => !NW.groups(m).includes('ketone') },
@@ -777,6 +782,11 @@ const NW = {
      * エノールが「−OH をもたない」側に落ちる。エノールにも −OH はあるのでナトリウムとは反応する。
      * 神奈川大 2021-3 で、候補が 1 通りに決まるべきところが 3 通り残って気づいた。
      */
+    // 酸化するとアルデヒドになるアルコール（第一級＋メタノール・I-0157）
+    primaryAlcohol(m) {
+        const g = NW.groups(m);
+        return g.includes('alcohol1') || g.includes('alcohol0');
+    },
     hydroxy(m) {
         const g = NW.groups(m);
         return g.some((x) => x.startsWith('alcohol')) || g.includes('enol');
@@ -1108,10 +1118,17 @@ const NW = {
             if (nb.length !== 1) return false;
             const c = nb[0].atom;
             if (c.element !== 'C') return false;
-            const isCarbonyl = m.getNeighbors(c.id).some((n) => n.atom.element === 'O' && n.type === 2);
-            const isCarbinol = m.getFreeValency(c.id) >= 1
-                && m.getNeighbors(c.id).some((n) => n.atom.element === 'O' && n.type === 1 && m.getFreeValency(n.atom.id) === 1);
-            return isCarbonyl || isCarbinol;
+            const cnb = m.getNeighbors(c.id);
+            const isCarbonyl = cnb.some((n) => n.atom.element === 'O' && n.type === 2);
+            const ohs = cnb.filter((n) => n.atom.element === 'O' && n.type === 1 && m.getFreeValency(n.atom.id) === 1);
+            const isCarbinol = !isCarbonyl && m.getFreeValency(c.id) >= 1 && ohs.length === 1;
+            /* ★ I-0054（2026-09-25・入試DB の検算で矛盾の原因と確かめた）: 相手の残りは **H か C だけ**。
+             *   CH3-CO-OH（酢酸）・CH3-CO-OR（酢酸エステル）・CH3-CO-NH-（アミド）は CH3-CO- を持っていても陰性。
+             *   陽性は CH3-CO-R と CH3-CH(OH)-R（R は H か炭素）に限る */
+            const restOk = cnb.every((n) => n.atom.id === a.id || n.atom.element === 'C'
+                || (isCarbonyl && n.atom.element === 'O' && n.type === 2)
+                || (isCarbinol && ohs.some((o) => o.atom.id === n.atom.id)));
+            return (isCarbonyl || isCarbinol) && restOk;
         });
     },
     /**
