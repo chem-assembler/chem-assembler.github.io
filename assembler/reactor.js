@@ -11591,6 +11591,87 @@ class Reactor {
         return stackChainsForBridge(mol, ca, reg ? reg.cb : cb) || (reg ? stackChainsForBridge(mol, ca, cb) : false);
     }
 
+    /* ★★ 2分子の反応で、呼んだ相手を**反応後の位置へ先に**置く（2026-09-25・ユーザー「反応による分子の移動は最小に」）。
+     *   測り方: いまの図で**試しに1回反応させ**（`apply`）、元の分子と相手がそれぞれ平均でどれだけ動いたかを見る。
+     *   相手を「相手の動き − 元の分子の動き」だけ先に平行移動しておけば、本番の反応では
+     *   元の分子も相手もほとんど動かない（`apply` は2つの相対的な置き方で生成物を組むので）。
+     *   ⚠ 試しの反応は控え（serializeState）へ戻す ＝ 原子の id も結合も変わらない（座標だけが残る）。
+     *   ⚠ 動かした先で**ほかの分子に重なるなら動かさない**（今までどおりの置き方になるだけ）。
+     *   `_prePlace = false` で今までどおり（否定対照）。 */
+    prePlacePartner(rule, site, added) {
+        if (this._prePlace === false) return false;
+        const g = this.game;
+        if (!Array.isArray(site) || !added || !added.size) return false;
+        const mineId = site.find(id => typeof id === 'string' && !added.has(id));
+        if (!mineId) return false;
+        const mine = componentOf(g.userMolecule, mineId);
+        const state = g.serializeState();
+        const pos0 = new Map(g.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+        let t = null;
+        try {
+            rule.apply(g, site);
+            const byId = new Map(g.userMolecule.atoms.map(a => [a.id, a]));
+            const mean = (ids) => {
+                let sx = 0, sy = 0, n = 0;
+                ids.forEach(id => { const a = byId.get(id), p = pos0.get(id); if (a && p) { sx += a.x - p.x; sy += a.y - p.y; n++; } });
+                return n ? { x: sx / n, y: sy / n } : null;
+            };
+            // ⚠ 数えるのは**生成物に残った原子だけ**（外れて水などになる -OH は、動いても分子の動きではない）
+            let prod = null;
+            for (const id of added) if (byId.has(id)) { prod = componentOf(g.userMolecule, id); break; }
+            const keep = (id) => !prod || prod.has(id);
+            const tO = mean([...mine].filter(keep)), tA = mean([...added].filter(keep));
+            if (tO && tA) t = { x: tA.x - tO.x, y: tA.y - tO.y };
+        } catch (e) { t = null; }
+        g.restoreState(typeof state === 'string' ? JSON.parse(state) : state);
+        if (!t) return false;
+        const G = typeof GRID_SIZE === 'number' ? GRID_SIZE : 42;
+        const dx = Math.round(t.x / G) * G, dy = Math.round(t.y / G) * G;
+        if (!dx && !dy) return false;
+        const mol = g.userMolecule;
+        const moving = mol.atoms.filter(a => added.has(a.id));
+        const others = mol.atoms.filter(a => !added.has(a.id) && !mine.has(a.id) && a.element !== 'H');
+        const clash = moving.some(a => a.element !== 'H' &&
+            others.some(o => Math.hypot(o.x - (a.x + dx), o.y - (a.y + dy)) < G * 0.65));
+        if (clash) return false;
+        moving.forEach(a => { a.x += dx; a.y += dy; });
+        g.updateDrawing();
+        return true;
+    }
+
+    /* ★ 呼んで実行した2分子の反応で、**元の分子が動いた分だけ生成物を戻す**（prePlacePartner の受け皿）。
+     *   元の分子の原子（残ったもの）の平均の動きを格子に丸め、その原子を含む生成物ごと逆に平行移動する。
+     *   ⚠ 戻した先でほかの分子に重なるなら戻さない。 */
+    anchorOriginal(before, addedIds) {
+        if (this._prePlace === false) return false;
+        const mol = this.game.userMolecule;
+        const added = new Set(addedIds || []);
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        // ⚠ 数えるのは**相手とつながった生成物に残った原子だけ**（外れて水などになる原子は数えない）
+        let prod = null;
+        for (const id of added) if (byId.has(id)) { prod = componentOf(mol, id); break; }
+        let sx = 0, sy = 0, n = 0;
+        before.atoms.forEach(b => {
+            if (added.has(b.id)) return;
+            const a = byId.get(b.id);
+            if (!a || (prod && !prod.has(b.id))) return;
+            sx += a.x - b.x; sy += a.y - b.y; n++;
+        });
+        if (!n) return false;
+        const G = typeof GRID_SIZE === 'number' ? GRID_SIZE : 42;
+        const dx = Math.round(sx / n / G) * G, dy = Math.round(sy / n / G) * G;
+        if (!dx && !dy) return false;
+        const comp = new Set();
+        before.atoms.forEach(b => { if (!added.has(b.id) && byId.has(b.id)) componentOf(mol, b.id).forEach(id => comp.add(id)); });
+        const moving = mol.atoms.filter(a => comp.has(a.id));
+        const others = mol.atoms.filter(a => !comp.has(a.id) && a.element !== 'H');
+        const clash = moving.some(a => a.element !== 'H' &&
+            others.some(o => Math.hypot(o.x - (a.x - dx), o.y - (a.y - dy)) < G * 0.65));
+        if (clash) return false;
+        moving.forEach(a => { a.x -= dx; a.y -= dy; });
+        return true;
+    }
+
     runPartnerHint(h) {
         const g = this.game;
         this.clearDeadEnd();
@@ -11672,7 +11753,20 @@ class Reactor {
          *   召喚する分子を、ヒドロキシ基同士が隣接する向きに」「反応による分子の移動は最小になるように」）。
          *   2分子の反応だけ（重合など並べた単量体をつなぐ反応は、向きをそろえて並べるので触らない） */
         // ⚠ 加硫は上で真下にそろえて置いたので向きは変えない（鏡映すると「＝」の重なりが崩れる）
-        if (!rule.wholeCanvas && times === 1 && !(h.selfCount > 0) && rule.id !== VULCANIZE_RULE) this.facePartner(cross[0], added);
+        if (!rule.wholeCanvas && times === 1 && !(h.selfCount > 0) && rule.id !== VULCANIZE_RULE) {
+            this.facePartner(cross[0], added);
+            /* ★ 相手を**最初から反応後の位置**に置く（2026-09-25・ユーザー「2分子の反応は分子の移動を最小に」。
+             *   加硫の I-0149 と同じ考えを2分子の反応ぜんぶへ）。置き直したら箇所を数え直す */
+            if (this.prePlacePartner(rule, cross[0], added)) {
+                try { sites = rule.detect(g.userMolecule) || []; } catch (e) { sites = []; }
+                cross = sites.filter(s => Array.isArray(s) &&
+                    s.some(id => added.has(id)) && s.some(id => !added.has(id)));
+                if (cross.length === 0) {
+                    return this.stopPartnerHint(h, 'detect',
+                        `「${h.name}」を置き直しましたが、${h.label} の箇所が見つかりませんでした。反応は実行していません。`);
+                }
+            }
+        }
         // ③ 両方を選ぶ → **その状態で本当に押せるか**を絞り込みそのもので確かめる
         this.selectPartnerPair(cross, added);
         const { siteAllowed } = this.siteFilter();
@@ -11687,7 +11781,8 @@ class Reactor {
         this._pendingSummon = {
             state: preSummonState,
             key: this.topologyKey(this.snapshotMolecule(g.userMolecule)),
-            name: h.name
+            name: h.name,
+            added: [...added]   // 呼んだ原子（実行のあとで「元の分子を動かさない」を測る）
         };
         if (g.closeMoleculeModal) g.closeMoleculeModal();
         g.updateDrawing(); // 選択枠（青の破線＋番号）を出してから動く
@@ -12014,6 +12109,8 @@ class Reactor {
         }
         // ★ 並べた単量体をつなぐ反応は、生成物を単量体が並んでいた場所へ戻す（I-0077・`settleInPlace` の注記）
         if (rule.wholeCanvas) this.settleInPlace(before, g.userMolecule);
+        // ★ 呼んで実行した2分子の反応は、元の分子を動かさない（`anchorOriginal`・2026-09-25）
+        else if (summoned && pending.added) this.anchorOriginal(beforeReal, pending.added);
         /* 「効くが、ふつうはそちらを使わない」の一言を**結果に添える**（v1428・同書 §12-3）。
          * ⚠ `apply` の外で足す ——「どの瓶から来たか」は反応の中身ではないので、
          *   `apply` に瓶ごとの分岐を1つも入れないまま言える（§12-1 の約束）。 */

@@ -34722,6 +34722,54 @@
         partnerCleanup(c);
     });
 
+    /* ★ RXM1（2026-09-25・ユーザー「2分子の反応は、反応による分子の移動を最小に」）:
+       札から呼んで反応させたとき、**元の分子は1原子も動かず**（生成物に残った原子で測る）、
+       **相手も反応後の位置に先に置かれる**（動いても 2 マス以内）。⚠ 否定対照: `_prePlace = false` で呼んだ相手が大きく動く */
+    test('RXM1: 札から呼んだ2分子の反応で、元の分子は動かず、相手は反応後の位置に先に置かれる（★否定対照: 置き方を切ると呼んだ相手が大きく動く）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const run = async (name, ruleId) => {
+            const btns = partnerSetup(c, name).filter(b => b.dataset.rule === ruleId);
+            assert(btns.length === 1, `${name} に ${ruleId} の札が無い（前提が崩れている）`);
+            const b0 = new Map(g.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+            btns[0].click();
+            await c.tick(30);
+            const s1 = new Map(g.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+            if (W.reactor.picking) {
+                const sites = W.reactor.picking.sites;
+                const uniq = sites[0].find(id => sites.filter(s => s.includes(id)).length === 1) || sites[0][0];
+                W.reactor.handlePick(g.userMolecule.atoms.find(a => a.id === uniq));
+                await c.tick(30);
+            }
+            W.reactor.finalizeMorph();
+            if (W.reactor.replayState().shown) W.reactor.replayExit();
+            assert(W.reactor.lastReaction && W.reactor.lastReaction.ruleId === ruleId, `${name}: ${ruleId} が実行されていない`);
+            const m = g.userMolecule;
+            const pid = [...s1.keys()].find(id => !b0.has(id) && m.atoms.some(a => a.id === id));
+            const prod = new Set(W.componentOf(m, pid));
+            const far = (map, ids) => Math.max(0, ...ids.filter(id => prod.has(id)).map(id => {
+                const a = m.atoms.find(q => q.id === id), p = map.get(id);
+                return a ? Math.hypot(a.x - p.x, a.y - p.y) : 0;
+            }));
+            const mine = far(b0, [...b0.keys()]);
+            const theirs = far(s1, [...s1.keys()].filter(id => !b0.has(id)));
+            partnerCleanup(c);
+            return { mine, theirs };
+        };
+        for (const [name, ruleId] of [['酢酸', 'esterification'], ['グリセリン', 'esterification'],
+            ['ヘキサメチレンジアミン', 'amidation'], ['エタノール', 'dehydration_inter'], ['安息香酸', 'dehydration_anhydride_inter']]) {
+            const r = await run(name, ruleId);
+            assert(r.mine < 1, `${name}（${ruleId}）: 元の分子が ${Math.round(r.mine)}px 動いた（動かないはず）`);
+            assert(r.theirs <= 100, `${name}（${ruleId}）: 呼んだ相手が反応で ${Math.round(r.theirs)}px 動いた（反応後の位置に先に置けていない）`);
+        }
+        // ★ 否定対照: 置き方（先に置く・元を戻す）を切ると、グリセリンのエステル化で呼んだ相手が大きく動く（v1666 まで 308px）
+        W.reactor._prePlace = false;
+        try {
+            const r = await run('グリセリン', 'esterification');
+            assert(r.theirs >= 150, `否定対照: 置き方を切っても呼んだ相手が大きく動かない（${Math.round(r.theirs)}px）＝ この検査は何も見ていない`);
+        } finally { W.reactor._prePlace = undefined; }
+    });
+
     test('RX39: ★否定対照 — 選ぶモードの案内は、その画面に本当にある出口だけを指す', async (c) => {
         /* 統合レーンの実測による申し立て（2026-08-18）。案内は
            「やめるときは**左のパレット**で道具を選ぶと戻ります」と言っていたが、
