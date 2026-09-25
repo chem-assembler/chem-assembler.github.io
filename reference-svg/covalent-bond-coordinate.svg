@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="330" viewBox="0 0 680 330" role="img">
+  <!-- ふつうの共有結合（両方の原子が電子を1個ずつ出す）と配位結合（一方の原子の非共有電子対を、電子をもたない H⁺ と共有する）の違い。2026-09-26 ユーザー校正「模式図で違いを説明」。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .sym { font-size: 24px; font-weight: 700; text-anchor: middle; }
+    .b { font-weight: 700; font-size: 17px; }
+    .s { font-size: 15px; fill: #444; }
+    .hd { font-weight: 700; font-size: 15px; fill: #333; text-anchor: middle; }
+    .c { text-anchor: middle; }
+    .red { fill: #c62828; font-weight: 700; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .grid { stroke: #cfd6de; stroke-width: 1; }
+    .shell { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #1f618d; stroke-width: 2; }
+    .bond { stroke: #222; stroke-width: 2.4; }
+  </style>
+  <text x="20" y="34" class="b">ふつうの共有結合: 両方が1個ずつ出す</text>
+  <g transform="translate(0 84)">
+  <text class="sym" x="80" y="8">H</text>
+  <circle cx="97" cy="0" r="3.2" fill="#c62828"/>
+  <text class="c b" x="135" y="6">＋</text>
+  <text class="sym" x="190" y="8">H</text>
+  <circle cx="173" cy="0" r="3.2" fill="#c62828"/>
+  <line x1="240" y1="0" x2="290" y2="0" stroke="#222" stroke-width="2.5"/><polygon points="290,-8 306,0 290,8" fill="#222"/>
+  <text class="sym" x="360" y="8">H</text>
+  <text class="sym" x="410" y="8">H</text>
+  <circle cx="385" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="385" cy="5" r="3.2" fill="#222"/>
+  </g>
+  <text x="470" y="90" class="s">赤の電子1個ずつが</text>
+  <text x="470" y="112" class="s">共有電子対になる</text>
+  <text x="20" y="170" class="b">配位結合: 一方（N）の非共有電子対を H⁺ と共有する</text>
+  <g transform="translate(0 232)">
+  <text class="sym" x="70" y="8">H</text>
+  <text class="sym" x="120" y="8">N</text>
+  <text class="sym" x="170" y="8">H</text>
+  <text class="sym" x="120" y="54">H</text>
+  <circle cx="95" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="95" cy="5" r="3.2" fill="#222"/>
+  <circle cx="145" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="145" cy="5" r="3.2" fill="#222"/>
+  <circle cx="115" cy="23" r="3.2" fill="#222"/>
+  <circle cx="125" cy="23" r="3.2" fill="#222"/>
+  <circle cx="115" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="125" cy="-18" r="3.2" fill="#1f618d"/>
+  <text class="c b" x="220" y="6">＋</text>
+  <text class="sym" x="265" y="8">H⁺</text>
+  <line x1="300" y1="0" x2="345" y2="0" stroke="#222" stroke-width="2.5"/><polygon points="345,-8 361,0 345,8" fill="#222"/>
+  <text class="sym" x="400" y="8">H</text>
+  <text class="sym" x="450" y="8">N</text>
+  <text class="sym" x="500" y="8">H</text>
+  <text class="sym" x="450" y="54">H</text>
+  <text class="sym" x="450" y="-38">H</text>
+  <circle cx="425" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="425" cy="5" r="3.2" fill="#222"/>
+  <circle cx="475" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="475" cy="5" r="3.2" fill="#222"/>
+  <circle cx="445" cy="23" r="3.2" fill="#222"/>
+  <circle cx="455" cy="23" r="3.2" fill="#222"/>
+  <circle cx="445" cy="-23" r="3.2" fill="#222"/>
+  <circle cx="455" cy="-23" r="3.2" fill="#222"/>
+  <circle cx="445" cy="-23" r="3.2" fill="#1f618d"/>
+  <circle cx="455" cy="-23" r="3.2" fill="#1f618d"/>
+  <text class="c s" x="450" y="82">NH₄⁺</text>
+  </g>
+  <text x="530" y="200" class="s">青の1組は</text>
+  <text x="530" y="222" class="s">もとは N の</text>
+  <text x="530" y="244" class="s">非共有電子対</text>
+</svg>

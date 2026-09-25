@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="476" viewBox="0 0 680 476" role="img">
+  <!-- 原子価と電子式と結合の手の表（元素・族・価電子・電子式・不対電子・非共有電子対・結合の手）。2026-09-26 ユーザー校正「table と figure は統合してよい」で、文字の表とスライドの図を1枚にした。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .sym { font-size: 24px; font-weight: 700; text-anchor: middle; }
+    .b { font-weight: 700; font-size: 17px; }
+    .s { font-size: 15px; fill: #444; }
+    .hd { font-weight: 700; font-size: 15px; fill: #333; text-anchor: middle; }
+    .c { text-anchor: middle; }
+    .red { fill: #c62828; font-weight: 700; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .grid { stroke: #cfd6de; stroke-width: 1; }
+    .shell { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #1f618d; stroke-width: 2; }
+    .bond { stroke: #222; stroke-width: 2.4; }
+  </style>
+  <text class="hd" x="60" y="36">元素</text>
+  <text class="hd" x="120" y="36">族</text>
+  <text class="hd" x="190" y="36">価電子</text>
+  <text class="hd" x="300" y="36">電子式</text>
+  <text class="hd" x="410" y="36">不対電子</text>
+  <text class="hd" x="510" y="36">非共有電子対</text>
+  <text class="hd" x="610" y="36">結合の手</text>
+  <line class="grid" x1="20" y1="48" x2="660" y2="48"/>
+  <text class="c b" x="60" y="99">H</text>
+  <text class="c" x="120" y="99">1</text>
+  <text class="c" x="190" y="99">1</text>
+  <text class="sym" x="300" y="101">H</text>
+  <circle cx="317" cy="93" r="3.2" fill="#c62828"/>
+  <text class="c red" x="410" y="99">1</text>
+  <text class="c blue" x="510" y="99">0</text>
+  <text class="sym" x="610" y="101">H</text>
+  <line class="bond" x1="624" y1="93" x2="644" y2="93"/>
+  <line class="grid" x1="20" y1="122" x2="660" y2="122"/>
+  <text class="c b" x="60" y="173">C</text>
+  <text class="c" x="120" y="173">14</text>
+  <text class="c" x="190" y="173">4</text>
+  <text class="sym" x="300" y="175">C</text>
+  <circle cx="300" cy="149" r="3.2" fill="#c62828"/>
+  <circle cx="317" cy="167" r="3.2" fill="#c62828"/>
+  <circle cx="300" cy="185" r="3.2" fill="#c62828"/>
+  <circle cx="283" cy="167" r="3.2" fill="#c62828"/>
+  <text class="c red" x="410" y="173">4</text>
+  <text class="c blue" x="510" y="173">0</text>
+  <text class="sym" x="610" y="175">C</text>
+  <line class="bond" x1="624" y1="167" x2="644" y2="167"/>
+  <line class="bond" x1="596" y1="167" x2="576" y2="167"/>
+  <line class="bond" x1="610" y1="183" x2="610" y2="197"/>
+  <line class="bond" x1="610" y1="151" x2="610" y2="137"/>
+  <line class="grid" x1="20" y1="196" x2="660" y2="196"/>
+  <text class="c b" x="60" y="247">N</text>
+  <text class="c" x="120" y="247">15</text>
+  <text class="c" x="190" y="247">5</text>
+  <text class="sym" x="300" y="249">N</text>
+  <circle cx="295" cy="223" r="3.2" fill="#1f618d"/>
+  <circle cx="305" cy="223" r="3.2" fill="#1f618d"/>
+  <circle cx="317" cy="241" r="3.2" fill="#c62828"/>
+  <circle cx="300" cy="259" r="3.2" fill="#c62828"/>
+  <circle cx="283" cy="241" r="3.2" fill="#c62828"/>
+  <text class="c red" x="410" y="247">3</text>
+  <text class="c blue" x="510" y="247">1</text>
+  <text class="sym" x="610" y="249">N</text>
+  <line class="bond" x1="624" y1="241" x2="644" y2="241"/>
+  <line class="bond" x1="596" y1="241" x2="576" y2="241"/>
+  <line class="bond" x1="610" y1="257" x2="610" y2="271"/>
+  <line class="grid" x1="20" y1="270" x2="660" y2="270"/>
+  <text class="c b" x="60" y="321">O</text>
+  <text class="c" x="120" y="321">16</text>
+  <text class="c" x="190" y="321">6</text>
+  <text class="sym" x="300" y="323">O</text>
+  <circle cx="295" cy="297" r="3.2" fill="#1f618d"/>
+  <circle cx="305" cy="297" r="3.2" fill="#1f618d"/>
+  <circle cx="317" cy="315" r="3.2" fill="#c62828"/>
+  <circle cx="295" cy="333" r="3.2" fill="#1f618d"/>
+  <circle cx="305" cy="333" r="3.2" fill="#1f618d"/>
+  <circle cx="283" cy="315" r="3.2" fill="#c62828"/>
+  <text class="c red" x="410" y="321">2</text>
+  <text class="c blue" x="510" y="321">2</text>
+  <text class="sym" x="610" y="323">O</text>
+  <line class="bond" x1="624" y1="315" x2="644" y2="315"/>
+  <line class="bond" x1="596" y1="315" x2="576" y2="315"/>
+  <line class="grid" x1="20" y1="344" x2="660" y2="344"/>
+  <text class="c b" x="60" y="395">F</text>
+  <text class="c" x="120" y="395">17</text>
+  <text class="c" x="190" y="395">7</text>
+  <text class="sym" x="300" y="397">F</text>
+  <circle cx="295" cy="371" r="3.2" fill="#1f618d"/>
+  <circle cx="305" cy="371" r="3.2" fill="#1f618d"/>
+  <circle cx="317" cy="389" r="3.2" fill="#c62828"/>
+  <circle cx="295" cy="407" r="3.2" fill="#1f618d"/>
+  <circle cx="305" cy="407" r="3.2" fill="#1f618d"/>
+  <circle cx="283" cy="384" r="3.2" fill="#1f618d"/>
+  <circle cx="283" cy="394" r="3.2" fill="#1f618d"/>
+  <text class="c red" x="410" y="395">1</text>
+  <text class="c blue" x="510" y="395">3</text>
+  <text class="sym" x="610" y="397">F</text>
+  <line class="bond" x1="624" y1="389" x2="644" y2="389"/>
+  <line class="grid" x1="20" y1="418" x2="660" y2="418"/>
+  <circle cx="80" cy="448" r="3.2" fill="#c62828"/>
+  <text x="90" y="453" class="s">不対電子</text>
+  <circle cx="175" cy="448" r="3.2" fill="#1f618d"/>
+  <circle cx="185" cy="448" r="3.2" fill="#1f618d"/>
+  <text x="194" y="453" class="s">非共有電子対</text>
+  <circle cx="320" cy="443" r="3.2" fill="#222"/>
+  <circle cx="320" cy="453" r="3.2" fill="#222"/>
+  <text x="330" y="453" class="s">共有電子対</text>
+</svg>

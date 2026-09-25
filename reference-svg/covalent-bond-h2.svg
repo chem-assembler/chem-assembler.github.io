@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="250" viewBox="0 0 680 250" role="img">
+  <!-- 水素原子2個が電子を1個ずつ出し合い、2個を共有して H₂ になる（どちらも K殻に2個 ＝ He と同じ）。2026-09-26 ユーザー校正「模式図」。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .sym { font-size: 24px; font-weight: 700; text-anchor: middle; }
+    .b { font-weight: 700; font-size: 17px; }
+    .s { font-size: 15px; fill: #444; }
+    .hd { font-weight: 700; font-size: 15px; fill: #333; text-anchor: middle; }
+    .c { text-anchor: middle; }
+    .red { fill: #c62828; font-weight: 700; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .grid { stroke: #cfd6de; stroke-width: 1; }
+    .shell { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #1f618d; stroke-width: 2; }
+    .bond { stroke: #222; stroke-width: 2.4; }
+  </style>
+  <circle class="shell" cx="90" cy="110" r="48"/>
+  <circle class="nuc" cx="90" cy="110" r="16"/>
+  <text class="c b" x="90" y="116">H</text>
+  <circle class="e" cx="138" cy="110" r="7"/>
+  <text class="c b" x="190" y="116">＋</text>
+  <circle class="shell" cx="290" cy="110" r="48"/>
+  <circle class="nuc" cx="290" cy="110" r="16"/>
+  <text class="c b" x="290" y="116">H</text>
+  <circle class="e" cx="242" cy="110" r="7"/>
+  <line x1="360" y1="110" x2="410" y2="110" stroke="#222" stroke-width="2.5"/>
+  <polygon points="410,102 426,110 410,118" fill="#222"/>
+  <circle class="shell" cx="510" cy="110" r="48"/>
+  <circle class="shell" cx="580" cy="110" r="48"/>
+  <circle class="nuc" cx="510" cy="110" r="16"/><text class="c b" x="510" y="116">H</text>
+  <circle class="nuc" cx="580" cy="110" r="16"/><text class="c b" x="580" y="116">H</text>
+  <circle class="e" cx="545" cy="98" r="7"/><circle class="e" cx="545" cy="122" r="7"/>
+  <text class="c s" x="90" y="186">H 原子（電子1個）</text>
+  <text class="c s" x="290" y="186">H 原子（電子1個）</text>
+  <text class="c s" x="545" y="186">H₂ 分子</text>
+  <text class="c" x="340" y="228">重なった所の電子2個を共有する → どちらの H も K殻に2個（He と同じ電子配置）</text>
+</svg>

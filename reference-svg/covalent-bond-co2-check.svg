@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="310" viewBox="0 0 680 310" role="img">
+  <!-- 二酸化炭素の電子式の間違い（共有電子対1組ずつ）と正しい形（2組ずつ）。原子ごとに丸で囲んで電子を数え、8個になっているかを確かめる。2026-09-26 ユーザー校正「実際に間違っている図を表示して何が違うかを説明」「確認を図で示す」。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .sym { font-size: 24px; font-weight: 700; text-anchor: middle; }
+    .b { font-weight: 700; font-size: 17px; }
+    .s { font-size: 15px; fill: #444; }
+    .hd { font-weight: 700; font-size: 15px; fill: #333; text-anchor: middle; }
+    .c { text-anchor: middle; }
+    .red { fill: #c62828; font-weight: 700; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .grid { stroke: #cfd6de; stroke-width: 1; }
+    .shell { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #1f618d; stroke-width: 2; }
+    .bond { stroke: #222; stroke-width: 2.4; }
+  </style>
+  <text x="30" y="34" class="b red">✗ 共有電子対を1組ずつ</text>
+  <text x="370" y="34" class="b blue">○ 構造式 O＝C＝O のとおり2組ずつ</text>
+  <g transform="translate(0 130)">
+  <text class="sym" x="80" y="8">O</text>
+  <text class="sym" x="160" y="8">C</text>
+  <text class="sym" x="240" y="8">O</text>
+  <circle cx="120" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="120" cy="5" r="3.2" fill="#222"/>
+  <circle cx="200" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="200" cy="5" r="3.2" fill="#222"/>
+  <circle cx="75" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="85" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="75" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="85" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="235" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="245" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="235" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="245" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="63" cy="0" r="3.2" fill="#c62828"/>
+  <circle cx="257" cy="0" r="3.2" fill="#c62828"/>
+  <circle cx="160" cy="-18" r="3.2" fill="#c62828"/>
+  <circle cx="160" cy="18" r="3.2" fill="#c62828"/>
+  </g>
+  <text x="30" y="210" class="s">C のまわり: 共有 4個（＋不対電子 2個）</text>
+  <text x="30" y="234" class="s">O のまわり: 7個（不対電子が残る）</text>
+  <text x="30" y="266" class="red">→ 不対電子が残る ＝ 手が余っている</text>
+  <g transform="translate(0 130)">
+  <text class="sym" x="420" y="8">O</text>
+  <text class="sym" x="510" y="8">C</text>
+  <text class="sym" x="600" y="8">O</text>
+  <circle cx="460.5" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="460.5" cy="5" r="3.2" fill="#222"/>
+  <circle cx="469.5" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="469.5" cy="5" r="3.2" fill="#222"/>
+  <circle cx="550.5" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="550.5" cy="5" r="3.2" fill="#222"/>
+  <circle cx="559.5" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="559.5" cy="5" r="3.2" fill="#222"/>
+  <circle cx="415" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="425" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="415" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="425" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="595" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="605" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="595" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="605" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="420" cy="0" r="34" fill="none" stroke="#2f7d6d" stroke-width="2" stroke-dasharray="5 4"/>
+  <circle cx="510" cy="0" r="34" fill="none" stroke="#e0762b" stroke-width="2" stroke-dasharray="5 4"/>
+  <circle cx="600" cy="0" r="34" fill="none" stroke="#2f7d6d" stroke-width="2" stroke-dasharray="5 4"/>
+  </g>
+  <text x="370" y="210" class="s">丸の中の電子を数える</text>
+  <text x="370" y="232" class="s">（共有電子対は両方に数える）</text>
+  <text x="370" y="256" class="s">O: 8個　C: 8個　O: 8個</text>
+  <text x="370" y="286" class="blue">→ どの原子も8個（オクテット）で完成</text>
+</svg>

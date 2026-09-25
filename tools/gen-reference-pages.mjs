@@ -436,7 +436,9 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-adv-body{padding:0 20px 8px}
 /* ⚠ 畳んだ札の中では題を一段小さく（開くと本文が続くので、節そのものと同じ強さにしない） */
 .ref-scope .ref-adv-sum>.ref-sec-h{font-size:21px}
-.ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
+/* ★ リストは本文と同じ大きさにし、左の帯と薄い面で段落から浮かせる（2026-09-26 ユーザー「リストの表示をもっと目立つ感じに、埋没している」） */
+.ref-scope .ref-list{font-size:17px;line-height:1.9;margin:0 0 22px;padding:12px 16px 12px 2.1em;background:var(--panel);border-left:4px solid var(--accent);border-radius:0 8px 8px 0}
+.ref-scope .ref-list li::marker{color:var(--accent);font-weight:700}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:14.5px}
 .ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
