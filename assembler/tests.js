@@ -56107,6 +56107,17 @@
                 }
                 /* ★ 「化学」の札（化学基礎 → 化学 のリンク・2026-09-24）は**生成器が目次から付ける**ので、アプリの組む中身には無い。
                    札を除いて照らし、札そのものは「行き先が化学（科目）のページのときだけ」付いていることを確かめる */
+                /* ★★ 節の「✏️ この節の一問一答」（I-0143）は、面Aでは押すとその場で qa が開く部品（2026-09-25 ユーザー「埋め込みに」）。
+                   行き先がアプリの組んだリンクと同じ・押す前は iframe なし */
+                if (live.classList && live.classList.contains('ref-sec-qa')) {
+                    const btn = got[i].querySelector('button[data-embed]');
+                    const want = live.querySelector('a').getAttribute('href');
+                    assert(got[i].classList.contains('embed') && btn && btn.getAttribute('data-embed') === want,
+                        `${where} の ${i + 1} 番目: 節の一問一答が埋め込みの部品になっていない・行き先が違う（${btn && btn.getAttribute('data-embed')} ／ ${want}）`);
+                    assert(!got[i].querySelector('iframe'), `${where}: 節の一問一答が押す前から iframe を置いている`);
+                    assert(flat(btn.textContent) === flat(live.textContent), `${where}: 節の一問一答の釦の文が違う`);
+                    return;
+                }
                 let gotEl = got[i];
                 /* ★★ 反応式の「アプリで試す」（:::reaction の app:・I-0126・2026-09-25 ユーザー「埋め込みにしてください」）。
                    面Bは <p class="ref-rx-app"><a> のまま・**面Aだけ**が「▶ ここで反応を試す」の部品（押すと iframe）になる。
@@ -56158,7 +56169,8 @@
             /* ── ④ 埋め込みの行き先が、原稿の codes そのものであること ──
                ⚠ URL を手で書き換えても赤（`REF17` ④ は「qa に実在するか」で、こちらは「原稿と同じか」）。 */
             const embeds = [...doc.querySelectorAll('[data-embed]')].map(e => e.getAttribute('data-embed'));
-            const qaSrc = embeds.filter(u => u.indexOf('/qa/') === 0)[0];
+            // ⚠ 節の一問一答（?scope=section・I-0143）も /qa/ で始まる ＝ ページ末の箱は scope=section の無いもの
+            const qaSrc = embeds.filter(u => u.indexOf('/qa/') === 0 && !/[?&]scope=section(&|$)/.test(u))[0];
             // ⚠ 反応式の「ここで反応を試す」（?summon=…&embed=1）も /assembler/ で始まる ＝ ページ末の箱は open=reference で引く
             const appSrc = embeds.filter(u => u.indexOf('/assembler/') === 0 && /[?&]open=reference(&|$)/.test(u))[0];
             /* ★★ `codes` を持たないページ（横断のページ・§26）は、**箱そのものを出さない**

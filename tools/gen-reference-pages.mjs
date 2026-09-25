@@ -909,6 +909,11 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
     });
     /* ★★ 反応式の「ここで反応を試す」（I-0126）。行き先は素の href に embed=1 を足したもの（:::link の embed と同じ約束）。
        アプリ（assembler）は embed=1 で看板と帯を隠し、高さを親に送る（game.js applyOpenParam） */
+    /* ★★ 節の一問一答（I-0143）を、ページ末の一問一答の箱と同じ部品に（押すまで iframe を作らない・高さもページ末の箱と同じ） */
+    blocks = blocks.replace(/<div data-qa-embed="([^"]+)" data-qa-label="([^"]*)"><\/div>/g, (m, h, label) => {
+        const href = h.replace(/&amp;/g, '&');
+        return `<div class="embed"><div class="embed-run"><button type="button" data-embed="${amp(href)}" data-embed-title="${label}">${label}</button></div></div>`;
+    });
     let rxEmbeds = 0;
     blocks = blocks.replace(/<div data-rx-embed="([^"]+)"><\/div>/g, (m, h) => {
         const href = h.replace(/&amp;/g, '&');
@@ -1130,6 +1135,18 @@ for (const p of pages) {
             /* ★★ 反応式の「アプリで試す」（:::reaction の app:・I-0126）も、面Aでは**押すとその場にアプリが開く部品**にする
                （2026-09-25 ユーザー「埋め込みにしてください」）。ここでは目印（行き先の素の href を持つ空箱）を置くだけ。
                ⚠ 面B（アプリの資料ペイン）は今までどおりのリンク（アプリの中にアプリを入れない） */
+            /* ★★ 節の「✏️ この節の一問一答」（I-0143）も、面Aでは**押すとその場で qa が開く部品**にする
+               （2026-09-25 ユーザー「qa は埋め込みにした方がユーザーはやりやすい」）。ここでは目印を置くだけ。
+               ⚠ 節の口はページの上端の要素（renderBlocks が put する）なので、el そのものが当たることがある */
+            const qaSlot = (p) => {
+                const a = p.querySelector('a');
+                const slot = document.createElement('div');
+                slot.setAttribute('data-qa-embed', a.getAttribute('href'));
+                slot.setAttribute('data-qa-label', a.textContent);
+                return slot;
+            };
+            if (el.matches && el.matches('p.ref-sec-qa')) el = qaSlot(el);
+            else el.querySelectorAll('p.ref-sec-qa').forEach((p) => p.parentNode.replaceChild(qaSlot(p), p));
             el.querySelectorAll('p.ref-rx-app').forEach((p) => {
                 const a = p.querySelector('a');
                 if (!a) return;
