@@ -76,8 +76,11 @@ const NARROW_CARDS = [
     { id: 'ox3', say: ['酸化されなかった'], mean: '第三級アルコール', row: 'アルコールの級', cell: '3級', test: (m) => NW.groups(m).includes('alcohol3') },
     { id: 'iodo', say: ['ヨウ素と水酸化ナトリウムで黄色の沈殿が生じた'], mean: 'ヨードホルム陽性（CH3-CO- か CH3-CH(OH)-）', row: 'ヨードホルム', cell: '○', test: (m) => NW.iodoform(m) },
     { id: 'iodo-no', say: ['ヨウ素と水酸化ナトリウムでは沈殿しなかった'], mean: 'ヨードホルム陰性', row: 'ヨードホルム', cell: '×', test: (m) => !NW.iodoform(m) },
-    { id: 'silver', say: ['銀鏡反応を示した'], mean: 'アルデヒド', row: 'アルデヒド', cell: '○', test: (m) => NW.groups(m).includes('aldehyde') },
-    { id: 'silver-no', say: ['銀鏡反応を示さなかった'], mean: 'アルデヒドでない', row: 'アルデヒド', cell: '×', test: (m) => !NW.groups(m).includes('aldehyde') },
+    /* ★ I-0156（ユーザー決定 2026-09-26「A」・入試問題取り込み作業のセッション経由）: 札の言葉「銀鏡反応を示した」どおり、
+     *   ギ酸・ギ酸エステル（HCOO−。分子の中にホルミル基がある）も陽性にする ＝ 入試の「銀鏡反応を示す」と意味をそろえる。
+     *   ⚠ 行の名前（アルデヒド）は変えない（行の台帳と表の見出しを動かさない）。mean で言い分ける */
+    { id: 'silver', say: ['銀鏡反応を示した'], mean: '還元性（アルデヒド・ギ酸・ギ酸エステル）', row: 'アルデヒド', cell: '○', test: (m) => NW.silverMirror(m) },
+    { id: 'silver-no', say: ['銀鏡反応を示さなかった'], mean: '還元性なし（アルデヒドでもギ酸・ギ酸エステルでもない）', row: 'アルデヒド', cell: '×', test: (m) => !NW.silverMirror(m) },
     { id: 'br2', say: ['臭素水を脱色した'], mean: '炭素間二重結合をもつ', row: 'C=C', cell: '○', test: (m) => NW.groups(m).includes('cc_double') },
     { id: 'br2-no', say: ['臭素水を脱色しなかった'], mean: '炭素間二重結合をもたない', row: 'C=C', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') },
     { id: 'h2-no', say: ['水素を付加しなかった'], mean: '不飽和結合をもたない（＝不飽和度は環のぶん）', row: '不飽和結合', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') && !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
@@ -782,6 +785,18 @@ const NW = {
      * エノールが「−OH をもたない」側に落ちる。エノールにも −OH はあるのでナトリウムとは反応する。
      * 神奈川大 2021-3 で、候補が 1 通りに決まるべきところが 3 通り残って気づいた。
      */
+    // 銀鏡反応を示すか（I-0156）: アルデヒド、または H−C(=O)−O− をもつ（ギ酸・ギ酸エステル・ギ酸塩）
+    silverMirror(m) {
+        if (NW.groups(m).includes('aldehyde')) return true;
+        return m.atoms.some((a) => {
+            if (a.element !== 'C' || m.getFreeValency(a.id) !== 1) return false;   // H がちょうど1つ
+            const nb = m.getNeighbors(a.id);
+            if (nb.length !== 2) return false;
+            const dO = nb.some((n) => n.atom.element === 'O' && n.type === 2);
+            const sO = nb.some((n) => n.atom.element === 'O' && n.type === 1);
+            return dO && sO;
+        });
+    },
     // 酸化するとアルデヒドになるアルコール（第一級＋メタノール・I-0157）
     primaryAlcohol(m) {
         const g = NW.groups(m);
