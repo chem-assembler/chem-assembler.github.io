@@ -3649,8 +3649,18 @@ function stackChainsForBridge(mol, caId, cbId) {
     const staticBonds = mol.bonds.filter(b => !movingIds.has(b.atomId1) && !movingIds.has(b.atomId2));
     const pos = new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
     // 下 → 上 の順。近い段（1歩）から試し、だめなら1段外へ
-    for (const k of [1, 2]) {
-        for (const sign of [1, -1]) {
+    // ★ ただし**もう橋の位置に並んでいる置き方があれば、それを先に**（I-0149・v1664）。
+    //   加硫の相手を呼んだ時点で「反応後の位置」に置いてあるので、ここで下 → 上 の順に試すと、
+    //   相手の側から見た組（ca が相手の鎖）で**元の鎖を反対側へ動かしてしまう**
+    const tries = [];
+    for (const k of [1, 2]) for (const sign of [1, -1]) {
+        const still = Math.abs(Math.round(ca.x / G) * G - cb.x) < 1e-6 &&
+            Math.abs(Math.round(ca.y / G) * G + sign * 3 * k * G - cb.y) < 1e-6;
+        tries.push({ k, sign, still });
+    }
+    tries.sort((a, b) => (b.still ? 1 : 0) - (a.still ? 1 : 0));
+    for (const { k, sign } of tries) {
+        {
             /* ★ 硫黄2個ぶん離す（v1487）。C-S-S-C は**結合3本**なので、ca と cb は
              * **刻みの 3k 倍**だけ離れる（硫黄1個だった v1484 までは 2k 倍）。
              * 席 s1・s2 を「ca の真下（真上）に並ぶ**格子点**」に取り、cb をその先の格子点へ運ぶと、
@@ -9044,11 +9054,12 @@ const REACTION_RULES = [
 const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール', 'ホルムアルデヒド',
     'ヨードメタン（ヨウ化メチル）'];
 
-// 畳んだ見出しの札と id（v1420）。**文言と id は1か所**——テストと実装が同じものを見る
-const PARTNER_HINTS_ID = 'partner-hints';
-// ⚠ 「もう1つ」とは書かない（v1437・§15）。重合は**同じ単量体をもう2つ**要るので、
-//    数を決め打つと札の中身（「＋ エチレン をもう2つ呼び出す」）と食い違う
-const PARTNER_HINTS_SUMMARY = '相手の分子が要る反応';
+/* 相手を呼び出す札の目印（v1420 → v1664・I-0150）。**セレクタは1か所** —— テストと実装が同じものを見る。
+ * ⚠ v1663 までは「相手の分子が要る反応」の `<details>` に**畳んで別に**並べていた。これは試薬パレットが
+ *   あった頃の、モーダルの高さを抑えるための対策の名残。ユーザー（2026-09-25）:「他の分子を呼び出すか
+ *   どうかより、反応の仕組みの方が重要。付加反応なら塩素付加と酢酸付加に本質的な違いはない」
+ *   ⇒ いまは畳まず、反応の一覧の中に**反応ルールの並び順**で混ぜて置く（呼び出さない反応と区別しない） */
+const PARTNER_HINTS_SEL = '#reaction-actions button[data-partner]';
 
 /**
  * 反応の一覧を割る2つの節の見出し（v1423・DESIGN_reaction_execution.md §12）。
@@ -9057,7 +9068,7 @@ const PARTNER_HINTS_SUMMARY = '相手の分子が要る反応';
  * ⚠ 「分子を変えるか変えないか」で割ってはいけない —— それだと
  *   「↩ 反応前に戻す」（分子を変える）だけが振り返りの側から出ていってしまう。
  *
- * 文言は**1か所**（テストと実装が同じものを見る。PARTNER_HINTS_SUMMARY と同じ約束）。
+ * 文言は**1か所**（テストと実装が同じものを見る。PARTNER_HINTS_SEL と同じ約束）。
  */
 const RX_SECTION_NEXT = 'この分子にできること';
 const RX_SECTION_LAST = 'いま起きた反応';
@@ -10624,7 +10635,10 @@ class Reactor {
         const nextSec = this.makeReactionSection(RX_SECTION_NEXT);
 
         let executable = 0; // 実際に押して進められる反応の数（⚠ の解説カードは数えない）
-        REACTION_RULES.forEach(rule => {
+        // ★ 札は反応ルールの並び順で1列に並べる（I-0150）。相手を呼び出す札も同じ列に混ぜるので、
+        //   いったん { order, el } で集めてから並べて積む
+        const items = [];
+        REACTION_RULES.forEach((rule, order) => {
             let sites = [];
             try {
                 sites = rule.detect(mol);
@@ -10648,32 +10662,32 @@ class Reactor {
             // `?reagent=<ルールid>` から名指しできるようにする（瓶を持たないルールが5件ある）
             btn.dataset.rule = rule.id;
             btn.addEventListener('click', () => this.onRuleClick(rule, sites));
-            nextSec.appendChild(btn);
+            items.push({ order, el: btn });
         });
 
         this.executableCount = executable;
+        // 相手の分子が要る反応への道は**いつでも出す**（v1420・ユーザー申し立て
+        // 「作成済みの分子しか選べない」）。押せる反応が0件のときしか出していなかったので、
+        // エタノールのように単独で4件できる分子だと**エステル化へ進む道が一覧に生えなかった**。
+        // ⚠ **上位N件で切らない**（切った分が黙って消える）。
+        // ★ v1664（I-0150）: 畳まず、同じ反応ルールの札のすぐ後ろに置く（呼び出すかどうかで分けない）
+        //
+        // ⚠ **見えているときだけ数える。** 案内の総当たり（候補5件 × 全ルールの detect）は
+        //   実測で 20〜30ms かかり、`refresh()` は**作図のたび**に走る（ふだんの再描画は 6〜7ms）。
+        //   この案内が出るのは分子モーダルの中だけなので、開いているときに限る
+        //   （開いた瞬間にも `openMoleculeModal` が refresh を呼び直す）
+        // ⚠ 試算の土台も同じ `scope`（v1429）。ここを全体のままにすると、
+        //    「ブタン酸を見ているのに、隣のケトンに相手を足す案内」が生えて同じ混ざり方が残る
+        if (this.partnerHintsVisible()) {
+            this.partnerHintItems(scope, executable > 0).forEach(it => items.push(it));
+        }
+        items.sort((a, b) => a.order - b.order).forEach(it => nextSec.appendChild(it.el));
         // ⚠ 目印を付け直す前に**節を DOM へ挿す**。`markSelectedReagent()` は
         //   `#reaction-actions [data-rule]` を引くので、繋いでいない節の中の札は見えない
         this.actionsEl.appendChild(nextSec);
         // 描き直したら `?reagent=` の目印を付け直す（付けっぱなしにも消えっぱなしにもしない）
         if (this.selectedReagentId || this.selectedRuleId) this.markSelectedReagent();
 
-        // 相手の分子が要る反応への道は**いつでも出す**（v1420・ユーザー申し立て
-        // 「作成済みの分子しか選べない」）。押せる反応が0件のときしか出していなかったので、
-        // エタノールのように単独で4件できる分子だと**エステル化へ進む道が一覧に生えなかった**。
-        // ⚠ **上位N件で切らない**（切った分が黙って消える）。長さは「畳む」ことで抑える ——
-        //   押せる反応があるときだけ畳んだ見出しの下に入れる（0件のときは開いて出す）
-        //
-        // ⚠ **見えているときだけ数える。** 案内の総当たり（候補5件 × 全ルールの detect）は
-        //   実測で 20〜30ms かかり、`refresh()` は**作図のたび**に走る（ふだんの再描画は 6〜7ms）。
-        //   「0件のときだけ」だった頃はめったに走らなかったが、常に出すようにした v1420 で
-        //   **1原子置くたびに5倍**になった。この案内が出るのは分子モーダルの中だけなので、
-        //   開いているときに限る（開いた瞬間にも `openMoleculeModal` が refresh を呼び直す）
-        // ⚠ 試算の土台も同じ `scope`（v1429）。ここを全体のままにすると、
-        //    「ブタン酸を見ているのに、隣のケトンに相手を足す案内」が生えて同じ混ざり方が残る
-        if (this.partnerHintsVisible()) {
-            this.renderPartnerHints(scope, executable > 0, nextSec);
-        }
         // 見出しだけになったら節ごと下ろす（空の見出しは「ここに何か出るはず」と読ませてしまう）
         if (nextSec.children.length <= 1) nextSec.remove();
 
@@ -11442,44 +11456,26 @@ class Reactor {
         return !!m && !m.classList.contains('hidden');
     }
 
-    // ⚠ `host` は積み先（v1423）。既定は `#reaction-actions` のままだが、`refresh()` からは
-    //    節①「この分子にできること」の器を渡す ——「相手を呼び出す → 反応」は**これから起こす反応**で、
-    //    直近の反応をふり返る節②とは別のまとまり
-    renderPartnerHints(baseIds, collapsed, host) {
-        const dest = host || this.actionsEl;
+    /* 相手を呼び出す札を、反応の一覧に混ぜる形（{ order, el }）で返す（I-0150・v1664）。
+     * order は反応ルールの並び順 ＋ 0.5 ＝ **同じルールの（呼び出さない）札のすぐ後ろ**に入る。
+     * ⚠ **1件も落とさない**（上位N件で切らない・畳まない）。 */
+    partnerHintItems(baseIds, hasExecutable) {
         const hints = this.cachedPartnerHints(baseIds);
         if (hints.length === 0) {
-            // 畳む側（押せる反応がある）では**何も出さない** —— 「できる反応が登録されていません」は
-            // 手が止まった人への断り文なので、押せる反応が並んでいる画面に出すと嘘になる
-            if (collapsed) return;
+            // 押せる反応が並んでいる画面では**何も出さない** —— 「できる反応が登録されていません」は
+            // 手が止まった人への断り文なので、押せる反応がある画面に出すと嘘になる
+            if (hasExecutable) return [];
             const note = document.createElement('div');
             note.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
             note.textContent = 'いまの分子でできる反応は登録されていません。' +
                 '原子や結合を足すか、別の分子を呼び出してみてください。';
-            dest.appendChild(note);
-            return;
+            return [{ order: Infinity, el: note }];
         }
-        // 一覧が長くならないように畳む。**中身は1件も落とさない**（畳むか、全部出すかの二択）
-        const box = document.createElement('details');
-        box.id = PARTNER_HINTS_ID;
-        box.style.cssText = 'font-size:11.5px; line-height:1.5;';
-        if (!collapsed) box.open = true;
-        const head = document.createElement('summary');
-        head.style.cssText = 'cursor:pointer; color:var(--neon-green); padding:4px 0;';
-        head.textContent = `${PARTNER_HINTS_SUMMARY}（${hints.length}件）`;
-        box.appendChild(head);
-        const note = document.createElement('div');
-        note.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
-        note.textContent = collapsed
-            ? '下の反応には相手の分子が要ります。押すと呼び出して、そこまで進めます:'
-            : 'この分子だけではできる反応がありません。' +
-              '下の反応には相手の分子が要ります。押すと呼び出して、そこまで進めます:';
-        box.appendChild(note);
-        const list = document.createElement('div');
-        list.style.cssText = 'display:flex; flex-direction:column; gap:5px; margin-top:5px;';
-        hints.forEach(h => list.appendChild(this.makePartnerHintButton(h)));
-        box.appendChild(list);
-        dest.appendChild(box);
+        const orderOf = new Map(REACTION_RULES.map((r, i) => [r.id, i]));
+        return hints.map(h => ({
+            order: (orderOf.has(h.ruleId) ? orderOf.get(h.ruleId) : REACTION_RULES.length) + 0.5,
+            el: this.makePartnerHintButton(h),
+        }));
     }
 
     /**
@@ -11496,8 +11492,8 @@ class Reactor {
     makePartnerHintButton(h) {
         const btn = document.createElement('button');
         btn.className = 'view-btn';
-        btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
-            'border-color:var(--neon-green); color:var(--neon-green);';
+        // ★ 見た目は呼び出さない札と同じ（I-0150・v1664）。呼び出すことは札の文言「＋ ○○ を呼び出す」が言う
+        btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px;';
         btn.dataset.partner = h.name;
         if (h.ruleId) btn.dataset.rule = h.ruleId;
         const many = h.siteCount > 1 ? `（${h.siteCount}箇所から選ぶ）` : '';
@@ -11582,6 +11578,21 @@ class Reactor {
         return true;
     }
 
+    /* 加硫の相手（呼んだ鎖 `added`）を、元の鎖の C=C の真下に「＝」でそろえて置く（I-0149）。
+     * site は加硫の箇所 [ca, ca2, cb, cb2]。どちらの組が呼んだ鎖の側かは added で見分け、
+     * **元の鎖の C=C を錨にして呼んだ鎖を動かす**（`stackChainsForBridge` は cb の側の鎖を動かす）。
+     * 鎖がそろって重なる相手の C=C を選ぶのは加硫の1本目と同じ（`inRegisterPartner`）。 */
+    stackPartnerForBridge(site, added) {
+        const mol = this.game.userMolecule;
+        if (!Array.isArray(site) || site.length < 4) return false;
+        const [a, a2, b, b2] = site;
+        const mineFirst = added.has(b) && !added.has(a);
+        if (!mineFirst && !(added.has(a) && !added.has(b))) return false;
+        const [ca, ca2, cb, cb2] = mineFirst ? [a, a2, b, b2] : [b, b2, a, a2];
+        const reg = inRegisterPartner(mol, ca, ca2, cb, cb2);
+        return stackChainsForBridge(mol, ca, reg ? reg.cb : cb) || (reg ? stackChainsForBridge(mol, ca, cb) : false);
+    }
+
     runPartnerHint(h) {
         const g = this.game;
         this.clearDeadEnd();
@@ -11630,17 +11641,40 @@ class Reactor {
             return this.stopPartnerHint(h, 'detect',
                 `「${h.name}」は置けましたが、${h.label} の判定でエラーが出ました（${e.message}）。`);
         }
-        const cross = sites.filter(s => Array.isArray(s) &&
+        let cross = sites.filter(s => Array.isArray(s) &&
             s.some(id => added.has(id)) && s.some(id => !added.has(id)));
         if (cross.length === 0) {
             return this.stopPartnerHint(h, 'detect',
                 `「${h.name}」は置けましたが、2分子にまたがる ${h.label} の箇所が見つかりませんでした。` +
                 '反応は実行していません。');
         }
+        /* ★ 加硫の相手の鎖は、**呼んだ時点で反応後の位置**（元の鎖の真下）に置く（I-0149・2026-09-25
+         *   ユーザー「最初から反応後の位置に呼び出すべき。加硫操作の時に移動させるとわかりづらい」）。
+         *   動かすのは呼んだ鎖だけ（元の鎖は1原子も動かない）。置き直したら箇所を数え直す */
+        if (rule.id === VULCANIZE_RULE && this.stackPartnerForBridge(cross[0], added)) {
+            try { sites = rule.detect(g.userMolecule) || []; } catch (e) { sites = []; }
+            cross = sites.filter(s => Array.isArray(s) &&
+                s.some(id => added.has(id)) && s.some(id => !added.has(id)));
+            /* 選ばせるのは**真下にそろった組だけ**（斜めの組を選ぶと、加硫の1本目で相手の鎖を横へ寄せ直す
+             * ＝ また動く）。鎖の R は「同じ単位が続く」印なので、どの単位に架けても同じ加硫ゴムになる */
+            const byId = new Map(g.userMolecule.atoms.map(a => [a.id, a]));
+            const G = bondStep(g.userMolecule);
+            const upright = cross.filter(s => Math.abs(byId.get(s[0]).x - byId.get(s[2]).x) < G * 0.35);
+            if (upright.length) {
+                const keep = new Set(upright);
+                sites = sites.filter(s => !cross.includes(s) || keep.has(s));
+                cross = upright;
+            }
+            if (cross.length === 0) {
+                return this.stopPartnerHint(h, 'detect',
+                    `「${h.name}」を鎖の下に置きましたが、${h.label} の箇所が見つかりませんでした。反応は実行していません。`);
+            }
+        }
         /* ★ 相手を「反応する側が向き合う」向きに置く（I-0131・2026-09-24 ユーザー「エタノールの分子間脱水：
          *   召喚する分子を、ヒドロキシ基同士が隣接する向きに」「反応による分子の移動は最小になるように」）。
          *   2分子の反応だけ（重合など並べた単量体をつなぐ反応は、向きをそろえて並べるので触らない） */
-        if (!rule.wholeCanvas && times === 1 && !(h.selfCount > 0)) this.facePartner(cross[0], added);
+        // ⚠ 加硫は上で真下にそろえて置いたので向きは変えない（鏡映すると「＝」の重なりが崩れる）
+        if (!rule.wholeCanvas && times === 1 && !(h.selfCount > 0) && rule.id !== VULCANIZE_RULE) this.facePartner(cross[0], added);
         // ③ 両方を選ぶ → **その状態で本当に押せるか**を絞り込みそのもので確かめる
         this.selectPartnerPair(cross, added);
         const { siteAllowed } = this.siteFilter();
@@ -14773,8 +14807,7 @@ if (typeof window !== 'undefined') {
     window.PARTNER_CANDIDATES = PARTNER_CANDIDATES;
     window.SELF_PARTNER_RULES = SELF_PARTNER_RULES; // PM5・PM6（1分子からの重合の入口）が読む
     window.SELF_PARTNER_UNITS = SELF_PARTNER_UNITS;
-    window.PARTNER_HINTS_ID = PARTNER_HINTS_ID;
-    window.PARTNER_HINTS_SUMMARY = PARTNER_HINTS_SUMMARY;
+    window.PARTNER_HINTS_SEL = PARTNER_HINTS_SEL;
     window.findPartnerHints = findPartnerHints; // RX35（位置に依らないことの実測）が読む
     window.RX_SECTION_NEXT = RX_SECTION_NEXT;   // RX40（節の見出し）が読む
     window.RX_SECTION_LAST = RX_SECTION_LAST;

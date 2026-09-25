@@ -29762,7 +29762,7 @@
     test('PM6（否定対照）: 1分子の入口は既存の道を1つも変えない', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;
-        const selfBtns = () => [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button[data-count]')];
+        const selfBtns = () => [...D.querySelectorAll(W.PARTNER_HINTS_SEL + '[data-count]')];
 
         // ---- ① **もう並べてある人には出さない**（すでに押せる反応をもう一度案内しない） ----
         //    ＝ 2分子以上を自分で並べたときの従来の道はそのまま
@@ -30461,10 +30461,32 @@
         assert(btns.length === 1, `ポリイソプレン1本で加硫の札が ${btns.length} 枚`);
         assert(btns[0].dataset.partner === 'ポリイソプレン', `呼ぶ鎖が ${btns[0].dataset.partner}`);
         assert(W.findPartnerHints(g, null, ['vulcanization']).length === 1, '硫黄の瓶の空振りに札が出ない');
-        // ③ 押す → 2本目が並び、加硫の箇所が生える（9箇所 ＝ 箇所選びで止まる）
+        // ③ 押す → 2本目が並び、加硫の箇所が生える（箇所選びで止まる）
+        const before = new Map(g.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
         btns[0].click();
         assert(count('R') === 4, `押したあとの鎖が ${count('R') / 2} 本`);
         assert(vul.detect(g.userMolecule).length > 0, '2本並べても加硫の箇所が無い');
+        /* ★ I-0149（v1664）: 2本目は**呼んだ時点で反応後の位置**（元の鎖の真下）に置く。元の鎖は動かさない。
+           箇所選びは真下にそろった組だけ（斜めの組を選ぶと加硫のときに鎖をまた動かす） */
+        const moved0 = g.userMolecule.atoms.filter(a => before.has(a.id) &&
+            Math.hypot(a.x - before.get(a.id).x, a.y - before.get(a.id).y) > 0.5).length;
+        assert(moved0 === 0, `2本目を呼んだら元の鎖が ${moved0} 原子動いた`);
+        const newAtoms = g.userMolecule.atoms.filter(a => !before.has(a.id) && a.element !== 'H');
+        const oldMaxY = Math.max(...[...before.values()].map(p => p.y));
+        assert(newAtoms.every(a => a.y > oldMaxY), '2本目が元の鎖の真下に置かれていない（加硫で動かすことになる）');
+        const pk = W.reactor.picking;
+        assert(pk && pk.sites.length >= 1, '箇所選びに入っていない');
+        const byId = new Map(g.userMolecule.atoms.map(a => [a.id, a]));
+        assert(pk.sites.every(s => Math.abs(byId.get(s[0]).x - byId.get(s[2]).x) < 30),
+            '箇所選びに斜めの組が混ざっている（選ぶと加硫のときに鎖が横へ動く）');
+        // 否定対照ではなく実測: 選んだ組で加硫しても、どの原子も動かない
+        const snap = new Map(g.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+        const site = pk.sites[0];
+        W.reactor.picking = null; g.clearUIOverlay();
+        vul.apply(g, site);
+        const moved1 = g.userMolecule.atoms.filter(a => snap.has(a.id) &&
+            Math.hypot(a.x - snap.get(a.id).x, a.y - snap.get(a.id).y) > 0.5).length;
+        assert(moved1 === 0, `加硫の1本目で ${moved1} 原子が動いた（呼んだ位置が反応後の位置になっていない）`);
         assert(D.getElementById('molecule-modal').classList.contains('hidden'), '押したあとモーダルが閉じない');
         // 並べ終えたら札は出ない（もう押せる人に「呼びなさい」と言わない）
         assert(!W.findPartnerHints(g, null).some(h => h.ruleId === 'vulcanization'), '2本あるのにまだ札が出る');
@@ -34473,7 +34495,7 @@
         g.updateDrawing();
         if (name) assert(g.summonMolecule(name), `${name} が呼び出せない`);
         g.openMoleculeModal();
-        return [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')];
+        return [...D.querySelectorAll(W.PARTNER_HINTS_SEL)];
     };
     // ⚠ **開けたら必ず閉じる**（開きっぱなしだと後続の SW4 が巻き添えで赤くなる）
     const partnerCleanup = (c) => {
@@ -34496,11 +34518,16 @@
             `エタノールで押せる反応が ${W.reactor.executableCount} 件（複数を期待。前提が崩れている）`);
         assert(btns.length >= 2,
             `押せる反応があると相手の呼び出しが出ない（${btns.length}件）`);
-        const box = D.getElementById(W.PARTNER_HINTS_ID);
-        assert(box.tagName.toLowerCase() === 'details' && !box.open,
-            '押せる反応があるのに畳まれていない（一覧が長くなる）');
-        assert(box.querySelector('summary').textContent.includes(W.PARTNER_HINTS_SUMMARY),
-            `畳んだ見出しの札が違う（${box.querySelector('summary').textContent}）`);
+        /* ★ v1664（I-0150）: 呼び出す札は**畳まず、呼び出さない札と同じ列**に、反応ルールの並び順で混ぜる
+           （ユーザー「呼び出すかどうかより反応の仕組みの方が重要」）。⚠ 否定対照: 畳みの器が残っていたら赤 */
+        assert(!D.querySelector('#reaction-actions details'), '呼び出す札がまだ畳みの器（details）に入っている');
+        const col = btns[0].parentElement;
+        assert(col && col.querySelector('button[data-rule]:not([data-partner])'),
+            '呼び出す札が、呼び出さない札と同じ列に並んでいない');
+        const orderOf = new Map(W.REACTION_RULES.map((r, i) => [r.id, i]));
+        const seq = [...col.querySelectorAll('button[data-rule]')].map(b => orderOf.get(b.dataset.rule));
+        assert(seq.every((v, i) => i === 0 || seq[i - 1] <= v),
+            `札が反応ルールの並び順になっていない（${seq.join(',')}）`);
         assert(btns.some(b => b.dataset.rule === 'esterification'),
             'エタノールからエステル化への道が無い（申し立てそのもの）');
 
@@ -34562,7 +34589,7 @@
         const dy = (W.CANVAS_LIMIT - 20) - Math.min(...g.userMolecule.atoms.map(a => a.y));
         g.userMolecule.atoms.forEach(a => { a.x += dx; a.y += dy; });
         g.updateDrawing();
-        btns = [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')];
+        btns = [...D.querySelectorAll(W.PARTNER_HINTS_SEL)];
         assert(btns.length >= 1, '端に寄せたら札そのものが消えた（前提が崩れている）');
         const atoms0 = g.userMolecule.atoms.length;
         btns[0].click();
@@ -34621,26 +34648,21 @@
         const g = c.game, W = c.W, D = c.D;
 
         // ① **上位N件で切らない**（切った分が黙って消えるため）。
-        //    畳んだ `<details>` の中の札の数 ＝ `findPartnerHints` が返した件数
+        //    一覧に出た札の数 ＝ `findPartnerHints` が返した件数
         partnerSetup(c, 'エタノール');
         const hints = W.findPartnerHints(g, null);
-        const btns = [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')];
+        const btns = [...D.querySelectorAll(W.PARTNER_HINTS_SEL)];
         assert(hints.length === btns.length,
             `案内が ${hints.length} 件あるのに札は ${btns.length} 件しか出ていない（切り捨てている）`);
-        assert(D.getElementById(W.PARTNER_HINTS_ID).querySelector('summary')
-            .textContent.includes(`（${hints.length}件）`), '見出しの件数が中身と合っていない');
 
-        // ② 押せる反応が0件のときは**開いて**出す（断り文が畳まれて見えないと手が止まる）
+        // ② 押せる反応が0件のときも、札は畳まれずに見えている（v1664・I-0150 で畳みそのものをやめた）
         partnerSetup(c, '酢酸メチル');
-        const box = D.getElementById(W.PARTNER_HINTS_ID);
-        if (W.reactor.executableCount === 0) {
-            assert(box && box.open, '押せる反応が0件なのに案内が畳まれている');
-        }
+        assert(!D.querySelector('#reaction-actions details'), '呼び出す札が畳みの器（details）に入っている');
 
         // ③ 札はモーダルの「押したら閉じる」一括処理から外れている（`data-partner` が目印）。
         //    外れていないと、止まった理由を出した画面ごと消えて申し立ての症状に戻る
         partnerSetup(c, 'エタノール');
-        const one = [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')][0];
+        const one = [...D.querySelectorAll(W.PARTNER_HINTS_SEL)][0];
         assert(one.dataset.partner, '札に data-partner が無い（一括クローズの除外が効かない）');
 
         // ④ 試薬の空振りから出る札も**同じ作りで同じ動き**（入口が2つでも約束は1つ）
@@ -36261,7 +36283,7 @@
         g.userMolecule.atoms.forEach(a => { a.x += dx; a.y += dy; });
         g.updateDrawing();
         g.openMoleculeModal();
-        const btn = D.querySelector('#' + W.PARTNER_HINTS_ID + ' button');
+        const btn = D.querySelector(W.PARTNER_HINTS_SEL);
         assert(btn, '相手の呼び出しの札が出ていない（前提が崩れている）');
         btn.click();
         return D.getElementById('btn-deadend-report');
@@ -52558,7 +52580,7 @@
         assert(W.PARTNER_CANDIDATES.includes('酢酸'), '酢酸が相手の候補に入っていない');
         trSetup(c, ['アセチレン（エチン）']);
         g.openMoleculeModal();
-        const hints = [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')];
+        const hints = [...D.querySelectorAll(W.PARTNER_HINTS_SEL)];
         assert(hints.some(b => b.dataset.rule === 'add_carboxylic_acid_alkyne'),
             'アセチレン1分子から「＋ 酢酸 を呼び出す → 酢酸ビニル」の札が出ない ＝ ' +
             '瓶を持たないこの反応に入口が無い。出ている札: ' +
@@ -53520,7 +53542,7 @@
         trSetup(c, [PHX]);
         g.openMoleculeModal();
         try {
-            const hints = [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')];
+            const hints = [...D.querySelectorAll(W.PARTNER_HINTS_SEL)];
             assert(hints.some(b => b.dataset.rule === 'williamson_ether'),
                 'フェノキシドから「＋ ヨードメタン を呼び出す → アニソール」の札が出ない。出ている札: ' +
                 (hints.map(b => b.dataset.rule).join(', ') || '（なし）'));
