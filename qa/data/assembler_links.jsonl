@@ -890,3 +890,7 @@
 {"code":"theo.life.home-hazard","kind":"reference","label":"資料「薬品を安全に扱う」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-safety に載っている）"}
 {"code":"theo.life.sulfuric-dilution","kind":"reference","label":"資料「薬品を安全に扱う」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-safety に載っている）"}
 {"code":"theo.life.reagent-storage","kind":"reference","label":"資料「薬品を安全に扱う」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-safety に載っている）"}
+{"code":"org.ali.fg-def","kind":"none","why":"官能基という考え方（骨格が違っても同じ官能基なら似た性質）の定義で、分子を1つ組んでも見えない。比べるには2分子を並べて性質を見る必要がある"}
+{"code":"org.ali.fg-structures","kind":"none","why":"官能基の名前と形の対応の暗記。参考書の表と構造式の例題で見る項目で、組んだ分子の名前が出るだけでは名前と形の対応を問えない"}
+{"code":"org.ali.fg-oh-neighbor","kind":"none","why":"−OH の付き先（ベンゼン環かどうか）で分類が変わる、という比較の項目。アルコールとフェノールの2分子を並べないと見えない"}
+{"code":"org.ali.fg-nitro-sulfo","kind":"none","why":"硝酸・硫酸から −OH を除いた形という由来の項目。構造の配位結合は発展で、アプリの作図では見せない"}

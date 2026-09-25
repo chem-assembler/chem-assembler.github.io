@@ -215,10 +215,10 @@ function runDataTests(DATA) {
   //   88項目の1単元を参考書の節（TOC.txt）7つに分け、編と単元の間に「分類」（category）を1段足した
   t("単元: 脂肪族炭化水素を参考書の節7つに分け、分類（category）は同じ編の中で続けて並び、2単元以上を束ねる", function () {
     // ★ 2026-09-25（I-0143）: 項目は載っている参考書のページの節へ（はみ出していた1項目ずつと、反応のしくみ・アルコールの脱水へ移った分で数が変わった）
-    var SPLIT = { "sec-organic-features": 7, "sec-hydrocarbon-classes": 11, "sec-organic-formulas": 6,
+    var SPLIT = { "sec-organic-features": 7, "sec-hydrocarbon-classes": 15, "sec-organic-formulas": 6,
       "sec-alkane-isomers": 4, "sec-stereoisomers": 11, "sec-alkane": 18, "sec-alkene": 26 };
     var ali = patterns.filter(function (p) { return /^org\.ali\./.test(p.code); });
-    assert(ali.length === 88, "org.ali の項目が 88 件でない: " + ali.length + "（分けるときに項目が増減した）");
+    assert(ali.length === 92, "org.ali の項目が 92 件でない（v163 で官能基の4件を足した）: " + ali.length + "（分けるときに項目が増減した）");
     Object.keys(SPLIT).forEach(function (id) {
       var n = patterns.filter(function (p) { return p.unit === id; }).length;
       assert(n === SPLIT[id], id + ": 項目 " + n + " 件（" + SPLIT[id] + " 件のはず）");

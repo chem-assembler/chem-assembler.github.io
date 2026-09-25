@@ -56013,7 +56013,7 @@
            **合計で見るので 0件のページ1枚は他のページの多さに隠れる** ＝ もともと空振りしていた。
            ★ `codes` が任意になった（設計書 §26）いま、見るべきは「**持たないページが増えていないか**」。
              横断のページは1枚だけで、増えるときは設計の判断が要る ＝ 名指しで固定する。 */
-        /* ★ 持たなくてよい2枚（どちらも**単元をまたぐ横断のページ**・§26）:
+        /* ★ 持たなくてよい2枚（どちらも**単元をまたぐ横断のページ**・§26）—— ⚠ 2026-09-25 から functional-groups は専用の4項目を持つ（下の注記は当時の理由）:
              functional-groups … 「−OH はアルコール、−CHO はアルデヒド」と**行き先を指す**ページ。
                                   −OH の性質そのものはアルコールのページが持つ。
              numeral-prefix    … 数を表す接頭辞（ジ・トリ・テトラ…）だけを引き受けるページ（v1539）。
@@ -56027,7 +56027,8 @@
            （ref-inorg-design §1-3 の案C。後で qa が項目を作ったら codes: を足す）。 */
         const orgPages = pages.filter(p => RM.divisionOf(p.unit) === 'org');
         const noCodes = orgPages.filter(p => !(p.codes || []).length).map(p => p.id);
-        assert(noCodes.join(',') === 'functional-groups,numeral-prefix',
+        /* ⚠ 2026-09-25（ユーザー決定）: functional-groups にも専用の知識項目を4つ作ってつないだ（I-0111）＝ 持たないのは numeral-prefix だけ */
+        assert(noCodes.join(',') === 'numeral-prefix',
             `有機で知識項目を持たないページが「${noCodes.join('・') || '（無し）'}」`
             + '（持たなくてよいのは単元をまたぐ横断のページだけ・§26。増やすなら設計書に理由を残すこと）');
         const ledger = RM.parseGroups(await grab('../qa/GROUPS.tsv', 'グループ台帳（qa/GROUPS.tsv）'));
