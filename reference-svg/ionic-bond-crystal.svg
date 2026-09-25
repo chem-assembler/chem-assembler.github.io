@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="330" viewBox="0 0 680 330" role="img">
+  <!-- イオン結晶（NaCl）の並び（2026-09-25・ユーザーの校正「イオン結晶の図」）。平面で、Na⁺ と Cl⁻ が
+       上下左右に交互に、すき間なく接して並ぶ。立体の並び（単位格子）は unit-cell のページ。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .na { fill: #bbdefb; stroke: #1565c0; stroke-width: 1.5; }
+    .cl { fill: #c8e6c9; stroke: #2e7d32; stroke-width: 1.5; }
+    .ion { font-family: system-ui, sans-serif; font-size: 15px; fill: #222; }
+    .t { font-family: system-ui, sans-serif; font-size: 17px; fill: #222; }
+    .s { font-family: system-ui, sans-serif; font-size: 15px; fill: #444; }
+  </style>
+  <!-- 中心間 46px（Cl⁻ 半径 27・Na⁺ 半径 19 ＝ 接する）。6列×5行 -->
+  <g id="lattice">
+    <circle class="cl" cx="60" cy="60" r="27"/><text class="ion" x="60" y="65" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="106" cy="60" r="19"/><text class="ion" x="106" y="65" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="152" cy="60" r="27"/><text class="ion" x="152" y="65" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="198" cy="60" r="19"/><text class="ion" x="198" y="65" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="244" cy="60" r="27"/><text class="ion" x="244" y="65" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="290" cy="60" r="19"/><text class="ion" x="290" y="65" text-anchor="middle">Na⁺</text>
+
+    <circle class="na" cx="60" cy="106" r="19"/><text class="ion" x="60" y="111" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="106" cy="106" r="27"/><text class="ion" x="106" y="111" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="152" cy="106" r="19"/><text class="ion" x="152" y="111" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="198" cy="106" r="27"/><text class="ion" x="198" y="111" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="244" cy="106" r="19"/><text class="ion" x="244" y="111" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="290" cy="106" r="27"/><text class="ion" x="290" y="111" text-anchor="middle">Cl⁻</text>
+
+    <circle class="cl" cx="60" cy="152" r="27"/><text class="ion" x="60" y="157" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="106" cy="152" r="19"/><text class="ion" x="106" y="157" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="152" cy="152" r="27"/><text class="ion" x="152" y="157" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="198" cy="152" r="19"/><text class="ion" x="198" y="157" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="244" cy="152" r="27"/><text class="ion" x="244" y="157" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="290" cy="152" r="19"/><text class="ion" x="290" y="157" text-anchor="middle">Na⁺</text>
+
+    <circle class="na" cx="60" cy="198" r="19"/><text class="ion" x="60" y="203" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="106" cy="198" r="27"/><text class="ion" x="106" y="203" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="152" cy="198" r="19"/><text class="ion" x="152" y="203" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="198" cy="198" r="27"/><text class="ion" x="198" y="203" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="244" cy="198" r="19"/><text class="ion" x="244" y="203" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="290" cy="198" r="27"/><text class="ion" x="290" y="203" text-anchor="middle">Cl⁻</text>
+
+    <circle class="cl" cx="60" cy="244" r="27"/><text class="ion" x="60" y="249" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="106" cy="244" r="19"/><text class="ion" x="106" y="249" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="152" cy="244" r="27"/><text class="ion" x="152" y="249" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="198" cy="244" r="19"/><text class="ion" x="198" y="249" text-anchor="middle">Na⁺</text>
+    <circle class="cl" cx="244" cy="244" r="27"/><text class="ion" x="244" y="249" text-anchor="middle">Cl⁻</text>
+    <circle class="na" cx="290" cy="244" r="19"/><text class="ion" x="290" y="249" text-anchor="middle">Na⁺</text>
+  </g>
+  <text class="t" x="350" y="92">Na⁺ と Cl⁻ が 1：1 で、</text>
+  <text class="t" x="350" y="120">上下左右に交互に並ぶ</text>
+  <text class="t" x="350" y="164">どのイオンも、まわりを</text>
+  <text class="t" x="350" y="192">反対の符号のイオンに</text>
+  <text class="t" x="350" y="220">囲まれて引き合っている</text>
+  <text class="s" x="175" y="304" text-anchor="middle">塩化ナトリウム NaCl の結晶（平面で見た並び）</text>
+</svg>

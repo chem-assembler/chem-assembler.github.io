@@ -1,72 +1,72 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="564.706" height="268.235" viewBox="0 0 800 380" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="330" viewBox="0 0 680 330" role="img">
   <!-- イオン結晶のへき開。ふつうは ＋ と − が向き合うが、1つぶんずらすと同符号が向き合って反発する。
-       ⚠ ずらす量は格子の1目ぶん（半端にずらすと同符号が向き合わない）。
-       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+       2026-09-25 ユーザーの校正「陽イオンと陰イオンの間は隙間が空いていない方がよい、ここは NaCl でなく ＋ − でもよい」で、
+       すき間のない ＋・− のブロックに描き直した（固体と融解液の図 ionic-bond-conduct-blocks.svg と同じ見た目）。
+       ⚠ ずらす量は格子の1目ぶん（半端にずらすと同符号が向き合わない）。図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="rp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c62828" />
+    </marker>
+    <marker id="sh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333" />
+    </marker>
+  </defs>
   <style>
-    .na { fill: #bbdefb; stroke: #1565c0; stroke-width: 1.6; }
-    .cl { fill: #c8e6c9; stroke: #2e7d32; stroke-width: 1.6; }
-    .ion { font-size: 17px; fill: #222; }
-    .title { font-size: 22px; fill: #222; }
-    .small { font-size: 20px; fill: #444; }
+    .p { fill: #ffcc80; stroke: #e65100; stroke-width: 1.5; }
+    .m { fill: #90caf9; stroke: #1565c0; stroke-width: 1.5; }
+    .sign { font-family: system-ui, sans-serif; font-size: 20px; font-weight: 700; fill: #333; }
+    .b { font-family: system-ui, sans-serif; font-size: 17px; fill: #222; font-weight: 700; }
+    .t { font-family: system-ui, sans-serif; font-size: 16px; fill: #222; }
+    .r { font-family: system-ui, sans-serif; font-size: 16px; fill: #c62828; font-weight: 700; }
+    .cut { stroke: #c62828; stroke-width: 2; stroke-dasharray: 6 4; }
   </style>
+  <!-- 左: ふつうの並び（4×4） -->
+  <text class="b" x="30" y="30">ふつうは ＋ と − が向き合う</text>
+  <rect class="p" x="40" y="50" width="44" height="44"/><text class="sign" x="62" y="79" text-anchor="middle">＋</text>
+  <rect class="m" x="84" y="50" width="44" height="44"/><text class="sign" x="106" y="79" text-anchor="middle">−</text>
+  <rect class="p" x="128" y="50" width="44" height="44"/><text class="sign" x="150" y="79" text-anchor="middle">＋</text>
+  <rect class="m" x="172" y="50" width="44" height="44"/><text class="sign" x="194" y="79" text-anchor="middle">−</text>
+  <rect class="m" x="40" y="94" width="44" height="44"/><text class="sign" x="62" y="123" text-anchor="middle">−</text>
+  <rect class="p" x="84" y="94" width="44" height="44"/><text class="sign" x="106" y="123" text-anchor="middle">＋</text>
+  <rect class="m" x="128" y="94" width="44" height="44"/><text class="sign" x="150" y="123" text-anchor="middle">−</text>
+  <rect class="p" x="172" y="94" width="44" height="44"/><text class="sign" x="194" y="123" text-anchor="middle">＋</text>
+  <rect class="p" x="40" y="138" width="44" height="44"/><text class="sign" x="62" y="167" text-anchor="middle">＋</text>
+  <rect class="m" x="84" y="138" width="44" height="44"/><text class="sign" x="106" y="167" text-anchor="middle">−</text>
+  <rect class="p" x="128" y="138" width="44" height="44"/><text class="sign" x="150" y="167" text-anchor="middle">＋</text>
+  <rect class="m" x="172" y="138" width="44" height="44"/><text class="sign" x="194" y="167" text-anchor="middle">−</text>
+  <rect class="m" x="40" y="182" width="44" height="44"/><text class="sign" x="62" y="211" text-anchor="middle">−</text>
+  <rect class="p" x="84" y="182" width="44" height="44"/><text class="sign" x="106" y="211" text-anchor="middle">＋</text>
+  <rect class="m" x="128" y="182" width="44" height="44"/><text class="sign" x="150" y="211" text-anchor="middle">−</text>
+  <rect class="p" x="172" y="182" width="44" height="44"/><text class="sign" x="194" y="211" text-anchor="middle">＋</text>
+  <text class="t" x="128" y="258" text-anchor="middle">引き合って、硬い</text>
 
-  <!-- ===== ふつうの並び ===== -->
-  <text class="title" x="60" y="58">ふつうは ＋ と − が向き合う</text>
-
-  <circle class="cl" cx="100" cy="130" r="24" /><text class="ion" x="100" y="135" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="156" cy="130" r="16" /><text class="ion" x="156" y="135" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="212" cy="130" r="24" /><text class="ion" x="212" y="135" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="268" cy="130" r="16" /><text class="ion" x="268" y="135" text-anchor="middle">Na⁺</text>
-
-  <circle class="na" cx="100" cy="186" r="16" /><text class="ion" x="100" y="191" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="156" cy="186" r="24" /><text class="ion" x="156" y="191" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="212" cy="186" r="16" /><text class="ion" x="212" y="191" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="268" cy="186" r="24" /><text class="ion" x="268" y="191" text-anchor="middle">Cl⁻</text>
-
-  <circle class="cl" cx="100" cy="242" r="24" /><text class="ion" x="100" y="247" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="156" cy="242" r="16" /><text class="ion" x="156" y="247" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="212" cy="242" r="24" /><text class="ion" x="212" y="247" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="268" cy="242" r="16" /><text class="ion" x="268" y="247" text-anchor="middle">Na⁺</text>
-
-  <circle class="na" cx="100" cy="298" r="16" /><text class="ion" x="100" y="303" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="156" cy="298" r="24" /><text class="ion" x="156" y="303" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="212" cy="298" r="16" /><text class="ion" x="212" y="303" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="268" cy="298" r="24" /><text class="ion" x="268" y="303" text-anchor="middle">Cl⁻</text>
-
-  <text class="small" x="184" y="362" text-anchor="middle">引き合っていて動かない</text>
-
-  <!-- ===== 1つぶんずらす ===== -->
-  <text class="title" x="440" y="58">1つぶんずらすと同符号が向き合う</text>
-  <path d="M 520 88 L 636 88" style="stroke:#c62828;stroke-width:2.5;fill:none" />
-  <polygon points="646,88 632,83 632,93" fill="#c62828" />
-  <text class="small" x="656" y="93" style="fill:#c62828">強い力</text>
-
-  <circle class="cl" cx="516" cy="130" r="24" /><text class="ion" x="516" y="135" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="572" cy="130" r="16" /><text class="ion" x="572" y="135" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="628" cy="130" r="24" /><text class="ion" x="628" y="135" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="684" cy="130" r="16" /><text class="ion" x="684" y="135" text-anchor="middle">Na⁺</text>
-
-  <circle class="na" cx="516" cy="186" r="16" /><text class="ion" x="516" y="191" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="572" cy="186" r="24" /><text class="ion" x="572" y="191" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="628" cy="186" r="16" /><text class="ion" x="628" y="191" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="684" cy="186" r="24" /><text class="ion" x="684" y="191" text-anchor="middle">Cl⁻</text>
-
-  <path d="M 436 214 L 700 214" style="stroke:#c62828;stroke-width:1.5;stroke-dasharray:6 4;fill:none" />
-
-  <circle class="cl" cx="460" cy="242" r="24" /><text class="ion" x="460" y="247" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="516" cy="242" r="16" /><text class="ion" x="516" y="247" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="572" cy="242" r="24" /><text class="ion" x="572" y="247" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="628" cy="242" r="16" /><text class="ion" x="628" y="247" text-anchor="middle">Na⁺</text>
-
-  <circle class="na" cx="460" cy="298" r="16" /><text class="ion" x="460" y="303" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="516" cy="298" r="24" /><text class="ion" x="516" y="303" text-anchor="middle">Cl⁻</text>
-  <circle class="na" cx="572" cy="298" r="16" /><text class="ion" x="572" y="303" text-anchor="middle">Na⁺</text>
-  <circle class="cl" cx="628" cy="298" r="24" /><text class="ion" x="628" y="303" text-anchor="middle">Cl⁻</text>
-
-  <!-- 向き合った同符号（反発する組） -->
-  <rect x="492" y="166" width="63" height="105" rx="24" style="fill:none;stroke:#c62828;stroke-width:2;stroke-dasharray:5 4" />
-  <text class="small" x="486" y="158" text-anchor="end" style="fill:#c62828">同符号</text>
-
-  <text class="small" x="584" y="338" text-anchor="middle" style="fill:#c62828">向き合った同符号どうしが反発する</text>
-  <text class="small" x="584" y="362" text-anchor="middle">→ この面に沿って割れる（へき開）</text>
+  <!-- 右: 上の2段を1つぶん右へずらす -->
+  <text class="b" x="330" y="30">1つぶんずらすと同符号が向き合う</text>
+  <!-- 上2段（ずらした） -->
+  <rect class="p" x="384" y="50" width="44" height="44"/><text class="sign" x="406" y="79" text-anchor="middle">＋</text>
+  <rect class="m" x="428" y="50" width="44" height="44"/><text class="sign" x="450" y="79" text-anchor="middle">−</text>
+  <rect class="p" x="472" y="50" width="44" height="44"/><text class="sign" x="494" y="79" text-anchor="middle">＋</text>
+  <rect class="m" x="516" y="50" width="44" height="44"/><text class="sign" x="538" y="79" text-anchor="middle">−</text>
+  <rect class="m" x="384" y="94" width="44" height="44"/><text class="sign" x="406" y="123" text-anchor="middle">−</text>
+  <rect class="p" x="428" y="94" width="44" height="44"/><text class="sign" x="450" y="123" text-anchor="middle">＋</text>
+  <rect class="m" x="472" y="94" width="44" height="44"/><text class="sign" x="494" y="123" text-anchor="middle">−</text>
+  <rect class="p" x="516" y="94" width="44" height="44"/><text class="sign" x="538" y="123" text-anchor="middle">＋</text>
+  <!-- 下2段（そのまま） -->
+  <rect class="p" x="340" y="138" width="44" height="44"/><text class="sign" x="362" y="167" text-anchor="middle">＋</text>
+  <rect class="m" x="384" y="138" width="44" height="44"/><text class="sign" x="406" y="167" text-anchor="middle">−</text>
+  <rect class="p" x="428" y="138" width="44" height="44"/><text class="sign" x="450" y="167" text-anchor="middle">＋</text>
+  <rect class="m" x="472" y="138" width="44" height="44"/><text class="sign" x="494" y="167" text-anchor="middle">−</text>
+  <rect class="m" x="340" y="182" width="44" height="44"/><text class="sign" x="362" y="211" text-anchor="middle">−</text>
+  <rect class="p" x="384" y="182" width="44" height="44"/><text class="sign" x="406" y="211" text-anchor="middle">＋</text>
+  <rect class="m" x="428" y="182" width="44" height="44"/><text class="sign" x="450" y="211" text-anchor="middle">−</text>
+  <rect class="p" x="472" y="182" width="44" height="44"/><text class="sign" x="494" y="211" text-anchor="middle">＋</text>
+  <!-- ずれた面 -->
+  <path class="cut" d="M 330 138 L 580 138" />
+  <path d="M 406 130 L 406 146" stroke="#c62828" stroke-width="2" marker-start="url(#rp)" marker-end="url(#rp)" />
+  <path d="M 450 130 L 450 146" stroke="#c62828" stroke-width="2" marker-start="url(#rp)" marker-end="url(#rp)" />
+  <path d="M 494 130 L 494 146" stroke="#c62828" stroke-width="2" marker-start="url(#rp)" marker-end="url(#rp)" />
+  <text class="r" x="590" y="130">反発</text>
+  <text class="r" x="590" y="152">→ 割れる</text>
+  <text class="t" x="460" y="258" text-anchor="middle">上の2段に力を加えて1つぶん右へずらすと、</text>
+  <text class="t" x="460" y="282" text-anchor="middle">ずれた面で ＋と＋・−と− が向き合う</text>
 </svg>
