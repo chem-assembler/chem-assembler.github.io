@@ -32,13 +32,14 @@
   <path class="to" d="M 208 172 L 322 208" />
   <path class="ti" d="M 208 172 L 322 208" />
 
-  <!-- 枝付きフラスコ -->
-  <circle cx="200" cy="258" r="54" fill="#fff" stroke="#555" stroke-width="2.5" />
+  <!-- 枝付きフラスコ（2026-09-25 ユーザー校正「フラスコの □ と 〇 の内側の輪郭は消す」: 円と首を1本の輪郭で描く。
+       首（x 185〜230）が円と交わる点は (185, 206.1) と (230, 213.1)） -->
+  <path d="M 185 126 L 185 206.1 A 54 54 0 1 0 230 213.1 L 230 126" fill="#fff" stroke="none" />
   <rect clip-path="url(#bulb)" class="liq" x="146" y="268" width="123" height="53" />
   <path clip-path="url(#bulb)" d="M 146 268 L 254 268" style="stroke:#7aa7c7;stroke-width:1.5;fill:none" />
   <circle cx="184" cy="300" r="4" fill="#9e9e9e" /><circle cx="200" cy="305" r="4" fill="#9e9e9e" />
   <circle cx="215" cy="299" r="4" fill="#9e9e9e" />
-  <rect x="185" y="126" width="45" height="101" fill="#fff" stroke="#555" stroke-width="2.5" />
+  <path d="M 185 126 L 185 206.1 A 54 54 0 1 0 230 213.1 L 230 126" fill="none" stroke="#555" stroke-width="2.5" />
   <rect x="178" y="118" width="59" height="23" rx="3" fill="#bdbdbd" stroke="#555" stroke-width="1.5" />
 
   <!-- 温度計 -->
@@ -48,6 +49,11 @@
   <!-- 加熱 -->
   <path d="M 200 318 C 186 336, 190 352, 200 360 C 210 352, 214 336, 200 318 Z" fill="#ef6c00" />
   <rect x="172" y="360" width="71" height="15" rx="3" fill="#9e9e9e" />
+
+  <!-- アダプター（2026-09-25 ユーザー校正「アダプターはいらない？」: 冷却器の出口から受け器の口へ下ろす。
+       冷却器の内管の出口は (318,206) を 18.4° 回した先 ＝ およそ (603, 301)） -->
+  <path class="to" d="M 580 294 L 600 300.5 Q 621 307 622 328 L 622 346" />
+  <path class="ti" d="M 580 294 L 600 300.5 Q 621 307 622 328 L 622 346" />
 
   <!-- 受け器（三角フラスコ・密栓しない） -->
   <path class="glass" d="M 606 314 L 606 332 L 578 402 L 668 402 L 640 332 L 640 314" />
@@ -78,6 +84,8 @@
   <path d="M 392 196 L 392 182" style="stroke:#1565c0;stroke-width:2;fill:none" />
   <polygon points="392,172 386,186 398,186" fill="#1565c0" />
 
+  <text class="lab" x="660" y="296">アダプター</text>
+  <path class="lead" d="M 656 292 L 630 312" />
   <text class="lab" x="680" y="340">受け器</text>
   <text class="lab" x="680" y="365">（密栓しない）</text>
   <path class="lead" d="M 676 352 L 664 366" />
