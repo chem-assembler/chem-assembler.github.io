@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="360" viewBox="0 0 680 360" role="img">
+  <!-- 族と周期（2026-09-25・ユーザーの校正「ここでは族が初出なので図や説明が必要」「より重要なのは族ごとに覚えること」）。
+       原子番号1〜20を周期表の形に並べ、縦の列（族）と横の行（周期）、族ごとの価電子の数を示す。3〜12族（遷移元素）は
+       この範囲に入らないので列を省いて間を空けた。図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .cell { fill: #ffffff; stroke: #888; stroke-width: 1.2; }
+    .cellng { fill: #eceff1; stroke: #888; stroke-width: 1.2; }
+    .sym { font-family: system-ui, sans-serif; font-size: 20px; font-weight: 700; fill: #222; }
+    .z { font-family: system-ui, sans-serif; font-size: 14px; fill: #555; }
+    .h { font-family: system-ui, sans-serif; font-size: 15px; fill: #444; }
+    .hb { font-family: system-ui, sans-serif; font-size: 16px; fill: #1565c0; font-weight: 700; }
+    .gap { font-family: system-ui, sans-serif; font-size: 14px; fill: #777; }
+    .band { fill: #e3f2fd; }
+  </style>
+  <!-- 族の列の x（左端）: 1族 100, 2族 164, [3〜12族は省略], 13族 290, 14 354, 15 418, 16 482, 17 546, 18 610 -->
+  <rect class="band" x="100" y="300" width="570" height="36" rx="4" />
+  <text class="h" x="20" y="40">族 →</text>
+  <text class="h" x="130" y="40" text-anchor="middle">1</text>
+  <text class="h" x="194" y="40" text-anchor="middle">2</text>
+  <text class="gap" x="244" y="40" text-anchor="middle">3〜12</text>
+  <text class="h" x="320" y="40" text-anchor="middle">13</text>
+  <text class="h" x="384" y="40" text-anchor="middle">14</text>
+  <text class="h" x="448" y="40" text-anchor="middle">15</text>
+  <text class="h" x="512" y="40" text-anchor="middle">16</text>
+  <text class="h" x="576" y="40" text-anchor="middle">17</text>
+  <text class="h" x="640" y="40" text-anchor="middle">18</text>
+  <text class="h" x="20" y="88">周期 1</text>
+  <text class="h" x="20" y="152">周期 2</text>
+  <text class="h" x="20" y="216">周期 3</text>
+  <text class="h" x="20" y="280">周期 4</text>
+
+  <!-- 周期1 -->
+  <rect class="cell" x="100" y="56" width="60" height="56" /><text class="z" x="106" y="72">1</text><text class="sym" x="130" y="100" text-anchor="middle">H</text>
+  <rect class="cellng" x="610" y="56" width="60" height="56" /><text class="z" x="616" y="72">2</text><text class="sym" x="640" y="100" text-anchor="middle">He</text>
+  <!-- 周期2 -->
+  <rect class="cell" x="100" y="120" width="60" height="56" /><text class="z" x="106" y="136">3</text><text class="sym" x="130" y="164" text-anchor="middle">Li</text>
+  <rect class="cell" x="164" y="120" width="60" height="56" /><text class="z" x="170" y="136">4</text><text class="sym" x="194" y="164" text-anchor="middle">Be</text>
+  <rect class="cell" x="290" y="120" width="60" height="56" /><text class="z" x="296" y="136">5</text><text class="sym" x="320" y="164" text-anchor="middle">B</text>
+  <rect class="cell" x="354" y="120" width="60" height="56" /><text class="z" x="360" y="136">6</text><text class="sym" x="384" y="164" text-anchor="middle">C</text>
+  <rect class="cell" x="418" y="120" width="60" height="56" /><text class="z" x="424" y="136">7</text><text class="sym" x="448" y="164" text-anchor="middle">N</text>
+  <rect class="cell" x="482" y="120" width="60" height="56" /><text class="z" x="488" y="136">8</text><text class="sym" x="512" y="164" text-anchor="middle">O</text>
+  <rect class="cell" x="546" y="120" width="60" height="56" /><text class="z" x="552" y="136">9</text><text class="sym" x="576" y="164" text-anchor="middle">F</text>
+  <rect class="cellng" x="610" y="120" width="60" height="56" /><text class="z" x="616" y="136">10</text><text class="sym" x="640" y="164" text-anchor="middle">Ne</text>
+  <!-- 周期3 -->
+  <rect class="cell" x="100" y="184" width="60" height="56" /><text class="z" x="106" y="200">11</text><text class="sym" x="130" y="228" text-anchor="middle">Na</text>
+  <rect class="cell" x="164" y="184" width="60" height="56" /><text class="z" x="170" y="200">12</text><text class="sym" x="194" y="228" text-anchor="middle">Mg</text>
+  <rect class="cell" x="290" y="184" width="60" height="56" /><text class="z" x="296" y="200">13</text><text class="sym" x="320" y="228" text-anchor="middle">Al</text>
+  <rect class="cell" x="354" y="184" width="60" height="56" /><text class="z" x="360" y="200">14</text><text class="sym" x="384" y="228" text-anchor="middle">Si</text>
+  <rect class="cell" x="418" y="184" width="60" height="56" /><text class="z" x="424" y="200">15</text><text class="sym" x="448" y="228" text-anchor="middle">P</text>
+  <rect class="cell" x="482" y="184" width="60" height="56" /><text class="z" x="488" y="200">16</text><text class="sym" x="512" y="228" text-anchor="middle">S</text>
+  <rect class="cell" x="546" y="184" width="60" height="56" /><text class="z" x="552" y="200">17</text><text class="sym" x="576" y="228" text-anchor="middle">Cl</text>
+  <rect class="cellng" x="610" y="184" width="60" height="56" /><text class="z" x="616" y="200">18</text><text class="sym" x="640" y="228" text-anchor="middle">Ar</text>
+  <!-- 周期4 -->
+  <rect class="cell" x="100" y="248" width="60" height="44" /><text class="z" x="106" y="262">19</text><text class="sym" x="130" y="286" text-anchor="middle">K</text>
+  <rect class="cell" x="164" y="248" width="60" height="44" /><text class="z" x="170" y="262">20</text><text class="sym" x="194" y="286" text-anchor="middle">Ca</text>
+
+  <!-- 価電子の数 -->
+  <text class="hb" x="20" y="324">価電子</text>
+  <text class="hb" x="130" y="324" text-anchor="middle">1</text>
+  <text class="hb" x="194" y="324" text-anchor="middle">2</text>
+  <text class="hb" x="320" y="324" text-anchor="middle">3</text>
+  <text class="hb" x="384" y="324" text-anchor="middle">4</text>
+  <text class="hb" x="448" y="324" text-anchor="middle">5</text>
+  <text class="hb" x="512" y="324" text-anchor="middle">6</text>
+  <text class="hb" x="576" y="324" text-anchor="middle">7</text>
+  <text class="hb" x="640" y="324" text-anchor="middle">0</text>
+</svg>

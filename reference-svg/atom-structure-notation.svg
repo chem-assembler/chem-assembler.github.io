@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="260" viewBox="0 0 680 260" role="img">
+  <!-- 原子番号と質量数の書き方（2026-09-25・ユーザーの校正「35と17の位置がたてにそろわないので、画像を使う」）。
+       文字の上付き・下付きでは 35 と 17 の右端がそろわないので、図で示す。数字は右寄せで元素記号の左に縦にそろえる。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .sym { font-family: system-ui, sans-serif; font-size: 96px; font-weight: 700; fill: #222; }
+    .num { font-family: system-ui, sans-serif; font-size: 44px; font-weight: 700; }
+    .mass { fill: #c62828; }
+    .z { fill: #1565c0; }
+    .t { font-family: system-ui, sans-serif; font-size: 18px; fill: #222; }
+    .tm { font-family: system-ui, sans-serif; font-size: 18px; fill: #c62828; font-weight: 700; }
+    .tz { font-family: system-ui, sans-serif; font-size: 18px; fill: #1565c0; font-weight: 700; }
+    .lead { stroke: #777; stroke-width: 1.3; fill: none; }
+  </style>
+  <!-- 数字は x=198 で右寄せ（縦にそろう） -->
+  <text class="num mass" x="198" y="92" text-anchor="end">35</text>
+  <text class="num z" x="198" y="196" text-anchor="end">17</text>
+  <text class="sym" x="206" y="178">Cl</text>
+
+  <!-- 質量数の説明（右上） -->
+  <path class="lead" d="M 204 64 L 364 44" />
+  <text class="tm" x="372" y="40">質量数</text>
+  <text class="t" x="372" y="64">＝ 陽子の数 ＋ 中性子の数</text>
+  <!-- 原子番号の説明（右下） -->
+  <path class="lead" d="M 204 190 L 364 214" />
+  <text class="tz" x="372" y="212">原子番号</text>
+  <text class="t" x="372" y="236">＝ 陽子の数</text>
+  <!-- 元素記号 -->
+  <path class="lead" d="M 336 128 L 364 128" />
+  <text class="t" x="372" y="124">元素記号</text>
+  <text class="t" x="372" y="148">（原子番号で決まる）</text>
+</svg>

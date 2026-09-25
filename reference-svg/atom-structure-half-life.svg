@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="400" viewBox="0 0 680 400" role="img">
+  <!-- 半減期のグラフ（2026-09-25・ユーザーの校正「指数関数のグラフ、数値も入れる、初期値に関係なく、
+       初期値に対して一定の割合になることを説明」）。横軸は半減期の回数（¹⁴C なら 5730年ごと）、縦軸は残る割合。
+       曲線は y = (1/2)^t（t は半減期の回数）。どこから数えても、半減期1回で半分になることを2か所の矢印で示す。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .axis { stroke: #333; stroke-width: 1.8; fill: none; }
+    .grid { stroke: #ddd; stroke-width: 1; }
+    .curve { stroke: #c62828; stroke-width: 3; fill: none; }
+    .dot { fill: #c62828; }
+    .hl { stroke: #1565c0; stroke-width: 2; fill: none; stroke-dasharray: 5 3; }
+    .t { font-family: system-ui, sans-serif; font-size: 16px; fill: #222; }
+    .s { font-family: system-ui, sans-serif; font-size: 15px; fill: #444; }
+    .b { font-family: system-ui, sans-serif; font-size: 16px; fill: #1565c0; font-weight: 700; }
+  </style>
+  <!-- 座標: t=0..4 → x=90..570（1回 120px）。y: 1 → 50、0 → 320（高さ 270） -->
+  <path class="grid" d="M 90 50 L 570 50 M 90 185 L 570 185 M 90 252.5 L 570 252.5 M 90 286.25 L 570 286.25" />
+  <path class="axis" d="M 90 30 L 90 320 L 590 320" />
+  <text class="s" x="80" y="55" text-anchor="end">1</text>
+  <text class="s" x="80" y="190" text-anchor="end">½</text>
+  <text class="s" x="80" y="257" text-anchor="end">¼</text>
+  <text class="s" x="80" y="291" text-anchor="end">⅛</text>
+  <text class="t" x="30" y="22">残る割合</text>
+  <text class="s" x="90" y="342" text-anchor="middle">0</text>
+  <text class="s" x="210" y="342" text-anchor="middle">1回</text>
+  <text class="s" x="330" y="342" text-anchor="middle">2回</text>
+  <text class="s" x="450" y="342" text-anchor="middle">3回</text>
+  <text class="s" x="570" y="342" text-anchor="middle">4回</text>
+  <text class="s" x="210" y="362" text-anchor="middle">5730年</text>
+  <text class="s" x="330" y="362" text-anchor="middle">11460年</text>
+  <text class="s" x="450" y="362" text-anchor="middle">17190年</text>
+  <text class="t" x="330" y="390" text-anchor="middle">経過した時間（半減期の回数・¹⁴C の年数）</text>
+  <!-- y = 320 - 270*(1/2)^t を 0.25 刻みで -->
+  <path class="curve" d="M 90 50 L 120 92.9 L 150 128.9 L 180 159.2 L 210 185 L 240 206.4 L 270 224.5 L 300 239.6 L 330 252.5 L 360 263.2 L 390 272.2 L 420 279.8 L 450 286.25 L 480 291.6 L 510 296.1 L 540 299.9 L 570 303.1" />
+  <circle class="dot" cx="90" cy="50" r="5" /><circle class="dot" cx="210" cy="185" r="5" />
+  <circle class="dot" cx="330" cy="252.5" r="5" /><circle class="dot" cx="450" cy="286.25" r="5" />
+  <!-- どこから数えても半分: 0.5回目（y≈0.707）→ 1.5回目（y≈0.354） -->
+  <path class="hl" d="M 150 128.9 L 270 128.9 L 270 224.5" />
+  <text class="b" x="280" y="120">どこから数えても</text>
+  <text class="b" x="280" y="142">半減期1回で半分</text>
+  <text class="s" x="280" y="216">（約0.71 → 約0.35）</text>
+</svg>
