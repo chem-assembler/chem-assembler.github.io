@@ -72,6 +72,35 @@ const ledgerText = [fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf8') : ''
         }
     }
 }
+/* ★ 台帳の SHA がリポジトリに在るか（I-0145・2026-09-25）。
+ *   9/21 の履歴の書き換えで SHA が全部変わり、判定済みの14本が黙って「未統合」に戻って見えた。
+ *   次に書き換えたときに同じことが黙って起きないよう、引けない SHA を数えて出す（1回の cat-file でまとめて引く） */
+{
+    const uniq = [...new Set(verdicts.map(e => e.sha))];
+    let out = null;
+    try {
+        out = execFileSync('git', ['cat-file', '--batch-check'], {
+            cwd: ROOT, input: uniq.map(s => s + '^{commit}').join('\n') + '\n',
+            encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 16 * 1024 * 1024
+        });
+    } catch (e) { out = null; }
+    if (out) {
+        const res = lines(out);
+        const missingAll = uniq.filter((s, i) => / missing$/.test(res[i] || ''));
+        /* ⚠ 数えるのは「今もあるブランチで、引ける SHA の判定が1行も無いもの」だけ ——
+         *   書き換えのあとに新しい SHA で判定し直した行があれば、古い行は無害（14行が実際にそう） */
+        const heads = new Set(lines(git(['for-each-ref', '--format=%(refname:short)', 'refs/heads']) || ''));
+        const okBranch = new Set(verdicts.filter(e => !missingAll.includes(e.sha)).map(e => e.branch));
+        const stale = verdicts.filter(e => missingAll.includes(e.sha) && heads.has(e.branch) && !okBranch.has(e.branch));
+        const missing = [...new Set(stale.map(e => e.sha))];
+        if (missing.length) {
+            const who = stale.map(e => e.branch);
+            console.error(`⚠ branch-verdicts.jsonl の SHA のうち ${missing.length} 件がリポジトリに在りません（履歴の書き換えで変わった？）。` +
+                `その判定は効かないので、ブランチが「未統合」に戻って見えます。判定し直して新しい SHA で1行足してください: ` +
+                `${[...new Set(who)].slice(0, 5).join(', ')}${who.length > 5 ? ' …' : ''}`);
+        }
+    }
+}
 // 先端の SHA で引く ＝ 判定のあとにコミットが積まれたら、一覧に戻ってくる
 const verdictOf = (branch, sha) => verdicts.find(e => e.branch === branch && sha.startsWith(e.sha)) || null;
 
