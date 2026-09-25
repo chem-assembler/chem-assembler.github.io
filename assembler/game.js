@@ -13222,7 +13222,11 @@ const OPEN_TARGETS = {
  * 「自分のことだけ知っている」に保たれる。
  */
 const CROSS_APP_FROM = {
-    qa: { label: '一問一答', url: '../qa/' }
+    qa: { label: '一問一答', url: '../qa/' },
+    /* ★ 参考書（2026-09-25・I-0126）。反応式の「▶ 大きな画面で開く」／面Bの「アプリで試す」から来る。
+       CLAUDE.md「アプリ横断のリンクは往復にする」。戻り先は ?page=<ページid> があればそのページ、無ければ目次。
+       ⚠ 知ってよいのは参考書の URL の形（/reference/<ページid>/）だけ。ページの一覧は持たない */
+    reference: { label: '参考書', url: '../reference/', byPage: true }
 };
 
 /* 帯を出す。戻り値はテスト用の要約（出さなかったときは null）。
@@ -13239,7 +13243,10 @@ function renderFromBand(params, summoned) {
 
     const code = (params.get('code') || '').trim();
     let back = app.url;
-    if (code) back += '?code=' + encodeURIComponent(code) + '&from=assembler';
+    if (app.byPage) {
+        const page = (params.get('page') || '').trim();
+        if (/^[a-z0-9-]+$/.test(page)) back += page + '/';
+    } else if (code) back += '?code=' + encodeURIComponent(code) + '&from=assembler';
 
     // 分子を頼まれたのに出せなかった ＝ 黙って白紙にしない。
     // トーストは数秒で消えるが、帯は残るので「なぜ空なのか」が後からでも読める
@@ -13307,7 +13314,16 @@ function applyOpenParam(search) {
     // ⚠ **`if (!target) return null` より前**に置く。qa から来る導線で最も多いのは
     //    `?open=` を持たない `?summon=` 単独なので、後ろに置くと**戻り道が出る場面が半分になる**。
     //    `?open=isomer&formula=` も下で早期 return するため、ここが唯一の共通点
-    window.__fromBand = renderFromBand(params, summoned);
+    /* ★ 参考書のページに埋め込まれたとき（?embed=1・I-0126 反応式の「ここで反応を試す」）。
+       ① 帯は作らない（参考書の中に居るのに「参考書へ戻る」は無意味）
+       ② 高さを親に知らせる —— 約束は ion と同じ `{ type: 'slz-embed', v: 1, h }`（DESIGN_reference_centric.md §2-4 (6)）。
+          ⚠ このアプリは画面の高さいっぱいに描く作りなので、中身を測ると iframe の高さがそのまま返る
+            （伸びない）。**使いやすい高さ（560px）を1回だけ**送る。親は受けた高さに iframe を合わせる */
+    const embedded = params.get('embed') === '1';
+    window.__fromBand = embedded ? null : renderFromBand(params, summoned);
+    if (embedded && window.parent !== window) {
+        try { window.parent.postMessage({ type: 'slz-embed', v: 1, h: 560 }, location.origin); } catch (e) { /* 送れなくても本体は動かす */ }
+    }
 
     /* 受け口⑧ `?quest=<課題id>` … 実験モードの課題を1問だけ始める（第2段・D-E5）。
      *

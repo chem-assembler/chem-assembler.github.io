@@ -33801,6 +33801,56 @@
 
     /* ★ RXS3（v1654・I-0135）: 付加の共重合の入口。スチレン（SBR）・アクリロニトリル（NBR）を呼んだところから、
      *   相手の 1,3-ブタジエンを呼んで共重合まで届く札が出る（参考書の rubber の「アプリで試す」がこれを使う） */
+    /* ★ RXE1（v1660・I-0126）: 参考書の反応式の「▶ ここで反応を試す」は、アプリを ?embed=1 で iframe に開く。
+     *   子（このアプリ）は ① 看板（header）を隠す ② 「参考書へ戻る」の帯を作らない ③ 高さを親へ送る（{type:'slz-embed', v:1, h}）。
+     *   ⚠ embed=1 が無ければ今までどおり（看板も帯も出る）＝ 否定対照 */
+    test('RXE1: ?embed=1 で開くと看板と帯を隠し、高さを親へ送り、反応を選んだ状態で開く（★否定対照: embed=1 なしは看板と帯が出る）', async (c) => {
+        const base = '/assembler/index.html?summon=' + encodeURIComponent('エテン') + '&reagent=add_br2&from=reference&page=alkene';
+        const open = (url) => new Promise((res, rej) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute;left:-9999px;top:0;width:640px;height:420px';
+            f.src = url;
+            document.body.appendChild(f);
+            const t0 = Date.now();
+            (function poll() {
+                try {
+                    const g = f.contentWindow && f.contentWindow.game;
+                    if (g && g.userMolecule && g.userMolecule.atoms.length) return setTimeout(() => res(f), 400);
+                } catch (e) { /* 読み込み中 */ }
+                if (Date.now() - t0 > 20000) { f.remove(); return rej(new Error('アプリが開かない: ' + url)); }
+                setTimeout(poll, 100);
+            })();
+        });
+        const got = [];
+        const on = (e) => { if (e.data && e.data.type === 'slz-embed') got.push({ src: e.source, d: e.data }); };
+        window.addEventListener('message', on);
+        let f1 = null, f2 = null;
+        try {
+            f1 = await open(base + '&embed=1');
+            const d = f1.contentDocument;
+            assert(d.documentElement.classList.contains('embed'), 'embed=1 なのに <html class="embed"> が付いていない');
+            assert(getComputedStyle(d.querySelector('header')).display === 'none', 'embed=1 なのに看板（header）が見えている');
+            const band = d.getElementById('from-band');
+            assert(!band || getComputedStyle(band).display === 'none' || !band.textContent.trim(), 'embed=1 なのに「参考書へ戻る」の帯が出ている');
+            const mine = got.filter(m => m.src === f1.contentWindow);
+            assert(mine.length >= 1 && mine.every(m => m.d.v === 1 && m.d.h >= 400), `高さの知らせが届かない・形が違う（${JSON.stringify(mine.map(m => m.d))}）`);
+            const els = f1.contentWindow.game.userMolecule.atoms.map(a => a.element).sort().join('');
+            assert(els === 'CC', `エテンが呼び出されていない（${els}）`);
+            // ★ 否定対照: embed=1 なし ＝ 今までどおり（看板も帯も出る・高さは送らない）
+            f2 = await open(base);
+            const d2 = f2.contentDocument;
+            assert(!d2.documentElement.classList.contains('embed'), '★ 否定対照: embed=1 が無いのに embed の印が付いた');
+            assert(getComputedStyle(d2.querySelector('header')).display !== 'none', '★ 否定対照: embed=1 が無いのに看板が消えた');
+            const band2 = d2.getElementById('from-band');
+            assert(band2 && !band2.classList.contains('hidden') && band2.textContent.trim(), '★ 否定対照: embed=1 が無いのに「参考書へ戻る」の帯が出ない');
+            assert(!got.some(m => m.src === f2.contentWindow), '★ 否定対照: embed=1 が無いのに高さを送った');
+        } finally {
+            window.removeEventListener('message', on);
+            if (f1) f1.remove();
+            if (f2) f2.remove();
+        }
+    });
+
     test('RXS3: スチレン・アクリロニトリルから「＋ 1,3-ブタジエン → 共重合」の札が出る（★否定対照: エチレンでは出ない・もう2種類並べてあれば出ない）', async (c) => {
         c.reset();
         const g = c.game, W = c.W;
@@ -56058,6 +56108,28 @@
                 /* ★ 「化学」の札（化学基礎 → 化学 のリンク・2026-09-24）は**生成器が目次から付ける**ので、アプリの組む中身には無い。
                    札を除いて照らし、札そのものは「行き先が化学（科目）のページのときだけ」付いていることを確かめる */
                 let gotEl = got[i];
+                /* ★★ 反応式の「アプリで試す」（:::reaction の app:・I-0126・2026-09-25 ユーザー「埋め込みにしてください」）。
+                   面Bは <p class="ref-rx-app"><a> のまま・**面Aだけ**が「▶ ここで反応を試す」の部品（押すと iframe）になる。
+                   部品の中身（embed=1 を足しただけの URL・大きな画面で開く＝素の URL・同じタブ・押す前は iframe なし）を確かめ、
+                   部品と面Bのリンクを除いて残りを照らす */
+                const liveRxApp = live.querySelector ? live.querySelector('p.ref-rx-app a') : null;
+                let liveCmp = live;
+                if (liveRxApp) {
+                    const box = got[i].querySelector('.embed-app');
+                    assert(box, `${where} の ${i + 1} 番目: 反応式の「アプリで試す」が「ここで反応を試す」の部品になっていない（焼き直し忘れ？）`);
+                    const raw = liveRxApp.getAttribute('href');
+                    const btn = box.querySelector('button[data-embed]');
+                    assert(btn && btn.getAttribute('data-embed') === raw + '&embed=1',
+                        `${where}: 反応式の部品の URL が「素の URL ＋ embed=1」でない\n    焼いたもの: ${btn && btn.getAttribute('data-embed')}\n    素        : ${raw}`);
+                    const alt = box.querySelector('a.alt');
+                    assert(alt && alt.getAttribute('href') === raw && !alt.hasAttribute('target'),
+                        `${where}: 反応式の部品の「大きな画面で開く」が素の URL・同じタブになっていない`);
+                    assert(!box.querySelector('iframe'), `${where}: 反応式の部品が押す前から iframe を置いている`);
+                    gotEl = got[i].cloneNode(true);
+                    gotEl.querySelectorAll('.embed-app').forEach(e => e.remove());
+                    liveCmp = live.cloneNode(true);
+                    liveCmp.querySelectorAll('p.ref-rx-app').forEach(e => e.remove());
+                }
                 const tags = liveLink ? got[i].querySelectorAll('a.ref-link .ref-course-tag') : [];
                 if (tags.length) {
                     gotEl = got[i].cloneNode(true);
@@ -56068,7 +56140,7 @@
                     assert(tocHomeOf(p.id) && tocHomeOf(p.id).course === 'basic',
                         `${where} の ${i + 1} 番目: 化学基礎でないページのリンクに「化学」の札が付いている`);
                 }
-                assert(flat(gotEl.textContent) === flat(live.textContent),
+                assert(flat(gotEl.textContent) === flat(liveCmp.textContent),
                     `${where} の ${i + 1} 番目（${live.tagName.toLowerCase()}.${live.className}）が、いまアプリが組む中身と違う\n`
                     + `    焼いたもの: ${flat(got[i].textContent).slice(0, 90)}\n`
                     + `    アプリから: ${flat(live.textContent).slice(0, 90)}\n`
@@ -56087,7 +56159,8 @@
                ⚠ URL を手で書き換えても赤（`REF17` ④ は「qa に実在するか」で、こちらは「原稿と同じか」）。 */
             const embeds = [...doc.querySelectorAll('[data-embed]')].map(e => e.getAttribute('data-embed'));
             const qaSrc = embeds.filter(u => u.indexOf('/qa/') === 0)[0];
-            const appSrc = embeds.filter(u => u.indexOf('/assembler/') === 0)[0];
+            // ⚠ 反応式の「ここで反応を試す」（?summon=…&embed=1）も /assembler/ で始まる ＝ ページ末の箱は open=reference で引く
+            const appSrc = embeds.filter(u => u.indexOf('/assembler/') === 0 && /[?&]open=reference(&|$)/.test(u))[0];
             /* ★★ `codes` を持たないページ（横断のページ・§26）は、**箱そのものを出さない**
                （`video` と同じ扱い）。⚠ 「0問」と書いた箱や、押しても別のページへ着地する箱を残さない。 */
             if (!(p.codes || []).length) {

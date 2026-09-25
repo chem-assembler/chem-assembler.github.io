@@ -376,7 +376,8 @@
             summon = gen.left[0].name;
         }
         return { rule: rule, summon: summon,
-            href: '/assembler/?summon=' + encodeURIComponent(summon) + '&reagent=' + encodeURIComponent(rule) + '&' + APP_FROM };
+            href: '/assembler/?summon=' + encodeURIComponent(summon) + '&reagent=' + encodeURIComponent(rule) + '&' + APP_FROM
+                + (CTX_PAGE ? '&page=' + encodeURIComponent(CTX_PAGE) : '') };   // ★ 戻り道（アプリの「← 参考書へ戻る」がこのページへ戻す）
     }
 
     var BETWEEN_KEYS = ['kind', 'at', 'to', 'label', 'color'];

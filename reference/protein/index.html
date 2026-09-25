@@ -937,7 +937,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <section class="ref-sec" id="ref-sec-peptide"><h4 class="ref-sec-h">ペプチド結合</h4><p class="ref-sec-lead">一方のアミノ酸の −COOH と、もう一方のアミノ酸の −NH₂ から水1分子がとれてできる −CO−NH− の結合をペプチド結合といいます。</p></section>
 <p class="ref-p">アミノ酸どうしが、一方の <b>−COOH</b> ともう一方の <b>−NH₂</b> から<b>水1分子がとれて</b>縮合すると、<b>−CO−NH−</b> の結合ができます。アミノ酸どうしのこの結合を<b>ペプチド結合</b>といい、できた化合物を<b>ペプチド</b>といいます。</p>
 <p class="ref-p">具体例として、グリシン2分子からは<b>グリシルグリシン</b>ができます。</p>
-<div class="ref-rx ref-rx-has-img"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-fig"><div class="ref-figure-scroll"><img class="ref-figure-img ref-rx-img ref-figure-img-scroll" src="/reference-img/rx-01bd30eb.png?h=d7577eac" alt="構造式の反応式: H₂N−CH₂−COOH ＋ H₂N−CH₂−COOH → H₂N−CH₂−CO−NH−CH₂−COOH ＋ H₂O" loading="lazy" style="width:100.0%"></div></div><div class="ref-rx-eq"><span class="ref-rx-side">H₂N−CH₂−COOH ＋ H₂N−CH₂−COOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂N−CH₂−CO−NH−CH₂−COOH ＋ H₂O</span></div><p class="ref-rx-app"><a href="/assembler/?summon=%E3%82%B0%E3%83%AA%E3%82%B7%E3%83%B3&amp;reagent=amidation&amp;from=reference" title="「グリシン」を呼び出して、この反応を選んだ状態でアプリを開きます">アプリで試す ▶</a></p><p class="ref-note">左のグリシンの −COOH の OH と、右のグリシンの −NH₂ の H から水がとれています。</p></div>
+<div class="ref-rx ref-rx-has-img"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-fig"><div class="ref-figure-scroll"><img class="ref-figure-img ref-rx-img ref-figure-img-scroll" src="/reference-img/rx-01bd30eb.png?h=d7577eac" alt="構造式の反応式: H₂N−CH₂−COOH ＋ H₂N−CH₂−COOH → H₂N−CH₂−CO−NH−CH₂−COOH ＋ H₂O" loading="lazy" style="width:100.0%"></div></div><div class="ref-rx-eq"><span class="ref-rx-side">H₂N−CH₂−COOH ＋ H₂N−CH₂−COOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂N−CH₂−CO−NH−CH₂−COOH ＋ H₂O</span></div><div class="embed embed-app"><div class="embed-run"><button type="button" data-embed="/assembler/?summon=%E3%82%B0%E3%83%AA%E3%82%B7%E3%83%B3&amp;reagent=amidation&amp;from=reference&amp;page=protein&amp;embed=1" data-embed-title="▶ ここで反応を試す">▶ ここで反応を試す</button></div><a class="alt" href="/assembler/?summon=%E3%82%B0%E3%83%AA%E3%82%B7%E3%83%B3&amp;reagent=amidation&amp;from=reference&amp;page=protein">▶ 大きな画面で開く</a></div><p class="ref-note">左のグリシンの −COOH の OH と、右のグリシンの −NH₂ の H から水がとれています。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/protein-glycylglycine.png?h=a6b2341e" alt="グリシルグリシンの構造式。左端にアミノ基、右端にカルボキシ基があり、まん中に C=O と N−H が並んだペプチド結合がある" loading="lazy"><figcaption class="ref-figure-cap"><b>グリシルグリシン</b>。まん中の −CO−NH− がペプチド結合です。</figcaption></figure>
 <p class="ref-p">アミノ酸2分子からできたものを<b>ジペプチド</b>、3分子なら<b>トリペプチド</b>、多数なら<b>ポリペプチド</b>といいます。タンパク質は、ポリペプチドが決まった形に折りたたまれたものです。</p>
 <p class="ref-p">ペプチド結合は、カルボン酸とアミンからできる<b>アミド結合と同じ結合</b>です。アミノ酸どうしのときだけ、特にペプチド結合と呼びます。</p>
@@ -1025,7 +1025,24 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+window.addEventListener('message', function (e) {
+  if (e.origin !== location.origin) return;
+  var d = e.data;
+  if (!d || d.type !== 'slz-embed' || d.v !== 1) return;
+  var h = Math.ceil(d.h);
+  if (!(h > 0)) return;
+  var fs = document.querySelectorAll('.embed iframe');
+  for (var i = 0; i < fs.length; i++) {
+    if (fs[i].contentWindow !== e.source) continue;
+    var prev = parseFloat(fs[i].dataset.embedH);
+    if (prev === prev && Math.abs(prev - h) <= 1) return;
+    fs[i].dataset.embedH = h;
+    fs[i].style.height = h + 'px';
+    return;
+  }
+});
+</script>
 <script>
 (function () {
   var d = document.querySelector('.ref-toc details');

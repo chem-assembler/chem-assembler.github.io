@@ -937,7 +937,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <section class="ref-sec" id="ref-sec-prep"><h4 class="ref-sec-h">セッケンのつくり方</h4><p class="ref-sec-lead">油脂に水酸化ナトリウム水溶液を加えて加熱するとけん化が起こり、セッケンとグリセリンができます。飽和食塩水を加えると、セッケンが固まって浮き上がります。</p></section>
 <p class="ref-p">油脂に<b>水酸化ナトリウム水溶液</b>を加えて加熱すると、3か所のエステル結合が切れる<b>けん化</b>が起こり、<b>グリセリン</b>と<b>高級脂肪酸のナトリウム塩 R−COONa</b>、つまりセッケンができます。</p>
 <p class="ref-p">具体例として、ステアリン酸だけからなる油脂で書くと次のようになります。</p>
-<div class="ref-rx ref-rx-has-img"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-fig"><div class="ref-figure-scroll"><img class="ref-figure-img ref-rx-img ref-figure-img-scroll" src="/reference-img/rx-d9d69cd3.png?h=dfcbab34" alt="構造式の反応式: C₃H₅(OCOC₁₇H₃₅)₃ ＋ 3NaOH → C₃H₅(OH)₃ ＋ 3C₁₇H₃₅COONa" loading="lazy" style="width:154.4%"></div></div><div class="ref-rx-eq"><span class="ref-rx-side">C₃H₅(OCOC₁₇H₃₅)₃ ＋ 3NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₃H₅(OH)₃ ＋ 3C₁₇H₃₅COONa</span></div><p class="ref-rx-app"><a href="/assembler/?summon=%E3%83%88%E3%83%AA%E3%82%B9%E3%83%86%E3%82%A2%E3%83%AA%E3%83%B3&amp;reagent=saponification&amp;from=reference" title="「トリステアリン」を呼び出して、この反応を選んだ状態でアプリを開きます">アプリで試す ▶</a></p><p class="ref-note">グリセリン1分子と、セッケンのステアリン酸ナトリウム3分子ができます。</p></div>
+<div class="ref-rx ref-rx-has-img"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-fig"><div class="ref-figure-scroll"><img class="ref-figure-img ref-rx-img ref-figure-img-scroll" src="/reference-img/rx-d9d69cd3.png?h=dfcbab34" alt="構造式の反応式: C₃H₅(OCOC₁₇H₃₅)₃ ＋ 3NaOH → C₃H₅(OH)₃ ＋ 3C₁₇H₃₅COONa" loading="lazy" style="width:154.4%"></div></div><div class="ref-rx-eq"><span class="ref-rx-side">C₃H₅(OCOC₁₇H₃₅)₃ ＋ 3NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₃H₅(OH)₃ ＋ 3C₁₇H₃₅COONa</span></div><div class="embed embed-app"><div class="embed-run"><button type="button" data-embed="/assembler/?summon=%E3%83%88%E3%83%AA%E3%82%B9%E3%83%86%E3%82%A2%E3%83%AA%E3%83%B3&amp;reagent=saponification&amp;from=reference&amp;page=soap&amp;embed=1" data-embed-title="▶ ここで反応を試す">▶ ここで反応を試す</button></div><a class="alt" href="/assembler/?summon=%E3%83%88%E3%83%AA%E3%82%B9%E3%83%86%E3%82%A2%E3%83%AA%E3%83%B3&amp;reagent=saponification&amp;from=reference&amp;page=soap">▶ 大きな画面で開く</a></div><p class="ref-note">グリセリン1分子と、セッケンのステアリン酸ナトリウム3分子ができます。</p></div>
 <p class="ref-p"><b>「油脂1分子からセッケンは3分子」は必ず覚えてください。</b>けん化の反応式の立て方と、けん化価の計算は油脂のページで扱っています。</p>
 <p class="ref-p">けん化したあとの液に<b>飽和食塩水</b>を加えると、セッケンが水に溶けにくくなって固まり、浮き上がります。このように、多量の塩を加えて物質を分離する操作を<b>塩析</b>といいます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/fat/">油脂の構造・けん化の反応式・けん化価の計算は油脂のページへ</a></p>
@@ -1027,7 +1027,24 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+window.addEventListener('message', function (e) {
+  if (e.origin !== location.origin) return;
+  var d = e.data;
+  if (!d || d.type !== 'slz-embed' || d.v !== 1) return;
+  var h = Math.ceil(d.h);
+  if (!(h > 0)) return;
+  var fs = document.querySelectorAll('.embed iframe');
+  for (var i = 0; i < fs.length; i++) {
+    if (fs[i].contentWindow !== e.source) continue;
+    var prev = parseFloat(fs[i].dataset.embedH);
+    if (prev === prev && Math.abs(prev - h) <= 1) return;
+    fs[i].dataset.embedH = h;
+    fs[i].style.height = h + 'px';
+    return;
+  }
+});
+</script>
 <script>
 (function () {
   var d = document.querySelector('.ref-toc details');

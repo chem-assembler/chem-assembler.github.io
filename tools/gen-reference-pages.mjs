@@ -907,6 +907,14 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
         }
         blocks = blocks.replace(slot, appEmbedBox(b));
     });
+    /* ★★ 反応式の「ここで反応を試す」（I-0126）。行き先は素の href に embed=1 を足したもの（:::link の embed と同じ約束）。
+       アプリ（assembler）は embed=1 で看板と帯を隠し、高さを親に送る（game.js applyOpenParam） */
+    let rxEmbeds = 0;
+    blocks = blocks.replace(/<div data-rx-embed="([^"]+)"><\/div>/g, (m, h) => {
+        const href = h.replace(/&amp;/g, '&');
+        rxEmbeds++;
+        return appEmbedBox({ text: '▶ ここで反応を試す', href, embedHref: href + (href.indexOf('?') >= 0 ? '&' : '?') + 'embed=1' });
+    });
     /* ★★ 化学基礎のページから「化学」（科目）のページへ飛ぶリンクには、**必ず「化学」の札を付ける**
        （2026-09-24 ユーザー「基礎のページからのリンクで、無機など化学のページから飛ばすときはかならず表示してください」）。
        ★ 科目は目次（TOC.txt）が持つ ＝ 読めるのはこの生成器。資料ペイン（面B）は有機（化学）のページしか開かないので、
@@ -960,7 +968,7 @@ ${embedBox('▶ アプリの中で開く', 'このページを資料ペインに
 <a href="/reference/terms/">用語から引く</a>
 ${next ? `<a href="/reference/${next.id}/">${esc(next.title)} →</a>` : ''}</nav>
 ${EMBED_JS}
-${embedLinks.length ? EMBED_MSG_JS : ''}
+${(embedLinks.length || rxEmbeds) ? EMBED_MSG_JS : ''}
 ${tocHtml ? TOC_JS : ''}
 ${blocks.indexOf('ref-figure-img') >= 0 ? ZOOM_JS : ''}
 ${(p.blocks || []).some(b => b.kind === 'section' && b.advanced) ? advJs() : ''}`;
@@ -1119,6 +1127,16 @@ for (const p of pages) {
                 slot.setAttribute('data-embed-slot', String(n));
                 if (row === el) el = slot; else row.parentNode.replaceChild(slot, row);
             }
+            /* ★★ 反応式の「アプリで試す」（:::reaction の app:・I-0126）も、面Aでは**押すとその場にアプリが開く部品**にする
+               （2026-09-25 ユーザー「埋め込みにしてください」）。ここでは目印（行き先の素の href を持つ空箱）を置くだけ。
+               ⚠ 面B（アプリの資料ペイン）は今までどおりのリンク（アプリの中にアプリを入れない） */
+            el.querySelectorAll('p.ref-rx-app').forEach((p) => {
+                const a = p.querySelector('a');
+                if (!a) return;
+                const slot = document.createElement('div');
+                slot.setAttribute('data-rx-embed', a.getAttribute('href'));
+                p.parentNode.replaceChild(slot, p);
+            });
             /* ★ 押しもの → リンク。**静的なページに、押しても何も起きないボタンを残さない** */
             el.querySelectorAll('button').forEach((btn) => {
                 const a = document.createElement('a');

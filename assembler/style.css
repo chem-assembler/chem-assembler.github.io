@@ -3981,3 +3981,8 @@ a.ref-sec-qa-link::before { content: ''; }
 .ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
 .ref-rx-app { margin: 4px 0 0; text-align: right; }
 .ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
+
+/* ★ 参考書のページに埋め込まれたとき（?embed=1・I-0126 反応式の「ここで反応を試す」）。
+   参考書の中に居るので、看板（header）と「参考書へ戻る」の帯は出さない。高さは game.js が親へ送る */
+html.embed header { display: none; }
+html.embed #from-band { display: none !important; }
