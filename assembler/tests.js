@@ -56071,7 +56071,7 @@
                     assert(btn, `${where}: 埋め込みの箱に押しものが無い`);
                     /* ★ URL は**台帳から組んだもの**（原稿に URL を書かない・§2-4 (1)）。
                        ⚠ 手で書き換えても、台帳を変えて焼き忘れてもここが赤くなる。 */
-                    const want = RM.appHref(emb.app, emb.id, p.id, true);
+                    const want = RM.appHref(emb.app, emb.id, p.id, true, emb.proc);
                     assert(btn.getAttribute('data-embed') === want,
                         `${where}: 埋め込みの URL が台帳と違う\n    焼いたもの: ${btn.getAttribute('data-embed')}\n    台帳から  : ${want}`);
                     assert(/[?&]embed=1(&|$)/.test(want), `${where}: 埋め込みの URL に embed=1 が付いていない（${want}）`);
@@ -57860,6 +57860,17 @@
         const embList = parse(':::link\napp: ion-equation/halflist\nembed: true\ntext: 半反応式を一覧で見てみよう\n:::');
         assert(embList.embedHref === '/ion-equation/halflist.html?embed=1&from=reference&page=zz-ref28',
             `引数の無い受け口の embedHref が違う: ${embList.embedHref}`);
+        /* ★ `proc:`（2026-09-25）… 手順を選べる受け口（半反応式の手順A／B）を、その手順で開く。
+           素の href にも埋め込みにも同じ値が入る（「▶ 大きな画面で開く」でも同じ手順で開く） */
+        const embB = parse(':::link\napp: ion-equation/halfreaction\nid: MnO4_red\nproc: B\nembed: true\n'
+            + 'text: 手順B で組んでみよう\n:::');
+        assert(embB.embedHref === '/ion-equation/halfreaction.html?q=MnO4_red&proc=B&embed=1&from=reference&page=zz-ref28',
+            `proc: B の embedHref が違う: ${embB.embedHref}`);
+        assert(embB.embedHref.replace('embed=1&', '') === embB.href, 'proc: B の素の href に手順が入っていない');
+        assert(/proc は A \/ B のどれか/.test(red(':::link app: ion-equation/halfreaction id: MnO4_red proc: C text: 手順C で組んでみよう :::')),
+            '否定対照: 無い手順（C）が通った');
+        assert(/手順を選べる受け口にだけ/.test(red(':::link app: ion-equation/redox id: rs1 proc: B text: 酸化還元の反応式を組み立ててみよう :::')),
+            '否定対照: 手順を選べない受け口に proc が通った');
         assert(/埋め込める受け口ではありません/.test(red(':::link app: ion-equation/redox id: rs1 embed: true text: 酸化還元の反応式を組み立ててみよう :::')),
             '否定対照: embeddable でない受け口に embed: true が通った');
         assert(/app:（ほかのアプリの受け口）と一緒に/.test(red(':::link to: ph embed: true text: 水素イオン濃度と pH のページへ :::')),
@@ -57877,7 +57888,7 @@
         const pages = JSON.parse(await grab('reference.json', 'reference.json'));
         pages.forEach(p => (p.blocks || []).forEach(b => {
             if (b.kind !== 'link' || !b.app) return;
-            assert(b.href === RM.appHref(b.app, b.id, p.id), `${p.id}: app: ${b.app} の href が台帳と違う（node tools/gen-reference.mjs）`);
+            assert(b.href === RM.appHref(b.app, b.id, p.id, false, b.proc), `${p.id}: app: ${b.app} の href が台帳と違う（node tools/gen-reference.mjs）`);
         }));
 
         /* ── ③ 区分 ── */
