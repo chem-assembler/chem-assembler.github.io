@@ -1759,7 +1759,6 @@ html:not(.rec-short) #mobile-name-chip { display: none !important; }
 #reaction-controls button { min-width: 34px; padding: 4px 5px; font-size: 14px; }
 /* ▶ 反応をもう一度見る（v1568）。操作の見た目は機構ビューアの #reaction-controls とそろえる。
    ⚠ ふだんの ▶ は幅 28px ＝ 320px で ↩ 反応前に戻す の後ろに残る 29.8px に収める（RX31 ④ の「段を増やさない」） */
-.work-strip #btn-rx-replay { min-width: 28px; width: 28px; padding: 0; font-size: 14px; }
 #rx-replay-controls { display: flex; gap: 5px; flex: 0 0 auto; align-items: center; }
 #rx-replay-controls button { min-width: 34px; padding: 4px 5px; font-size: 14px; }
 #rx-replay-controls #btn-rx-replay-exit { font-size: 12px; padding: 4px 10px; margin-left: 4px; }

@@ -33918,7 +33918,7 @@
             assert(rx.replayState().pos < p1 || p1 <= 1e-6, '⏮ で戻らない');
             // やめると反応のあとの図と帯の行に戻る（▶ もう一度見る と ↩ 反応前に戻す）
             D.getElementById('btn-rx-replay-exit').click();
-            assert(!rx.replayState().shown && vis('btn-rx-replay') && vis('btn-rx-undo'), 'やめたあと帯の行が戻らない');
+            assert(!rx.replayState().shown && vis('rx-replay-controls') && vis('btn-rx-undo'), 'やめたあと帯の行が戻らない');
             // ★ 否定対照: 見直しの段取りを組まない設定にすると、今までの再生（行は出ない）
             rx.autoReplayOnExecute = false;
             g.userMolecule = new W.Molecule(); g.updateDrawing();
@@ -33944,7 +33944,7 @@
         W.reactor.finalizeMorph();
         g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = []; g.updateDrawing();
         names.forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`));
-        assert(c.D.getElementById('btn-rx-replay').classList.contains('hidden'), '反応の前から ▶ が出ている');
+        assert(c.D.getElementById('rx-replay-controls').classList.contains('hidden'), '反応の前から ▶ が出ている');
         const rule = W.REACTION_RULES.find(r => r.id === id);
         const sites = rule.detect(g.userMolecule) || [];
         assert(sites.length, `${names.join('＋')} に ${id} の箇所が無い（検査が素通りする）`);
@@ -33983,10 +33983,10 @@
             for (const cs of cases) {
                 const tag = `${cs.id}（${cs.names.join('＋')}）`;
                 await rrpRun(c, cs.names, cs.id);
-                assert(vis('btn-rx-replay') && vis('btn-rx-undo'), `${tag}: 反応のあとに ▶ と ↩ が並んでいない`);
+                assert(vis('rx-replay-controls') && vis('btn-rx-undo'), `${tag}: 反応のあとに ▶ と ↩ が並んでいない`);
                 const s0 = rrpSig(c), L0 = rx.lastReaction;
                 // ▶ → ⏸ → 🔄（ふだんは ▶ しか無いので、押して入る）
-                btn('btn-rx-replay').click();
+                btn('btn-rx-replay-play').click();
                 assert(rx.replayState().playing, `${tag}: ▶ を押しても流れない`);
                 assert(card.classList.contains('rx-replaying') && vis('rx-replay-controls') && !vis('btn-rx-undo') && !vis('btn-iupac-numbering'),
                     `${tag}: 見直しのあいだ、帯の行が見直しの操作に入れ替わっていない`);
@@ -34006,9 +34006,12 @@
                 assert(new Set(frames).size === frames.length, `${tag}: 段ごとの絵が同じものを含む（止まっても絵が変わらない）`);
                 // 最後まで進むと、本物の図と帯の行が戻る
                 assert(!rx.replayState().shown && !rx._morphing, `${tag}: ⏭ で最後まで進んでも見直しが終わらない`);
-                assert(!card.classList.contains('rx-replaying') && vis('btn-rx-replay') && vis('btn-rx-undo'), `${tag}: 終わっても帯の行が戻らない`);
+                assert(!card.classList.contains('rx-replaying') && vis('rx-replay-controls') && vis('btn-rx-undo'), `${tag}: 終わっても帯の行が戻らない`);
+                // ★ v1665（ユーザー「反応後にコマ送りボタンが消えるのがやりづらい」）: 終わってもコマ送りは出たまま。やめる だけ隠れ、⏮ は押せて ⏭ は押せない
+                assert(!vis('btn-rx-replay-exit') && !btn('btn-rx-replay-prev').disabled && btn('btn-rx-replay-next').disabled,
+                    `${tag}: 終わったあとのコマ送りの出し方が違う（やめる が出ている／⏮ が押せない／⏭ が押せる）`);
                 // ⏮ は終わりから1段ずつ戻る
-                btn('btn-rx-replay').click(); btn('btn-rx-replay-play').click();   // 入って止める
+                btn('btn-rx-replay-play').click(); btn('btn-rx-replay-play').click();   // 入って止める
                 rx.replayStep(1); rx.replayStep(1); rx.replayStep(1); rx.replayStep(1); rx.replayStep(1); rx.replayStep(1);
                 assert(!rx.replayState().shown, `${tag}: （下ごしらえ）終わりまで進まない`);
                 assert(rx.replayStep(-1) && rx.replayState().stage === cs.want[cs.want.length - 1],
@@ -34034,9 +34037,9 @@
             g.userMolecule.addAtom('C', g.userMolecule.atoms[0].x, g.userMolecule.atoms[0].y + 210);
             g.updateDrawing();
             assert(rrpSig(c) !== s1, '否定対照: 描き足しても物差しが変わらない');
-            assert(!vis('btn-rx-replay') && rx.replayPlay() === false, '描き足したのに ▶ が出ている／押せる（見直す図がもう無い）');
+            assert(!vis('rx-replay-controls') && rx.replayPlay() === false, '描き足したのに ▶ が出ている／押せる（見直す図がもう無い）');
             btn('btn-undo').click();
-            assert(vis('btn-rx-replay'), '描き足しを ↩ 戻す で戻しても ▶ が戻らない');
+            assert(vis('rx-replay-controls'), '描き足しを ↩ 戻す で戻しても ▶ が戻らない');
         } finally {
             rx.finalizeMorph();
             g.userMolecule = new W.Molecule(); g.updateDrawing();
@@ -34062,14 +34065,14 @@
             c.clickAt(40, 40);
             assert(!rx.replayState().shown && !rx._morphing, 'タップしても見直しが終わらない');
             assert(rrpSig(c) === s0, `タップで作図が起きた（${rrpSig(c)} ≠ ${s0}）`);
-            assert(vis('btn-rx-replay') && vis('btn-rx-undo'), 'タップで終えたあと帯の行が戻らない');
+            assert(vis('rx-replay-controls') && vis('btn-rx-undo'), 'タップで終えたあと帯の行が戻らない');
             // ② 止めたままリボンの ↩ 戻す（分子が反応前へ変わる）＝ 見直しは終わり、▶ も引っ込む
             pausedMid();
             btn('btn-undo').click();
             assert(!rx.replayState().shown && !rx._morphing, '↩ 戻す のあとも写しが出たまま（次のタップが飲まれる）');
-            assert(!vis('btn-rx-replay') && !btn('reaction-card').classList.contains('rx-replaying'), '↩ 戻す のあとも ▶ か見直しの行が残る');
+            assert(!vis('rx-replay-controls') && !btn('reaction-card').classList.contains('rx-replaying'), '↩ 戻す のあとも ▶ か見直しの行が残る');
             btn('btn-redo').click();
-            assert(vis('btn-rx-replay'), 'やり直しで反応のあとへ戻っても ▶ が戻らない');
+            assert(vis('rx-replay-controls'), 'やり直しで反応のあとへ戻っても ▶ が戻らない');
             // ③ 止めたまま次の反応 ＝ 前の見直しは捨て、▶ は新しい反応を見直す
             pausedMid();
             const L1 = rx.lastReaction;
@@ -34085,7 +34088,7 @@
             assert(btn('btn-rx-replay-exit').click() === undefined && !rx.replayState().shown, 'やめる で見直しが終わらない');
             // ④ ↩ 反応前に戻す ＝ 見直す反応が無くなる
             btn('btn-rx-undo').click();
-            assert(!vis('btn-rx-replay') && rx.replayPlay() === false, '反応前に戻したのに ▶ が出ている／押せる');
+            assert(!vis('rx-replay-controls') && rx.replayPlay() === false, '反応前に戻したのに ▶ が出ている／押せる');
         } finally {
             rx.finalizeMorph();
             g.userMolecule = new W.Molecule(); g.updateDrawing();
@@ -34104,7 +34107,7 @@
                 const row = FD.getElementById('reaction-card'), strip = FD.getElementById('work-strip');
                 const hgt = el => Math.round(el.getBoundingClientRect().height);
                 const rest = { row: hgt(row), strip: hgt(strip) };
-                const play = FD.getElementById('btn-rx-replay').getBoundingClientRect();
+                const play = FD.getElementById('rx-replay-controls').getBoundingClientRect();
                 const undo = FD.getElementById('btn-rx-undo').getBoundingClientRect();
                 assert(play.width > 0 && Math.abs(play.top - undo.top) <= 3 && play.left >= undo.right,
                     `${name}: ▶ が ↩ 反応前に戻す の後ろの同じ段にいない`);

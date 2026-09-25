@@ -10378,14 +10378,12 @@ class Reactor {
         // ▶ 反応をもう一度見る（v1568）。⚠ 出し入れは `syncUndoButton()` の中で ↩ と同じ条件でそろえる
         this._replay = null;
         this.replayCard = document.getElementById('reaction-card');
-        this.replayBtn = document.getElementById('btn-rx-replay');
         this.replayControls = document.getElementById('rx-replay-controls');
         const rb = id => document.getElementById(id);
         this.replayBtns = {
             restart: rb('btn-rx-replay-restart'), prev: rb('btn-rx-replay-prev'),
             play: rb('btn-rx-replay-play'), next: rb('btn-rx-replay-next'), exit: rb('btn-rx-replay-exit')
         };
-        if (this.replayBtn) this.replayBtn.addEventListener('click', () => this.replayPlay());
         const on = (b, fn) => { if (b) b.addEventListener('click', fn); };
         on(this.replayBtns.play, () => this.replayPlay());
         on(this.replayBtns.prev, () => this.replayStep(-1));
@@ -13557,15 +13555,22 @@ class Reactor {
         }
         const open = this.replayFrameShown();
         const can = !open && this.canReplay();
-        if (this.replayBtn) this.replayBtn.classList.toggle('hidden', !can);
-        if (this.replayControls) this.replayControls.classList.toggle('hidden', !open);
+        /* ★ v1665（2026-09-25 ユーザー「反応後にコマ送りボタンが消えるのがやりづらい」）:
+         *   再生が終わっても**コマ送りの操作（🔄 ⏮ ▶ ⏭）は出したまま**にする。v1664 までは終わると
+         *   「▶ もう一度見る」1つに畳んでいた。見直していないあいだは ↩ 反応前に戻す と並べ、
+         *   「やめる」だけ隠す（止めるものが無い）。⏮ を押すとその場で1段戻って見直しに入る。
+         *   ⚠ 「▶ もう一度見る」の札（#btn-rx-replay）は無くした（操作の ▶ と同じことをするので2つ出さない） */
+        if (this.replayControls) this.replayControls.classList.toggle('hidden', !open && !can);
         if (this.replayCard) this.replayCard.classList.toggle('rx-replaying', open);
         const b = this.replayBtns;
+        if (b && b.exit) b.exit.classList.toggle('hidden', !open);
         if (b && b.play) {
             b.play.textContent = open && r.playing ? '⏸' : '▶';
             // ⚠ 流しているあいだは位置がコマごとに進む（ここは再描画のたびには呼ばれない）＝ 押せるままにする
-            if (b.prev) b.prev.disabled = !open || (!r.playing && r.pos <= 1e-6);
-            if (b.next) b.next.disabled = !open || (!r.playing && r.pos >= r.tl.end - 1e-6);
+            // ⚠ 見直していないとき（can）は反応のあとの図 ＝ 最後の段にいる: ⏮ は押せる・⏭ は押せない
+            if (b.prev) b.prev.disabled = open ? (!r.playing && r.pos <= 1e-6) : !can;
+            if (b.next) b.next.disabled = open ? (!r.playing && r.pos >= r.tl.end - 1e-6) : true;
+            if (b.restart) b.restart.disabled = !open && !can;
         }
         return open;
     }
