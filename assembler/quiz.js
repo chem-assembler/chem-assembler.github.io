@@ -2748,6 +2748,13 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
             const leftEnd = heavyNb.length === 1 && heavyNb[0].atom.x > a.x + 1;
             // ★ 原子1つだけの分子は教科書の書き順（H₂O・H₂S・HCl は H が前、CH₄・NH₃ は後ろ）。2026-09-24 反応式の構造式で「OH₂」と出ていた
             const loneHFirst = heavyNb.length === 0 && ['O', 'S', 'Se', 'F', 'Cl', 'Br', 'I'].indexOf(a.element) >= 0;
+            /* ★ 左端の炭素は H を前に書かない（I-0121・2026-09-24 ユーザー「CH₃ は基本この向き」）。
+             *   「CH₃」と書き、**文字全体のまん中**を原子の位置に置く（whole）＝ 右から来る価標は文字の右端で止まり、
+             *   示性式の「CH₃−CH…」と同じ見た目になる。⚠ HO−・H₂N− など炭素以外は今までどおり H を前に */
+            if (leftEnd && hs && a.element === 'C') {
+                labels.set(a.id, { text: a.element + hs, atEnd: false, whole: true });
+                return;
+            }
             const atEnd = !!((leftEnd || loneHFirst) && hs);
             labels.set(a.id, { text: atEnd ? hs + a.element : a.element + hs, atEnd });
         }

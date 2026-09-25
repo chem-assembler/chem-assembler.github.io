@@ -61499,8 +61499,8 @@
         try {
             const aa = paperOf('酢酸');
             assert(aa.circles === 0, `紙の図に丸が ${aa.circles} 個描かれている`);
-            same(aa.labels, ['H₃C', 'C', 'O', 'OH'], '酢酸（既定 ＝ C=O は線・OH だけ文字）');
-            same(paperOf('酢酸', { condense: ['COOH'] }).labels, ['H₃C', 'COOH'], '酢酸（condense=COOH）');
+            same(aa.labels, ['CH₃', 'C', 'O', 'OH'], '酢酸（既定 ＝ C=O は線・OH だけ文字）');
+            same(paperOf('酢酸', { condense: ['COOH'] }).labels, ['CH₃', 'COOH'], '酢酸（condense=COOH）');
             // ★ v1554: −CHO は C−H も線（ユーザー提案・教科書 5編 p.148 の図(8) R−C−H）。C から出る線は3本（環・=O・H）
             {
                 const bz = paperOf('ベンズアルデヒド');
@@ -61651,7 +61651,7 @@
             same(paperOf('アンモニア').labels, ['NH₃'], '★否定対照 アンモニア（既定）');
             assert(paperOf('アンモニア').lines.length === 0, '★否定対照 アンモニア（既定）に価標が描かれた');
             same(paperOf('メタン').labels, ['CH₄'], '★否定対照 メタン（既定）');
-            same(paperOf('酢酸').labels, ['H₃C', 'C', 'O', 'OH'], '★否定対照 酢酸（既定 ＝ FGT3 と同じ）');
+            same(paperOf('酢酸').labels, ['CH₃', 'C', 'O', 'OH'], '★否定対照 酢酸（既定 ＝ FGT3 と同じ）');
         } finally {
             svg.remove();
         }
