@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="360" viewBox="0 0 680 360" role="img">
+  <!-- 原子番号1〜20のイオン化エネルギー（第一イオン化エネルギー・kJ/mol の概数）。ページの本文用（問題用の記号 a〜f の付いた図は例題だけに使う。2026-09-25・ユーザー校正）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .b { font-weight: 700; font-size: 18px; }
+    .s { font-size: 15px; fill: #444; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .nucT { font-weight: 700; font-size: 16px; fill: #b3541e; text-anchor: middle; }
+    .shell { fill: none; stroke: #888; stroke-width: 1.5; }
+    .shellOut { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #222; stroke-width: 1.2; }
+    .eOut { fill: #ffe14d; stroke: #1f618d; stroke-width: 2.2; }
+    .pull { stroke: #c62828; fill: none; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .red { fill: #c62828; font-weight: 700; }
+  </style>
+  <line x1="90" y1="300" x2="660" y2="300" stroke="#222" stroke-width="1.5"/>
+  <line x1="90" y1="300" x2="90" y2="40" stroke="#222" stroke-width="1.5"/>
+  <line x1="85" y1="300" x2="90" y2="300" stroke="#222"/>
+  <text x="81" y="305" text-anchor="end" class="s">0</text>
+  <line x1="85" y1="250" x2="90" y2="250" stroke="#222"/>
+  <text x="81" y="255" text-anchor="end" class="s">500</text>
+  <line x1="85" y1="200" x2="90" y2="200" stroke="#222"/>
+  <text x="81" y="205" text-anchor="end" class="s">1000</text>
+  <line x1="85" y1="150" x2="90" y2="150" stroke="#222"/>
+  <text x="81" y="155" text-anchor="end" class="s">1500</text>
+  <line x1="85" y1="100" x2="90" y2="100" stroke="#222"/>
+  <text x="81" y="105" text-anchor="end" class="s">2000</text>
+  <line x1="85" y1="50" x2="90" y2="50" stroke="#222"/>
+  <text x="81" y="55" text-anchor="end" class="s">2500</text>
+  <text x="20" y="28" class="s">（kJ/mol）</text>
+  <polyline fill="none" stroke="#555" stroke-width="2" points="90,168.8 119.5,62.8 148.9,248 178.4,210 207.9,219.9 237.4,191.4 266.8,159.8 296.3,168.6 325.8,131.9 355.3,91.9 384.7,250.4 414.2,226.2 443.7,242.2 473.2,221.3 502.6,198.8 532.1,200 561.6,174.9 591.1,147.9 620.5,258.1 650,241"/>
+  <circle cx="90" cy="168.8" r="4" fill="#555"/>
+  <text x="100" y="173.8" class="s">H</text>
+  <text x="90" y="320" text-anchor="middle" class="s">1</text>
+  <circle cx="119.5" cy="62.8" r="6" fill="#1f618d"/>
+  <text x="119.5" y="50.8" text-anchor="middle" class="blue">He</text>
+  <text x="119.5" y="320" text-anchor="middle" class="s">2</text>
+  <circle cx="148.9" cy="248" r="6" fill="#c62828"/>
+  <text x="148.9" y="272" text-anchor="middle" class="red">Li</text>
+  <text x="148.9" y="320" text-anchor="middle" class="s">3</text>
+  <circle cx="178.4" cy="210" r="4" fill="#555"/>
+  <text x="178.4" y="198" text-anchor="middle" class="s">Be</text>
+  <text x="178.4" y="320" text-anchor="middle" class="s">4</text>
+  <circle cx="207.9" cy="219.9" r="4" fill="#555"/>
+  <text x="207.9" y="243.9" text-anchor="middle" class="s">B</text>
+  <text x="207.9" y="320" text-anchor="middle" class="s">5</text>
+  <circle cx="237.4" cy="191.4" r="4" fill="#555"/>
+  <text x="237.4" y="179.4" text-anchor="middle" class="s">C</text>
+  <text x="237.4" y="320" text-anchor="middle" class="s">6</text>
+  <circle cx="266.8" cy="159.8" r="4" fill="#555"/>
+  <text x="266.8" y="147.8" text-anchor="middle" class="s">N</text>
+  <text x="266.8" y="320" text-anchor="middle" class="s">7</text>
+  <circle cx="296.3" cy="168.6" r="4" fill="#555"/>
+  <text x="296.3" y="192.6" text-anchor="middle" class="s">O</text>
+  <text x="296.3" y="320" text-anchor="middle" class="s">8</text>
+  <circle cx="325.8" cy="131.9" r="4" fill="#555"/>
+  <text x="325.8" y="119.9" text-anchor="middle" class="s">F</text>
+  <text x="325.8" y="320" text-anchor="middle" class="s">9</text>
+  <circle cx="355.3" cy="91.9" r="6" fill="#1f618d"/>
+  <text x="355.3" y="79.9" text-anchor="middle" class="blue">Ne</text>
+  <text x="355.3" y="320" text-anchor="middle" class="s">10</text>
+  <circle cx="384.7" cy="250.4" r="6" fill="#c62828"/>
+  <text x="384.7" y="274.4" text-anchor="middle" class="red">Na</text>
+  <text x="384.7" y="320" text-anchor="middle" class="s">11</text>
+  <circle cx="414.2" cy="226.2" r="4" fill="#555"/>
+  <text x="414.2" y="214.2" text-anchor="middle" class="s">Mg</text>
+  <text x="414.2" y="320" text-anchor="middle" class="s">12</text>
+  <circle cx="443.7" cy="242.2" r="4" fill="#555"/>
+  <text x="443.7" y="266.2" text-anchor="middle" class="s">Al</text>
+  <text x="443.7" y="320" text-anchor="middle" class="s">13</text>
+  <circle cx="473.2" cy="221.3" r="4" fill="#555"/>
+  <text x="473.2" y="209.3" text-anchor="middle" class="s">Si</text>
+  <text x="473.2" y="320" text-anchor="middle" class="s">14</text>
+  <circle cx="502.6" cy="198.8" r="4" fill="#555"/>
+  <text x="502.6" y="186.8" text-anchor="middle" class="s">P</text>
+  <text x="502.6" y="320" text-anchor="middle" class="s">15</text>
+  <circle cx="532.1" cy="200" r="4" fill="#555"/>
+  <text x="532.1" y="224" text-anchor="middle" class="s">S</text>
+  <text x="532.1" y="320" text-anchor="middle" class="s">16</text>
+  <circle cx="561.6" cy="174.9" r="4" fill="#555"/>
+  <text x="561.6" y="162.9" text-anchor="middle" class="s">Cl</text>
+  <text x="561.6" y="320" text-anchor="middle" class="s">17</text>
+  <circle cx="591.1" cy="147.9" r="6" fill="#1f618d"/>
+  <text x="591.1" y="135.9" text-anchor="middle" class="blue">Ar</text>
+  <text x="591.1" y="320" text-anchor="middle" class="s">18</text>
+  <circle cx="620.5" cy="258.1" r="6" fill="#c62828"/>
+  <text x="620.5" y="282.1" text-anchor="middle" class="red">K</text>
+  <text x="620.5" y="320" text-anchor="middle" class="s">19</text>
+  <circle cx="650" cy="241" r="4" fill="#555"/>
+  <text x="650" y="229" text-anchor="middle" class="s">Ca</text>
+  <text x="650" y="320" text-anchor="middle" class="s">20</text>
+  <text x="370" y="346" text-anchor="middle">原子番号</text>
+  <text x="500" y="54" class="blue">● 貴ガス（山）</text>
+  <text x="500" y="78" class="red">● アルカリ金属（谷）</text>
+</svg>

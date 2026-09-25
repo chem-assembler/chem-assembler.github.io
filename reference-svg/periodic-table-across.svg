@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="360" viewBox="0 0 680 360" role="img">
+  <!-- 同じ周期（横）の比較: Li と F。最外殻はどちらも L殻で距離はほぼ同じ、実質の電荷が +1 と +7（2026-09-25・ユーザー校正「縦の比較とヨコの比較を明確にわけて、それぞれ図も用いて」）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .b { font-weight: 700; font-size: 18px; }
+    .s { font-size: 15px; fill: #444; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .nucT { font-weight: 700; font-size: 16px; fill: #b3541e; text-anchor: middle; }
+    .shell { fill: none; stroke: #888; stroke-width: 1.5; }
+    .shellOut { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #222; stroke-width: 1.2; }
+    .eOut { fill: #ffe14d; stroke: #1f618d; stroke-width: 2.2; }
+    .pull { stroke: #c62828; fill: none; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .red { fill: #c62828; font-weight: 700; }
+  </style>
+  <circle class="shell" cx="170" cy="150" r="42"/>
+  <circle class="e" cx="170" cy="108" r="6"/>
+  <circle class="e" cx="170" cy="192" r="6"/>
+  <circle class="shellOut" cx="170" cy="150" r="78"/>
+  <circle class="eOut" cx="170" cy="72" r="7"/>
+  <circle class="nuc" cx="170" cy="150" r="21"/>
+  <text class="nucT" x="170" y="156">+3</text>
+  <text class="b" x="170" y="58" text-anchor="middle">Li</text>
+  <circle class="shell" cx="510" cy="150" r="42"/>
+  <circle class="e" cx="510" cy="108" r="6"/>
+  <circle class="e" cx="510" cy="192" r="6"/>
+  <circle class="shellOut" cx="510" cy="150" r="78"/>
+  <circle class="eOut" cx="533.1" cy="75.5" r="7"/>
+  <circle class="eOut" cx="582.6" cy="121.6" r="7"/>
+  <circle class="eOut" cx="577.5" cy="189.1" r="7"/>
+  <circle class="eOut" cx="521.6" cy="227.1" r="7"/>
+  <circle class="eOut" cx="456.9" cy="207.1" r="7"/>
+  <circle class="eOut" cx="432.2" cy="144.1" r="7"/>
+  <circle class="eOut" cx="466.1" cy="85.5" r="7"/>
+  <circle class="nuc" cx="510" cy="150" r="21"/>
+  <text class="nucT" x="510" y="156">+9</text>
+  <text class="b" x="510" y="58" text-anchor="middle">F</text>
+  <text x="340" y="146" text-anchor="middle" class="s">最外殻は</text>
+  <text x="340" y="168" text-anchor="middle" class="s">どちらも L殻</text>
+  <text x="170" y="266" text-anchor="middle">原子核 +3、内側の電子 2個</text>
+  <text x="170" y="292" text-anchor="middle">→ 実質 <tspan class="red">+1</tspan></text>
+  <text x="510" y="266" text-anchor="middle">原子核 +9、内側の電子 2個</text>
+  <text x="510" y="292" text-anchor="middle">→ 実質 <tspan class="red">+7</tspan></text>
+  <text x="340" y="336" text-anchor="middle" class="b">距離は同じ。実質の電荷が大きい F のほうが、最外殻電子を強く引く</text>
+</svg>

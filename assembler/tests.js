@@ -57401,10 +57401,14 @@
             const built = book.renderBlocks(pg);
             // 描いた順に平らに並べる（畳みの中も順に）
             const flat = [];
-            built.els.forEach(el => {
-                if (el.tagName === 'DETAILS') { flat.push(el); [...el.querySelector('.ref-adv-body').children].forEach(x => flat.push(x)); }
-                else flat.push(el);
-            });
+            // ★ 畳みは2種類（発展の節 .ref-adv-body・畳む小見出し .ref-hfold-body）で、入れ子にもなる ＝ 中へ順にたどる
+            const walk = el => {
+                flat.push(el);
+                if (el.tagName !== 'DETAILS') return;
+                const body = [...el.children].find(x => x.classList.contains('ref-adv-body') || x.classList.contains('ref-hfold-body'));
+                if (body) [...body.children].forEach(walk);
+            };
+            built.els.forEach(walk);
             const own = new Set(pg.codes || []);
             secs.forEach((b, i) => {
                 if (!b.codes || !b.codes.length) return;
@@ -57458,10 +57462,15 @@
 
             /* ── ③ 中身が落ちていない ── */
             const flat = (pg.blocks || []).filter(b => book.renderBlock(b)).length;
-            const dets = built.els.filter(el => el.tagName === 'DETAILS');
+            const dets = built.els.filter(el => el.tagName === 'DETAILS' && el.classList.contains('ref-adv'));
             // ⚠ 節の一問一答の口（.ref-sec-qa・I-0143）はブロックではない（節の codes から足したもの）ので数えない
             const notQa = (el) => !el.classList.contains('ref-sec-qa');
-            const packed = dets.reduce((n, d) => n + [...d.querySelector('.ref-adv-body').children].filter(notQa).length, 0);
+            /* ★ 畳む小見出し（.ref-hfold・`fold: true`）は、器1つが見出し1ブロック、中身は .ref-hfold-body に入る
+               ＝ 発展の畳みの中にあっても外にあっても、中身の数を足せば勘定が合う */
+            const hbodies = [];
+            built.els.forEach(el => { if (el.matches && el.matches('details.ref-hfold')) hbodies.push(el); if (el.querySelectorAll) el.querySelectorAll('details.ref-hfold').forEach(x => hbodies.push(x)); });
+            const packed = dets.reduce((n, d) => n + [...d.querySelector('.ref-adv-body').children].filter(notQa).length, 0)
+                + hbodies.reduce((n, d) => n + [...d.querySelector('.ref-hfold-body').children].filter(notQa).length, 0);
             const outside = built.els.filter(notQa).length;
             assert(outside + packed === flat,
                 `${pg.id}: 畳む前 ${flat} ブロックが、畳んだあと 外 ${outside} ＋ 中 ${packed} になっている`

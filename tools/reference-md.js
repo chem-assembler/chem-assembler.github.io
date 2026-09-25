@@ -55,7 +55,7 @@
     var LEVELS = ['★★★', '★★☆', '★☆☆'];
     /* ⚠ `note`（補足）は **型を書かない `::: … :::` の行き先**（§20-4）。
        ★ ユーザーは「ちょっと囲みたい」だけのことがあり、そのたびに tone を選ばせない。 */
-    var TONES = ['caution', 'memorize', 'skip', 'note'];
+    var TONES = ['caution', 'confusing', 'memorize', 'skip', 'note'];
     /* ★★ 発展の印（設計書 §23・REFBOOK_STYLE §10）。**節と小見出しに `advanced: true` を足す**。
        ⚠⚠ **意味は「範囲の外」だけ。重要度も暗記の要否も言わない** ——
          覚える範囲の線引きは今までどおり**本文の文**が持つ（REFBOOK_STYLE §8-5・本人の最大の特徴）。
@@ -499,7 +499,7 @@
         /* ★ 節の下の小見出し（§20-5）。**本文では `## タイトル` と書ける**（`:::heading` と同じもの）。
            ⚠ **アンカーは持たない** —— 綴りは `#ref-sec-<anchor>` の1つだけ、という §19-2 の決めを
               増やさないため。★ だから**目次（`renderToc`）にも出さない**（目次の行き先は節だけ）。 */
-        heading: { order: ['title', 'advanced', 'course'], req: ['title'], list: [], prose: ['title'], bool: ['advanced'], enum: { course: ['adv'] } },
+        heading: { order: ['title', 'advanced', 'course', 'fold'], req: ['title'], list: [], prose: ['title'], bool: ['advanced', 'fold'], enum: { course: ['adv'] } },
         /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
         list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'], hang: ['items'] },
         /* 図。⚠ `src` は **`reference-img/` の中のファイル名だけ**（パスも .. も書けない）。

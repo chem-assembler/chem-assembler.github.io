@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="230" viewBox="0 0 680 230" role="img">
+  <!-- 電子親和力の場面（原子 ＋ e⁻ → 陰イオン、エネルギーが出る）。2026-09-25・ユーザー校正。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .b { font-weight: 700; font-size: 18px; }
+    .s { font-size: 15px; fill: #444; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .nucT { font-weight: 700; font-size: 16px; fill: #b3541e; text-anchor: middle; }
+    .shell { fill: none; stroke: #888; stroke-width: 1.5; }
+    .shellOut { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #222; stroke-width: 1.2; }
+    .eOut { fill: #ffe14d; stroke: #1f618d; stroke-width: 2.2; }
+    .pull { stroke: #c62828; fill: none; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .red { fill: #c62828; font-weight: 700; }
+  </style>
+  <text x="150" y="180" text-anchor="middle" class="s">Cl 原子</text>
+  <text x="500" y="180" text-anchor="middle" class="s">Cl⁻（陰イオン）</text>
+  <circle class="shellOut" cx="150" cy="110" r="44"/>
+  <circle class="nuc" cx="150" cy="110" r="22"/>
+  <text class="nucT" x="150" y="116">Cl</text>
+  <circle class="eOut" cx="163" cy="68" r="6"/>
+  <circle class="eOut" cx="191" cy="94" r="6"/>
+  <circle class="eOut" cx="188.1" cy="132" r="6"/>
+  <circle class="eOut" cx="156.5" cy="153.5" r="6"/>
+  <circle class="eOut" cx="120" cy="142.2" r="6"/>
+  <circle class="eOut" cx="106.1" cy="106.7" r="6"/>
+  <circle class="eOut" cx="125.2" cy="73.6" r="6"/>
+  <circle class="eOut" cx="222" cy="60" r="7"/>
+  <text x="234" y="66">e⁻</text>
+  <circle class="shellOut" cx="500" cy="110" r="44"/>
+  <circle class="nuc" cx="500" cy="110" r="22"/>
+  <text class="nucT" x="500" y="116">Cl</text>
+  <circle class="eOut" cx="513" cy="68" r="6"/>
+  <circle class="eOut" cx="538.9" cy="89.5" r="6"/>
+  <circle class="eOut" cx="542" cy="123" r="6"/>
+  <circle class="eOut" cx="520.5" cy="148.9" r="6"/>
+  <circle class="eOut" cx="487" cy="152" r="6"/>
+  <circle class="eOut" cx="461.1" cy="130.5" r="6"/>
+  <circle class="eOut" cx="458" cy="97" r="6"/>
+  <circle class="eOut" cx="479.5" cy="71.1" r="6"/>
+  <line x1="300" y1="100" x2="380" y2="100" stroke="#222" stroke-width="2.5"/>
+  <polygon points="380,92 396,100 380,108" fill="#222"/>
+  <text x="540" y="36" text-anchor="middle" class="red">＋ エネルギー</text>
+  <text x="540" y="58" text-anchor="middle" class="s">（電子親和力）が出る</text>
+  <text x="340" y="214" text-anchor="middle">原子が電子を1個受け取る。受け取って安定になる原子ほど、この値が大きい</text>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="230" viewBox="0 0 680 230" role="img">
+  <!-- 電気陰性度の場面と結合の極性（HCl）。共有電子対が電気陰性度の大きい Cl の側に寄り、H が δ＋・Cl が δ−（2026-09-25・ユーザー校正「図が必要」）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .b { font-weight: 700; font-size: 18px; }
+    .s { font-size: 15px; fill: #444; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .nucT { font-weight: 700; font-size: 16px; fill: #b3541e; text-anchor: middle; }
+    .shell { fill: none; stroke: #888; stroke-width: 1.5; }
+    .shellOut { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #222; stroke-width: 1.2; }
+    .eOut { fill: #ffe14d; stroke: #1f618d; stroke-width: 2.2; }
+    .pull { stroke: #c62828; fill: none; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .red { fill: #c62828; font-weight: 700; }
+  </style>
+  <circle cx="230" cy="110" r="34" fill="#eef4fb" stroke="#1f618d" stroke-width="2"/>
+  <text x="230" y="117" text-anchor="middle" class="b">H</text>
+  <circle cx="450" cy="110" r="46" fill="#fdecec" stroke="#c62828" stroke-width="2"/>
+  <text x="450" y="117" text-anchor="middle" class="b">Cl</text>
+  <circle class="eOut" cx="372" cy="100" r="7"/>
+  <circle class="eOut" cx="372" cy="120" r="7"/>
+  <text x="355" y="160" text-anchor="middle" class="s">共有電子対</text>
+  <line x1="318" y1="110" x2="354" y2="110" stroke="#c62828" stroke-width="2.5"/>
+  <polygon points="354,103 366,110 354,117" fill="#c62828"/>
+  <text x="230" y="60" text-anchor="middle" class="blue">δ＋</text>
+  <text x="450" y="50" text-anchor="middle" class="red">δ−</text>
+  <text x="230" y="176" text-anchor="middle" class="s">電気陰性度 2.2</text>
+  <text x="450" y="186" text-anchor="middle" class="s">電気陰性度 3.2</text>
+  <text x="340" y="218" text-anchor="middle">共有電子対を強く引く Cl の側に寄る → 電荷のかたより（結合の極性）</text>
+</svg>

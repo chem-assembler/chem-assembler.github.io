@@ -6354,6 +6354,9 @@ const REF_LEVEL_WORDS = {
 /* 注意の囲みの札。⚠ こちらも記号だけにしない */
 const REF_TONE_WORDS = {
     caution: '⚠ 勘違いしやすい',
+    /* ★ `confusing`（2026-09-25・ユーザー「勘違いしやすい、ではなく混乱しやすいポイント」）——
+       本人の思い違いではなく、**資料どうしで書き方が割れている**所（改訂の前後など）。見た目は caution と同じ */
+    confusing: '⚠ 混乱しやすい',
     memorize: '丸暗記でよい',
     skip: '覚えなくてよい',
     /* ★ `note`（補足）は **型を書かない `::: … :::` の行き先**（§20-4）——
@@ -6758,10 +6761,16 @@ class ReferenceBook {
         /* ★ いま読んでいる節（`codes` を持つもの）。**次の節が始まる手前（＝ 例題のあと）**に「この節の一問一答」の口を置く
            （2026-09-25・I-0143）。⚠ 発展の節なら口も畳みの中（節の中身と一緒に隠れる） */
         let open = null;
-        const put = (el) => { if (fold) fold.appendChild(el); else els.push(el); };
+        /* ★ 畳む小見出し（`fold: true`・2026-09-25 ユーザー「付加重合の反応式を増やす。状況によってはたためるように」）。
+           その見出しから**次の見出しか節の手前まで**を閉じた `<details>` に入れる（発展とは別の器・札は付けない）。
+           ⚠ 発展の小見出しを畳まない理由（上の注記）は「どこまでか」が器で言えないことだった ——
+             `fold: true` は書き手が**畳む範囲を見出しで区切る**と約束したときだけ付ける */
+        let hfold = null;
+        const put = (el) => { if (hfold) hfold.appendChild(el); else if (fold) fold.appendChild(el); else els.push(el); };
         const closeSec = () => { if (open) { put(this.renderSectionQa(open)); open = null; } };
         const closes = (b) => b.kind === 'section' || (b.kind === 'heading' && !b.advanced);
         (page.blocks || []).forEach(b => {
+            if (hfold && (b.kind === 'section' || b.kind === 'heading')) hfold = null;
             if (b.kind === 'section') closeSec();
             if (fold && closes(b)) fold = null;
             const starts = b.kind === 'section' && b.advanced;
@@ -6770,6 +6779,12 @@ class ReferenceBook {
                 els.push(det.wrap);
                 fold = det.body;
                 if (b.codes && b.codes.length) open = b;
+                return;
+            }
+            if (b.kind === 'heading' && b.fold) {
+                const det = this.renderHeadingFold(b);
+                put(det.wrap);
+                hfold = det.body;
                 return;
             }
             const el = this.renderBlock(b);
@@ -6805,6 +6820,20 @@ class ReferenceBook {
          してしまうと、事典として引けなくなる）。
        ★ `<details>` は素の HTML なので **JS が1行も要らない**（`:::exercise` の解答隠しと同じ作り）＝
          焼いた面Aでも、アプリの面Bでも、同じ markup が同じように効く。 */
+    /* 畳む小見出しの器（`fold: true`）。閉じていても見出しの題と「▶ 開く」は見える */
+    renderHeadingFold(block) {
+        const det = document.createElement('details');
+        det.className = 'ref-hfold';
+        const sum = document.createElement('summary');
+        sum.className = 'ref-hfold-sum';
+        sum.appendChild(this.renderHeading(block));
+        det.appendChild(sum);
+        const body = document.createElement('div');
+        body.className = 'ref-hfold-body';
+        det.appendChild(body);
+        return { wrap: det, body };
+    }
+
     renderAdvancedFold(block) {
         const det = document.createElement('details');
         /* ⚠ **id と `.ref-sec-advanced` は `<details>` 側が持つ** ——
@@ -7185,7 +7214,7 @@ class ReferenceBook {
     /* 注意の囲み。⚠ **記号だけにしない**（言葉が札に出る） */
     renderCallout(block) {
         const box = document.createElement('div');
-        box.className = 'ref-callout ref-callout-' + block.tone;
+        box.className = 'ref-callout ref-callout-' + (block.tone === 'confusing' ? 'caution' : block.tone);
         const b = document.createElement('b');
         b.className = 'ref-callout-tag';
         b.textContent = REF_TONE_WORDS[block.tone] || '';

@@ -3827,6 +3827,13 @@ html:not(.rec-short) #mobile-name-chip { display: none !important; }
 }
 .ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
 .ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+/* 畳む小見出し（`fold: true`・2026-09-25）。色は変数だけ（明るい地の読み替えが要らない） */
+.ref-hfold { margin: 0 0 16px; border-left: 3px solid var(--border-color); padding-left: 10px; }
+.ref-hfold-sum { cursor: pointer; list-style: none; }
+.ref-hfold-body { padding-top: 4px; }
+.ref-hfold-sum::-webkit-details-marker { display: none; }
+.ref-hfold-sum .ref-h5::after { content: '　▶ 開く'; font-weight: 400; font-size: 0.85em; color: var(--text-secondary); }
+.ref-hfold[open] > .ref-hfold-sum .ref-h5::after { content: '　▼ 閉じる'; }
 .ref-callout-caution { border-left-color: #ffd166; }
 .ref-callout-caution .ref-callout-tag { color: #ffd166; }
 .ref-callout-memorize { border-left-color: var(--neon-purple); }

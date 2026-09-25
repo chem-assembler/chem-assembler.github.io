@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="250" viewBox="0 0 680 250" role="img">
+  <!-- 電気陰性度の数直線（ポーリングの値・小数1桁）。金属は左、非金属は右、H は非金属の中でいちばん小さい（2026-09-25・ユーザー校正「テキストだとわかりずらい。図に」「水素は実質的に非金属最弱」）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .b { font-weight: 700; font-size: 18px; }
+    .s { font-size: 15px; fill: #444; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .nucT { font-weight: 700; font-size: 16px; fill: #b3541e; text-anchor: middle; }
+    .shell { fill: none; stroke: #888; stroke-width: 1.5; }
+    .shellOut { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #222; stroke-width: 1.2; }
+    .eOut { fill: #ffe14d; stroke: #1f618d; stroke-width: 2.2; }
+    .pull { stroke: #c62828; fill: none; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .red { fill: #c62828; font-weight: 700; }
+  </style>
+  <rect x="60" y="120" width="257.8" height="16" fill="#fae5b6"/>
+  <rect x="317.8" y="120" width="322.2" height="16" fill="#ccecf7"/>
+  <line x1="60" y1="136" x2="640" y2="136" stroke="#222" stroke-width="1.5"/>
+  <line x1="140.6" y1="136" x2="140.6" y2="144" stroke="#222"/>
+  <text x="140.6" y="162" text-anchor="middle" class="s">1</text>
+  <line x1="301.7" y1="136" x2="301.7" y2="144" stroke="#222"/>
+  <text x="301.7" y="162" text-anchor="middle" class="s">2</text>
+  <line x1="462.8" y1="136" x2="462.8" y2="144" stroke="#222"/>
+  <text x="462.8" y="162" text-anchor="middle" class="s">3</text>
+  <line x1="623.9" y1="136" x2="623.9" y2="144" stroke="#222"/>
+  <text x="623.9" y="162" text-anchor="middle" class="s">4</text>
+  <circle cx="623.9" cy="128" r="4" fill="#555"/>
+  <text x="623.9" y="104" text-anchor="middle" class="blue">F</text>
+  <circle cx="527.2" cy="128" r="4" fill="#555"/>
+  <text x="527.2" y="104" text-anchor="middle" class="blue">O</text>
+  <circle cx="495" cy="128" r="4" fill="#555"/>
+  <text x="495" y="74" text-anchor="middle" class="blue">Cl</text>
+  <circle cx="462.8" cy="128" r="4" fill="#555"/>
+  <text x="462.8" y="104" text-anchor="middle" class="blue">N</text>
+  <circle cx="398.3" cy="128" r="4" fill="#555"/>
+  <text x="398.3" y="104" text-anchor="middle" class="blue">C</text>
+  <circle cx="398.3" cy="128" r="4" fill="#555"/>
+  <text x="398.3" y="74" text-anchor="middle" class="blue">S</text>
+  <circle cx="333.9" cy="128" r="4" fill="#555"/>
+  <text x="333.9" y="104" text-anchor="middle" class="red">H</text>
+  <circle cx="285.6" cy="128" r="4" fill="#555"/>
+  <text x="285.6" y="74" text-anchor="middle">Cu</text>
+  <circle cx="269.4" cy="128" r="4" fill="#555"/>
+  <text x="269.4" y="104" text-anchor="middle">Fe</text>
+  <circle cx="237.2" cy="128" r="4" fill="#555"/>
+  <text x="237.2" y="74" text-anchor="middle">Al</text>
+  <circle cx="188.9" cy="128" r="4" fill="#555"/>
+  <text x="188.9" y="104" text-anchor="middle">Mg</text>
+  <circle cx="140.6" cy="128" r="4" fill="#555"/>
+  <text x="140.6" y="44" text-anchor="middle">Ca</text>
+  <circle cx="140.6" cy="128" r="4" fill="#555"/>
+  <text x="140.6" y="104" text-anchor="middle">Li</text>
+  <circle cx="124.4" cy="128" r="4" fill="#555"/>
+  <text x="124.4" y="74" text-anchor="middle">Na</text>
+  <circle cx="108.3" cy="128" r="4" fill="#555"/>
+  <text x="108.3" y="104" text-anchor="middle">K</text>
+  <text x="172.8" y="192" text-anchor="middle" class="b">金属</text>
+  <text x="478.9" y="192" text-anchor="middle" class="b">非金属</text>
+  <text x="333.9" y="222" text-anchor="middle" class="red">H はよく出る非金属の中でいちばん小さい</text>
+  <text x="640" y="30" text-anchor="end" class="s">大きいほど共有電子対を強く引く →</text>
+</svg>

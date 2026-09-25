@@ -365,6 +365,90 @@ note: 塩化ビニルが付加重合してポリ塩化ビニルになります�
 
 小さな分子の**単量体（モノマー）**が次々につながって、巨大な分子の**重合体（ポリマー）**ができる —— この反応が**重合**です。つながり方が**付加反応による重合**であるものを、**付加重合**と呼びます。重合には他に縮合重合などもあります。
 
+:::heading
+title: 主な付加重合の反応式（一覧）
+fold: true
+:::
+
+ビニル化合物 CH₂=CHX の X を変えると、いろいろな高分子ができます。式の形はどれも同じで、**二重結合が開いて単位どうしがつながり、X は鎖からぶら下がる**だけです。材料としての性質は「合成樹脂」のページで扱います。
+
+:::reaction
+left: n CH₂=CH₂
+right: ［CH₂−CH₂］ₙ
+gen: n エチレン → ［ポリエチレン］n
+app: addition_polymerization
+level: ★★★
+note: エチレン → ポリエチレン。X ＝ −H の場合です。
+:::
+
+:::reaction
+left: n CH₂=CH−CH₃
+right: ［CH₂−CH(CH₃)］ₙ
+gen: n プロペン → ［ポリプロピレン］n
+app: addition_polymerization
+level: ★★★
+note: プロペン（プロピレン）→ ポリプロピレン。X ＝ −CH₃。
+:::
+
+:::reaction
+left: n CH₂=CH−C₆H₅
+right: ［CH₂−CH(C₆H₅)］ₙ
+gen: n スチレン → ［ポリスチレン］n
+app: addition_polymerization
+level: ★★★
+note: スチレン → ポリスチレン。X ＝ −C₆H₅（フェニル基）。
+:::
+
+:::reaction
+left: n CH₂=CH−OCOCH₃
+right: ［CH₂−CH(OCOCH₃)］ₙ
+gen: n 酢酸ビニル → ［ポリ酢酸ビニル］n
+app: addition_polymerization
+level: ★★★
+note: 酢酸ビニル → ポリ酢酸ビニル。X ＝ −OCOCH₃。
+:::
+
+:::reaction
+left: n CH₂=CH−CN
+right: ［CH₂−CH(CN)］ₙ
+gen: n アクリロニトリル → ［ポリアクリロニトリル］n
+app: addition_polymerization
+level: ★★★
+note: アクリロニトリル → ポリアクリロニトリル（アクリル繊維の主成分）。X ＝ −CN。
+:::
+
+:::reaction
+left: n CH₂=C(CH₃)COOCH₃
+right: ［CH₂−C(CH₃)(COOCH₃)］ₙ
+gen: n メタクリル酸メチル → ［ポリメタクリル酸メチル］n
+app: addition_polymerization
+level: ★★☆
+note: メタクリル酸メチル → ポリメタクリル酸メチル。1つの炭素に −CH₃ と −COOCH₃ の2つがぶら下がります。
+:::
+
+:::reaction
+left: n CF₂=CF₂
+right: ［CF₂−CF₂］ₙ
+gen: n テトラフルオロエチレン → ［ポリテトラフルオロエチレン］n
+app: addition_polymerization
+level: ★★☆
+note: テトラフルオロエチレン → ポリテトラフルオロエチレン。エチレンの H が4つとも F に置きかわった形です。
+:::
+
+:::reaction
+left: n CH₂=CCl₂
+right: ［CH₂−CCl₂］ₙ
+gen: n 塩化ビニリデン → ［ポリ塩化ビニリデン］n
+app: addition_polymerization summon=塩化ビニリデン
+level: ★☆☆
+note: 塩化ビニリデン → ポリ塩化ビニリデン。1つの炭素に −Cl が2個付いた形です。
+:::
+
+:::link
+to: plastic
+text: それぞれの高分子の性質と使い道は「合成樹脂」で
+:::
+
 :::section
 anchor: oxidation
 title: 酸化開裂と、不飽和結合の検出
