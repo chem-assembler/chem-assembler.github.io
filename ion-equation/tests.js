@@ -11697,7 +11697,10 @@ async function runPortalUITests(iframe) {
       .map((a) => a.getAttribute("href"));
     for (const m of MODES) {
       if (m.id === "hub" || m.id === "portal") continue;
-      assert(portalHrefs.includes(m.href),
+      /* 束（family）の仲間は、代表のページ上端の切り替えから入る（2026-09-26・I-0171/I-0172）。
+         代表がここに出ていればよい */
+      const head = m.family ? MODES.find((x) => x.family === m.family && x.familyHead) : m;
+      assert(head && portalHrefs.includes(head.href),
         m.id + "（" + m.label + "）が入り口ページのどこにも出ていない");
     }
   });
@@ -11705,20 +11708,27 @@ async function runPortalUITests(iframe) {
   /* ★ B3-2（2026-09-07）: 役割カードを**単元の順**に束ねた（DESIGN §11）。
      ユーザーの決定は「化学反応式の係数合わせ／酸塩基／酸化還元」の順で、
      ③ の中は 部品 → 組み立て → 応用。**中和は①と②の両方に出す**が、同じ札は2枚並べない。 */
-  await t("PORTAL: 役割カードが単元の順に束ねられ、③の中が 部品→組み立て→応用 で並ぶ", async () => {
+  await t("PORTAL: 役割カードが単元の順に束ねられ、③は3本柱・電池と電気分解は④", async () => {
     const us = win.Portal.state().roleUnits;
-    assert(us.length === 4, "単元の束が4つでない: " + us.length);
-    assert(us.map((u) => u.id).join() === "ru-coeff,ru-acidbase,ru-redox,ru-find",
+    assert(us.length === 5, "単元の束が5つでない: " + us.length);
+    assert(us.map((u) => u.id).join() === "ru-coeff,ru-acidbase,ru-redox,ru-cell,ru-find",
       "束の並びが単元の順でない: " + us.map((u) => u.id).join());
-    assert(/①/.test(us[0].name) && /②/.test(us[1].name) && /③/.test(us[2].name),
+    assert(/①/.test(us[0].name) && /②/.test(us[1].name) && /③/.test(us[2].name) && /④/.test(us[3].name),
       "単元に番号が付いていない: " + us.map((u) => u.name).join(" / "));
+    /* ★ 2026-09-26（ユーザー指示・I-0170）: ①〜④ の見出しの字を上げた。札の題（.roleTitle）より大きいこと */
+    const nameFs = parseFloat(win.getComputedStyle(doc.querySelector(".roleUnitName")).fontSize);
+    const titleFs = parseFloat(win.getComputedStyle(doc.querySelector(".roleTitle")).fontSize);
+    assert(nameFs > titleFs, "単元の見出しが札の題より大きくない: " + nameFs + " / " + titleFs);
     /* ③ の並び（部品4 → 組み立て2 → 応用2）。電池と電気分解が最後に対で並ぶ
        ⚠ 2026-09-18: 半反応式を「一覧（覚える）」と「組む」に分けたので、部品が3→4になった。
        **一覧が先**（読む順が学ぶ順） */
+    /* ★ 2026-09-26: ③ は3本柱（酸化数 → 半反応式 → 反応式）。一覧は半反応式に、自分で選ぶは組み立てに統合し、
+       ページ上端の切り替えで行き来する（MODES の family）。液性は置き場所を相談中（I-0173）なので末尾の小さい札 */
     const redox = us.find((u) => u.id === "ru-redox");
-    assert(redox.hrefs.join() ===
-      "oxidation.html,halflist.html,halfreaction.html,condition.html,redox.html,redox.html?free=1,battery.html,electrolysis.html",
-      "③ の並びが 部品→組み立て→応用 でない: " + redox.hrefs.join());
+    assert(redox.hrefs.join() === "oxidation.html,halfreaction.html,redox.html,condition.html",
+      "③ の並びが3本柱でない: " + redox.hrefs.join());
+    const cellU = us.find((u) => u.id === "ru-cell");
+    assert(cellU.hrefs.join() === "battery.html,electrolysis.html", "④ が電池・電気分解でない: " + cellU.hrefs.join());
     /* ★ 中和は①と②の両方に出す（ユーザー決定）。ただし**同じ札を2枚並べない** ——
        題も行き先も違い、①のほうは「沈殿ができる」ことに着目していると分かる書き分け。 */
     const coeff = us.find((u) => u.id === "ru-coeff");
@@ -11923,8 +11933,11 @@ async function runPortalUITests(iframe) {
       assert(bar, frameId + ": モードの帯が無い");
       const ids = [...bar.children].map((a) => a.dataset.mode);
       ids.forEach((x) => seen.add(x));
+      // 束の仲間はページ上端の切り替えで見える
+      [...d2.querySelectorAll("main .familyTabs a")].forEach((a) => seen.add(a.dataset.mode));
       // 自分以外の全モードがそろっていること
-      const want = MODES.filter((m) => m.id !== modeId).map((m) => m.id);
+      /* 束（family）は代表だけ・自分の束は出さない（2026-09-26・I-0171/I-0172） */
+      const want = modeBarFor(modeId).map((m) => m.id);
       assert(JSON.stringify(ids) === JSON.stringify(want),
         frameId + ": 帯の中身が MODES と違う（" + ids.join(",") + " / 想定 " + want.join(",") + "）");
       // 行き先が実在すること（href の取り違え）
@@ -11942,7 +11955,60 @@ async function runPortalUITests(iframe) {
       assert(rows === 1, frameId + ": 帯が " + rows + " 段に折り返している");
     }
     // どのモードも「どこからも見えない」状態になっていないこと
-    for (const m of MODES) assert(seen.has(m.id), m.id + ": どのページの帯にも出てこない");
+    for (const m of MODES) assert(seen.has(m.id), m.id + ": どのページの帯にも切り替えにも出てこない");
+  });
+
+  /* ★ 2026-09-26（ユーザー指示・I-0171/I-0172）: 同じ仕事の2つの面を束（MODES の family）にした。
+     帯には代表だけ、束の中はページ上端の切り替え。どれが開いているかは URL（?free=1 も含めて）で決まり、
+     参考書の埋め込み（?embed=1）には出さない */
+  await t("FAMILY: 帯は束の代表だけ・ページ上端の切り替えで面を行き来する（半反応式／酸化還元の組み立て）", async () => {
+    const barIds = (id) => modeBarFor(id).map((m) => m.id);
+    assert(!barIds("index").includes("free") && !barIds("index").includes("halflist"),
+      "帯に束の代表でない面が出ている: " + barIds("index").join());
+    assert(barIds("index").includes("redox") && barIds("index").includes("halfbuild"), "帯に束の代表が無い");
+    assert(!barIds("halflist").includes("halfbuild") && !barIds("free").includes("redox"),
+      "自分の束の仲間が帯に出ている");
+    const cases = [
+      ["redox.html", (w) => w.RedoxEq, "redox", "redox,free"],
+      ["redox.html?free=1", (w) => w.RedoxEq && w.RedoxEq.free, "free", "redox,free"],
+      ["halfreaction.html", (w) => w.document.querySelector("main .familyTabs"), "halfbuild", "halflist,halfbuild"],
+      ["halflist.html", (w) => w.HalfList && w.document.querySelector("main .familyTabs"), "halflist", "halflist,halfbuild"],
+    ];
+    for (const [src, ready, want, members] of cases) {
+      const { f, win: w } = await openProbeFrame(src, ready, "position:absolute;left:-9999px;width:800px;height:700px");
+      assert(w, src + " が開かない");
+      const nav = w.document.querySelector("main .familyTabs");
+      assert(nav, src + ": ページ上端に切り替えが無い");
+      assert(w.document.querySelector("main").firstElementChild === nav, src + ": 切り替えが本文の先頭にない");
+      const as = [...nav.querySelectorAll("a")];
+      assert(as.map((a) => a.dataset.mode).join() === members, src + ": 切り替えの仲間: " + as.map((a) => a.dataset.mode).join());
+      const act = as.filter((a) => a.classList.contains("active"));
+      assert(act.length === 1 && act[0].dataset.mode === want && act[0].getAttribute("aria-current") === "page",
+        src + ": 開いている面が " + want + " になっていない: " + act.map((a) => a.dataset.mode).join());
+      assert(!w.document.querySelector("header .familyTabs"), src + ": ヘッダーに足している（高さの約束）");
+      f.remove();
+    }
+    // 参考書の埋め込みには出さない
+    const e = await openProbeFrame("halflist.html?embed=1", (w) => w.HalfList, "position:absolute;left:-9999px;width:800px;height:700px");
+    assert(e.win && !e.win.document.querySelector(".familyTabs"), "埋め込みに切り替えが出ている");
+    e.f.remove();
+  });
+
+  /* ★ 2026-09-26（ユーザー指示「AgNO3 （Ag+) と書く」・I-0172）: 自由に組み合わせるの一覧で、
+     はたらくイオンを添える。**式から導く**ので手書きの表は無い。弱酸（シュウ酸）には添えない */
+  await t("FREE: 試薬の一覧は「AgNO₃（Ag⁺）」のように、はたらくイオンを添える（弱酸と主役そのものには添えない）", async () => {
+    const ion = (id) => activeIonOf(REAGENTS.find((r) => r.id === id));
+    assert(ion("AgNO3") === "Ag+" && ion("CuSO4") === "Cu^2+" && ion("KMnO4") === "MnO4-" && ion("HCl_dil") === "H+",
+      "はたらくイオンが違う: " + ["AgNO3", "CuSO4", "KMnO4", "HCl_dil"].map(ion).join());
+    assert(ion("H2C2O4") === null, "弱酸のシュウ酸に C₂O₄²⁻ を添えている");
+    assert(ion("Zn") === null && ion("H2O2_asOxidant") === null && ion("Cl2") === null, "主役そのものに添えている");
+    const { f, win: w } = await openProbeFrame("redox.html?free=1", (x) => x.RedoxEq && x.RedoxEq.free && x.document.querySelector("#pickOx option"),
+      "position:absolute;left:-9999px;width:800px;height:700px");
+    assert(w, "自由モードが開かない");
+    const texts = [...w.document.querySelectorAll("#pickOx option")].map((o) => o.textContent);
+    assert(texts.some((x) => x.includes("AgNO₃（Ag⁺）")), "一覧に AgNO₃（Ag⁺）が無い: " + texts.join(" / "));
+    assert(texts.some((x) => x.includes("シュウ酸") && !x.includes("（")), "シュウ酸にイオンを添えている");
+    f.remove();
   });
 
   await t("MODE-NAV: GA4 が入っている全ページの末尾からプライバシーポリシーへ行ける（D-1）", async () => {

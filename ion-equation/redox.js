@@ -3003,6 +3003,12 @@ if (pickToggleEl) {
    一覧を開いた人だけが、短くなった一覧のすぐ上でその理由を読む（§15-1）。
 
    want が新しい一覧から外れていたら、反応する相手の先頭（無ければ一覧の先頭）に差し替える。 */
+/* 試薬の式。はたらくのがイオンなら「AgNO₃（Ag⁺）」と添える（I-0172・model.js の activeIonOf） */
+function reagentFormula(rg) {
+  const ion = activeIonOf(rg);
+  return SPECIES[rg.sp].disp + (ion ? "（" + SPECIES[ion].disp + "）" : "");
+}
+
 function fillPick(sel, partnerId, cond, want) {
   /* 相手が決まっていないときは**絞らない**。絞る根拠が無いのに空の一覧を作ると、
      そこから何も選べなくなる（一度でも空になると相手も決まらないので抜け出せない）。 */
@@ -3018,7 +3024,7 @@ function fillPick(sel, partnerId, cond, want) {
       const o = document.createElement("option");
       o.value = rg.id;
       // 選ぶのは**物質**であって半反応式ではない（学習者が手に持つのは試薬なので）
-      o.textContent = rg.label + "　" + SPECIES[rg.sp].disp;
+      o.textContent = rg.label + "　" + reagentFormula(rg);
       g.appendChild(o);
     }
     sel.appendChild(g);
@@ -3113,7 +3119,7 @@ function runPick() {
     const oxRg = a.side === "ox" ? a : b, redRg = a.side === "ox" ? b : a;
     /* 液性も見出しに出す。同じ2つを選んでも液性で式が変わる（MnO₄⁻）ので、
        いまどちらを見ているのかが分からないと、あとから見比べられない */
-    freeStage.title = SPECIES[oxRg.sp].disp + " × " + SPECIES[redRg.sp].disp +
+    freeStage.title = reagentFormula(oxRg) + " × " + reagentFormula(redRg) +
       "（" + COND_LABEL[cond] + "）";
     freeStage.intro = res.message + " 倍率をそろえて、1本の式にまとめよう。";
     initStage();                      // 以後は収録ステージとまったく同じ体験になる

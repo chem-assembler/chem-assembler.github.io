@@ -2414,9 +2414,11 @@ main.timelineMain {
    ⚠ 見出しは下の「単元から入る」（.subjectName）より小さくする ——
    同じ大きさにすると、2つの索引が同じ重みに見えて どちらを読めばよいか分からなくなる。 */
 .roleUnits { display: flex; flex-direction: column; gap: 18px; }
+/* ①〜④ の見出し（2026-09-26・ユーザー指示「①②③のフォントサイズを上げる」・I-0170）。
+   14 → 18。単元の束が、その下の札の題（.roleTitle）より一段上に読めるようにする */
 .roleUnitName {
-  font-size: calc(14 * var(--fs-u)); font-weight: bold; color: #46525e;
-  margin: 0 0 2px; padding-left: 9px; border-left: 4px solid #a9c6de;
+  font-size: calc(18 * var(--fs-u)); font-weight: bold; color: #33404c;
+  margin: 0 0 4px; padding-left: 10px; border-left: 5px solid #7fa9cc; line-height: 1.4;
 }
 .roleUnitNote { font-size: calc(12 * var(--fs-u)); color: #7d8a91; line-height: 1.7; margin: 0 0 8px; padding-left: 13px; }
 
@@ -2512,3 +2514,22 @@ main.timelineMain {
 html.embed header,
 html.embed footer,
 html.embed .refBack { display: none; }
+
+/* ---- 束の切り替え（header-ui.js・2026-09-26・I-0171/I-0172）----
+   「一覧で覚える ⇄ 自分で組む」「ステージで組む ⇄ 自由に組み合わせる」。帯から入口を1本に減らした代わりに、
+   ページ上端で同じ仕事の面を行き来する。**本文と同じ幅**で2つを等分に置く（どちらも同じ重さの面）。
+   main が flex（イオン反応モード）でも1行を占めるよう flex-basis を 100% にする */
+.familyTabs {
+  flex: 1 0 100%;
+  display: flex; gap: 0; margin: 0 0 12px;
+  border: 1px solid #3b82c4; border-radius: 10px; overflow: hidden;
+}
+.familyTabs a {
+  flex: 1 1 0; display: flex; align-items: center; justify-content: center;
+  min-height: 40px; padding: 6px 10px; text-align: center;
+  font-size: calc(14 * var(--fs-u)); font-weight: bold; text-decoration: none;
+  color: #2f5b7a; background: #fff;
+}
+.familyTabs a + a { border-left: 1px solid #3b82c4; }
+.familyTabs a.active { background: #3b82c4; color: #fff; }
+.familyTabs a:not(.active):hover { background: #eef5fb; }

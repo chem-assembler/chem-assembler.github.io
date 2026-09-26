@@ -87,6 +87,42 @@
     }
   }
 
+  /* ---- 束の切り替え（2026-09-26・I-0171/I-0172）----
+     「半反応式の一覧」と「半反応式を組む」、「ステージで組む」と「自由に組み合わせる」は
+     同じ仕事の2つの面なので、帯では1本にまとめ、**ページ上端の切り替え**で行き来する。
+     ⚠ ヘッダーには足さない（320×568 で 120px 以下の約束）。<main> の先頭に置く。
+     ⚠ 埋め込み（?embed=1・参考書の中）では出さない —— 埋め込みは1つの面だけを見せる場所。
+     いまどれを開いているかは URL で決める: 同じファイルの仲間のうち、
+     href のクエリ（free=1 など）がすべて今の URL にそろっているもの。いちばん細かく合うものを採る。 */
+  try {
+    const main = document.querySelector("main");
+    const fam = modeBar && typeof familyOf === "function" ? familyOf(modeBar.dataset.mode || "") : [];
+    const q = new URLSearchParams(location.search);
+    if (main && fam.length > 1 && q.get("embed") !== "1") {
+      const file = (location.pathname.split("/").pop() || "index.html");
+      let active = null, best = -1;
+      for (const m of fam) {
+        const [mf, mq] = m.href.split("?");
+        if (mf !== file) continue;
+        const need = [...new URLSearchParams(mq || "")];
+        if (!need.every(([k, v]) => q.get(k) === v)) continue;
+        if (need.length > best) { best = need.length; active = m.id; }
+      }
+      const nav = document.createElement("nav");
+      nav.className = "familyTabs";
+      nav.setAttribute("aria-label", "この仕事の面を切り替える");
+      for (const m of fam) {
+        const a = document.createElement("a");
+        a.href = m.href;
+        a.textContent = m.tab || m.label;
+        a.dataset.mode = m.id;
+        if (m.id === active) { a.className = "active"; a.setAttribute("aria-current", "page"); }
+        nav.appendChild(a);
+      }
+      main.prepend(nav);
+    }
+  } catch (e) { /* 切り替えが作れなくても本体は動かす */ }
+
   const bars = [...document.querySelectorAll("header .hscroll")].map((wrap) => {
     const strip = wrap.querySelector(".strip");
     const holder = wrap.parentElement;

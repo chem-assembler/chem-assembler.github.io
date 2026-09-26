@@ -305,26 +305,45 @@ function partialRule(stage) {
 const MODES = [
   { id: "hub",       href: "../index.html",      label: "🏠 化学レンズ",        group: "hub" },
   { id: "index",     href: "index.html",         label: "イオン反応モード",      group: "play" },
-  { id: "redox",     href: "redox.html",         label: "酸化還元モード",        group: "play" },
+  /* family（2026-09-26・ユーザー指示・I-0171/I-0172）: **同じ仕事を別の面から見るページの束**。
+     帯には束の代表（familyHead）だけを出し、束の中の行き来はページ上端の切り替え（header-ui.js の
+     familyTabs）でする。tab はその切り替えに出す短い名前。
+       redox … 収録ステージで組む ⇄ 酸化剤と還元剤を自分で選ぶ（「酸化還元反応の組み立て」に統合）
+       half  … 一覧で覚える ⇄ 自分で組む（「半反応式を組む」に統合） */
+  { id: "redox",     href: "redox.html",         label: "酸化還元モード",        group: "play",
+    family: "redox", familyHead: true, tab: "ステージで組む" },
   { id: "battery",   href: "battery.html",       label: "🔋 電池をつくる",       group: "play" },
   /* B3-2（2026-09-07）: 電気分解を別のページに割った。**帯はこの表からしか作られない**ので、
      入口を増やすときに直すのはここ1行でよい（DESIGN §8-2） */
   { id: "elyz",      href: "electrolysis.html",  label: "⚡ 電気分解をする",     group: "play" },
-  { id: "free",      href: "redox.html?free=1",  label: "⚗ 自由に組み合わせる",  group: "tool" },
+  { id: "free",      href: "redox.html?free=1",  label: "⚗ 自由に組み合わせる",  group: "tool",
+    family: "redox", tab: "自由に組み合わせる" },
   { id: "oxnum",     href: "oxidation.html",     label: "🔢 酸化数を決める",     group: "tool" },
   /* 半反応式の一覧（2026-09-18）。**係数を決める練習の手前にある資料**なので、
      帯では halfbuild のすぐ前に置く（覚える → 組む、の順に読める） */
-  { id: "halflist",  href: "halflist.html",      label: "📋 半反応式の一覧",     group: "tool" },
-  { id: "halfbuild", href: "halfreaction.html",  label: "⚡ 半反応式を組む",     group: "tool" },
+  { id: "halflist",  href: "halflist.html",      label: "📋 半反応式の一覧",     group: "tool",
+    family: "half", tab: "一覧で覚える" },
+  { id: "halfbuild", href: "halfreaction.html",  label: "⚡ 半反応式を組む",     group: "tool",
+    family: "half", familyHead: true, tab: "自分で組む" },
   { id: "condition", href: "condition.html",     label: "⚖ 液性で書き換える",    group: "tool" },
   { id: "portal",    href: "portal.html",        label: "☰ 単元から入る",       group: "find" },
   { id: "library",   href: "library.html",       label: "🔎 反応インデックス",   group: "find" },
 ];
 
 /* いま開いているページ（id）から見た帯の中身。自分自身は出さない。
-   `free` は redox.html の変種なので、redox にいるときも出す（そこから入るのが自然）。 */
+   束（family）は代表だけを出し、**自分の束は丸ごと出さない**（束の中はページ上端の切り替えで行き来する）。
+   ⚠ 2026-09-26 まで `free` と `halflist` も帯に並んでいた ＝ 同じ仕事の入口が帯に2本ずつあった。 */
 function modeBarFor(currentId) {
-  return MODES.filter((m) => m.id !== currentId);
+  const cur = MODES.find((m) => m.id === currentId);
+  return MODES.filter((m) => m.id !== currentId &&
+    !(cur && cur.family && m.family === cur.family) &&
+    (!m.family || m.familyHead));
+}
+
+/* 束の仲間（切り替えに並べる順 ＝ MODES の順）。束に入っていなければ空 */
+function familyOf(currentId) {
+  const cur = MODES.find((m) => m.id === currentId);
+  return cur && cur.family ? MODES.filter((m) => m.family === cur.family) : [];
 }
 
 /* 比予想クイズ。「この2つは何 : 何で反応するか」を**先に当ててから**試す出題。
@@ -3382,6 +3401,24 @@ function composeStage(oxHalfId, redHalfId) {
 }
 
 function reagentById(id) { return REAGENTS.find((r) => r.id === id) || null; }
+
+/* 試薬のうち、**実際に e⁻ をやりとりするイオン**（2026-09-26・ユーザー指示「AgNO₃ は（Ag⁺）と書く」・I-0172）。
+   手に持つのは AgNO₃ だが、はたらくのは Ag⁺。一覧で「AgNO₃（Ag⁺）」と並べて書くための種 id を返す。
+   ★ 手書きの表にしない —— 半反応式の左辺から導く（式を直せば札も追従する）。
+   返さない（null）もの:
+     ・試薬そのものが主役（Zn・H₂O₂・Cl₂ など）
+     ・電荷をもたない種（書き添える意味が無い）
+     ・弱酸（acidSelf: "weak"。シュウ酸は水中でほとんど分子のまま ＝ C₂O₄²⁻ と添えると誤り） */
+function activeIonOf(rg) {
+  if (!rg || rg.acidSelf === "weak") return null;
+  const hid = rg.half.acid || rg.half.any || rg.half.basic;
+  const hr = hid && HALF_REACTIONS[hid];
+  if (!hr) return null;
+  const core = hr.left.filter((t) => t.sp !== "e-" && t.sp !== "H2O");
+  const act = core.find((t) => t.sp !== "H+") || core[0];
+  if (!act || act.sp === rg.sp || !SPECIES[act.sp] || !SPECIES[act.sp].charge) return null;
+  return act.sp;
+}
 
 /* 試薬 → その液性での半反応式 id（無ければ null） */
 function halfOfReagent(rg, condition) {
