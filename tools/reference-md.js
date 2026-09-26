@@ -155,7 +155,11 @@
         'ratio/proportion': { path: '/ratio/proportion.html', param: null },
         'ratio/balance': { path: '/ratio/balance.html', param: null },
         /* ★ thermo は 2026-09-20 に `?h=` を足した（h1〜h6。参考書が問を名指しでき、図の撮影も URL だけで決まる） */
-        'ratio/thermo': { path: '/ratio/thermo.html', param: 'h', opt: true }
+        'ratio/thermo': { path: '/ratio/thermo.html', param: 'h', opt: true },
+        /* ★ 電子対でみる分子のかたち（2026-09-26・公開①・DESIGN_bond_app.md §5-2）。id はお題（molecules.json の id）。
+           `NH4+` の + は appHref が %2B にする（受け側は空白に読まれた形も戻して受ける）。
+           受け側の表は shape/tests.js の refReceivers（自分宛てのリンクだけを見る）。埋め込み可 */
+        'shape': { path: '/shape/', param: 'm', embeddable: true }
     };
     /* 受け口へ渡す id の綴り。⚠ `MnO4-`（化学式）・`MnO4_red,Fe2_ox`（半反応式の列）・`u-gas` を受ける */
     var APP_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.,+-]*$/;
@@ -186,7 +190,7 @@
        ⚠ 条件: `window.<アプリの口>.<関数>(引数)` の1文だけ（空白なし）。
        同じ URL ・同じ act で 2 回撮って 1 バイトでも違えば赤なのは変わらない（抽選の画面を黙って焼かない）。 */
     var SHOT_ACT_RE = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)+\([^()\s]*\)$/;
-    var SHOT_URL_RE = /^\/(ion-equation|muki|ratio|assembler)\/[^\s]*$/;
+    var SHOT_URL_RE = /^\/(ion-equation|muki|ratio|assembler|shape)\/[^\s]*$/;
     function parseShot(text, where) {
         var s = String(text).trim();
         var re = /(^|\s)(url|sel|wait|scale|act|状態)=/g, cuts = [], m;

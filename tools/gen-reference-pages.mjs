@@ -353,7 +353,10 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
 .ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
 .ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
-.embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
+/* ⚠ content-box（2026-09-26）: 子が送る h は**中身の高さ**。border-box のままだと上下の枠線 2px ぶん
+   中身の領域が h−2 になり、どの埋め込みにも縦のスクロールバーが出ていた（shape の公開①の検収で発見）。
+   親の受け口（style.height = h）は変えずに、枠線を外側へ出す。横は枠線ぶん引いて 100% に収める */
+.embed-app iframe{box-sizing:content-box;width:1px;min-width:calc(100% - 2px);height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
 .embed-app .alt{margin-left:0}
 /* ⚠ 釦の文は原稿の text: そのもの ＝ **強調 <b> が入りうる**（上の .embed b は箱の題のための指定） */

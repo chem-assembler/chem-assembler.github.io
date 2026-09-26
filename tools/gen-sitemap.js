@@ -50,6 +50,9 @@ const PAGES = [
     // ⚠ 2026-09-13: akinator.html は 3ba0898e（muki v32）が sitemap.xml へ**手で**足していて、
     //   この表に無かった ＝ 誰かが生成し直すたびに sitemap から黙って消えていた（ref-alcsplit が踏んだ）
     ['/muki/akinator.html', 'muki/akinator.html'],
+    // 2026-09-26: 電子対でみる分子のかたち（公開①で noindex を外した。DESIGN_bond_app.md §5-4）。
+    //   ⚠ sitemap.xml へ手で足すと、次に生成し直したとき黙って消える（akinator と同じ轍）
+    ['/shape/', 'shape/index.html'],
     ['/privacy.html', 'privacy.html'],
 ];
 

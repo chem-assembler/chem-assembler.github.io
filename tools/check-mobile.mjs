@@ -163,6 +163,9 @@ const PAGES = [
     ['muki', '/muki/tree.html'],
     ['qa', '/qa/'],
     ['assembler', '/assembler/'],
+    // ★ 2026-09-26 公開①: 電子対でみる分子のかたち。組む台（原子を置く SVG）と形の画面（3D の投影）
+    ['shape', '/shape/'],
+    ['shape', '/shape/?m=NH3&view=shape'],
 ];
 
 // --- 引数 ---

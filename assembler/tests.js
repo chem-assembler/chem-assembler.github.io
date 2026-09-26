@@ -56376,7 +56376,9 @@
                     `入った iframe の URL が原稿と台帳から組んだものと違う\n    入った: ${inner.getAttribute('src')}\n    台帳から: ${emb.embedHref}`);
                 assert(/[?&]embed=1(&|$)/.test(inner.getAttribute('src')), 'embed=1 が付いていない');
                 await wait(() => inner.contentDocument && inner.contentDocument.readyState === 'complete'
-                    && inner.contentWindow.location.pathname.indexOf('.html') > 0, '埋め込んだ子のページが開かない');
+                    /* ⚠ 2026-09-26: 子は `/shape/` のようなディレクトリの URL もある（.html で終わらない）。
+                       見たいのは「about:blank から本物のページへ移った」ことだけ */
+                    && /^\/[^?#]*(\.html|\/)$/.test(inner.contentWindow.location.pathname), '埋め込んだ子のページが開かない');
 
                 /* ★ 子がもう `embed=1` を知っていれば、放っておいても高さが来る（§2-4 (2)②）。
                    ⚠ 来ない版でも赤にしない —— 子の約束は子の test.html が見る。 */
@@ -56386,12 +56388,24 @@
                     if (!子から) await new Promise(r => setTimeout(r, 50));
                 }
                 if (子から) {
+                    /* ⚠ 2026-09-26: 子は描き上がりに合わせて高さを**送り直す**（shape は SVG の台が後から伸びる）。
+                       最初の1通の直後を比べると競合で赤になる（実測: 668px を送ったあと 712px に伸びた）。
+                       送り直しが落ち着くまで最大 3 秒待ってから比べる */
+                    for (let i = 0; i < 60; i++) {
+                        const hh = parseFloat(inner.dataset.embedH);
+                        if (Math.abs(hh - inner.contentDocument.documentElement.scrollHeight) <= 8) break;
+                        await new Promise(r => setTimeout(r, 50));
+                    }
                     const h = parseFloat(inner.dataset.embedH);
                     const doch = inner.contentDocument.documentElement.scrollHeight;
                     assert(Math.abs(h - doch) <= 8,
                         `子が送ってきた高さ ${h}px が、子の中身の高さ ${doch}px と合っていない`);
                     assert(Math.abs(parseFloat(inner.style.height) - h) <= 1,
                         `親が iframe を ${h}px に伸ばしていない（いまは ${inner.style.height}）`);
+                    /* ★ 2026-09-26: 中身の領域（clientHeight）が送られた高さ以上 ＝ 縦のスクロールバーが出ない。
+                       border-box のままだと枠線 2px ぶん足りず、どの埋め込みにもスクロールバーが出ていた */
+                    assert(inner.clientHeight >= h - 1,
+                        `iframe の中身の領域 ${inner.clientHeight}px が送られた高さ ${h}px より小さい（枠線ぶん溢れてスクロールバーが出る）`);
                 }
 
                 /* (b)(c) 親の受け口そのもの。⚠ **子の realm から打つ**（`e.source` を偽れない）。

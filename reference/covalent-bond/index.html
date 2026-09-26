@@ -132,7 +132,10 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
 .ref-summary li{margin:6px 0;line-height:1.75;font-size:15px}
 .ref-summary b{display:inline;font-size:inherit;margin:0}
 .embed-app{margin:22px 0}
-.embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
+/* ⚠ content-box（2026-09-26）: 子が送る h は**中身の高さ**。border-box のままだと上下の枠線 2px ぶん
+   中身の領域が h−2 になり、どの埋め込みにも縦のスクロールバーが出ていた（shape の公開①の検収で発見）。
+   親の受け口（style.height = h）は変えずに、枠線を外側へ出す。横は枠線ぶん引いて 100% に収める */
+.embed-app iframe{box-sizing:content-box;width:1px;min-width:calc(100% - 2px);height:420px;margin-top:0}
 .embed-app .embed-run{margin:0}
 .embed-app .alt{margin-left:0}
 /* ⚠ 釦の文は原稿の text: そのもの ＝ **強調 <b> が入りうる**（上の .embed b は箱の題のための指定） */
@@ -995,6 +998,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <p class="ref-p">⚠ 共有電子対・非共有電子対の数は、<b>分子全体で数える</b>のか<b>1つの原子のまわりで数える</b>のかで答えが変わります。問題文がどちらを聞いているかを必ず確かめましょう（上の表は分子全体の数です）。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">二酸化炭素の電子式は、O と C の間に共有電子対を1組ずつ置けばよい</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">共有電子対1組ずつだと、C のまわりは 4個・O のまわりは 7個（不対電子が残る）になり、安定な電子配置になりません。構造式 O＝C＝O のとおり、<b>C と O の間に共有電子対を2組ずつ</b>置くと、3つの原子すべてが8個になります。</span></p><p class="ref-mistake-why">電子式をいきなり点で書こうとすると、二重結合を見落としやすいためです。★ 先に構造式を書いて手の数を合わせておけば、この間違いは起こりません。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/covalent-bond-co2-check.png?h=904c3452" alt="二酸化炭素の電子式の間違いと正しい形。左は O と C の間に共有電子対を1組ずつ置いた間違いで、C と O に不対電子（赤の点）が残っている。右は2組ずつ置いた正しい形で、原子ごとに丸で囲むと、どの丸の中にも電子が8個ある" loading="lazy"><figcaption class="ref-figure-cap">書いたら、<b>原子ごとに丸で囲んで電子を数えます</b>（共有電子対は両方の原子に数える）。左は不対電子が残っていて、手が余った状態です。右はどの原子も8個で完成です。</figcaption></figure>
+<div class="embed embed-app"><div class="embed-run"><button type="button" data-embed="/shape/?m=CO2&amp;embed=1&amp;from=reference&amp;page=covalent-bond" data-embed-title="不対電子をタップでつないで、CO₂ の電子式を組んでみよう">不対電子をタップでつないで、CO₂ の電子式を組んでみよう</button></div><a class="alt" href="/shape/?m=CO2&amp;from=reference&amp;page=covalent-bond">▶ 大きな画面で開く</a></div>
 <h5 class="ref-h5">例題 —— 電子式の書き方</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の分子の構造式を書き、電子式にしたときの共有電子対と非共有電子対の数（分子全体）を答えよ。(1) N₂　(2) O₂　(3) H₂O₂</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) N（3本）どうしを3本でつなぐ。<b>N≡N</b>、共有電子対 3・非共有電子対 2（各 N に1組）　(2) O（2本）どうしを2本でつなぐ。<b>O＝O</b>、共有電子対 2・非共有電子対 4（各 O に2組）　(3) O−O の両端に H。<b>H−O−O−H</b>、共有電子対 3・非共有電子対 4（各 O に2組）</p><img class="ref-figure-img" src="/reference-img/covalent-bond-ex1-answer-a.png?h=8a038fb3" alt="N₂・O₂・H₂O₂ のそれぞれについて、原子のパーツを並べ、構造式 N≡N・O＝O・H−O−O−H に組み立て、さらに電子式に直す流れを矢印でつないだ図。電子式では原子ごとに円を描き、どの円の中にも電子が8個（H は2個）あることを示している" loading="lazy"></div></details></div>
@@ -1009,6 +1013,7 @@ a.ref-sec-qa-link::before { content: ''; }
 <div class="ref-table-wrap"><div class="ref-cap">配位結合で結合の手の数が変わる例</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">もとの分子</th><th style="text-align: left;">加わるもの</th><th style="text-align: left;">できるイオン</th><th style="text-align: left;">中心の原子の手の数</th></tr></thead><tbody><tr><td style="text-align: left;">水 H₂O</td><td style="text-align: left;">H⁺</td><td style="text-align: left;">オキソニウムイオン H₃O⁺</td><td style="text-align: left;">O：2本 → 3本</td></tr><tr><td style="text-align: left;">アンモニア NH₃</td><td style="text-align: left;">H⁺</td><td style="text-align: left;">アンモニウムイオン NH₄⁺</td><td style="text-align: left;">N：3本 → 4本</td></tr></tbody></table></div>
 <p class="ref-p">⚠ NH₃ と NH₄⁺ は存在しますが、<b>NH₄ という分子は存在しません</b>。N の手は3本なので、中性の分子では H を4つつなげないためです。<b>簡単な化合物は、結合の手の数を考えて正しい化学式を書けるようにすることが重要</b>です。</p>
 <p class="ref-p">H₃O⁺ と NH₄⁺ のほかにも、硫酸 H₂SO₄ や硝酸 HNO₃ など、配位結合をもつ分子やイオンはたくさんあります。金属イオンに分子やイオンが配位結合してできる錯イオンも、同じ仕組みです。<b>配位結合の例として、H₃O⁺ と NH₄⁺ の2つは電子式まで書けるようにしましょう。</b>硫酸・硝酸の配位結合は、構造式を読めれば十分です。</p>
+<div class="embed embed-app"><div class="embed-run"><button type="button" data-embed="/shape/?m=NH4%2B&amp;embed=1&amp;from=reference&amp;page=covalent-bond" data-embed-title="NH₃ の非共有電子対を H⁺ にわたして、NH₄⁺ をつくってみよう">NH₃ の非共有電子対を H⁺ にわたして、NH₄⁺ をつくってみよう</button></div><a class="alt" href="/shape/?m=NH4%2B&amp;from=reference&amp;page=covalent-bond">▶ 大きな画面で開く</a></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/oxoacid/">オキソ酸（硫酸など）の構造と配位結合へ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/complex-ion/">金属イオンへの配位結合（錯イオン）へ <b class="ref-course-tag" title="化学（科目）の内容のページです">化学</b></a></p>
 <h5 class="ref-h5">例題 —— 配位結合</h5>
@@ -1036,7 +1041,24 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+window.addEventListener('message', function (e) {
+  if (e.origin !== location.origin) return;
+  var d = e.data;
+  if (!d || d.type !== 'slz-embed' || d.v !== 1) return;
+  var h = Math.ceil(d.h);
+  if (!(h > 0)) return;
+  var fs = document.querySelectorAll('.embed iframe');
+  for (var i = 0; i < fs.length; i++) {
+    if (fs[i].contentWindow !== e.source) continue;
+    var prev = parseFloat(fs[i].dataset.embedH);
+    if (prev === prev && Math.abs(prev - h) <= 1) return;
+    fs[i].dataset.embedH = h;
+    fs[i].style.height = h + 'px';
+    return;
+  }
+});
+</script>
 <script>
 (function () {
   var d = document.querySelector('.ref-toc details');

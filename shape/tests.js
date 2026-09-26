@@ -830,11 +830,67 @@
       badHtmlBodyHeights('.body-x { height: 100%; } main { height: 50vh; }').length === 0);
   }
 
+  /* ---- 参考書から来るリンク（公開①・2026-09-26・DESIGN_bond_app.md §5-2）----
+     参考書（../assembler/reference.json）の `:::link app: shape id: …` が、実在するお題を指しているか。
+     CLAUDE.md「横断の整合性検査は、両方のデータが揃う側に置く」—— 参考書はこちらのお題を持たない。
+     ⚠ 受け口の名前はここに1本の表で持つ（ion の refReceiversIon・ratio の refReceivers と同じ型）。
+       tools/reference-md.js の APP_TARGETS に足した `shape` の写し。embeddable も写す */
+  function refReceivers(mols) {
+    return { 'shape': { ids: new Set(mols.map(function (m) { return m.id; })), embeddable: true } };
+  }
+  function refLinkProblems(pages, recv) {
+    var out = [], seen = 0;
+    function walk(o, page) {
+      if (Array.isArray(o)) { o.forEach(function (x) { walk(x, page); }); return; }
+      if (!o || typeof o !== 'object') return;
+      if (o.kind === 'link' && typeof o.app === 'string' && (o.app === 'shape' || o.app.indexOf('shape/') === 0)) {
+        seen++;
+        var id = o.id == null ? '' : String(o.id);
+        var where = page + ' → ' + o.app + (id ? ' ' + id : '');
+        if (!(o.app in recv)) out.push(where + '（受け口の表に無い名前）');
+        else if (!id) out.push(where + '（id が無い）');
+        else if (!recv[o.app].ids.has(id)) out.push(where + '（お題が実在しない）');
+        if (o.embed && !(o.app in recv && recv[o.app].embeddable)) out.push(where + '（埋め込めない受け口に embed: true）');
+      }
+      Object.keys(o).forEach(function (k) { if (o[k] && typeof o[k] === 'object') walk(o[k], page); });
+    }
+    (pages || []).forEach(function (p) { walk(p.blocks || [], p.id || '?'); });
+    return { problems: out, seen: seen };
+  }
+  async function runRefLinkTests(mols) {
+    section('参考書から来るリンク');
+    var recv = refReceivers(mols);
+    ok('REF1: 受け口の表が空でない（H2O・NH4+ が引ける）', recv.shape.ids.has('H2O') && recv.shape.ids.has('NH4+'));
+    var g = refLinkProblems([{ id: 'p', blocks: [
+      { kind: 'link', app: 'shape', id: 'NH4+', embed: true, text: 'x' },
+      { kind: 'link', app: 'ion-equation/redox', id: 'no-such', text: 'よそのアプリは見ない' },
+      { kind: 'link', to: 'alcohol', text: '参考書の中のリンクは見ない' }
+    ] }], recv);
+    var b = refLinkProblems([{ id: 'p', blocks: [
+      { kind: 'link', app: 'shape', id: 'XeF4', text: 'x' },
+      { kind: 'link', app: 'shape', text: 'x' },
+      { kind: 'link', app: 'shape/nosuch', id: 'H2O', text: 'x' }
+    ] }], recv);
+    ok('REF2: ⚠ 否定対照 — 在るお題は通し、無いお題・id なし・知らない受け口は赤にする',
+      g.problems.length === 0 && g.seen === 1 && b.problems.length === 3);
+    try {
+      var res = await fetch('../assembler/reference.json', { cache: 'no-store' });
+      var pages = await res.json();
+      var r = refLinkProblems(pages, recv);
+      ok('REF3: 参考書の shape 宛てのリンクがすべて実在するお題を指す（' + r.seen + '本' +
+        (r.problems.length ? '・' + r.problems.join(' / ') : '') + '）',
+        Array.isArray(pages) && pages.length > 10 && r.problems.length === 0);
+    } catch (e) {
+      ok('REF3: ../assembler/reference.json を読める（' + e + '）', false);
+    }
+  }
+
   (async function main() {
     try {
       var mols = await (await fetch('molecules.json?v=' + VER, { cache: 'no-store' })).json();
       runModelTests(window.ChemShape.model, mols, ok, section);
       await runUITests();
+      await runRefLinkTests(mols);
     } catch (e) {
       ok('テストが例外で止まらない: ' + (e && e.stack || e), false);
     }

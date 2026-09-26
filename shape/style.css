@@ -23,7 +23,10 @@ header {
 }
 header h1 { font-size: 18px; margin: 0; }
 .version { font-size: 12px; opacity: .8; }
-.hubLink { margin-left: auto; color: #fff; font-size: 13px; text-decoration: none; }
+/* 押せる高さは 32px 以上（tools/check-mobile.mjs の見張り）。見た目の行は変えず、上下の余白で当たりを広げる。
+   header が align-items: baseline なので、行の高さは字の基線にそろったまま */
+.hubLink { margin-left: auto; color: #fff; font-size: 13px; text-decoration: none;
+  display: inline-block; padding: 8px 0 8px 8px; margin-top: -8px; margin-bottom: -8px; }
 .hubLink:hover { text-decoration: underline; }
 
 main { max-width: 720px; margin: 0 auto; padding: 8px 12px 12px; }
