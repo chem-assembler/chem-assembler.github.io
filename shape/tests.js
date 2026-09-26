@@ -12,10 +12,11 @@
   function runModelTests(M, molecules, ok, section) {
     section = section || function () {};
 
-    function build(atoms, bonds) {
+    function build(atoms, bonds, unfold) {
       var s = M.create();
       var ids = atoms.map(function (el) { return M.addAtom(s, el); });
       var bad = [];
+      (unfold || []).forEach(function (k) { if (!M.unfold(s, ids[k])) bad.push('unfold'); });
       bonds.forEach(function (t) {
         if (t[3] === 'dative') { var d = M.donate(s, ids[t[0]], ids[t[1]]); if (!d.ok) bad.push(d.reason); return; }
         for (var o = 0; o < t[2]; o++) { var r = M.bond(s, ids[t[0]], ids[t[1]]); if (!r.ok) bad.push(r.reason); }
@@ -41,7 +42,7 @@
         if (t[3] === 'dative') return [inv[t[0]], inv[t[1]], t[2], 'dative']; // 配位結合は与える側・受け手の向きを変えない
         return (seed % 2) ? [inv[t[1]], inv[t[0]], t[2]] : [inv[t[0]], inv[t[1]], t[2]];
       });
-      return build(atoms, bonds);
+      return build(atoms, bonds, (spec.unfold || []).map(function (k) { return inv[k]; }));
     }
 
     var T = M.prepareTargets(molecules);
@@ -112,7 +113,7 @@
       ok('⚠ 不対電子が残る原子には札を付けない（途中の数を電子不足と言わない）', M.tag(half.s, half.ids[0]).label === null);
     })();
 
-    section('モデル: ほどく（公開②のための形・UI はまだ無い）');
+    section('モデル: ほどく（公開②・手の数の表）');
     (function () {
       var s = M.create();
       var ids = {}; ['N', 'O', 'F', 'Cl', 'C', 'B', 'H', 'P', 'S'].forEach(function (el) { ids[el] = M.addAtom(s, el); });
@@ -129,15 +130,20 @@
     var must = ['H2', 'HCl', 'H2O', 'NH3', 'CH4', 'CO2', 'N2', 'HCN', 'C2H4', 'H2O2', 'H2S', 'PH3', 'HCHO'];
     ok('最低限のお題（12件＋M2 の HCHO）がそろっている', must.every(function (id) { return !!byId[id]; }));
     ok('お題の id は重ならない', new Set(T.map(function (t) { return t.id; })).size === T.length);
+    // 公開②のお題だけは中心の電子の数が 8 でない（B 6・P 10・S 12）。ほかの原子は H 2・他 8
+    var CENTER_COUNT = { BF3: ['B', 6], PCl5: ['P', 10], SF6: ['S', 12] };
     T.forEach(function (t) {
       var b = M.fromSpec(molecules.filter(function (x) { return x.id === t.id; })[0]);
+      var cc = CENTER_COUNT[t.id];
       var inv = b.state.atoms.every(function (a) {
         var n = M.electronCount(b.state, a.id);
+        if (cc && a.el === cc[0]) return n === cc[1];
         return a.el === 'H' ? n === 2 : n === 8;
       });
-      ok(t.id + ': 表どおりに組めて完成し、自分のコードと一致（H は2個・他は8個）',
+      ok(t.id + ': 表どおりに組めて完成し、自分のコードと一致（' + (cc ? cc[0] + ' は' + cc[1] + '個・' : '') + 'H は2個・他は8個）',
         !t.errors.length && M.judge(b.state).complete && M.checkTarget(b.state, t).match && inv);
     });
+    ok('「発展」の札はオクテットに収まらないお題（BF₃・PCl₅・SF₆）だけ', T.filter(function (t) { return t.advanced; }).map(function (t) { return t.id; }).join() === 'BF3,PCl5,SF6');
     ok('お題のコードはすべて互いに違う', new Set(T.map(function (t) { return t.code; })).size === T.length);
 
     (function () {
@@ -284,6 +290,59 @@
       var loose = build(['N', 'H', 'H', 'H', 'H+'], [[0, 1, 1], [0, 2, 1], [0, 3, 1]]);
       var r = M.checkTarget(loose.s, byId['NH4+']);
       ok('⚠ 否定対照: NH₃ と H⁺ を並べただけでは NH₄⁺ と一致しない（空きが残っている）', !r.match && r.openVacancy === 1 && r.sameFormula);
+    })();
+
+    section('モデル: 公開② 電子不足・超原子価（§6・M4）');
+    (function () {
+      var sh = function (id) { return M.moleculeShape(M.fromSpec(molecules.filter(function (x) { return x.id === id; })[0]).state); };
+      var bf = build(['B', 'F', 'F', 'F'], [[0, 1, 1], [0, 2, 1], [0, 3, 1]]);
+      var tB = M.tag(bf.s, bf.ids[0]), sB = M.moleculeShape(bf.s);
+      ok('BF₃: 不対電子 0 で完成・B は 6個「電子不足（発展）」・お題と一致', !bf.bad.length && M.judge(bf.s).complete &&
+        tB.count === 6 && tB.kind === 'deficient' && tB.label === '電子不足（発展）' && M.checkTarget(bf.s, byId.BF3).match);
+      ok('BF₃: まとまり 3 → 平面正三角形の配置 → 平面正三角形', sB.domains === 3 && sB.arrangement === '平面正三角形' && sB.shape === '平面正三角形' && sB.lone === 0);
+      ok('⚠ BF₃ の F は 8個（オクテット）＝ 電子不足は B だけ', [1, 2, 3].every(function (k) { return M.tag(bf.s, bf.ids[k]).label === 'オクテット'; }));
+
+      // PCl₅: ほどかないと P の手は3本 ＝ Cl が2つ余る
+      var p3 = build(['P', 'Cl', 'Cl', 'Cl', 'Cl', 'Cl'], [[0, 1, 1], [0, 2, 1], [0, 3, 1]]);
+      var r4 = M.canBond(p3.s, p3.ids[0], p3.ids[4]);
+      ok('⚠ 否定対照: P をほどかないと4本目の Cl はつながらない（不対電子が無い）・未完成', !r4.ok && r4.reason === 'no-unpaired' &&
+        !M.judge(p3.s).complete && M.judge(p3.s).leftover === 2 && !M.checkTarget(p3.s, byId.PCl5).match);
+      ok('P をほどく: 非共有電子対 1→0・不対電子 0→2・手の数 3→5', M.unfold(p3.s, p3.ids[0]) && M.atomOf(p3.s, p3.ids[0]).lp === 0 &&
+        M.atomOf(p3.s, p3.ids[0]).un === 2 && M.handsOf(p3.s, p3.ids[0]) === 5);
+      M.bond(p3.s, p3.ids[0], p3.ids[4]); M.bond(p3.s, p3.ids[0], p3.ids[5]);
+      var tP = M.tag(p3.s, p3.ids[0]);
+      ok('PCl₅: 3本つないでからほどいても完成・P は 10個「超原子価（発展）」・お題と一致（ほどく順によらない）', M.judge(p3.s).complete &&
+        tP.count === 10 && tP.kind === 'hyper' && M.checkTarget(p3.s, byId.PCl5).match);
+      var sP = sh('PCl5');
+      ok('PCl₅: まとまり 5 → 三方両錐の配置 → 三方両錐形（発展）', sP.domains === 5 && sP.arrangement === '三方両錐' && sP.shape === '三方両錐形' && sP.advanced && sP.lone === 0);
+
+      // SF₆: 2組ほどく
+      var s1 = build(['S', 'F', 'F', 'F', 'F', 'F', 'F'], [[0, 1, 1], [0, 2, 1], [0, 3, 1], [0, 4, 1]], [0]);
+      ok('⚠ 否定対照: S を1組だけほどくと手は4本 ＝ 5本目の F はつながらない', !M.canBond(s1.s, s1.ids[0], s1.ids[5]).ok && M.handsOf(s1.s, s1.ids[0]) === 4);
+      ok('S はもう1組ほどける（4→6）', M.canUnfold(s1.s, s1.ids[0]) && M.unfold(s1.s, s1.ids[0]) && M.handsOf(s1.s, s1.ids[0]) === 6);
+      M.bond(s1.s, s1.ids[0], s1.ids[5]); M.bond(s1.s, s1.ids[0], s1.ids[6]);
+      var tS = M.tag(s1.s, s1.ids[0]);
+      ok('SF₆: 2組ほどいて完成・S は 12個「超原子価（発展）」・お題と一致', M.judge(s1.s).complete && tS.count === 12 && tS.kind === 'hyper' &&
+        M.checkTarget(s1.s, byId.SF6).match && M.atomOf(s1.s, s1.ids[0]).unfold === 2);
+      var sS = sh('SF6');
+      ok('SF₆: まとまり 6 → 正八面体の配置 → 正八面体形（発展）', sS.domains === 6 && sS.arrangement === '正八面体' && sS.shape === '正八面体形' && sS.advanced);
+      ok('⚠ SF₆ の S はもうほどけない（6 の先は無い）', !M.canUnfold(s1.s, s1.ids[0]));
+
+      // 否定対照: N・O はほどけない（分子の中でも）
+      var nh3 = M.fromSpec(molecules.filter(function (x) { return x.id === 'NH3'; })[0]).state;
+      var h2o = M.fromSpec(molecules.filter(function (x) { return x.id === 'H2O'; })[0]).state;
+      var nId = nh3.atoms.filter(function (a) { return a.el === 'N'; })[0].id, oId = h2o.atoms.filter(function (a) { return a.el === 'O'; })[0].id;
+      ok('⚠ 否定対照: NH₃ の N・H₂O の O はほどけない（unfold しても何も変わらない）', !M.canUnfold(nh3, nId) && !M.unfold(nh3, nId) &&
+        M.atomOf(nh3, nId).lp === 1 && !M.canUnfold(h2o, oId) && !M.unfold(h2o, oId) && M.atomOf(h2o, oId).lp === 2);
+      ok('⚠ 否定対照: ほどいた P の分子（PCl₅）と、ほどかない形は別のコード（ラベルにほどいた数）', byId.PCl5.code.indexOf('P|0|1') >= 0);
+
+      // 理想の向き（5・6）
+      var pr = function (vs) { var a = []; for (var i = 0; i < vs.length; i++) for (var j = i + 1; j < vs.length; j++) a.push(Math.round(M.angleDeg(vs[i], vs[j]))); return a.sort(function (x, y) { return x - y; }); };
+      ok('5（三方両錐）: 90° が6組・120° が3組・180° が1組', pr(M.idealVectors(5)).join() === '90,90,90,90,90,90,120,120,120,180');
+      ok('6（正八面体）: 90° が12組・180° が3組', pr(M.idealVectors(6)).join() === '90,90,90,90,90,90,90,90,90,90,90,90,180,180,180');
+      // ⚠ 超原子価に sp³d・sp³d² を付けない（§0・§3-7）。モデルのどこにも軌道の名前を持たない
+      var src = JSON.stringify(Object.keys(M)) + JSON.stringify(M.SHAPE_NAME) + JSON.stringify(M.ARRANGEMENT);
+      ok('⚠ モデルは超原子価に sp³d・sp³d² の札を持たない', !/sp3d|sp³d/.test(src));
     })();
   }
 
@@ -493,6 +552,7 @@
     await runEmbedTests();
     await runShapeUITests();
     await runDativeUITests();
+    await runAdvancedUITests();
     await runWidthTests();
   }
 
@@ -711,6 +771,159 @@
     tapAng(A, n2, slotOfKind(A, n2, 'p') === null ? 0 : slotOfKind(A, n2, 'p'));
     tap(A, hp);
     ok('⚠ 否定対照: H⁺ に2つ目は配位できない（空きは1つ）', A.win.ChemShape.model.bondsOf(st(A).mol, hp).length === 1);
+    A.f.remove();
+  }
+
+  /* ---- 公開②（M4）: 電子不足・超原子価（§6）---- */
+  function vis(A, id) { var e = A.doc.getElementById(id); return e.style.display !== 'none' && A.win.getComputedStyle(e).display !== 'none'; }
+  function atomG(A, id) { return A.doc.querySelector('#board .atom[data-id="' + id + '"]'); }
+  function tagText(A) { return [].map.call(A.doc.querySelectorAll('#board .chkTag'), function (t) { return t.textContent; }).join(' / '); }
+
+  async function runAdvancedUITests() {
+    section('画面: 公開② 超原子価（PCl₅ ＝ P を1組ほどく）');
+    var A = await openApp('index.html?m=PCl5');
+    var M2 = A.win.ChemShape.model;
+    var tl = A.doc.getElementById('taskLabel');
+    ok('?m=PCl5 でお題が開き、見出しの後ろに「発展」の札', tl.textContent.indexOf('PCl₅（五塩化リン）') === 0 && !!tl.querySelector('.advBadge') &&
+      tl.querySelector('.advBadge').textContent === '発展');
+    ok('PCl₅ は構造式が既定（教科書は電子式を描かない・§3-5）', A.doc.getElementById('lineMode').className === 'on' && st(A).mode === 'line');
+    var P = A.app.idsOf('P')[0], Cl = A.app.idsOf('Cl');
+    ok('構造式でも P の「ほどける」青い対だけは出る（2個）・Cl の非共有電子対は出ない',
+      atomG(A, P).querySelectorAll('.e-lp').length === 2 && Cl.every(function (c) { return atomG(A, c).querySelectorAll('.e-lp').length === 0; }));
+    ok('はじめの声かけ: 「P の青い対をタップして「ほどく」」', /P の青い対をタップして「ほどく」/.test(msg(A)));
+    ok('⚠ 何も選んでいないときは「ほどく」を出さない', !vis(A, 'unfoldBtn'));
+    tapAng(A, P, slotOfKind(A, P, 'p'));
+    ok('P の青い対をタップ → 対が選ばれ「ほどく」が出る', !!st(A).sel && st(A).slots[P][st(A).sel.slot].k === 'p' && vis(A, 'unfoldBtn') &&
+      /「ほどく」を押すと/.test(msg(A)));
+    var sub = A.doc.querySelector('.subBar').getBoundingClientRect().height;
+    A.doc.getElementById('unfoldBtn').click();
+    var Pa = M2.atomOf(st(A).mol, P);
+    ok('「ほどく」→ P の非共有電子対 0・不対電子 5（赤い手 5本）', Pa.lp === 0 && Pa.un === 5 && Pa.unfold === 1 &&
+      atomG(A, P).querySelectorAll('line.hand').length === 5 && atomG(A, P).querySelectorAll('.e-lp').length === 0);
+    var angs = st(A).slots[P].map(function (x) { return x.ang; }).sort(function (a, b) { return a - b; });
+    var gaps = angs.map(function (a, i) { return i ? a - angs[i - 1] : a + 360 - angs[angs.length - 1]; });
+    ok('手が5本の P は放射状（72° おき）に置く（§3-5）', angs.length === 5 && gaps.every(function (g) { return Math.abs(g - 72) < 0.5; }));
+    ok('声かけ「P の手が 5 本になった（オクテットを超える・発展）」・選びは消え「ほどく」も消える', /P の手が 5 本になった（オクテットを超える・発展）/.test(msg(A)) &&
+      !st(A).sel && !vis(A, 'unfoldBtn'));
+    ok('⚠ もうほどけない（P の手は 5 まで）: P をタップしても青い対は無い', (function () { tap(A, P); var r = st(A).sel && st(A).slots[P][st(A).sel.slot].k; st(A).sel = null; return r === 'u'; })());
+    Cl.forEach(function (c) { tap(A, P); tap(A, c); });
+    ok('Cl を5つつなぐと「完成！ PCl₅（五塩化リン）ができた」', /完成！ PCl₅（五塩化リン）ができた/.test(msg(A)) && st(A).last.match === true &&
+      M2.bondsOf(st(A).mol, P).length === 5);
+    ok('確かめ: P は 10・札「P は 10 個・超原子価（発展）」', A.doc.querySelector('#board .chkNum[data-id="' + P + '"]').textContent === '10' &&
+      tagText(A) === 'P は 10 個・超原子価（発展）');
+    ok('⚠ Cl には札を付けない（オクテット）・札は1行だけ', A.doc.querySelectorAll('#board .chkTag').length === 1);
+    var inside = st(A).mol.atoms.every(function (a) { var p = st(A).pos[a.id]; return p.x >= 0 && p.x <= 400 && p.y >= 0 && p.y <= 300; });
+    ok('5本の Cl は台の中に収まる', inside);
+    A.doc.getElementById('shapeViewBtn').click();
+    A.app.stopSpin();
+    ok('形: 「中心 P・電子のまとまり 5 組」「三方両錐の配置 → 三方両錐形（発展）」', /中心 P・電子のまとまり 5 組/.test(A.app.shapeSvg.querySelector('.dom').textContent) &&
+      A.app.shapeSvg.querySelector('.arr').textContent === '三方両錐の配置' && A.app.shapeSvg.querySelector('.shp').textContent === '三方両錐形（発展）');
+    ok('形: 立体の Cl は 5つ・非共有電子対のふくらみは無い', qa(A, '.pane3d .ball').length === 5 && qa(A, '.lobe').length === 0);
+    ok('⚠ 画面のどこにも sp³d・sp³d² が出ない（§0: 超原子価に付けない）', !/sp3d|sp³d/.test(A.doc.body.textContent + A.app.shapeSvg.textContent));
+    A.doc.getElementById('buildView').click();
+    A.f.remove();
+
+    A = await openApp('index.html?m=PCl5');
+    M2 = A.win.ChemShape.model;
+    P = A.app.idsOf('P')[0]; Cl = A.app.idsOf('Cl');
+    for (var k = 0; k < 3; k++) { tapAng(A, P, slotOfKind(A, P, 'u')); tap(A, Cl[k]); }
+    ok('ほどく前に3本つなぐと「P の手が足りない。青い対を「ほどく」と2本増える」', /P の手が足りない。青い対を「ほどく」と2本増える/.test(msg(A)));
+    tap(A, P);
+    ok('手の無い P をタップすると青い対が選ばれる（原子ごとのタップでよい）', !!st(A).sel && st(A).slots[P][st(A).sel.slot].k === 'p' && vis(A, 'unfoldBtn'));
+    A.doc.getElementById('unfoldBtn').click();
+    ok('3本つないだあとでもほどける（手 2本が増える）', M2.atomOf(st(A).mol, P).un === 2 && st(A).slots[P].length === 5);
+    tap(A, P); tap(A, Cl[3]); tap(A, P); tap(A, Cl[4]);
+    ok('残りの Cl 2つで完成（ほどく順によらない）', st(A).last.match === true);
+    A.doc.getElementById('undoBtn').click(); A.doc.getElementById('undoBtn').click(); A.doc.getElementById('undoBtn').click();
+    ok('「戻す」でほどく前に戻る（P の手は3本・青い対1組）', M2.atomOf(st(A).mol, P).lp === 1 && M2.atomOf(st(A).mol, P).unfold === 0);
+    A.f.remove();
+
+    section('画面: 公開② 超原子価（SF₆ ＝ S を2組ほどく）');
+    A = await openApp('index.html?m=SF6');
+    M2 = A.win.ChemShape.model;
+    var S = A.app.idsOf('S')[0], F = A.app.idsOf('F');
+    tapAng(A, S, slotOfKind(A, S, 'p')); A.doc.getElementById('unfoldBtn').click();
+    ok('1組ほどくと S の手は 4本', M2.handsOf(st(A).mol, S) === 4 && /S の手が 4 本/.test(msg(A)));
+    tapAng(A, S, slotOfKind(A, S, 'p'));
+    ok('S はもう1組ほどける（「ほどく」がまた出る）', vis(A, 'unfoldBtn'));
+    A.doc.getElementById('unfoldBtn').click();
+    ok('2組ほどくと S の手は 6本（赤い手 6本・60° おき）', M2.handsOf(st(A).mol, S) === 6 && atomG(A, S).querySelectorAll('line.hand').length === 6 &&
+      st(A).slots[S].length === 6);
+    F.forEach(function (f) { tap(A, S); tap(A, f); });
+    ok('F を6つつなぐと「完成！ SF₆（六フッ化硫黄）ができた」・S は 12「超原子価（発展）」', /完成！ SF₆（六フッ化硫黄）ができた/.test(msg(A)) &&
+      A.doc.querySelector('#board .chkNum[data-id="' + S + '"]').textContent === '12' && tagText(A) === 'S は 12 個・超原子価（発展）');
+    A.f.remove();
+    A = await openApp('index.html?m=SF6&view=shape');
+    A.app.stopSpin();
+    ok('SF₆ を形から: 「まとまり 6 組」「正八面体の配置 → 正八面体形（発展）」・F 6つ', /まとまり 6 組/.test(A.app.shapeSvg.querySelector('.dom').textContent) &&
+      A.app.shapeSvg.querySelector('.arr').textContent === '正八面体の配置' && A.app.shapeSvg.querySelector('.shp').textContent === '正八面体形（発展）' &&
+      qa(A, '.pane3d .ball').length === 6);
+    var al = A.app.shapeSvg.querySelector('.angLabel');
+    ok('SF₆: 模式図の角は 90°（十字の 180° の組を選ばない）', !!al && al.textContent === '90°');
+    ok('⚠ SF₆ の画面にも sp³d² が出ない', !/sp3d|sp³d/.test(A.app.shapeSvg.textContent + msg(A)));
+    A.f.remove();
+
+    section('画面: 公開② 電子不足（BF₃）');
+    A = await openApp('index.html?m=BF3');
+    M2 = A.win.ChemShape.model;
+    var B = A.app.idsOf('B')[0]; F = A.app.idsOf('F');
+    ok('BF₃: 「発展」の札・電子式が既定', !!A.doc.querySelector('#taskLabel .advBadge') && st(A).mode === 'dot');
+    F.forEach(function (f, i) { tapAng(A, B, [0, 180, 90][i]); tap(A, f); });
+    ok('F を3つつなぐと「完成！ BF₃（三フッ化ホウ素）ができた」（B は 6個でも完成・不対電子 0）', /完成！ BF₃（三フッ化ホウ素）ができた/.test(msg(A)) &&
+      st(A).last.match === true && M2.electronCount(st(A).mol, B) === 6);
+    ok('確かめ: B は 6・札「B は 6 個・電子不足（発展）」', A.doc.querySelector('#board .chkNum[data-id="' + B + '"]').textContent === '6' &&
+      tagText(A) === 'B は 6 個・電子不足（発展）');
+    ok('BF₃ の B は3まとまり ＝ 台の上でも 120°', anglesAround(A, B).join() === '120,120,120');
+    A.doc.getElementById('shapeViewBtn').click();
+    A.app.stopSpin();
+    ok('形: 「まとまり 3 組」「平面正三角形の配置 → 平面正三角形」・角 120°', /まとまり 3 組/.test(A.app.shapeSvg.querySelector('.dom').textContent) &&
+      A.app.shapeSvg.querySelector('.shp').textContent === '平面正三角形' && A.app.shapeSvg.querySelector('.angLabel').textContent === '120°');
+    A.f.remove();
+
+    section('画面: 公開② の否定対照（N・O はほどけない・公開①のお題では出さない）');
+    A = await openApp('index.html?m=NH3');
+    var N = A.app.idsOf('N')[0];
+    tapAng(A, N, slotOfKind(A, N, 'p'));
+    ok('⚠ NH₃ の N の青い対のあたりをタップ → 赤が選ばれ、「ほどく」は出ない', !!st(A).sel && st(A).slots[N][st(A).sel.slot].k === 'u' && !vis(A, 'unfoldBtn'));
+    A.f.remove();
+    A = await openApp('index.html?m=H2S');
+    var Sx = A.app.idsOf('S')[0];
+    tapAng(A, Sx, slotOfKind(A, Sx, 'p'));
+    ok('⚠ 公開①のお題（H₂S）では S の青い対を触っても「ほどく」を出さない（赤が選ばれる）', !!st(A).sel && st(A).slots[Sx][st(A).sel.slot].k === 'u' && !vis(A, 'unfoldBtn'));
+    A.f.remove();
+    A = await openApp('index.html');
+    A.doc.getElementById('freeMode').click();
+    ['N', 'O', 'P', 'H+'].forEach(function (e) { A.doc.querySelector('#palette button[data-el="' + e + '"]').click(); });
+    var Nf = A.app.idsOf('N')[0], Of = A.app.idsOf('O')[0], Pf = A.app.idsOf('P')[0];
+    tapAng(A, Nf, slotOfKind(A, Nf, 'p'));
+    ok('⚠ 自由・H⁺ あり: N の青い対は選べる（配位のため）が「ほどく」は出ない', !!st(A).sel && st(A).slots[Nf][st(A).sel.slot].k === 'p' && !vis(A, 'unfoldBtn'));
+    A.doc.getElementById('unfoldBtn').click();
+    ok('⚠ 隠れた「ほどく」を押しても N は変わらない（非共有電子対 1）', A.win.ChemShape.model.atomOf(st(A).mol, Nf).lp === 1);
+    st(A).sel = null;
+    tapAng(A, Of, slotOfKind(A, Of, 'p'));
+    ok('⚠ 自由: O の青い対でも「ほどく」は出ない', !!st(A).sel && st(A).slots[Of][st(A).sel.slot].k === 'p' && !vis(A, 'unfoldBtn'));
+    st(A).sel = null;
+    tapAng(A, Pf, slotOfKind(A, Pf, 'p'));
+    ok('自由: P の青い対なら「ほどく」が出る（H⁺ があれば「H⁺ をタップ」も言う）', vis(A, 'unfoldBtn') && /「ほどく」を押すか/.test(msg(A)));
+    A.f.remove();
+
+    section('画面: 公開② 375px 幅');
+    A = await openApp('index.html?m=PCl5', 375, 700);
+    P = A.app.idsOf('P')[0];
+    var h0 = A.doc.querySelector('.subBar').getBoundingClientRect().height;
+    tapAng(A, P, slotOfKind(A, P, 'p'));
+    var h1 = A.doc.querySelector('.subBar').getBoundingClientRect().height;
+    ok('375px: 「ほどく」が出ても下の段は1行のまま（' + Math.round(h0) + '→' + Math.round(h1) + 'px）', vis(A, 'unfoldBtn') && near(h0, h1));
+    A.doc.getElementById('unfoldBtn').click();
+    A.app.idsOf('Cl').forEach(function (c) { tap(A, P); tap(A, c); });
+    ok('375px: PCl₅ を組み終えても横スクロールが出ない・完成（' + A.doc.documentElement.scrollWidth + 'px）',
+      A.doc.documentElement.scrollWidth <= 376 && st(A).last.match === true);
+    var tb = A.doc.querySelector('.taskBar'), nb = A.doc.getElementById('nextTask');
+    ok('375px: 「発展」の札がついても ◀ お題 ▶ は1行（▶ が次の行へ落ちない）', Math.abs(nb.getBoundingClientRect().top - A.doc.getElementById('prevTask').getBoundingClientRect().top) < 2 &&
+      tb.getBoundingClientRect().right <= 376);
+    A.f.remove();
+    A = await openApp('index.html?m=SF6&view=shape', 375, 700);
+    ok('375px: SF₆ の形の画面で横スクロールが出ない', A.doc.documentElement.scrollWidth <= 376);
     A.f.remove();
   }
 

@@ -136,8 +136,10 @@
   }
   function openVacancy(s) { return s.atoms.reduce(function (t, a) { return t + (a.vacancy || 0); }, 0); }
 
-  /* ---- 「ほどく」（公開②・M4。UI はまだ無い）----
-     非共有電子対1組 → 不対電子2個。「既定 + 2×ほどいた数」が取りうる手の数に入るときだけ。 */
+  /* ---- 「ほどく」（公開②・M4・§3-2・§4-2）----
+     非共有電子対1組 → 不対電子2個。「既定 + 2×ほどいた数」が取りうる手の数に入るときだけ（P: 3→5、S: 2→4→6）。
+     N・O・F・Cl・C・B・H はほどけない（手の数の表に次の数が無い）。
+     ⚠ 超原子価に sp³d・sp³d² を付けない（§0・§3-7）。ここは電子の数だけを扱う。 */
   function canUnfold(s, id) {
     var A = atomOf(s, id);
     if (!A || A.lp < 1) return false;
@@ -172,6 +174,14 @@
     if (n === 8) return { count: n, kind: 'octet', label: 'オクテット' };
     if (n < 8) return { count: n, kind: 'deficient', label: '電子不足（発展）' };
     return { count: n, kind: 'hyper', label: '超原子価（発展）' };
+  }
+
+  // 盤の上でほどいた数の合計（お題の「ほどく数」と比べて声かけに使う）
+  function unfoldTotal(s) { return s.atoms.reduce(function (t, a) { return t + (a.unfold || 0); }, 0); }
+  // 手の数（既定の不対電子 ＋ 2×ほどいた数）。受け手のパーツ（H⁺）は 0
+  function handsOf(s, id) {
+    var A = atomOf(s, id);
+    return (A && !A.part && ELEMENTS[A.el]) ? ELEMENTS[A.el].un + 2 * A.unfold : 0;
   }
 
   function unpairedTotal(s) { return s.atoms.reduce(function (t, a) { return t + a.un; }, 0); }
@@ -331,6 +341,10 @@
         id: spec.id, formula: spec.formula, name: spec.name,
         atoms: spec.atoms.slice(), bonds: spec.bonds.map(function (t) { return t.slice(); }),
         allowedUnpaired: spec.allowedUnpaired || 0,
+        // 公開②: ほどく原子の番号（atoms の添字・同じ番号を2回で2組）・「発展」の札・既定の書き方（PCl₅・SF₆ は構造式）
+        unfold: (spec.unfold || []).slice(), advanced: !!spec.advanced, mode: spec.mode || null,
+        // M6: 教科書の実測の結合角（CH₄・NH₃・H₂O だけ。値の無いお題は null ＝ 数値を出さない）
+        bondAngle: typeof spec.bondAngle === 'number' ? spec.bondAngle : null,
         code: code(built.state), counts: formulaCounts(built.state), charge: charge(built.state), errors: built.errors
       };
     });
@@ -476,7 +490,7 @@
     create: create, clone: clone, atomOf: atomOf, bondBetween: bondBetween, bondsOf: bondsOf,
     addAtom: addAtom, canBond: canBond, bond: bond, canUnfold: canUnfold, unfold: unfold,
     bondOrderSum: bondOrderSum, electronCount: electronCount, tag: tag,
-    unpairedTotal: unpairedTotal, charge: charge, judge: judge,
+    unpairedTotal: unpairedTotal, unfoldTotal: unfoldTotal, handsOf: handsOf, charge: charge, judge: judge,
     wlRefine: wlRefine, canonicalRowsCore: canonicalRowsCore, code: code,
     componentOf: componentOf, formulaCounts: formulaCounts, sameCounts: sameCounts,
     fromSpec: fromSpec, prepareTargets: prepareTargets, checkTarget: checkTarget,

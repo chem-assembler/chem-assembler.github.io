@@ -1,4 +1,5 @@
 /* shape.js — 電子対でみる分子のかたち（shape）の画面。M1: 原子を置く・タップで結合・電子式⇄構造式・判定・お題。M2: 形を見る（中心 → まとまり → 配置 → 形・2D と 3D）。M3: 配位結合（青い対 → H⁺）。
+   M4（公開②・発展）: 電子不足（BF₃）・超原子価（青い対 →「ほどく」: PCl₅・SF₆）・三方両錐・正八面体。
    設計の正は DESIGN_bond_app.md。化学の判断は model.js（window.ChemShape.model）だけが持つ。
    ここが持つのは「見た目」: 原子の位置・4つの側（スロット）・描画・タップ。
    ⚠ グローバルは window.ChemShape の1つだけ（IIFE・§2）。 */
@@ -76,7 +77,7 @@
      ================================================================ */
   var st = {
     mol: M.create(), pos: {}, slots: {},
-    history: [], mode: 'dot', check: false, sel: null,
+    history: [], mode: 'dot', userMode: 'dot', modeFromUrl: false, check: false, sel: null,
     targets: [], taskIdx: 0, free: false, notice: null, ready: false,
     view: 'build', centerId: null, rotY: 0.55, rotX: -0.35, fresh: {}
   };
@@ -116,8 +117,14 @@
   // 結合していない原子: 上下左右の4か所（原子の電子式の書き方）
   function looseSlots(id) {
     var A = M.atomOf(st.mol, id);
-    var s = SIDE_ANG.map(function (a) { return { ang: a, k: null }; });
     var lp = A.lp, un = A.un;
+    // ほどいて5つ・6つになった原子（P・S・公開②）は上下左右に収まらないので放射状（72°・60°）に置く（§3-5）
+    if (lp + un > 4) {
+      var r = openSlots(lp + un, -90);
+      r.forEach(function (sl) { if (lp > 0) { sl.k = 'p'; lp--; } else if (un > 0) { sl.k = 'u'; un--; } });
+      return r;
+    }
+    var s = SIDE_ANG.map(function (a) { return { ang: a, k: null }; });
     PAIR_ORDER.forEach(function (k) { if (lp > 0) { s[k].k = 'p'; lp--; } });
     SINGLE_ORDER.forEach(function (k) { if (un > 0 && s[k].k === null) { s[k].k = 'u'; un--; } });
     return s;
@@ -143,9 +150,18 @@
   /* タップで選べる枠（M3）: 不対電子（赤）はいつでも。非共有電子対（青）は、台に受け手（空きのある H⁺）が
      あるときだけ（受け手が無いのに青を選ぶと、赤をねらったタップを青に取られる）。
      中心のタップ（ang が null）は赤を先に。向きがあれば、選べる枠のうちいちばん近いもの */
+  /* 「ほどく」（公開②・M4）をこの場で使えるか。発展のお題（advanced）と自由のときだけ。
+     ★ 公開①のお題（H₂S・PH₃ など）では出さない: S・P の青い対を指で触っただけで「ほどく」が現れると、
+       化学基礎の生徒が H₂S の S をほどいて組めなくなる（手が4本になる）。挙動を公開①のまま保つ */
+  function unfoldAllowed() {
+    var t = currentTarget();
+    return st.free || !!(t && t.advanced);
+  }
+  function canUnfoldHere(id) { return unfoldAllowed() && M.canUnfold(st.mol, id); }
+
   function pickSlot(id, ang) {
     var s = st.slots[id] || [];
-    var withPairs = M.openVacancy(st.mol) > 0;
+    var withPairs = M.openVacancy(st.mol) > 0 || canUnfoldHere(id);
     var cand = [];
     for (var k = 0; k < s.length; k++) if (s[k].k === 'u' || (withPairs && s[k].k === 'p')) cand.push(k);
     if (!cand.length) return null;
@@ -395,6 +411,9 @@
   function setupBoard() {
     st.mol = M.create(); st.pos = {}; st.slots = {}; st.sel = null; st.history = []; st.notice = null; st.fresh = {};
     st.view = 'build'; st.centerId = null; st.wasComplete = false; st.check = false;
+    // 書き方: お題が既定を持てばそれ（PCl₅・SF₆ は構造式 ＝ 教科書は電子式を描かない・§3-5）、無ければ利用者が選んだもの
+    var tg = !st.free && st.targets[st.taskIdx];
+    st.mode = (tg && tg.mode && !st.modeFromUrl) ? tg.mode : st.userMode;
     if (!st.free && st.targets[st.taskIdx]) {
       var els = st.targets[st.taskIdx].atoms;
       var cols = Math.min(els.length, 3), rows = Math.ceil(els.length / 3);
@@ -442,6 +461,14 @@
     return (t !== undefined && Date.now() - t < FRESH_BLUE_MS) ? 'blue' : null;
   }
 
+  // 1つめのタップで選んだ枠に合わせた声かけ（赤 → 相手・青 → H⁺／ほどく）
+  function sayPicked(id, slot) {
+    var isPair = st.slots[id][slot].k === 'p';
+    if (isPair && canUnfoldHere(id)) {
+      say(M.openVacancy(st.mol) > 0 ? '「ほどく」を押すか、わたす相手（H⁺）をタップしよう' : '「ほどく」を押すと、青い対が赤い点2つになる', 'info');
+    } else say(isPair ? 'この対をわたす相手（H⁺）をタップしよう' : '相手の原子をタップしよう', 'info');
+  }
+
   function tapAtom(id, ang) {
     var A = M.atomOf(st.mol, id);
     st.notice = null;
@@ -453,14 +480,14 @@
         return;
       }
       st.sel = { id: id, slot: s0 };
-      say(st.slots[id][s0].k === 'p' ? 'この対をわたす相手（H⁺）をタップしよう' : '相手の原子をタップしよう', 'info');
+      sayPicked(id, s0);
       update();
       return;
     }
     if (st.sel.id === id) {
       var s2 = pickSlot(id, ang);
-      if (s2 === st.sel.slot) st.sel = null;
-      else { st.sel.slot = s2; say('相手の原子をタップしよう', 'info'); }
+      if (s2 === st.sel.slot || s2 === null) st.sel = null;
+      else { st.sel.slot = s2; sayPicked(id, s2); }
       update();
       return;
     }
@@ -470,7 +497,8 @@
       // 配位結合: 青い対 → 受け手（空きのある原子）
       var cd = M.canDonate(st.mol, st.sel.id, id);
       if (!cd.ok) {
-        say(cd.reason === 'no-vacancy' ? '青い対（非共有電子対）は H⁺ にわたそう' : 'ここにはわたせません');
+        if (cd.reason === 'no-vacancy' && canUnfoldHere(st.sel.id) && M.openVacancy(st.mol) === 0) say('青い対は「ほどく」で赤い点にしてからつなごう');
+        else say(cd.reason === 'no-vacancy' ? '青い対（非共有電子対）は H⁺ にわたそう' : 'ここにはわたせません');
         update();
         return;
       }
@@ -501,11 +529,27 @@
     update();
   }
 
+  /* 「ほどく」（公開②・M4・§3-2）: 選んだ青い対（非共有電子対）を不対電子2個（赤）にする。
+     手の数の表に入るときだけ（P: 3→5、S: 2→4→6）。できない原子（N・O …）ではボタンそのものを出さない */
+  function unfoldSelected() {
+    if (!st.sel || st.view !== 'build') return;
+    var id = st.sel.id, sl = st.slots[id] && st.slots[id][st.sel.slot];
+    if (!sl || sl.k !== 'p' || !canUnfoldHere(id)) return;
+    pushHistory();
+    M.unfold(st.mol, id);
+    relayout(id);
+    st.sel = null;
+    var A = M.atomOf(st.mol, id);
+    say(A.el + ' の手が ' + M.handsOf(st.mol, id) + ' 本になった（オクテットを超える・発展）', 'info');
+    update();
+  }
+
   // お題をそのまま組む（?view=shape で形の画面から始めるとき）
   function assembleTarget() {
     var t = st.targets[st.taskIdx];
     if (!t) return;
     var ids = st.mol.atoms.map(function (x) { return x.id; });
+    (t.unfold || []).forEach(function (k) { if (M.unfold(st.mol, ids[k])) relayout(ids[k]); });
     t.bonds.forEach(function (bd) {
       if (bd[3] === 'dative') { var ps = pairSlots(ids[bd[0]]); donateAtoms(ids[bd[0]], ps.length ? ps[0] : null, ids[bd[1]]); return; }
       for (var o = 0; o < bd[2]; o++) bondAtoms(ids[bd[0]], pickUnpaired(ids[bd[0]], 0), ids[bd[1]]); // 右向きから（C=C・O=C=O を横に）
@@ -609,9 +653,15 @@
     } else if (j.complete) {
       res.text = '完成！ 不対電子が1つも残っていない'; res.kind = 'done';
     }
+    // 公開②: お題が「ほどく」を求めていて、まだ足りないとき（PCl₅ の P・SF₆ の S）
+    var needEl = null;
+    if (t && t.unfold && t.unfold.length && M.unfoldTotal(st.mol) < t.unfold.length) needEl = t.atoms[t.unfold[0]];
+    var needStuck = needEl && st.mol.atoms.every(function (a) { return a.el !== needEl || a.un === 0; });
     if (!res.text) {
       if (j.empty) res.text = '下の原子をタップして置こう';
+      else if (!st.mol.bonds.length && needEl) { res.text = needEl + ' の青い対をタップして「ほどく」と、手が増える'; res.kind = 'info'; }
       else if (!st.mol.bonds.length) res.text = '赤い点をタップして、相手の原子をタップしよう';
+      else if (needStuck) { res.text = needEl + ' の手が足りない。青い対を「ほどく」と2本増える'; res.kind = 'warn'; }
       else { res.text = '手が余っています（不対電子 ' + j.leftover + ' 個）'; res.kind = 'warn'; }
     }
     return res;
@@ -622,6 +672,7 @@
     if (M.openVacancy(st.mol) > 0 && !sh.twoAtoms && sh.lone > 0) return '青い対を H⁺ にわたすと、形が変わる';
     if (sh.twoAtoms) return '原子が2個の分子は、いつも直線';
     if (!sh.supported) return 'この形はここでは扱いません';
+    if (sh.domains >= 5) return '電子対 ' + sh.domains + ' 組がたがいに遠ざかる形（発展）';
     if (sh.lone === 0) return '非共有電子対が無いので、配置どおりの形';
     if (sh.domains === 4) return '結合角は 109.5° より少し狭い';
     if (sh.domains === 3) return '結合角は 120° より少し狭い';
@@ -685,6 +736,15 @@
         el('circle', { cx: p.x, cy: p.y, r: L / 2 + 5, 'class': 'chk' }, gChk);
         var tx = el('text', { x: p.x + 24, y: p.y - 22, 'class': 'chkNum' + (t.label ? ' ok' : ''), 'data-id': a.id }, gChk);
         tx.textContent = String(t.count);
+      });
+      // 公開②の札: オクテットでない原子（電子不足・超原子価）は台の左上に1行ずつ（分子に重ねない）
+      var ty = 20;
+      st.mol.atoms.forEach(function (a) {
+        var t = M.tag(st.mol, a.id);
+        if (t.kind !== 'deficient' && t.kind !== 'hyper') return;
+        var tt = el('text', { x: 10, y: ty, 'class': 'chkTag ' + t.kind, 'data-id': a.id }, gChk);
+        tt.textContent = a.el + ' は ' + t.count + ' 個・' + t.label;
+        ty += 18;
       });
     }
 
@@ -754,9 +814,18 @@
       var g = el('g', { 'class': 'atom', 'data-id': a.id, 'data-el': a.el }, gAtom);
       var lone = a.part && !M.bondsOf(st.mol, a.id).length;
       txt(g, p.x, p.y, lone ? M.PARTS[a.part].label : a.el, 'sym' + (lone ? ' part' : ''));
+      // ★ 構造式では非共有電子対を書かない。ただし「ほどける」対（発展のお題の P・S）だけは青で出す ＝ 「ほどく」操作の的。
+      //   PCl₅・SF₆ は構造式が既定（§3-5）なので、ここで出さないと、ほどく所が画面から消える
+      var showPairs = st.mode === 'dot' || canUnfoldHere(a.id);
       (st.slots[a.id] || []).forEach(function (sl) {
         if (sl.k !== 'u' && sl.k !== 'p') return;
         var q = slotPoint(p, a.el, sl.ang);
+        if (sl.k === 'p' && showPairs && st.mode !== 'dot') {
+          var lx = -q.d.y * 4.6, ly = q.d.x * 4.6;
+          dot(g, q.x + lx, q.y + ly, 'e-lp');
+          dot(g, q.x - lx, q.y - ly, 'e-lp');
+          return;
+        }
         if (st.mode === 'dot') {
           if (sl.k === 'u') dot(g, q.x, q.y, 'e-un');
           else {
@@ -835,7 +904,11 @@
   function disp2D(v, n) {
     if (Math.abs(v[2]) < 0.3) return [v[0], v[1]];
     if (n === 4) return v[2] > 0 ? [0.42, 0.78] : [0.95, -0.02];
-    return [v[0] + 0.35 * v[2], v[1] + 0.45 * v[2]]; // 5・6 まとまり（M4）は斜めの投影
+    // 三方両錐（M4）: 軸は上下・赤道の1本は右の紙面。残りの赤道2本は左へ、手前（くさび）は左下・奥（破線）は左上
+    if (n === 5) return v[2] > 0 ? [-0.72, 0.5] : [-0.72, -0.42];
+    // 正八面体（M4）: 紙面の十字＋手前（くさび）は右下・奥（破線）は左上（右上は 90° の弧と数値の場所）
+    if (n === 6) return v[2] > 0 ? [0.55, 0.62] : [-0.55, -0.62];
+    return [v[0] + 0.35 * v[2], v[1] + 0.45 * v[2]];
   }
 
   function render2D(g) {
@@ -874,7 +947,13 @@
     txt(g, P2.x, P2.y, M.atomOf(st.mol, sh.center).el, 'sym s2 center');
     // 結合角: 非共有電子対が無いときだけ、表の理想の角を紙面の2本のあいだに書く（あるときは文で「少し狭い」）
     if (sh.lone === 0 && sh.idealAngle && bonds2.length >= 2) {
-      var a1 = Math.atan2(bonds2[0].v[1], bonds2[0].v[0]), a2 = Math.atan2(bonds2[1].v[1], bonds2[1].v[0]);
+      // 紙面の結合のうち、理想の角にいちばん近い2本（正八面体の十字は 180° の組を避けて 90° の組）
+      var want = parseFloat(sh.idealAngle), best = null;
+      for (var bi = 0; bi < bonds2.length; bi++) for (var bj = bi + 1; bj < bonds2.length; bj++) {
+        var dg = Math.abs(M.angleDeg(bonds2[bi].v, bonds2[bj].v) - want);
+        if (!best || dg < best.d - 1e-6) best = { d: dg, p: bonds2[bi], q: bonds2[bj] };
+      }
+      var a1 = Math.atan2(best.p.v[1], best.p.v[0]), a2 = Math.atan2(best.q.v[1], best.q.v[0]);
       var d = Math.atan2(Math.sin(a2 - a1), Math.cos(a2 - a1));
       var r = 24, mid = a1 + d / 2;
       if (Math.abs(Math.abs(d) - Math.PI) < 1e-6) { d = Math.PI; mid = a1 + Math.PI / 2; } // 180° は下側に弧
@@ -1001,7 +1080,15 @@
     var shapeMode = st.view === 'shape';
     $('taskMode').className = st.free ? '' : 'on';
     $('freeMode').className = st.free ? 'on' : '';
-    $('taskLabel').textContent = t ? t.formula + '（' + t.name + '）をつくろう' : '原子を置いて組もう';
+    var tl = $('taskLabel');
+    tl.textContent = t ? t.formula + '（' + t.name + '）をつくろう' : '原子を置いて組もう';
+    if (t && t.advanced) {
+      // 公開②のお題には「発展」の札（設計 §0・§1）。札は後ろに付ける（見出しは化学式から始まる）
+      var badge = document.createElement('span');
+      badge.className = 'advBadge';
+      badge.textContent = '発展';
+      tl.appendChild(badge);
+    }
     $('prevTask').disabled = st.free || st.taskIdx <= 0;
     $('nextTask').disabled = st.free || st.taskIdx >= st.targets.length - 1;
     $('buildView').className = shapeMode ? '' : 'on';
@@ -1018,6 +1105,9 @@
     svgShape.style.display = shapeMode ? '' : 'none';
     $('palette').style.visibility = shapeMode ? 'hidden' : '';
     $('undoBtn').style.display = $('resetBtn').style.display = shapeMode ? 'none' : '';
+    // 「ほどく」: 選んだのが青い対で、その原子がほどけるときだけ出す（N・O では出さない）
+    var sl = st.sel && st.slots[st.sel.id] && st.slots[st.sel.id][st.sel.slot];
+    $('unfoldBtn').style.display = (!shapeMode && sl && sl.k === 'p' && canUnfoldHere(st.sel.id)) ? '' : 'none';
     var cb = $('centerBtn');
     cb.style.display = shapeMode ? '' : 'none';
     cb.style.visibility = (shapeMode && st.shape && st.shape.candidates && st.shape.candidates.length > 1) ? '' : 'hidden';
@@ -1057,8 +1147,9 @@
     $('nextTask').addEventListener('click', function () { if (st.taskIdx < st.targets.length - 1) { st.taskIdx++; setupBoard(); } });
     $('buildView').addEventListener('click', function () { setView('build'); });
     $('shapeViewBtn').addEventListener('click', function () { setView('shape'); });
-    $('dotMode').addEventListener('click', function () { st.mode = 'dot'; update(); });
-    $('lineMode').addEventListener('click', function () { st.mode = 'line'; update(); });
+    $('dotMode').addEventListener('click', function () { st.mode = st.userMode = 'dot'; update(); });
+    $('lineMode').addEventListener('click', function () { st.mode = st.userMode = 'line'; update(); });
+    $('unfoldBtn').addEventListener('click', unfoldSelected);
     $('checkBtn').addEventListener('click', function () { st.check = !st.check; update(); });
     $('undoBtn').addEventListener('click', undo);
     $('resetBtn').addEventListener('click', setupBoard);
@@ -1084,7 +1175,7 @@
     st.targets = M.prepareTargets(list);
     var q = new URLSearchParams(location.search);
     var mode = q.get('mode');
-    if (mode === 'line' || mode === 'dot') st.mode = mode;
+    if (mode === 'line' || mode === 'dot') { st.mode = st.userMode = mode; st.modeFromUrl = true; }
     var m = q.get('m');
     if (m) m = m.replace(/ /g, '+'); // ?m=NH4+ の「+」はクエリでは空白に読まれる（NH4%2B でも同じに着く）
     if (m) {

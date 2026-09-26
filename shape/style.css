@@ -92,6 +92,11 @@ main { max-width: 720px; margin: 0 auto; padding: 8px 12px 12px; }
 .chk { fill: none; stroke: #7a8f8c; stroke-width: 1; stroke-dasharray: 3 3; }
 .chkNum { font-size: 12px; font-weight: bold; fill: #555; }
 .chkNum.ok { fill: #1d7a46; }
+/* 公開②の札（電子不足・超原子価）: 台の左上に1行 */
+.chkTag { font-size: 13px; font-weight: bold; fill: #8a4b12; }
+/* 「発展」の札（お題の見出しの後ろ） */
+.advBadge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #8a4b12; color: #fff; font-size: 11px; line-height: 18px; vertical-align: 2px; }
+.bar button.unfold { color: var(--c-lp); border-color: var(--c-lp); font-weight: bold; }
 
 .msg { min-height: 1.5em; margin: 6px 2px; font-size: 15px; font-weight: bold; color: #34504c; }
 .msg.done { color: #1d7a46; }

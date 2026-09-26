@@ -15,5 +15,8 @@
 {"id":"H2S","formula":"H₂S","name":"硫化水素","atoms":["H","H","S"],"bonds":[[0,2,1],[1,2,1]]},
 {"id":"PH3","formula":"PH₃","name":"ホスフィン","atoms":["P","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1]]},
 {"id":"NH4+","formula":"NH₄⁺","name":"アンモニウムイオン","atoms":["N","H","H","H","H+"],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1,"dative"]]},
-{"id":"H3O+","formula":"H₃O⁺","name":"オキソニウムイオン","atoms":["O","H","H","H+"],"bonds":[[0,1,1],[0,2,1],[0,3,1,"dative"]]}
+{"id":"H3O+","formula":"H₃O⁺","name":"オキソニウムイオン","atoms":["O","H","H","H+"],"bonds":[[0,1,1],[0,2,1],[0,3,1,"dative"]]},
+{"id":"BF3","formula":"BF₃","name":"三フッ化ホウ素","atoms":["B","F","F","F"],"bonds":[[0,1,1],[0,2,1],[0,3,1]],"advanced":true},
+{"id":"PCl5","formula":"PCl₅","name":"五塩化リン","atoms":["P","Cl","Cl","Cl","Cl","Cl"],"unfold":[0],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[0,5,1]],"advanced":true,"mode":"line"},
+{"id":"SF6","formula":"SF₆","name":"六フッ化硫黄","atoms":["S","F","F","F","F","F","F"],"unfold":[0,0],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[0,5,1],[0,6,1]],"advanced":true,"mode":"line"}
 ]
