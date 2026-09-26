@@ -125,6 +125,17 @@ why: 還元は塩酸の中で行うので、塩基のアニリンは塩酸と中
 :::
 
 :::link
+app: ion-equation/redox
+id: ra1
+text: 還元の反応式を半反応式から組み立てる（酸性なのでアニリンが H⁺ を受け取る）
+:::
+
+:::link
+to: half-reaction-condition
+text: 液性に合わせて、その液性で実際に存在する形で書く（類題・参考）
+:::
+
+:::link
 to: benzene-substitution
 text: 出発物質のニトロベンゼンをつくるニトロ化
 :::

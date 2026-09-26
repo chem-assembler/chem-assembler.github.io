@@ -265,3 +265,93 @@ source: slides:電池の基本２「実用電池と燃料電池」s7-8
 prompt: リン酸形燃料電池の正極の式 O₂ ＋ 4H⁺ ＋ 4e⁻ → 2H₂O を、**電解液が KOH 水溶液（アルカリ形）の場合の式に書き換えよ。**
 answer: **O₂ ＋ 2H₂O ＋ 4e⁻ → 4OH⁻** です。左辺の H⁺ の数だけ両辺に 4OH⁻ を足すと O₂ ＋ 4H₂O ＋ 4e⁻ → 2H₂O ＋ 4OH⁻ になり、両辺にある 2H₂O を消します。
 :::
+
+:::section
+anchor: related
+title: この操作が要る場面 —— 類題・参考
+lead: 液性に合わせて書き直す操作は、半反応式の段で使う場面と、半反応式を足し合わせたイオン反応式で使う場面があります。
+:::
+
+どちらも、**その液性で実際に存在する形で書く**という同じ考え方です。足し合わせたイオン反応式では、H⁺ を OH⁻ で打ち消すほかに、酸性では塩基（アニリン）が H⁺ を受け取り、塩基性では酸（カルボン酸）が H⁺ を手放した形になります。
+
+## 半反応式の段で直す
+
+:::link
+app: ion-equation/condition
+id: b1
+text: 水の電気分解・陰極（H₂ が出る側）
+:::
+
+:::link
+app: ion-equation/condition
+id: b2
+text: 水の電気分解・陽極（O₂ が出る側）
+:::
+
+:::link
+app: ion-equation/condition
+id: b3
+text: オゾンが酸化剤としてはたらくとき
+:::
+
+:::link
+app: ion-equation/condition
+id: b4
+text: 過酸化水素が酸化剤としてはたらくとき
+:::
+
+:::link
+app: ion-equation/electrolysis
+id: e6
+text: 水酸化ナトリウム水溶液の電気分解
+:::
+
+:::link
+to: fuel-cell
+text: アルカリ形燃料電池の正極・負極の式は「実用電池と燃料電池」で
+:::
+
+## 足し合わせてから直す（塩基性）
+
+:::link
+app: ion-equation/redox
+id: rs5
+text: オゾン × ヨウ化カリウム（KI デンプン紙）の反応式を組み立てる
+:::
+
+:::link
+app: ion-equation/redox
+id: rs4
+text: 過マンガン酸カリウム × ヨウ化カリウム（中性）の反応式を組み立てる
+:::
+
+:::link
+app: ion-equation/redox
+id: ro4
+text: 銀鏡反応の反応式を組み立てる（カルボン酸が R−COO⁻ になる）
+:::
+
+:::link
+app: ion-equation/redox
+id: ro5
+text: フェーリング反応の反応式を組み立てる
+:::
+
+:::link
+app: ion-equation/redox
+id: ri3
+text: ヨードホルム反応の反応式を組み立てる（参考）
+:::
+
+## 足し合わせてから直す（酸性）
+
+:::link
+app: ion-equation/redox
+id: ra1
+text: ニトロベンゼン × スズ（塩酸）の反応式を組み立てる（アニリンが H⁺ を受け取る）
+:::
+
+:::link
+to: aniline
+text: アニリン塩酸塩から NaOH でアニリンを遊離させる流れは「アニリン」で
+:::
