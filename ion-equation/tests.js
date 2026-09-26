@@ -6385,30 +6385,39 @@ async function runRedoxUITests(iframe) {
     assert(away >= 2, "Ag が着地点から離れた場所に一度も現れない＝着地点にワープしている: " + away);
   });
 
-  /* ★ I-0176（2026-09-26 ユーザー決定）: 金属樹。溶けた原子のぶん板の縁を削り（虫食い）、
-     析出は板の外へ伸びる枝の先に置く ＝ **穴と析出が重ならない**。溶液モード（板なし）では削らない */
-  await t("REDOX I-0176: 金属樹は、溶けたぶん板が虫食いになり、析出は板の外の枝に並ぶ（重ならない）", async () => {
+  /* ★ I-0176（2026-09-26 ユーザー指示）: 金属樹は**上下で分ける**。溶ける原子は板の上側に並び、
+     溶けると**その原子の〇の形に**板が抜ける（虫食い）。析出は板の下側に積む ＝ 穴と析出が重ならない。
+     （いったん「板から外へ伸びる枝」にしたが、水中のイオンが枝に詰まるので上下に改めた）
+     溶液モード（板なし）では抜かない */
+  await t("REDOX I-0176: 金属樹は上下に分かれる（上で原子の〇の形に抜け、下に析出が積もる・重ならない）", async () => {
     stageBtn(1).click();          // Cu × Ag⁺（銀樹）
     upBtns()[1].click();          // 還元側 ×2
     let s = state();
-    assert(!s.plateBites.length && !s.plateMasked && s.branches === 0, "動かす前から板が削れている／枝がある");
+    assert(!s.plateBites.length && !s.plateMasked, "動かす前から板が抜けている");
+    adv(60);   // 静止している粒にも transform を書かせる
+    const cu0 = agPos("Cu")[0];
     playBtn().click();
     adv(25000);
     s = state();
-    assert(s.plateBites.length === 1 && s.plateMasked, "溶けた Cu 1個ぶん板が削れていない: " + JSON.stringify(s.plateBites));
-    assert(s.deposited === 2 && s.branches === 2, "析出2個に枝が2本でない: " + s.deposited + " / " + s.branches);
-    const plateRight = 85 + 26;
+    assert(s.plateBites.length === 1 && s.plateMasked, "溶けた Cu 1個ぶん板が抜けていない: " + JSON.stringify(s.plateBites));
+    // 穴は溶けた原子の〇そのもの（同じ位置・同じ半径）
+    const hole = s.biteCircles[0];
+    assert(hole && cu0 && Math.abs(hole.x - cu0.x) < 1 && Math.abs(hole.y - cu0.y) < 1 && Math.abs(hole.r - cu0.r) < 0.5,
+      "穴が原子の〇と一致しない: " + JSON.stringify({ hole, cu0 }));
     const deps = agPos("Ag");
-    assert(deps.length === 2 && deps.every((p) => p.x - p.r > plateRight + 2),
-      "析出が板の縁（虫食いの場所）に重なっている: " + JSON.stringify(deps));
+    assert(s.deposited === 2 && deps.length === 2, "析出が2個でない: " + s.deposited);
+    // 上下: 析出はすべて穴より下・穴と重ならない
+    assert(deps.every((p) => p.y > hole.y && Math.hypot(p.x - hole.x, p.y - hole.y) > p.r + hole.r),
+      "析出が穴に重なっている／上にある: " + JSON.stringify({ deps, hole }));
+    assert(deps.every((p) => p.y - p.r > 85 + 0 && p.y + p.r <= 160 + 210 + 2), "析出が板の高さから外れている: " + JSON.stringify(deps));
     // やり直すと戻る
     stageBtn(1).click();
     s = state();
-    assert(!s.plateBites.length && !s.plateMasked && s.branches === 0, "やり直しても削れた跡・枝が残る");
-    // 溶液モード（板なし）では削らない
+    assert(!s.plateBites.length && !s.plateMasked, "やり直しても抜けた跡が残る");
+    // 溶液モード（板なし）では抜かない
     stageBtn(REDOX_STAGES.findIndex((x) => x.id === "rs1")).click();
     playBtn().click(); adv(25000);
-    assert(!state().plateBites.length, "板の無い回で板を削っている");
+    assert(!state().plateBites.length, "板の無い回で板を抜いている");
   });
 
   await t("REDOX: r3 で H₂ の泡が逃げてクリア", async () => {
@@ -6718,8 +6727,9 @@ async function runRedoxUITests(iframe) {
     stageBtn(0).click();
   });
 
-  await t("REDOX: 板の原子は水中の中央にそろい、e⁻ は原子がいた場所に残る", async () => {
-    const PLATE_TOP = 160, PLATE_BOTTOM = 370, PLATE_MID = 265;
+  /* ★ 2026-09-26（I-0176）: 金属樹を上下に分けたので、原子は「板の中央」ではなく**板の上側の帯**（180〜）にそろう */
+  await t("REDOX: 板の原子は板の上側の帯にそろい、e⁻ は原子がいた場所に残る", async () => {
+    const PLATE_TOP = 160, PLATE_BOTTOM = 370, PLATE_MID = 265, ZONE_TOP = 180;
     const at = (label) => {
       adv(60);   // 静止している粒にも transform を書かせる
       return $$("#beaker .particle").map((e) => {
@@ -6729,14 +6739,14 @@ async function runRedoxUITests(iframe) {
     };
     const r4 = REDOX_STAGES.findIndex((s) => s.id === "r4");   // Al × Cu²⁺（2:3）
     stageBtn(r4).click();
-    // 倍率を上げても板からはみ出さず、上下の中央にそろう（以前は上から詰めて水の外まで伸びていた）
+    // 倍率を上げても板からはみ出さず、上側の帯の上端からそろう。多いときは帯を下へ広げて間隔 18 以上を保つ
     for (let k = 0; k < 8; k++) doc.querySelectorAll("#schematicAdd button")[0].click();
     const many = at("Al");
     assert(many.length === 9, "×9 で原子が9個でない: " + many.length);
     assert(many[0] >= PLATE_TOP + 6 && many[many.length - 1] <= PLATE_BOTTOM - 6,
       "原子が板からはみ出す: " + many[0] + "〜" + many[many.length - 1]);
-    assert(Math.abs((many[0] + many[many.length - 1]) / 2 - PLATE_MID) < 2,
-      "原子が上下の中央にそろわない: " + JSON.stringify(many));
+    assert(Math.abs(many[0] - ZONE_TOP) < 2, "原子が上側の帯の上端からそろわない: " + JSON.stringify(many));
+    assert(many.every((y, i) => i === 0 || y - many[i - 1] >= 18 - 0.01), "原子の間隔が 18 より詰まっている: " + JSON.stringify(many));
     // 模範の 2:3 に戻して反応させる
     const svg = doc.getElementById("schematic");
     while (state().mult[0] > 2) {

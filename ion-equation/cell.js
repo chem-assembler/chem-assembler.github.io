@@ -454,11 +454,11 @@ let nextId = 1;
 
 /* ---- 溶けた板の虫食い（2026-09-26・ユーザー指示・I-0176）----
    「金属が溶けだしたときに、虫食いグラフィックにして金属板の質量が減ったことを表現する」。
-   負極の原子が1個溶けるたびに、**その高さで板の内側の縁を削る**（SVG の mask）。
+   負極の原子が1個溶けるたびに、**その高さで、原子の〇と同じ大きさの穴を板の縁に抜く**（SVG の mask）。
    電池では溶ける板（負極）と析出する板（正極）が別なので、削った穴と析出が重ならない。
    ⚠ 金属樹（redox.js・同じ板の上で溶けて析出する）は置き方をユーザーと相談中 ＝ ここは電池だけ。
    ⚠ 見た目だけ。数や判定には一切使わない（数は released が持つ）。 */
-let bites = [];          // { i: 板の番号, y: 溶けた高さ, k: 通し番号（形のゆらぎに使う） }
+let bites = [];          // { i: 板の番号, y: 溶けた高さ, r: 溶けた原子の半径 }
 const biteEdgeX = (i) => (i === 0 ? CELL.plateX[0] + CELL.plate.w : CELL.plateX[1]);   // 液に向いた縁
 function applyBites(i) {
   const body = cellSvg.querySelector("#plateBody" + i);
@@ -470,20 +470,15 @@ function applyBites(i) {
   const m = mk("mask", { id: "plateBite" + i, maskUnits: "userSpaceOnUse",
     x: CELL.plateX[i] - 4, y: CELL.plate.y - 4, width: CELL.plate.w + 8, height: CELL.plate.h + 8 }, defs);
   mk("rect", { x: CELL.plateX[i] - 4, y: CELL.plate.y - 4, width: CELL.plate.w + 8, height: CELL.plate.h + 8, fill: "#fff" }, m);
-  const ex = biteEdgeX(i), inward = i === 0 ? -1 : 1;
-  for (const b of mine) {
-    // 大きいかじり跡1つ＋小さい2つ。k でずらして、並んでも同じ形にならないようにする。
-    // 大きさは 320px 端末（0.667 倍）でも穴と読める寸法（r10 → 約7px）。板の幅 26 のうち最大 11 を削る
-    const j = ((b.k * 37) % 7) - 3;
-    mk("circle", { cx: ex, cy: b.y, r: 10, fill: "#000", class: "bite" }, m);
-    mk("circle", { cx: ex + inward * 6, cy: b.y - 8 + j * 0.6, r: 5, fill: "#000" }, m);
-    mk("circle", { cx: ex + inward * 4, cy: b.y + 8 - j * 0.4, r: 4.5, fill: "#000" }, m);
-  }
+  // ★ 穴は**溶けた原子の〇と同じ大きさ**（ユーザー指示「原子の〇をぬくかたち」）。
+  //   電池の原子は板の縁のすぐ外に並ぶので、縁の上に原子と同じ半径の〇を抜く ＝ 原子1個ぶんが板から抜けた跡
+  const ex = biteEdgeX(i);
+  for (const b of mine) mk("circle", { cx: ex, cy: b.y, r: b.r, fill: "#000", class: "bite" }, m);
   body.setAttribute("mask", "url(#plateBite" + i + ")");
 }
-function addBite(i, y) {
+function addBite(i, y, r) {
   if (isElyz()) return;
-  bites.push({ i, y, k: bites.length });
+  bites.push({ i, y, r: r || 15 });
   applyBites(i);
 }
 let phase = "idle";     // idle | running | done
@@ -700,7 +695,7 @@ function step(dt) {
     if (members.length) {
       const baseY = members.reduce((s, x) => s + x.y, 0) / members.length;
       members.forEach(killParticle);
-      addBite(n, baseY);   // 溶けたぶん板を削る（I-0176・電池だけ）
+      addBite(n, baseY, members[0].r);   // 溶けたぶん板を削る（I-0176・電池だけ）
       spawnProducts(oxHR().right, n, baseY);
       for (let k = 0; k < givePer; k++) {
         const path = ePath(spawnedE);
