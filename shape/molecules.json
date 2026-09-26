@@ -1,9 +1,9 @@
 [
 {"id":"H2","formula":"H₂","name":"水素","atoms":["H","H"],"bonds":[[0,1,1]]},
 {"id":"HCl","formula":"HCl","name":"塩化水素","atoms":["H","Cl"],"bonds":[[0,1,1]]},
-{"id":"H2O","formula":"H₂O","name":"水","atoms":["H","H","O"],"bonds":[[0,2,1],[1,2,1]]},
-{"id":"NH3","formula":"NH₃","name":"アンモニア","atoms":["N","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1]]},
-{"id":"CH4","formula":"CH₄","name":"メタン","atoms":["C","H","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]},
+{"id":"H2O","formula":"H₂O","name":"水","atoms":["H","H","O"],"bonds":[[0,2,1],[1,2,1]],"bondAngle":104.5},
+{"id":"NH3","formula":"NH₃","name":"アンモニア","atoms":["N","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1]],"bondAngle":106.7},
+{"id":"CH4","formula":"CH₄","name":"メタン","atoms":["C","H","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1]],"bondAngle":109.5},
 {"id":"Cl2","formula":"Cl₂","name":"塩素","atoms":["Cl","Cl"],"bonds":[[0,1,1]]},
 {"id":"O2","formula":"O₂","name":"酸素","atoms":["O","O"],"bonds":[[0,1,2]]},
 {"id":"N2","formula":"N₂","name":"窒素","atoms":["N","N"],"bonds":[[0,1,3]]},
@@ -15,5 +15,8 @@
 {"id":"H2S","formula":"H₂S","name":"硫化水素","atoms":["H","H","S"],"bonds":[[0,2,1],[1,2,1]]},
 {"id":"PH3","formula":"PH₃","name":"ホスフィン","atoms":["P","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1]]},
 {"id":"NH4+","formula":"NH₄⁺","name":"アンモニウムイオン","atoms":["N","H","H","H","H+"],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1,"dative"]]},
-{"id":"H3O+","formula":"H₃O⁺","name":"オキソニウムイオン","atoms":["O","H","H","H+"],"bonds":[[0,1,1],[0,2,1],[0,3,1,"dative"]]}
+{"id":"H3O+","formula":"H₃O⁺","name":"オキソニウムイオン","atoms":["O","H","H","H+"],"bonds":[[0,1,1],[0,2,1],[0,3,1,"dative"]]},
+{"id":"BF3","formula":"BF₃","name":"三フッ化ホウ素","atoms":["B","F","F","F"],"bonds":[[0,1,1],[0,2,1],[0,3,1]],"advanced":true},
+{"id":"PCl5","formula":"PCl₅","name":"五塩化リン","atoms":["P","Cl","Cl","Cl","Cl","Cl"],"unfold":[0],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[0,5,1]],"advanced":true,"mode":"line"},
+{"id":"SF6","formula":"SF₆","name":"六フッ化硫黄","atoms":["S","F","F","F","F","F","F"],"unfold":[0,0],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[0,5,1],[0,6,1]],"advanced":true,"mode":"line"}
 ]

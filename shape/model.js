@@ -136,8 +136,10 @@
   }
   function openVacancy(s) { return s.atoms.reduce(function (t, a) { return t + (a.vacancy || 0); }, 0); }
 
-  /* ---- 「ほどく」（公開②・M4。UI はまだ無い）----
-     非共有電子対1組 → 不対電子2個。「既定 + 2×ほどいた数」が取りうる手の数に入るときだけ。 */
+  /* ---- 「ほどく」（公開②・M4・§3-2・§4-2）----
+     非共有電子対1組 → 不対電子2個。「既定 + 2×ほどいた数」が取りうる手の数に入るときだけ（P: 3→5、S: 2→4→6）。
+     N・O・F・Cl・C・B・H はほどけない（手の数の表に次の数が無い）。
+     ⚠ 超原子価に sp³d・sp³d² を付けない（§0・§3-7）。ここは電子の数だけを扱う。 */
   function canUnfold(s, id) {
     var A = atomOf(s, id);
     if (!A || A.lp < 1) return false;
@@ -172,6 +174,14 @@
     if (n === 8) return { count: n, kind: 'octet', label: 'オクテット' };
     if (n < 8) return { count: n, kind: 'deficient', label: '電子不足（発展）' };
     return { count: n, kind: 'hyper', label: '超原子価（発展）' };
+  }
+
+  // 盤の上でほどいた数の合計（お題の「ほどく数」と比べて声かけに使う）
+  function unfoldTotal(s) { return s.atoms.reduce(function (t, a) { return t + (a.unfold || 0); }, 0); }
+  // 手の数（既定の不対電子 ＋ 2×ほどいた数）。受け手のパーツ（H⁺）は 0
+  function handsOf(s, id) {
+    var A = atomOf(s, id);
+    return (A && !A.part && ELEMENTS[A.el]) ? ELEMENTS[A.el].un + 2 * A.unfold : 0;
   }
 
   function unpairedTotal(s) { return s.atoms.reduce(function (t, a) { return t + a.un; }, 0); }
@@ -331,6 +341,10 @@
         id: spec.id, formula: spec.formula, name: spec.name,
         atoms: spec.atoms.slice(), bonds: spec.bonds.map(function (t) { return t.slice(); }),
         allowedUnpaired: spec.allowedUnpaired || 0,
+        // 公開②: ほどく原子の番号（atoms の添字・同じ番号を2回で2組）・「発展」の札・既定の書き方（PCl₅・SF₆ は構造式）
+        unfold: (spec.unfold || []).slice(), advanced: !!spec.advanced, mode: spec.mode || null,
+        // M6: 教科書の実測の結合角（CH₄・NH₃・H₂O だけ。値の無いお題は null ＝ 数値を出さない）
+        bondAngle: typeof spec.bondAngle === 'number' ? spec.bondAngle : null,
         code: code(built.state), counts: formulaCounts(built.state), charge: charge(built.state), errors: built.errors
       };
     });
@@ -407,9 +421,14 @@
 
   /* 分子の形。完成して1つにつながった分子だけ（それ以外は null）。
      centerId が候補にあればそれを中心に、無ければ候補の先頭 */
+  // 形を見る分子: まだ配位していない受け手（ひとりの H⁺）を除いたもの
+  function shapeState(s0) {
+    return { atoms: s0.atoms.filter(function (a) { return !(a.vacancy > 0 && !bondsOf(s0, a.id).length); }), bonds: s0.bonds };
+  }
+
   function moleculeShape(s0, centerId) {
     // まだ配位していない受け手（ひとりの H⁺）は形に入れない ＝ 配位する前の NH₃（三角錐形）と後の NH₄⁺（正四面体形）を見比べられる
-    var s = { atoms: s0.atoms.filter(function (a) { return !(a.vacancy > 0 && !bondsOf(s0, a.id).length); }), bonds: s0.bonds };
+    var s = shapeState(s0);
     if (!judge(s).complete || !s.atoms.length) return null;
     if (componentOf(s, s.atoms[0].id).length !== s.atoms.length) return null;
     if (s.atoms.length === 2) {
@@ -465,6 +484,37 @@
     return items;
   }
 
+  /* ---- 結合角の縮み（M6・§3-6）----
+     理想の正四面体（109.47°）から、**与えられた角**（教科書の実測値）まで、結合の向きだけを補間する。
+     ⚠ この関数は角度を「計算して出す」ものではない。終点の角は引数でもらう（molecules.json の bondAngle
+        ＝ 数研 化学基礎 2編 PLUS の実測値: CH₄ 109.5°・NH₃ 106.7°・H₂O 104.5°）。反発の強さから角度は出さない
+     ⚠ 非共有電子対の向きは動かさない。非共有電子対が無ければ（CH₄）何も動かさない（対照）
+     しくみ: 軸 a ＝ 非共有電子対の向きの和の反対。各結合を「軸からの傾き α」と「軸のまわりの向き e」に分け、
+     e はそのまま・α だけを変える。結合が軸のまわりに等間隔（NH₃ は 120°・H₂O は 180°）なので、
+     2本の結合の角 θ と α は cosθ = cos²α + sin²α·cosφ（φ ＝ 360°/結合の数）で結ばれる */
+  function squeezeGeometry(items, targetDeg, t) {
+    var copy = items.map(function (it) { return Object.assign({}, it, { v: it.v.slice() }); });
+    var lps = copy.filter(function (it) { return it.kind === 'lp'; });
+    var bs = copy.filter(function (it) { return it.kind === 'bond'; });
+    if (!lps.length || bs.length < 2 || typeof targetDeg !== 'number' || !(t > 0)) return copy;
+    var a = [0, 0, 0];
+    lps.forEach(function (it) { a[0] -= it.v[0]; a[1] -= it.v[1]; a[2] -= it.v[2]; });
+    var na = Math.hypot(a[0], a[1], a[2]);
+    if (na < 1e-9) return copy;
+    a = [a[0] / na, a[1] / na, a[2] / na];
+    var theta0 = angleDeg(bs[0].v, bs[1].v);
+    var theta = (theta0 + (targetDeg - theta0) * Math.min(1, t)) * Math.PI / 180;
+    var cphi = Math.cos(2 * Math.PI / bs.length);
+    var c2 = (Math.cos(theta) - cphi) / (1 - cphi);
+    var ca = Math.sqrt(Math.max(0, Math.min(1, c2))), sa = Math.sqrt(1 - ca * ca);
+    bs.forEach(function (it) {
+      var v = it.v, c = v[0] * a[0] + v[1] * a[1] + v[2] * a[2];
+      var p = [v[0] - c * a[0], v[1] - c * a[1], v[2] - c * a[2]], np = Math.hypot(p[0], p[1], p[2]) || 1;
+      it.v = [ca * a[0] + sa * p[0] / np, ca * a[1] + sa * p[1] / np, ca * a[2] + sa * p[2] / np];
+    });
+    return copy;
+  }
+
   function angleDeg(u, v) {
     var d = u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
     var nu = Math.hypot(u[0], u[1], u[2]), nv = Math.hypot(v[0], v[1], v[2]);
@@ -476,14 +526,15 @@
     create: create, clone: clone, atomOf: atomOf, bondBetween: bondBetween, bondsOf: bondsOf,
     addAtom: addAtom, canBond: canBond, bond: bond, canUnfold: canUnfold, unfold: unfold,
     bondOrderSum: bondOrderSum, electronCount: electronCount, tag: tag,
-    unpairedTotal: unpairedTotal, charge: charge, judge: judge,
+    unpairedTotal: unpairedTotal, unfoldTotal: unfoldTotal, handsOf: handsOf, charge: charge, judge: judge,
     wlRefine: wlRefine, canonicalRowsCore: canonicalRowsCore, code: code,
     componentOf: componentOf, formulaCounts: formulaCounts, sameCounts: sameCounts,
     fromSpec: fromSpec, prepareTargets: prepareTargets, checkTarget: checkTarget,
     PARTS: PARTS, PART_ORDER: PART_ORDER, canDonate: canDonate, donate: donate, openVacancy: openVacancy,
     ARRANGEMENT: ARRANGEMENT, SHAPE_NAME: SHAPE_NAME,
     domains: domains, shapeAt: shapeAt, shapeCenters: shapeCenters, moleculeShape: moleculeShape,
-    idealVectors: idealVectors, shapeGeometry: shapeGeometry, angleDeg: angleDeg
+    idealVectors: idealVectors, shapeGeometry: shapeGeometry, angleDeg: angleDeg,
+    shapeState: shapeState, squeezeGeometry: squeezeGeometry
   };
 
   if (typeof module === 'object' && module.exports) module.exports = api;
