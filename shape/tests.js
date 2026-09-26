@@ -344,6 +344,45 @@
       var src = JSON.stringify(Object.keys(M)) + JSON.stringify(M.SHAPE_NAME) + JSON.stringify(M.ARRANGEMENT);
       ok('⚠ モデルは超原子価に sp³d・sp³d² の札を持たない', !/sp3d|sp³d/.test(src));
     })();
+
+    section('モデル: M6 結合角の縮み（§3-6・数値は教科書の実測値）');
+    (function () {
+      var withAngle = T.filter(function (t) { return t.bondAngle !== null; }).map(function (t) { return t.id + ':' + t.bondAngle; }).sort().join();
+      ok('実測値（bondAngle）を持つのは CH₄ 109.5・NH₃ 106.7・H₂O 104.5 の3つだけ', withAngle === 'CH4:109.5,H2O:104.5,NH3:106.7');
+      ok('⚠ H₃O⁺・PH₃・H₂S は数値を持たない（教科書に値が無い）', ['H3O+', 'PH3', 'H2S'].every(function (id) { return byId[id].bondAngle === null; }));
+      var geo = function (id) {
+        var s = M.fromSpec(molecules.filter(function (x) { return x.id === id; })[0]).state;
+        return M.shapeGeometry(s, M.shapeCenters(s)[0]);
+      };
+      var bondPairs = function (items) {
+        var b = items.filter(function (x) { return x.kind === 'bond'; }), out = [];
+        for (var i = 0; i < b.length; i++) for (var j = i + 1; j < b.length; j++) out.push(M.angleDeg(b[i].v, b[j].v));
+        return out;
+      };
+      var lpSame = function (a, b) {
+        var la = a.filter(function (x) { return x.kind === 'lp'; }), lb = b.filter(function (x) { return x.kind === 'lp'; });
+        return la.length === lb.length && la.every(function (x, i) { return x.v.join() === lb[i].v.join(); });
+      };
+      [['NH3', 106.7, 3], ['H2O', 104.5, 1]].forEach(function (c) {
+        var g0 = geo(c[0]), g1 = M.squeezeGeometry(g0, byId[c[0]].bondAngle, 1);
+        var ps = bondPairs(g1);
+        ok(c[0] + ': アニメの終点の結合角が ' + c[1] + '°（' + c[2] + '組とも・' + ps.map(function (x) { return x.toFixed(2); }).join('・') + '）',
+          ps.length === c[2] && ps.every(function (x) { return Math.abs(x - c[1]) < 0.01; }));
+        ok(c[0] + ': 始点（t=0）は理想の 109.47°', bondPairs(M.squeezeGeometry(g0, c[1], 0)).every(function (x) { return Math.abs(x - 109.47) < 0.01; }));
+        ok('⚠ ' + c[0] + ': 非共有電子対の向きは動かさない', lpSame(g0, g1) && lpSame(g0, M.squeezeGeometry(g0, c[1], 0.5)));
+        var a25 = bondPairs(M.squeezeGeometry(g0, c[1], 0.25))[0], a50 = bondPairs(M.squeezeGeometry(g0, c[1], 0.5))[0], a75 = bondPairs(M.squeezeGeometry(g0, c[1], 0.75))[0];
+        ok(c[0] + ': 途中は 109.5° から少しずつ狭くなる（戻らない）', 109.47 > a25 && a25 > a50 && a50 > a75 && a75 > c[1] - 1e-9);
+        ok(c[0] + ': 結合の向きは単位ベクトルのまま', g1.every(function (x) { return Math.abs(Math.hypot(x.v[0], x.v[1], x.v[2]) - 1) < 1e-9; }));
+        ok('⚠ ' + c[0] + ': 元の並び（shapeGeometry の結果）を書き換えない', bondPairs(g0).every(function (x) { return Math.abs(x - 109.47) < 0.01; }));
+      });
+      var gc = geo('CH4'), gc1 = M.squeezeGeometry(gc, byId.CH4.bondAngle, 1);
+      ok('⚠ 対照: CH₄ は非共有電子対が無いので動かない（6組とも 109.47°・向きも同じ）', bondPairs(gc1).every(function (x) { return Math.abs(x - 109.47) < 0.01; }) &&
+        gc1.every(function (x, i) { return x.v.join() === gc[i].v.join(); }));
+      var n1 = bondPairs(M.squeezeGeometry(geo('NH3'), 106.7, 1))[0], w1 = bondPairs(M.squeezeGeometry(geo('H2O'), 104.5, 1))[0];
+      ok('非共有電子対が多いほど狭い: CH₄ ＞ NH₃ ＞ H₂O', 109.47 > n1 && n1 > w1);
+      ok('⚠ 終点の角は引数（データ）で決まる ＝ 模型は角度を計算しない（100° を渡せば 100°）',
+        Math.abs(bondPairs(M.squeezeGeometry(geo('NH3'), 100, 1))[0] - 100) < 0.01);
+    })();
   }
 
   /* ================================================================
@@ -553,6 +592,7 @@
     await runShapeUITests();
     await runDativeUITests();
     await runAdvancedUITests();
+    await runSqueezeUITests();
     await runWidthTests();
   }
 
@@ -924,6 +964,109 @@
     A.f.remove();
     A = await openApp('index.html?m=SF6&view=shape', 375, 700);
     ok('375px: SF₆ の形の画面で横スクロールが出ない', A.doc.documentElement.scrollWidth <= 376);
+    A.f.remove();
+  }
+
+  /* ---- M6: 結合角の縮み（§3-6・§6）---- */
+  async function squeezeDone(A) {
+    for (var i = 0; i < 100 && (A.app.squeezing() || st(A).sq.t < 1); i++) await wait(40);
+  }
+  function bondAngles(A) {
+    var M2 = A.win.ChemShape.model, b = A.app.shapeItems().filter(function (x) { return x.kind === 'bond'; }), out = [];
+    for (var i = 0; i < b.length; i++) for (var j = i + 1; j < b.length; j++) out.push(M2.angleDeg(b[i].v, b[j].v));
+    return out;
+  }
+  function lpVecs(A) { return A.app.shapeItems().filter(function (x) { return x.kind === 'lp'; }).map(function (x) { return x.v.map(function (n) { return n.toFixed(9); }).join(); }).join('|'); }
+  // 模式図の紙面の2本（H−X−H）の角を、描いた字の位置から測る
+  function drawnAngle(A) {
+    var hs = qa(A, '.pane2d .sqAtom'), c = q(A, '.pane2d .center');
+    if (hs.length !== 2 || !c) return null;
+    var cx = +c.getAttribute('x'), cy = +c.getAttribute('y');
+    var a = [].map.call(hs, function (h) { return Math.atan2(+h.getAttribute('y') - cy, +h.getAttribute('x') - cx); });
+    var d = Math.abs(a[0] - a[1]) * 180 / Math.PI;
+    return d > 180 ? 360 - d : d;
+  }
+  function lobeRx(A) { var l = q(A, '.pane3d .lobe'); return l ? +l.getAttribute('rx') : 0; }
+
+  async function runSqueezeUITests() {
+    section('画面: M6 結合角の縮み（NH₃ ＝ 109.5° → 106.7°）');
+    var A = await openApp('index.html?m=NH3&view=shape');
+    A.app.stopSpin();
+    var sb = A.doc.getElementById('squeezeBtn');
+    ok('NH₃ の形の画面に「反発で縮める」と、見比べる CH₄・NH₃・H₂O（NH₃ が選ばれている）', vis(A, 'squeezeBtn') && sb.textContent === '反発で縮める' &&
+      vis(A, 'cmpSeg') && A.doc.querySelector('#cmpSeg button.on').getAttribute('data-m') === 'NH3');
+    ok('押す前は M2 のまま（数値を書かず「109.5° より少し狭い」）', !q(A, '.sqLabel') && !q(A, '.angLabel') && /109\.5° より少し狭い/.test(msg(A)));
+    var lp0 = lpVecs(A), rx0 = lobeRx(A);
+    sb.click();
+    await wait(150);
+    ok('押した直後はアニメの途中 ＝ 数値はまだ出さない（途中の角を数え上げない）', A.app.squeezing() && st(A).sq.t < 1 && !q(A, '.sqLabel'));
+    await squeezeDone(A);
+    var an = bondAngles(A);
+    ok('アニメの終点: 立体の H−N−H が3組とも 106.7°（' + an.map(function (x) { return x.toFixed(2); }).join('・') + '）',
+      an.length === 3 && an.every(function (x) { return Math.abs(x - 106.7) < 0.01; }));
+    var dA = drawnAngle(A);
+    ok('模式図の紙面の2本も 106.7°（立体と同じ角・' + (dA && dA.toFixed(2)) + '°）', dA !== null && Math.abs(dA - 106.7) < 0.05);
+    ok('模式図に角の弧と「106.7°」', !!q(A, '.pane2d .sqArc') && q(A, '.sqLabel').textContent === '106.7°');
+    ok('画面に「数値は教科書の実測値」と書く（模型が計算した値ではない）', /数値は教科書の実測値/.test(q(A, '.sqCap').textContent));
+    ok('⚠ 非共有電子対の向きは動かない', lpVecs(A) === lp0 && lp0.length > 0);
+    ok('非共有電子対のふくらみは縮めるあいだに膨らむ（' + rx0 + '→' + lobeRx(A) + '）', lobeRx(A) > rx0 * 1.2);
+    ok('理想の 109.5° の位置を薄い破線で残す（模式図2本・立体3本）', qa(A, '.pane2d .ghost').length === 2 && qa(A, '.pane3d .ghost').length === 3);
+    ok('声かけ「非共有電子対が結合を押しのけ、少し狭くなる」・ボタンは「もとに戻す」', /押しのけ、少し狭くなる/.test(msg(A)) && sb.textContent === 'もとに戻す');
+    ok('⚠ 画面のどこにも「計算」と言わない・軌道の言葉（sp³）を出さない', !/計算|sp³|sp3/.test(A.app.shapeSvg.textContent + msg(A)));
+    // 並べ替え: H₂O へ（縮めた状態のまま切り替えると、もう一度縮める）
+    A.doc.querySelector('#cmpSeg button[data-m="H2O"]').click();
+    ok('見比べる H₂O を押すと H₂O の形の画面へ（縮めた状態を保ってもう一度縮める）', st(A).view === 'shape' && st(A).sqInfo.id === 'H2O' && st(A).sq.on);
+    await squeezeDone(A);
+    var aw = bondAngles(A);
+    ok('H₂O: 終点の H−O−H が 104.5°・数値「104.5°」', aw.length === 1 && Math.abs(aw[0] - 104.5) < 0.01 && q(A, '.sqLabel').textContent === '104.5°' &&
+      Math.abs(drawnAngle(A) - 104.5) < 0.05);
+    ok('H₂O: 非共有電子対は2組とも動かない・声かけ「2組で、さらに狭くなる」', lpVecs(A) === lpVecs({ app: { shapeItems: function () {
+      var M2 = A.win.ChemShape.model; return M2.shapeGeometry(st(A).mol, st(A).shape.center); } } }) && /2組で、さらに狭くなる/.test(msg(A)));
+    A.doc.querySelector('#cmpSeg button[data-m="CH4"]').click();
+    await squeezeDone(A);
+    var ac = bondAngles(A);
+    ok('⚠ 対照: CH₄ は動かない（6組とも 109.47°）・数値は「109.5°」・破線を出さない', ac.length === 6 && ac.every(function (x) { return Math.abs(x - 109.47) < 0.01; }) &&
+      q(A, '.sqLabel').textContent === '109.5°' && qa(A, '.ghost').length === 0 && /109\.5° のまま/.test(msg(A)));
+    ok('並べると CH₄ 109.5 ＞ NH₃ 106.7 ＞ H₂O 104.5（非共有電子対が多いほど狭い）', 109.5 > 106.7 && Math.max.apply(null, ac) > an[0] && an[0] > aw[0]);
+    A.doc.getElementById('squeezeBtn').click();
+    ok('「もとに戻す」で M2 の模式図に戻る（縮めた図・数値・破線が消える）', !st(A).sq.on && st(A).sq.t === 0 && !q(A, '.sqLabel') && qa(A, '.ghost').length === 0 &&
+      A.doc.getElementById('squeezeBtn').textContent === '反発で縮める');
+    A.doc.getElementById('buildView').click();
+    ok('「組む」に戻るとボタンは消え、縮めた状態も捨てる', !vis(A, 'squeezeBtn') && !vis(A, 'cmpSeg') && !st(A).sq.on);
+    A.f.remove();
+
+    section('画面: M6 の否定対照（実測値の無い分子には数値を出さない）');
+    var none = ['H3O%2B', 'PH3', 'H2S', 'H2O2', 'HCHO'];
+    for (var i = 0; i < none.length; i++) {
+      A = await openApp('index.html?m=' + none[i] + '&view=shape');
+      A.app.stopSpin();
+      ok('⚠ ' + decodeURIComponent(none[i]) + ': 「反発で縮める」も見比べる3つも出さない・角度の数値を作らない', st(A).view === 'shape' && !vis(A, 'squeezeBtn') &&
+        !vis(A, 'cmpSeg') && !q(A, '.sqLabel') && !/10[0-8]\.\d°/.test(A.app.shapeSvg.textContent));
+      if (i < 3) ok('⚠ ' + decodeURIComponent(none[i]) + ': 文だけで「109.5° より少し狭い」', /109\.5° より少し狭い/.test(msg(A)));
+      A.f.remove();
+    }
+
+    section('画面: M6 の 375px・埋め込み');
+    A = await openApp('index.html?m=NH3&view=shape', 375, 700);
+    A.app.stopSpin();
+    var sub = A.doc.querySelector('.subBar');
+    var btns = [A.doc.getElementById('squeezeBtn')].concat([].slice.call(A.doc.querySelectorAll('#cmpSeg button')));
+    ok('375px: 「反発で縮める」と CH₄・NH₃・H₂O が1行に並ぶ', btns.every(function (b) { return Math.abs(b.getBoundingClientRect().top - btns[0].getBoundingClientRect().top) < 2; }) &&
+      sub.getBoundingClientRect().height < 45);
+    A.doc.getElementById('squeezeBtn').click();
+    await squeezeDone(A);
+    ok('375px: 縮めた画面でも横スクロールが出ない（' + A.doc.documentElement.scrollWidth + 'px）・声かけは1行', A.doc.documentElement.scrollWidth <= 376 &&
+      A.doc.getElementById('msg').getBoundingClientRect().height < 30);
+    A.f.remove();
+    A = await openApp('index.html?m=NH3&view=shape&embed=1', 375, 700);
+    A.app.stopSpin();
+    var h0 = A.doc.documentElement.getBoundingClientRect().height;
+    A.doc.getElementById('squeezeBtn').click();
+    await squeezeDone(A);
+    var h1 = A.doc.documentElement.getBoundingClientRect().height;
+    A.doc.getElementById('buildView').click();
+    var h2 = A.doc.documentElement.getBoundingClientRect().height;
+    ok('embed=1: 縮めても・組むへ戻っても高さが変わらない（' + [h0, h1, h2].map(Math.round).join('→') + '）', near(h0, h1) && near(h0, h2));
     A.f.remove();
   }
 

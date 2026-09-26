@@ -421,9 +421,14 @@
 
   /* 分子の形。完成して1つにつながった分子だけ（それ以外は null）。
      centerId が候補にあればそれを中心に、無ければ候補の先頭 */
+  // 形を見る分子: まだ配位していない受け手（ひとりの H⁺）を除いたもの
+  function shapeState(s0) {
+    return { atoms: s0.atoms.filter(function (a) { return !(a.vacancy > 0 && !bondsOf(s0, a.id).length); }), bonds: s0.bonds };
+  }
+
   function moleculeShape(s0, centerId) {
     // まだ配位していない受け手（ひとりの H⁺）は形に入れない ＝ 配位する前の NH₃（三角錐形）と後の NH₄⁺（正四面体形）を見比べられる
-    var s = { atoms: s0.atoms.filter(function (a) { return !(a.vacancy > 0 && !bondsOf(s0, a.id).length); }), bonds: s0.bonds };
+    var s = shapeState(s0);
     if (!judge(s).complete || !s.atoms.length) return null;
     if (componentOf(s, s.atoms[0].id).length !== s.atoms.length) return null;
     if (s.atoms.length === 2) {
@@ -479,6 +484,37 @@
     return items;
   }
 
+  /* ---- 結合角の縮み（M6・§3-6）----
+     理想の正四面体（109.47°）から、**与えられた角**（教科書の実測値）まで、結合の向きだけを補間する。
+     ⚠ この関数は角度を「計算して出す」ものではない。終点の角は引数でもらう（molecules.json の bondAngle
+        ＝ 数研 化学基礎 2編 PLUS の実測値: CH₄ 109.5°・NH₃ 106.7°・H₂O 104.5°）。反発の強さから角度は出さない
+     ⚠ 非共有電子対の向きは動かさない。非共有電子対が無ければ（CH₄）何も動かさない（対照）
+     しくみ: 軸 a ＝ 非共有電子対の向きの和の反対。各結合を「軸からの傾き α」と「軸のまわりの向き e」に分け、
+     e はそのまま・α だけを変える。結合が軸のまわりに等間隔（NH₃ は 120°・H₂O は 180°）なので、
+     2本の結合の角 θ と α は cosθ = cos²α + sin²α·cosφ（φ ＝ 360°/結合の数）で結ばれる */
+  function squeezeGeometry(items, targetDeg, t) {
+    var copy = items.map(function (it) { return Object.assign({}, it, { v: it.v.slice() }); });
+    var lps = copy.filter(function (it) { return it.kind === 'lp'; });
+    var bs = copy.filter(function (it) { return it.kind === 'bond'; });
+    if (!lps.length || bs.length < 2 || typeof targetDeg !== 'number' || !(t > 0)) return copy;
+    var a = [0, 0, 0];
+    lps.forEach(function (it) { a[0] -= it.v[0]; a[1] -= it.v[1]; a[2] -= it.v[2]; });
+    var na = Math.hypot(a[0], a[1], a[2]);
+    if (na < 1e-9) return copy;
+    a = [a[0] / na, a[1] / na, a[2] / na];
+    var theta0 = angleDeg(bs[0].v, bs[1].v);
+    var theta = (theta0 + (targetDeg - theta0) * Math.min(1, t)) * Math.PI / 180;
+    var cphi = Math.cos(2 * Math.PI / bs.length);
+    var c2 = (Math.cos(theta) - cphi) / (1 - cphi);
+    var ca = Math.sqrt(Math.max(0, Math.min(1, c2))), sa = Math.sqrt(1 - ca * ca);
+    bs.forEach(function (it) {
+      var v = it.v, c = v[0] * a[0] + v[1] * a[1] + v[2] * a[2];
+      var p = [v[0] - c * a[0], v[1] - c * a[1], v[2] - c * a[2]], np = Math.hypot(p[0], p[1], p[2]) || 1;
+      it.v = [ca * a[0] + sa * p[0] / np, ca * a[1] + sa * p[1] / np, ca * a[2] + sa * p[2] / np];
+    });
+    return copy;
+  }
+
   function angleDeg(u, v) {
     var d = u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
     var nu = Math.hypot(u[0], u[1], u[2]), nv = Math.hypot(v[0], v[1], v[2]);
@@ -497,7 +533,8 @@
     PARTS: PARTS, PART_ORDER: PART_ORDER, canDonate: canDonate, donate: donate, openVacancy: openVacancy,
     ARRANGEMENT: ARRANGEMENT, SHAPE_NAME: SHAPE_NAME,
     domains: domains, shapeAt: shapeAt, shapeCenters: shapeCenters, moleculeShape: moleculeShape,
-    idealVectors: idealVectors, shapeGeometry: shapeGeometry, angleDeg: angleDeg
+    idealVectors: idealVectors, shapeGeometry: shapeGeometry, angleDeg: angleDeg,
+    shapeState: shapeState, squeezeGeometry: squeezeGeometry
   };
 
   if (typeof module === 'object' && module.exports) module.exports = api;

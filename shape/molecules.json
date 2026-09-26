@@ -1,9 +1,9 @@
 [
 {"id":"H2","formula":"H₂","name":"水素","atoms":["H","H"],"bonds":[[0,1,1]]},
 {"id":"HCl","formula":"HCl","name":"塩化水素","atoms":["H","Cl"],"bonds":[[0,1,1]]},
-{"id":"H2O","formula":"H₂O","name":"水","atoms":["H","H","O"],"bonds":[[0,2,1],[1,2,1]]},
-{"id":"NH3","formula":"NH₃","name":"アンモニア","atoms":["N","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1]]},
-{"id":"CH4","formula":"CH₄","name":"メタン","atoms":["C","H","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]},
+{"id":"H2O","formula":"H₂O","name":"水","atoms":["H","H","O"],"bonds":[[0,2,1],[1,2,1]],"bondAngle":104.5},
+{"id":"NH3","formula":"NH₃","name":"アンモニア","atoms":["N","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1]],"bondAngle":106.7},
+{"id":"CH4","formula":"CH₄","name":"メタン","atoms":["C","H","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1]],"bondAngle":109.5},
 {"id":"Cl2","formula":"Cl₂","name":"塩素","atoms":["Cl","Cl"],"bonds":[[0,1,1]]},
 {"id":"O2","formula":"O₂","name":"酸素","atoms":["O","O"],"bonds":[[0,1,2]]},
 {"id":"N2","formula":"N₂","name":"窒素","atoms":["N","N"],"bonds":[[0,1,3]]},

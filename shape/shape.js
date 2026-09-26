@@ -1,5 +1,6 @@
 /* shape.js — 電子対でみる分子のかたち（shape）の画面。M1: 原子を置く・タップで結合・電子式⇄構造式・判定・お題。M2: 形を見る（中心 → まとまり → 配置 → 形・2D と 3D）。M3: 配位結合（青い対 → H⁺）。
    M4（公開②・発展）: 電子不足（BF₃）・超原子価（青い対 →「ほどく」: PCl₅・SF₆）・三方両錐・正八面体。
+   M6（発展）: 結合角の縮み（CH₄・NH₃・H₂O の形の画面で「反発で縮める」。数値は教科書の実測値）。
    設計の正は DESIGN_bond_app.md。化学の判断は model.js（window.ChemShape.model）だけが持つ。
    ここが持つのは「見た目」: 原子の位置・4つの側（スロット）・描画・タップ。
    ⚠ グローバルは window.ChemShape の1つだけ（IIFE・§2）。 */
@@ -79,7 +80,9 @@
     mol: M.create(), pos: {}, slots: {},
     history: [], mode: 'dot', userMode: 'dot', modeFromUrl: false, check: false, sel: null,
     targets: [], taskIdx: 0, free: false, notice: null, ready: false,
-    view: 'build', centerId: null, rotY: 0.55, rotX: -0.35, fresh: {}
+    view: 'build', centerId: null, rotY: 0.55, rotX: -0.35, fresh: {},
+    // M6: 結合角の縮み。on ＝「反発で縮める」を押した・t ＝ 進み（0 理想の 109.5° → 1 実測値）・info ＝ 実測値のあるお題
+    sq: { on: false, t: 0 }, sqInfo: null
   };
 
   var $ = function (id) { return document.getElementById(id); };
@@ -672,6 +675,12 @@
     if (M.openVacancy(st.mol) > 0 && !sh.twoAtoms && sh.lone > 0) return '青い対を H⁺ にわたすと、形が変わる';
     if (sh.twoAtoms) return '原子が2個の分子は、いつも直線';
     if (!sh.supported) return 'この形はここでは扱いません';
+    // M6: 「反発で縮める」を押したあと。言ってよい線（§3-6）: 反発・非共有電子対が広く取る・多いほど狭い。角度の計算は言わない
+    if (st.sq.on && st.sqInfo) {
+      if (sh.lone === 0) return '非共有電子対が無いので、109.5° のまま';
+      if (sh.lone === 1) return '非共有電子対が結合を押しのけ、少し狭くなる';
+      return '非共有電子対が2組で、さらに狭くなる';
+    }
     if (sh.domains >= 5) return '電子対 ' + sh.domains + ' 組がたがいに遠ざかる形（発展）';
     if (sh.lone === 0) return '非共有電子対が無いので、配置どおりの形';
     if (sh.domains === 4) return '結合角は 109.5° より少し狭い';
@@ -686,6 +695,8 @@
     st.wasComplete = ev.complete;
     st.shape = M.moleculeShape(st.mol, st.centerId);
     if (st.view === 'shape' && !st.shape) st.view = 'build';
+    st.sqInfo = st.view === 'shape' ? squeezeTarget() : null;
+    if (!st.sqInfo) stopSqueeze(); // 形の画面を離れた・実測値の無い分子 → 縮めた状態を捨てる
     var msg = $('msg');
     var text, kind;
     if (st.view === 'shape') { text = shapeLine(st.shape); kind = 'info'; }
@@ -875,7 +886,116 @@
         { kind: 'atom', el: M.atomOf(st.mol, b.b).el, v: [0.5, 0, 0], order: b.order }
       ];
     }
-    return M.shapeGeometry(st.mol, sh.center);
+    var items = M.shapeGeometry(st.mol, sh.center);
+    // M6: 縮めている途中・縮めた後は、結合の向きだけを実測値へ補間（非共有電子対の向きは動かさない・model.js の squeezeGeometry）
+    if (st.sqInfo && st.sq.t > 0) items = M.squeezeGeometry(items, st.sqInfo.bondAngle, st.sq.t);
+    return items;
+  }
+  // 非共有電子対のふくらみの大きさ: 縮めるあいだに膨らむ（場所を広く取る・§3-6）
+  function lpScale() { return st.sqInfo ? 1 + 0.3 * st.sq.t : 1; }
+
+  /* ================================================================
+     結合角の縮み（M6・発展・§3-6）
+     ⚠ 数値は教科書の実測値（molecules.json の bondAngle）をそのまま置く。模型は角度を計算していない（画面にもそう書く）
+     ⚠ 実測値の無い H₃O⁺・PH₃・H₂S にはボタンを出さない（数値を出さない。「109.5° より少し狭い」と文だけ）
+     ================================================================ */
+  var SQ_MS = 1000, sqRaf = null;
+  // 形の画面の分子が、実測値を持つお題（CH₄・NH₃・H₂O）と同じ分子なら、そのお題（自由で組んでも同じ分子なら出す）
+  function squeezeTarget() {
+    var sh = st.shape;
+    if (!sh || sh.twoAtoms || sh.domains !== 4) return null;
+    var c = M.code(M.shapeState(st.mol));
+    for (var i = 0; i < st.targets.length; i++) {
+      var t = st.targets[i];
+      if (t.bondAngle !== null && t.code === c) return t;
+    }
+    return null;
+  }
+  function stopSqueeze() {
+    if (sqRaf !== null) { cancelAnimationFrame(sqRaf); sqRaf = null; }
+    st.sq.on = false; st.sq.t = 0;
+  }
+  function startSqueeze() {
+    if (sqRaf !== null) { cancelAnimationFrame(sqRaf); sqRaf = null; }
+    st.sq.on = true; st.sq.t = 0;
+    if (reduceMotion) { st.sq.t = 1; update(); return; }
+    update();
+    var t0 = null;
+    var step = function (now) {
+      if (t0 === null) t0 = now;
+      var p = Math.min(1, (now - t0) / SQ_MS);
+      st.sq.t = p < 1 ? 1 - Math.pow(1 - p, 3) : 1; // はじめ速く・終わりゆっくり
+      if (p < 1) { renderShape(); sqRaf = requestAnimationFrame(step); }
+      else { sqRaf = null; update(); }
+    };
+    sqRaf = requestAnimationFrame(step);
+  }
+  function toggleSqueeze() {
+    if (!st.sqInfo) return;
+    if (st.sq.on) { stopSqueeze(); update(); } else startSqueeze();
+  }
+  // CH₄・NH₃・H₂O を同じ画面で並べ替える（非共有電子対が多いほど狭い）。縮めた状態なら、切り替えた先でもう一度縮める
+  function compareTo(id) {
+    var idx = -1;
+    st.targets.forEach(function (t, i) { if (t.id === id) idx = i; });
+    if (idx < 0) return;
+    var keep = st.sq.on;
+    st.free = false; st.taskIdx = idx;
+    setupBoard();
+    assembleTarget();
+    st.history = [];
+    setView('shape');
+    if (keep && st.sqInfo) startSqueeze();
+  }
+
+  /* M6 の模式図（「反発で縮める」を押したあと）: 教科書の「結合角」の図の描き方。
+     紙面の2本（H−X−H）を下へ開き、そのあいだの角を弧と数値で。残りの2まとまりは上に（くさび／破線・ふくらみ）。
+     紙面の2本の角は、立体と同じ squeezeGeometry の結合の角そのもの（見た目で作り直さない） */
+  function renderSqueeze2D(g) {
+    var sh = st.shape, info = st.sqInfo, items = shapeItems();
+    var bonds = items.filter(function (it) { return it.kind === 'bond'; });
+    var lps = items.filter(function (it) { return it.kind === 'lp'; });
+    var th = M.angleDeg(bonds[0].v, bonds[1].v) * Math.PI / 180;
+    var down = Math.PI / 2, R = B2;
+    // 理想の 109.5° の位置（縮める前）を薄い破線で残す（非共有電子対があるときだけ・CH₄ は動かない）
+    if (lps.length && st.sq.t > 0) {
+      var h0 = Math.acos(-1 / 3) / 2;
+      [down + h0, down - h0].forEach(function (a) {
+        el('line', { x1: P2.x, y1: P2.y, x2: (P2.x + (R - 12) * Math.cos(a)).toFixed(1), y2: (P2.y + (R - 12) * Math.sin(a)).toFixed(1), 'class': 'ghost' }, g);
+      });
+    }
+    // 上の2まとまり: 左上 ＝ 手前（くさび／ふくらみ）・右上 ＝ 奥（破線／薄いふくらみ）
+    var rest = bonds.slice(2).map(function (b) { return { kind: 'bond', el: b.el }; }).concat(lps.map(function () { return { kind: 'lp' }; }));
+    var up = [-Math.PI / 2 - 0.62, -Math.PI / 2 + 0.62];
+    rest.forEach(function (it, i) {
+      var a = up[i], ux = Math.cos(a), uy = Math.sin(a), back = i === 1;
+      if (it.kind === 'lp') { lobe(g, P2.x, P2.y, ux, uy, lpScale(), 'lp2d' + (back ? ' back' : '')); return; }
+      var sx = P2.x + ux * 14, sy = P2.y + uy * 14, tx = P2.x + ux * (R - 14), ty = P2.y + uy * (R - 14);
+      var px = -uy, py = ux;
+      if (!back) {
+        el('path', { d: 'M' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' L' + (tx + px * 5).toFixed(1) + ' ' + (ty + py * 5).toFixed(1) +
+          ' L' + (tx - px * 5).toFixed(1) + ' ' + (ty - py * 5).toFixed(1) + ' Z', 'class': 'wedge' }, g);
+      } else {
+        for (var k = 1; k <= 6; k++) {
+          var f = k / 6, cx = sx + (tx - sx) * f, cy = sy + (ty - sy) * f, w = 5 * f;
+          el('line', { x1: (cx + px * w).toFixed(1), y1: (cy + py * w).toFixed(1), x2: (cx - px * w).toFixed(1), y2: (cy - py * w).toFixed(1), 'class': 'hash' }, g);
+        }
+      }
+      txt(g, P2.x + ux * R, P2.y + uy * R, it.el, 'sym s2');
+    });
+    // 紙面の2本（角を見る2本）
+    var a1 = down + th / 2, a2 = down - th / 2;
+    [a1, a2].forEach(function (a, i) {
+      var ux = Math.cos(a), uy = Math.sin(a);
+      bondLines(g, P2.x + ux * 14, P2.y + uy * 14, P2.x + ux * (R - 12), P2.y + uy * (R - 12), 1, 2.4);
+      txt(g, P2.x + ux * R, P2.y + uy * R, bonds[i].el, 'sym s2 sqAtom');
+    });
+    txt(g, P2.x, P2.y, M.atomOf(st.mol, sh.center).el, 'sym s2 center');
+    var r = 24;
+    el('path', { d: 'M' + (P2.x + r * Math.cos(a2)).toFixed(1) + ' ' + (P2.y + r * Math.sin(a2)).toFixed(1) +
+      ' A' + r + ' ' + r + ' 0 0 1 ' + (P2.x + r * Math.cos(a1)).toFixed(1) + ' ' + (P2.y + r * Math.sin(a1)).toFixed(1), 'class': 'arc sqArc' }, g);
+    // 数値は縮め終えてから（途中の角を数字で数え上げない ＝ 模型が角度を出しているように見せない）
+    if (st.sq.t >= 1 || !lps.length) txt(g, P2.x, P2.y + 38, String(info.bondAngle) + '°', 'angLabel sqLabel');
   }
 
   function lobe(g, cx, cy, vx, vy, scale, cls) {
@@ -912,6 +1032,7 @@
   }
 
   function render2D(g) {
+    if (st.sq.on && st.sqInfo) { renderSqueeze2D(g); return; }
     var sh = st.shape, items = shapeItems();
     if (sh.twoAtoms) {
       var a = items[0], b = items[1];
@@ -977,6 +1098,15 @@
     });
     if (!sh.twoAtoms) list.push({ center: true, z: 0, k: 1, x: P3.x, y: P3.y });
     list.sort(function (a, b) { return a.z - b.z; });
+    // M6: 縮めたあとも、理想の 109.5° の結合の位置を薄い破線で残す（どれだけ狭くなったかを見比べる）
+    if (st.sqInfo && st.sq.t > 0 && sh.lone > 0) {
+      var gg0 = el('g', { 'class': 'ghost3d' }, g);
+      M.shapeGeometry(st.mol, sh.center).forEach(function (it) {
+        if (it.kind !== 'bond') return;
+        var v = rotateYX(it.v, st.rotY, st.rotX), k = PERSP / (PERSP - v[2] * B3);
+        el('line', { x1: P3.x, y1: P3.y, x2: (P3.x + v[0] * B3 * k).toFixed(1), y2: (P3.y + v[1] * B3 * k).toFixed(1), 'class': 'ghost' }, gg0);
+      });
+    }
     if (sh.twoAtoms) {
       var gb = el('g', {}, g);
       bondLines(gb, list[0].x, list[0].y, list[1].x, list[1].y, list[0].it.order || list[1].it.order, 2.6, 'bond3');
@@ -988,7 +1118,7 @@
         txt(gg, o.x, o.y, M.atomOf(st.mol, sh.center).el, 'sym s3');
         return;
       }
-      if (o.it.kind === 'lp') { lobe(gg, P3.x, P3.y, o.v[0] * o.k * B3 / B2, o.v[1] * o.k * B3 / B2, 1, 'lp3d'); return; }
+      if (o.it.kind === 'lp') { lobe(gg, P3.x, P3.y, o.v[0] * o.k * B3 / B2, o.v[1] * o.k * B3 / B2, lpScale(), 'lp3d'); return; }
       if (!sh.twoAtoms) {
         var len = Math.hypot(o.x - P3.x, o.y - P3.y), t = len > 1 ? Math.min(0.9, HUB / len) : 0; // 中心の円のふちから引く
         bondLines(gg, P3.x + (o.x - P3.x) * t, P3.y + (o.y - P3.y) * t, o.x, o.y, o.it.order, (2.6 * o.k).toFixed(2), 'bond3');
@@ -1018,7 +1148,8 @@
     render2D(el('g', { 'class': 'pane2d' }, svgShape));
     el('g', { id: 'shape3d', 'class': 'pane3d' }, svgShape);
     render3D();
-    txt(svgShape, P2.x, 286, '模式図', 'cap');
+    // M6: 縮めた模式図には「数値は実測値」を必ず書く（模型が角度を計算したのではない・§3-6）
+    txt(svgShape, P2.x, 286, (st.sq.on && st.sqInfo) ? '模式図・数値は教科書の実測値' : '模式図', 'cap' + ((st.sq.on && st.sqInfo) ? ' sqCap' : ''));
     txt(svgShape, P3.x, 286, '立体（ドラッグで回る）', 'cap');
   }
 
@@ -1111,6 +1242,18 @@
     var cb = $('centerBtn');
     cb.style.display = shapeMode ? '' : 'none';
     cb.style.visibility = (shapeMode && st.shape && st.shape.candidates && st.shape.candidates.length > 1) ? '' : 'hidden';
+    // M6: 実測値のある分子（CH₄・NH₃・H₂O）の形の画面だけ「反発で縮める」と見比べる3つ。
+    // この3つは中心が1つなので「もう一方の中心」は場所ごと外す（375px で下の段を1行に保つ）
+    var sqOk = shapeMode && !!st.sqInfo;
+    if (sqOk) cb.style.display = 'none';
+    var sb = $('squeezeBtn');
+    sb.style.display = sqOk ? '' : 'none';
+    sb.textContent = st.sq.on ? 'もとに戻す' : '反発で縮める';
+    sb.className = 'squeeze' + (st.sq.on ? ' on' : '');
+    $('cmpSeg').style.display = sqOk ? '' : 'none';
+    [].forEach.call($('cmpSeg').querySelectorAll('button'), function (b) {
+      b.className = (sqOk && st.sqInfo.id === b.getAttribute('data-m')) ? 'on' : '';
+    });
   }
 
   /* ================================================================
@@ -1150,6 +1293,10 @@
     $('dotMode').addEventListener('click', function () { st.mode = st.userMode = 'dot'; update(); });
     $('lineMode').addEventListener('click', function () { st.mode = st.userMode = 'line'; update(); });
     $('unfoldBtn').addEventListener('click', unfoldSelected);
+    $('squeezeBtn').addEventListener('click', toggleSqueeze);
+    [].forEach.call($('cmpSeg').querySelectorAll('button'), function (b) {
+      b.addEventListener('click', function () { compareTo(b.getAttribute('data-m')); });
+    });
     $('checkBtn').addEventListener('click', function () { st.check = !st.check; update(); });
     $('undoBtn').addEventListener('click', undo);
     $('resetBtn').addEventListener('click', setupBoard);
@@ -1230,6 +1377,9 @@
       var a = angTo(st.pos[center], st.pos[p]), b = angTo(st.pos[center], st.pos[q]);
       return angDist(a, b);
     },
-    stopSpin: function () { st.noSpin = true; spinControl(); }
+    stopSpin: function () { st.noSpin = true; spinControl(); },
+    // M6: いま描いている形の並び（縮めた向きを含む）・縮めるアニメが走っているか
+    shapeItems: function () { return shapeItems(); },
+    squeezing: function () { return sqRaf !== null; }
   };
 })();

@@ -97,6 +97,13 @@ main { max-width: 720px; margin: 0 auto; padding: 8px 12px 12px; }
 /* 「発展」の札（お題の見出しの後ろ） */
 .advBadge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #8a4b12; color: #fff; font-size: 11px; line-height: 18px; vertical-align: 2px; }
 .bar button.unfold { color: var(--c-lp); border-color: var(--c-lp); font-weight: bold; }
+/* M6: 結合角の縮み。理想の 109.5° の位置は薄い破線で残す */
+.ghost { stroke: #9aa; stroke-width: 1.4; stroke-dasharray: 4 3; fill: none; }
+.sqLabel { font-size: 15px; font-weight: bold; fill: #1d6b5f; }
+.cap.sqCap { fill: #8a4b12; }
+/* M6 は発展（§7）。ボタンに「発展」の札（文字は CSS で足す ＝ ボタンの文言は「反発で縮める」「もとに戻す」のまま） */
+.bar button.squeeze::after { content: "発展"; display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 5px;
+  background: #8a4b12; color: #fff; font-size: 10px; line-height: 16px; vertical-align: 1px; }
 
 .msg { min-height: 1.5em; margin: 6px 2px; font-size: 15px; font-weight: bold; color: #34504c; }
 .msg.done { color: #1d7a46; }
