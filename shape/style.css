@@ -1,0 +1,123 @@
+/* style.css — 電子対でみる分子のかたち（shape）
+   ⚠ html / body に vh・% の高さを付けない（参考書に埋め込んだとき、高さの通知が発振する。
+      DESIGN_reference_centric.md §2-4 (2)・DESIGN_bond_app.md §6 の 8。test.html が見張っている）。
+   色の約束（参考書の図と同じ）: 赤 ＝ 不対電子・青 ＝ 非共有電子対・黒 ＝ 共有電子対 */
+:root {
+  --c-un: #d62828;     /* 不対電子 */
+  --c-lp: #1f5fbf;     /* 非共有電子対 */
+  --c-sh: #222;        /* 共有電子対・結合の線 */
+  --c-head: #2a6f6a;
+  --c-sel: #f4a100;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  background: #f5f8f7;
+  color: #222;
+}
+header {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px;
+  padding: 8px 14px;
+  background: var(--c-head); color: #fff;
+}
+header h1 { font-size: 18px; margin: 0; }
+.version { font-size: 12px; opacity: .8; }
+.hubLink { margin-left: auto; color: #fff; font-size: 13px; text-decoration: none; }
+.hubLink:hover { text-decoration: underline; }
+
+main { max-width: 720px; margin: 0 auto; padding: 8px 12px 12px; }
+
+.bar { display: flex; align-items: center; gap: 6px; margin: 4px 0; flex-wrap: wrap; }
+.bar button {
+  min-height: 36px; min-width: 36px; padding: 4px 10px;
+  border: 1px solid #b8c9c6; border-radius: 8px; background: #fff; color: #234;
+  font-size: 14px; cursor: pointer; white-space: nowrap; flex: 0 0 auto;
+}
+.bar button.on { background: var(--c-head); border-color: var(--c-head); color: #fff; }
+.bar button:disabled { opacity: .4; cursor: default; }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; }
+.seg button:first-child { border-radius: 8px 0 0 8px; }
+.seg button:last-child { border-radius: 0 8px 8px 0; border-left: none; }
+.taskBar { flex-wrap: nowrap; } /* ◀ お題 ▶ を1行に保つ（375px で ▶ だけ次の行へ落ちた）。長い名前はお題の札の中で折り返す */
+.taskLabel { flex: 1 1 auto; min-width: 0; text-align: center; font-weight: bold; font-size: 14px; }
+.bar .arrow { padding: 4px 8px; }
+
+/* 組む台（#board）と形の画面（#shapeView）は同じ大きさ（viewBox 400×300 の縦横比で幅から決まる）。
+   ⚠ 中身で高さを決めさせない（埋め込みの高さ通知が発振しない・§4-3） */
+.stage {
+  display: block; width: 100%; height: auto; aspect-ratio: 4 / 3;
+  background: #fff; border: 1px solid #cfdcda; border-radius: 10px;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.stage text { font-family: "Segoe UI", "Hiragino Sans", sans-serif; pointer-events: none; }
+.subBar { min-height: 38px; }
+
+/* 形の画面 */
+.hd1 { font-size: 15px; fill: #34504c; }
+.hd2 { font-size: 19px; font-weight: bold; fill: #222; }
+.hd2 .arr { fill: #34504c; }
+.hd2 .shp, .hd2.shp { fill: #1d6b5f; }
+.cap { font-size: 12px; fill: #777; }
+.sym.s2 { font-size: 20px; }
+.sym.s3 { font-size: 15px; }
+.lobe { fill: var(--c-lp); fill-opacity: .18; stroke: var(--c-lp); stroke-opacity: .55; stroke-width: 1; }
+.lp2d.back .lobe { fill-opacity: .08; stroke-dasharray: 3 2; }
+.wedge { fill: var(--c-sh); }
+.hash { stroke: var(--c-sh); stroke-width: 1.4; }
+.arc { fill: none; stroke: #888; stroke-width: 1.2; }
+.angLabel { font-size: 13px; fill: #555; }
+.hub { fill: #fff; stroke: #222; stroke-width: 2; }
+.ball { fill: #fff; stroke: #666; stroke-width: 1.4; }
+.bond3 { stroke: #333; stroke-linecap: round; }
+.sym { font-size: 22px; font-weight: bold; fill: #222; }
+.e-un { fill: var(--c-un); }
+.e-lp { fill: var(--c-lp); }
+.e-sh { fill: var(--c-sh); }
+.bond { stroke: var(--c-sh); stroke-width: 2.4; stroke-linecap: round; }
+.hand { stroke: var(--c-un); stroke-width: 3; stroke-linecap: round; }
+/* 配位結合でできた対: できた直後は青（e-co・bond co）→ 1.2 秒後に黒へ 0.8 秒で溶かす ＝ 2 秒で黒（ユーザー決定） */
+.e-co { fill: var(--c-lp); }
+.bond.co { stroke: var(--c-lp); }
+.layer-bond circle { transition: fill .8s linear; }
+.layer-bond line { transition: stroke .8s linear; }
+.ionBracket { fill: none; stroke: #222; stroke-width: 1.6; }
+.ionCharge { font-size: 17px; font-weight: bold; fill: #222; }
+.palette button.part { color: #7a3a9a; }
+.selWedge { fill: var(--c-sel); fill-opacity: .28; }
+.chk { fill: none; stroke: #7a8f8c; stroke-width: 1; stroke-dasharray: 3 3; }
+.chkNum { font-size: 12px; font-weight: bold; fill: #555; }
+.chkNum.ok { fill: #1d7a46; }
+
+.msg { min-height: 1.5em; margin: 6px 2px; font-size: 15px; font-weight: bold; color: #34504c; }
+.msg.done { color: #1d7a46; }
+.msg.warn { color: #b3541e; }
+
+.palette { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+.palette button {
+  min-height: 44px; padding: 0;
+  border: 1px solid #b8c9c6; border-radius: 8px; background: #fff;
+  font-size: 18px; font-weight: bold; color: #222; cursor: pointer;
+}
+.palette button:active { background: #e8f1ef; }
+
+.legend { font-size: 12px; color: #555; margin: 8px 2px 0; }
+.legend span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 3px 0 8px; vertical-align: middle; }
+.legend span:first-child { margin-left: 0; }
+.legend .dotU { background: var(--c-un); }
+.legend .dotP { background: var(--c-lp); }
+.legend .dotS { background: var(--c-sh); }
+
+.pageFoot { max-width: 720px; margin: 0 auto; padding: 8px 12px 16px; font-size: 12px; }
+.pageFoot a { color: #557; }
+
+/* 参考書から来たときの戻り道（shape.js が header の直後に作る） */
+.refBack { display: flex; align-items: center; padding: 2px 14px; background: #eef4fb; border-bottom: 1px solid #cfe0f0; }
+.refBack .refBackLink { display: inline-flex; align-items: center; min-height: 32px; color: #275d8c; font-weight: bold; text-decoration: none; font-size: 13px; }
+
+/* ---- 参考書のページに埋め込まれたとき（?embed=1・DESIGN_reference_centric.md §2-4 (2) ①）----
+   看板（ヘッダー）・フッター・戻る帯を出さない。クラスを付けるのは index.html の head の同期な1行 */
+html.embed header,
+html.embed footer,
+html.embed .refBack { display: none; }
