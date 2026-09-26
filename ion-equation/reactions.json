@@ -561,6 +561,21 @@
       "difficulty": 5
     },
     {
+      "id": "redox-cl2-hydroxide",
+      "reagents": ["Cl2", "Ca(OH)2"],
+      "reactants": ["Cl2", "OH-"],
+      "products": ["Cl-", "ClO-", "H2O"],
+      "coeffs": [1, 2, 1, 1, 1],
+      "netIonic": "Cl₂ ＋ 2OH⁻ → Cl⁻ ＋ ClO⁻ ＋ H₂O（塩素を塩基の水溶液に通す。さらし粉のもとの反応）",
+      "classes": { "type": "酸化還元", "saltType": null, "redox": "溶液中の酸化剤還元剤" },
+      "units": ["酸化還元", "液性"],
+      "species": ["Cl2", "OH-", "Cl-", "ClO-", "H2O", "H+", "Ca(OH)2", "Ca^2+", "Cl"],
+      "animationType": "redox-solution",
+      "redoxStage": "rs6",
+      "note": "自己酸化還元。同じ Cl₂ の Cl の一方が 0 → −1（Cl⁻）、もう一方が 0 → +1（ClO⁻）になる。半反応式 Cl₂ ＋ 2e⁻ → 2Cl⁻ と Cl₂ ＋ 2H₂O → 2HClO ＋ 2H⁺ ＋ 2e⁻ を ×1・×1 で足すと、全体が 2 で割れるので割る（Cl₂ ＋ H₂O → HClO ＋ H⁺ ＋ Cl⁻）。塩基性なので H⁺ は OH⁻ と H₂O に、弱酸の HClO は ClO⁻ になる。水酸化カルシウムに吸収させると、さらし粉 CaCl(ClO)・H₂O になる。酸化還元モードで遊べる。",
+      "difficulty": 5
+    },
+    {
       "id": "complex-cu-nh3",
       "reactants": ["CuSO4", "NH3"],
       "products": ["Cu(NH3)4SO4"],

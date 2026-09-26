@@ -245,10 +245,11 @@ main {
   border-radius: 999px;
   vertical-align: 2px;
 }
-.levelTag.organic { color: #6b4a1f; background: #fdf1e6; border: 1px solid #e0b183; }
+/* 参考（発展）の札（さらし粉・I-0180）も同じ色み ＝ どちらも「化学基礎の範囲の外」の印 */
+.levelTag.organic, .levelTag.refLevel { color: #6b4a1f; background: #fdf1e6; border: 1px solid #e0b183; }
 /* 帯の番号にも同じ色みで印を付ける（数字だけの帯でも「ここから有機」が見える） */
-.stageBar .strip button.organic { background: #fdf1e6; border-color: #e0b183; color: #6b4a1f; }
-.stageBar .strip button.organic.active { background: #c47a2c; border-color: #c47a2c; color: #fff; }
+.stageBar .strip button.organic, .stageBar .strip button.refLevel { background: #fdf1e6; border-color: #e0b183; color: #6b4a1f; }
+.stageBar .strip button.organic.active, .stageBar .strip button.refLevel.active { background: #c47a2c; border-color: #c47a2c; color: #fff; }
 /* ステージ見出しは「目標1行」に畳む。開く三角は .howto と同じ流儀（既定の marker は
    ブラウザ間で見え方が揺れるので消して ::before で描く）。
    summary を flex にすると三角と目標が同じ行に並び、閉じた状態が1行で収まる。 */
@@ -1871,6 +1872,10 @@ main.timelineMain {
    その .ig* 一式は、筆算そのものが作業面になったので取り払った。
    ⚠ .igSkip だけ残す ＝ 行き止まりを作らないための降参口は、見た目を使い回す */
 #calcMsg[hidden] { display: none; }
+/* 全体を割る段（I-0180）。割ったあとの行の酸化数の札が、下の判定の枠にかからないよう間をあける */
+#divMsg { margin-top: 14px; }
+#divMsg[hidden] { display: none; }
+#calcSheet .divIn { width: 3em; }
 .calcMsgText { line-height: 1.6; }
 /* 【①-B】v195 —— ×1 の側（＝①の式そのまま）の係数。**入力欄ではなく印**。
    入力欄と同じ 44px の枠に「もう書いてある」色で置く ＝ 空いている欄と一目で見分けが付き、

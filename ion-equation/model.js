@@ -73,6 +73,9 @@ const SPECIES = {
   "Al2(SO4)3":   { disp: "Al₂(SO₄)₃", name: "硫酸アルミニウム",   atoms: { Al: 2, S: 3, O: 12 }, charge: 0 },
   "N2":          { disp: "N₂",         name: "窒素",             atoms: { N: 2 },              charge: 0 },
   "Cl2":         { disp: "Cl₂",        name: "塩素",             atoms: { Cl: 2 },             charge: 0 },
+  /* 塩素の自己酸化還元（さらし粉・I-0180）。HClO は弱酸（酸性でも分子のまま書く）、塩基性では ClO⁻ */
+  "HClO":        { disp: "HClO",       name: "次亜塩素酸（弱酸）", atoms: { H: 1, Cl: 1, O: 1 },  charge: 0 },
+  "ClO-":        { disp: "ClO⁻",       name: "次亜塩素酸イオン", atoms: { Cl: 1, O: 1 },       charge: -1 },
   // 溶液中の酸化還元（KMnO₄・K₂Cr₂O₇ 系。参照エントリ用。房・アニメは未実装）
   "KMnO4":     { disp: "KMnO₄",      name: "過マンガン酸カリウム", atoms: { K: 1, Mn: 1, O: 4 }, charge: 0 },
   "MnO4-":     { disp: "MnO₄⁻",      name: "過マンガン酸イオン（赤紫）", atoms: { Mn: 1, O: 4 }, charge: -1 },
@@ -1739,6 +1742,12 @@ const HALF_REACTIONS = {
                  left: [{ sp: "Sn^2+", n: 1 }], right: [{ sp: "Sn^4+", n: 1 }, { sp: "e-", n: 2 }] },
   "Cl2_red":   { disp: "Cl₂ ＋ 2e⁻ → 2Cl⁻", kind: "reduction", couple: "Cl2/Cl-",
                  left: [{ sp: "Cl2", n: 1 }, { sp: "e-", n: 2 }], right: [{ sp: "Cl-", n: 2 }] },
+  /* 塩素が**還元剤**としてはたらく向き（さらし粉・自己酸化還元・I-0180）。Cl は 0 → +1。
+     HClO は弱酸なので分子のまま書く（参考書 chlorine: Cl₂ ＋ H₂O ⇄ HCl ＋ HClO）。
+     ⚠ 梯子には載せない（Cl2_red と組む自己酸化還元のためだけに置く。自由組み立ての試薬にもしない） */
+  "Cl2_ox_HClO": { disp: "Cl₂ ＋ 2H₂O → 2HClO ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "HClO/Cl2",
+                 left: [{ sp: "Cl2", n: 1 }, { sp: "H2O", n: 2 }],
+                 right: [{ sp: "HClO", n: 2 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
 
   /* ================================================================
      電池と電気分解の電極（2026-09-18・半反応式の一覧 段2）。
@@ -1871,6 +1880,9 @@ const OXIDATION = {
   // 電気分解（B3）。塩化物イオンは −1、単体の塩素は 0
   "Cl2":      { Cl: 0 },
   "Cl-":      { Cl: -1 },
+  // 塩素の自己酸化還元（I-0180）。次亜塩素酸の Cl は +1
+  "HClO":     { H: 1, Cl: 1, O: -2 },
+  "ClO-":     { Cl: 1, O: -2 },
   // ↓2種は現在未使用（SPECIES 側の注記どおり、将来の段階表示用に組で残す）
   "CH3COCI3": { C: [{ ox: -3, at: 0 }, { ox: 2, at: 3 }, { ox: 3, at: 5 }], H: 1, I: -1, O: -2 },
   "CI3CHO":   { C: [{ ox: 3, at: 0 }, { ox: 1, at: 3 }], H: 1, I: -1, O: -2 },
@@ -2791,6 +2803,8 @@ const HALF_CATALOG_META = {
   "I_ox":          { name: "ヨウ化カリウム",       sp: "KI",      subject: "basic", level: 1, section: "reductant" },
   "H2O2_ox":       { name: "過酸化水素",           sp: "H2O2",    subject: "basic", level: 1, section: "reductant" },
   "SO2_ox":        { name: "二酸化硫黄",           sp: "SO2",     subject: "basic", level: 1, section: "reductant" },
+  // 塩素が還元剤になる向き（さらし粉の自己酸化還元・I-0180）。発展
+  "Cl2_ox_HClO":   { name: "塩素（自己酸化還元で HClO になる）", sp: "Cl2", subject: "basic", level: 3, section: "reductant" },
   // --- 化学基礎: 金属とイオン（金属の単体は還元剤の表の最後の行・イオン化傾向） ---
   "Na_ox":         { name: "ナトリウム",           sp: "Na",      subject: "basic", level: 1, section: "metal" },
   "Zn_ox":         { name: "亜鉛",                 sp: "Zn",      subject: "basic", level: 1, section: "metal" },
@@ -3148,6 +3162,21 @@ const REDOX_STAGES = [
     rightOrder: ["CH3COONa", "CHI3", "NaI", "H2O"],
     intro: "アセトンにヨウ素と NaOH を加えると、黄色の CHI₃ が沈殿する（半反応式の立て方がほかと違う参考の段）",
   },
+  {
+    /* 参考（発展）・I-0180。塩素を塩基の水溶液に通す（さらし粉のもとの反応）。
+       **自己酸化還元** ＝ 同じ Cl₂ が酸化剤（Cl₂ → Cl⁻）にも還元剤（Cl₂ → HClO）にもなる。
+       ×1・×1 で足すと 2Cl₂ ＋ 2H₂O → 2HClO ＋ 2H⁺ ＋ 2Cl⁻ と**全体が2で割れる** ⇒ ③の直後に「全体を割る」段が出る
+       （eqDivisorOf が式から導く。データに「割る」とは書かない）。
+       液性の工程（塩基性）で H⁺ は H₂O に、HClO は ClO⁻ になり、Cl₂ ＋ 2OH⁻ → Cl⁻ ＋ ClO⁻ ＋ H₂O に着く。
+       ⚠ イオン反応式まで（bottles を持たない）。化学反応式 Ca(OH)₂ ＋ Cl₂ → CaCl(ClO)・H₂O は
+       陰イオン2種を1つの陽イオンが抱える複塩の水和物で④〜⑧に乗らないので組まず、クリアの後の1行で言う */
+    id: "rs6", title: "塩素 × 水酸化物（さらし粉）",
+    ox: "Cl2_ox_HClO", red: "Cl2_red", answer: [1, 1], mode: "solution", medium: "basic",
+    levelTag: "参考（発展）",
+    after: { lead: "水酸化カルシウムに吸収させると、さらし粉 CaCl(ClO)・H₂O になる",
+      ref: "chlorine", anchor: "chlorine-reactions" },
+    intro: "塩素を塩基の水溶液に通すと、同じ Cl₂ が酸化剤にも還元剤にもなる（自己酸化還元）",
+  },
 ];
 
 /* ================================================================================
@@ -3250,6 +3279,15 @@ const ORGANIC_OXIDANTS = {
    梯子に順位を持つので ORGANIC_OXIDANTS に載っていない）。ユーザーの言う 8〜12 と
    ちょうど一致する ——「有機の官能基の酸化として扱うか」で線が引かれており、
    シュウ酸は無機の還元剤とまったく同じ扱い方をするため。この一致は回帰テストで固定する。 */
+/* 難度の札（2026-09-26・I-0180）。有機（発展）は isOrganicStage が決め、それ以外は
+   ステージが持つ levelTag（さらし粉の「参考（発展）」）。札が無ければ null。
+   帯・見出し・索引が同じ文字列を貼る（1文字も違えない ＝ STAGELIST のテストが見張る） */
+const ORGANIC_LEVEL_TAG = "有機（発展）";
+function stageLevelTag(stage) {
+  if (isOrganicStage(stage)) return ORGANIC_LEVEL_TAG;
+  return (stage && stage.levelTag) || null;
+}
+
 function isOrganicStage(stage) {
   /* ★ 2026-09-26（I-0178）: 有機が**還元される側**に来る反応（ニトロベンゼンの還元）も有機（発展）。
      こちらは LISTED_OXIDANTS の organic 印で見る（id の一覧を手で書かないのは同じ） */
@@ -3316,7 +3354,9 @@ const LISTED_OXIDANTS = {
      強さ比べで答えることになる（B3 の決め）。相手は、ハロゲンの単体の酸化作用として
      よく出る組（ヨウ化カリウム・硫酸鉄(Ⅱ)・硫化水素）だけを書く。 */
   "Cl2_red": {
-    partners: ["I_ox", "Fe2_ox", "H2S_ox"],
+    /* Cl2_ox_HClO（I-0180）… 同じ Cl₂ が還元剤にもなる自己酸化還元（さらし粉 rs6）。
+       この式は試薬に持たせていないので、自由組み立ての一覧には出ない（収録ステージのためだけ） */
+    partners: ["I_ox", "Fe2_ox", "H2S_ox", "Cl2_ox_HClO"],
     why: "塩素の強さは、このアプリでは順位（梯子）に載せていません。相手はよく出る組み合わせだけを収録しています。",
   },
 };
@@ -4007,7 +4047,41 @@ const BATTERY_STAGES = [
     intro: "板を2枚選んで電池を組み立てよう。選んだら、どちらが正極になるかを予想してからつなぐ。" +
       "同じ板を2枚選ぶこともできる（そのときどうなるかも、確かめてみる価値がある）。",
   },
+  /* b3: 燃料電池（アルカリ形）（2026-09-26・I-0181）。参考書 fuel-cell#alkaline と同じ式。
+     ★ **イオン化傾向で負極が決まる電池ではない** ＝ metals を持たない。電極は白金（不活性・溶けない）で、
+     送りこむ気体（gases）で電極を呼ぶ。負極は「酸化の式の左辺にある気体」＝ 燃料の H₂（fuelCellPair が導く）。
+     ⚠ 式はステージが名指しする（ox / red）。電極を選ばせないので、式を選び直す場面が無い。
+     予想の問いは ask: "neg"（どちらが負極 ＝ e⁻ を出す側になるか）。
+     showCancel … 足し合わせで e⁻ 以外（OH⁻・H₂O）も両辺で打ち消し合うので、打ち消す前の行を見せる */
+  {
+    id: "b3", kind: "battery", title: "燃料電池（アルカリ形）", fuel: true,
+    gases: ["H2", "O2"], electrode: "Pt", solution: "KOH",
+    ox: "H2_ox_basic", red: "O2_red_basic", ask: "neg", showCancel: true,
+    acidForm: { ox: "H_ox", red: "O2_red", condition: ["b5", "b6"] },
+    intro: "白金の電極2枚を KOH 水溶液にひたし、片方に H₂、もう片方に O₂ を送りこむ。" +
+      "どちらの電極が負極（e⁻ を出す側）になるか、電極をタップして予想しよう。",
+  },
 ];
+
+/* 燃料電池の両極（I-0181）。板の金属ではなく**送りこむ気体**で電極を呼ぶ。
+   負極 ＝ 酸化の式の左辺にいる気体（燃料）・正極 ＝ 還元の式の左辺にいる気体。
+   イオン化傾向（negativeOf）は使わない ＝ ここがダニエル電池との違い。
+   返す形は halvesForPair と同じ（画面は同じ口で両方を扱える） */
+function fuelCellPair(stage) {
+  const ox = HALF_REACTIONS[stage && stage.ox], red = HALF_REACTIONS[stage && stage.red];
+  const gases = (stage && stage.gases) || [];
+  const neg = gases.find((g) => ox && ox.left.some((t) => t.sp === g)) || null;
+  const pos = gases.find((g) => red && red.left.some((t) => t.sp === g)) || null;
+  if (!neg || !pos || neg === pos) return { neg: null, pos: null, reason: "no-half" };
+  return { neg, pos, ox: stage.ox, red: stage.red, stage: composeStage(stage.ox, stage.red) };
+}
+
+/* 電池ステージ → 両極（燃料電池は気体から、それ以外は板2枚から） */
+function cellPairOf(stage) {
+  if (stage && stage.fuel) return fuelCellPair(stage);
+  const ms = (stage && stage.metals) || [];
+  return halvesForPair(ms[0], ms[1]);
+}
 
 /* ================================================================================
    板の左右をふり分ける（M・2026-08-18 の実機指摘「電極の配置をランダムにしないと、
@@ -4049,9 +4123,13 @@ function arrangeElectrodes(metals, flip) {
    どちらが (−) かは negativeOf が決めるので、ここも順序を直書きしない
    （＝板を左右どちらに置いても電池式は変わらない。M の並べ替えと衝突しない）。 */
 function cellNotation(stage) {
-  const ms = (stage && stage.metals) || [];
-  const h = halvesForPair(ms[0], ms[1]);
+  const h = cellPairOf(stage);
   if (!h.neg) return null;
+  // 燃料電池は電解液が1つ（参考書 fuel-cell の（−）H₂｜KOHaq｜O₂（＋）と同じ並び）
+  if (stage.fuel) {
+    const sol = SPECIES[stage.solution] ? SPECIES[stage.solution].disp + " aq" : "?";
+    return `(−) ${SPECIES[h.neg].disp} | ${sol} | ${SPECIES[h.pos].disp} (+)`;
+  }
   const salt = (m) => {
     const sp = electrolyteFor(stage, m);
     return sp && SPECIES[sp] ? SPECIES[sp].disp + " aq" : "?";
@@ -4062,8 +4140,7 @@ function cellNotation(stage) {
 /* 電池ステージ → REDOX_STAGES と同じ形のステージ。
    これを既存の checkRedoxMultipliers / combineHalves にそのまま渡す。 */
 function batteryStageOf(stage) {
-  const ms = (stage && stage.metals) || [];
-  const h = halvesForPair(ms[0], ms[1]);
+  const h = cellPairOf(stage);
   if (!h.stage) return null;
   // composeStage が付ける "free:…" は自由組み立てモードの名札なので、電池のものに付け替える
   return Object.assign({}, h.stage, { id: "battery:" + stage.id, title: stage.title });
@@ -4313,8 +4390,8 @@ const CURRICULUM = [
         note: "半反応式を整数倍して e⁻ をそろえ、足し合わせる" },
       /* ★ rs4・ra1（I-0178）は液性の工程が見どころの2本なので、ここに入れる
          （足し合わせたあとで書き直す。練習の b1〜b4 は半反応式1本を書き直す） */
-      { id: "u-condition", name: "液性による書き換え（酸性 ⇄ 塩基性）", condition: ["b1", "b2", "b3", "b4"],
-        redox: ["rs4", "ra1", "rs5"],
+      { id: "u-condition", name: "液性による書き換え（酸性 ⇄ 塩基性）", condition: ["b1", "b2", "b3", "b4", "b5", "b6"],
+        redox: ["rs4", "ra1", "rs5", "rs6"],
         note: "両辺に OH⁻ を足して H₂O にまとめ、相殺する" },
       // ★ 銀鏡反応・フェーリング反応（ro4・ro5・I-0178）もアルデヒドの酸化としてここに入れる
       { id: "u-redox-organic", name: "有機の酸化（アルコール）", redox: ["ro1", "ro2", "ro3", "ro4", "ro5"],
@@ -4586,6 +4663,8 @@ function combineHalves(stage, a, b) {
 const LIQUID_JOINS = [
   { medium: "basic", add: "OH-", from: "H+",      to: [{ sp: "H2O", n: 1 }], op: "neutralize" },
   { medium: "basic", add: "OH-", from: "CH3COOH", to: [{ sp: "CH3COO-", n: 1 }, { sp: "H2O", n: 1 }], op: "acidOff", name: "酢酸" },
+  // 次亜塩素酸（弱酸）も同じ操作 ＝ H⁺ を手放して ClO⁻ になる（さらし粉・I-0180）。操作の種類は増やさない
+  { medium: "basic", add: "OH-", from: "HClO",    to: [{ sp: "ClO-", n: 1 }, { sp: "H2O", n: 1 }],    op: "acidOff", name: "次亜塩素酸" },
   { medium: "acid",  add: "H+",  from: "C6H5NH2", to: [{ sp: "C6H5NH3+", n: 1 }], op: "baseOn", name: "アニリン" },
 ];
 /* 液性ごとに両辺に足すもの */
@@ -4624,15 +4703,49 @@ function liquidMediumOf(stage) {
 function liquidStepOf(stage) {
   const medium = liquidMediumOf(stage);
   if (!medium || !stage.answer) return null;
-  const c = combineHalves(stage, stage.answer[0], stage.answer[1]);
+  // ★ B の道で直すのは「全体を割った」あとの式（I-0180・さらし粉）。割る段が無い回は combineHalves そのもの
+  const c = sumOf(stage, stage.answer[0], stage.answer[1]);
   const need = liquidNeed(c, medium);
   if (!need) return null;
   const halves = medium === "basic"
     ? ["ox", "red"].filter((k) => liquidNeed(halfOfStage(stage, k), medium) > 0)
     : [];
-  const ops = liquidJoinsOf(medium)
-    .filter((j) => [...c.left, ...c.right].some((t) => t.sp === j.from)).map((j) => j.op);
-  return { medium, add: LIQUID_ADD[medium], need, paths: halves.length ? ["A", "B"] : ["B"], halves, ops };
+  const used = liquidJoinsOf(medium).filter((j) => [...c.left, ...c.right].some((t) => t.sp === j.from));
+  // froms … 結びつく相手の種（見出しの言葉を種で選ぶ。同じ操作 acidOff でも酢酸と次亜塩素酸は言い分ける）
+  return { medium, add: LIQUID_ADD[medium], need, paths: halves.length ? ["A", "B"] : ["B"], halves,
+    ops: used.map((j) => j.op), froms: used.map((j) => j.from) };
+}
+
+/* ================================================================================
+   全体を割る段（2026-09-26・I-0180・さらし粉）
+
+   ③は「倍率が最簡なら、足した式も最簡」を前提にしてきた。**自己酸化還元では崩れる**:
+   同じ Cl₂ が両方の半反応式の左辺にいるので、×1・×1 で足すと 2Cl₂ ＋ 2H₂O → 2HClO ＋ 2H⁺ ＋ 2Cl⁻
+   ＝ 係数が全部 2 で割れる。そこで③の直後に「全体を割る」段を置く（⑧〔全体を整数倍〕の逆向き）。
+   ★ 割る数はデータに書かず**式から導く**（係数の最大公約数）。既存のステージはどれも 1 ＝ 段は出ない（テストで固定）。
+   ★ 液性の工程（B の道）と④以降は、**割ったあとの式**を使う（sumOf）。
+   ================================================================================ */
+function eqDivisorOf(eq) {
+  const ns = [...eq.left, ...eq.right].map((t) => t.n);
+  return ns.length ? gcdAll(ns) : 1;
+}
+function divideEq(eq, g) {
+  const d = (side) => side.map((t) => ({ sp: t.sp, n: t.n / g }));
+  return { left: d(eq.left), right: d(eq.right) };
+}
+/* ③の式を最簡にしたもの（割る数が 1 なら combineHalves そのもの） */
+function sumOf(stage, a, b) {
+  const c = combineHalves(stage, a, b);
+  const g = eqDivisorOf(c);
+  return g > 1 ? divideEq(c, g) : c;
+}
+/* 割る数の判定1行。⚠ 答えの数は言わない（割り切れない・まだ割れる、の向きだけ） */
+function divideJudge(eq, k) {
+  const g = eqDivisorOf(eq);
+  if (!Number.isInteger(k) || k < 1) return { ok: false, kind: "none", text: "" };
+  if (k === g) return { ok: true, kind: "ok", text: "係数がいちばん小さい整数になった" };
+  if (g % k === 0) return { ok: false, kind: "short", text: "まだ全体が割り切れる。もっと大きい数で割ろう" };
+  return { ok: false, kind: "over", text: "割り切れない係数がある。すべての係数を割り切れる数にしよう" };
 }
 
 /* 1本の式を、その液性の形へ書き直す。k は両辺に足す数（人が書いた数）。
@@ -4699,7 +4812,8 @@ function liquidHeadText(step) {
     const j = liquidJoinsOf("acid").find((x) => step.ops.includes(x.op));
     return `酸性では${j ? j.name : "塩基"}は H⁺ を受け取っている。H⁺ を足して書き直そう`;
   }
-  const extra = liquidJoinsOf("basic").filter((j) => j.op !== "neutralize" && step.ops.includes(j.op))
+  const extra = liquidJoinsOf("basic").filter((j) => j.op !== "neutralize" &&
+      (step.froms ? step.froms.includes(j.from) : step.ops.includes(j.op)))
     .map((j) => `、${D(j.from)} は ${D(j.to[0].sp)} になっている`).join("");
   return `液性に合わせて書き直そう（中性・塩基性では H⁺ は OH⁻ と結びついて H₂O になっている${extra}）`;
 }
@@ -4723,7 +4837,7 @@ function liquidJudge(eq, medium, k) {
 
 /* ④以降が使うイオン反応式 ＝ 液性の工程を通したあとの式。工程が要らない回は combineHalves そのもの */
 function ionicOf(stage, a, b) {
-  const c = combineHalves(stage, a, b);
+  const c = sumOf(stage, a, b);   // 全体を割る段がある回は割ったあと（I-0180）
   const medium = liquidMediumOf(stage);
   const need = medium ? liquidNeed(c, medium) : 0;
   if (!need) return c;
@@ -4734,17 +4848,20 @@ function ionicOf(stage, a, b) {
 /* 類題・参考の一覧（液性の段の下・DESIGN_redox.md「追加の収録と類題の一覧」）。
    収録ステージへのリンクで、3つのまとまりに分ける。**題は各モードのステージから引く**（ここに書き写さない。
    title を持つのは「同じステージを別の道で開く」rs4 の A だけ）。
-   ⚠ アルカリ形燃料電池は battery.html にステージが無いので入れていない（電極の式は半反応式の一覧にだけある） */
+   ★ アルカリ形燃料電池（I-0181）: 両極を書き直す練習（condition b5・b6）と、電池のステージ（battery b3）を A に入れた */
 const LIQUID_RELATED = [
   { key: "A", head: "半反応式の段で直す", items: [
     { page: "condition", id: "b1" }, { page: "condition", id: "b2" },
     { page: "condition", id: "b3" }, { page: "condition", id: "b4" },
+    { page: "condition", id: "b5" }, { page: "condition", id: "b6" },
     { page: "electrolysis", id: "e6" },
+    { page: "battery", id: "b3" },
     { page: "redox", id: "rs4", liq: "A", title: "過マンガン酸カリウム（中性）を半反応式のうちに直す" },
   ] },
   { key: "B", head: "足し合わせた後で直す（塩基性）", items: [
     { page: "redox", id: "rs5" }, { page: "redox", id: "rs4" },
     { page: "redox", id: "ro4" }, { page: "redox", id: "ro5" }, { page: "redox", id: "ri3" },
+    { page: "redox", id: "rs6" },   // さらし粉（参考・I-0180）
   ] },
   { key: "C", head: "足し合わせた後で直す（酸性）", items: [
     { page: "redox", id: "ra1" },
@@ -4753,6 +4870,7 @@ const LIQUID_RELATED = [
 const LIQUID_RELATED_PAGES = {
   condition:    { file: "condition.html",    param: "s",   stages: () => CONDITION_STAGES },
   electrolysis: { file: "electrolysis.html", param: "s",   stages: () => ELECTROLYSIS_STAGES },
+  battery:      { file: "battery.html",      param: "s",   stages: () => BATTERY_STAGES },
   redox:        { file: "redox.html",        param: "rxn", stages: () => REDOX_STAGES },
 };
 /* いま開いている酸化還元ステージ（currentId）を外した一覧。空のまとまりは返さない。
@@ -6058,6 +6176,21 @@ const CONDITION_STAGES = [
              right: [{ sp: "OH-", n: 2 }],
     },
     intro: "H₂O₂ の O は −1（過酸化物の例外）。酸性では H₂O になるが、塩基性では OH⁻ になる。同じ操作で導けるか試そう。",
+  },
+  /* 燃料電池の両極（2026-09-26・I-0181）。リン酸形（酸性）の式から、アルカリ形（KOH 水溶液）の式を導く。
+     着く先は半反応式の一覧の H2_ox_basic・O2_red_basic と同じ式（テストで一致を固定）。
+     参考書 fuel-cell#alkaline の手順（H⁺ と同じ数の OH⁻ を両辺に足す → 中和 → H₂O を消す）そのもの */
+  {
+    id: "b5", title: "燃料電池の負極（H₂ をアルカリ形に）", half: "H_ox", answerOH: 2,
+    basic: { left: [{ sp: "H2", n: 1 }, { sp: "OH-", n: 2 }],
+             right: [{ sp: "H2O", n: 2 }, { sp: "e-", n: 2 }] },
+    intro: "リン酸形の燃料電池では、H₂ が e⁻ を出して H⁺ になる。アルカリ形（KOH 水溶液）では H⁺ は残れない。両辺に OH⁻ を足して書き直そう。",
+  },
+  {
+    id: "b6", title: "燃料電池の正極（O₂ をアルカリ形に）", half: "O2_red", answerOH: 4,
+    basic: { left: [{ sp: "O2", n: 1 }, { sp: "H2O", n: 2 }, { sp: "e-", n: 4 }],
+             right: [{ sp: "OH-", n: 4 }] },
+    intro: "リン酸形では、O₂ が H⁺ と e⁻ を受け取って H₂O になる。KOH 水溶液に H⁺ はほとんど無い。両辺に OH⁻ を足し、両辺の H₂O を消そう。",
   },
 ];
 
