@@ -2970,6 +2970,8 @@ const REDOX_STAGES = [
     id: "rs2", title: "二クロム酸カリウム × 鉄(Ⅱ)（溶液中）",
     ox: "Fe2_ox", red: "Cr2O7_red", answer: [6, 1], mode: "solution",
     bottles: ["K2Cr2O7", "FeSO4", "H2SO4"],
+    // 化学反応式の右辺の並び（参考書 redox-equation: K₂SO₄ ＋ Cr₂(SO₄)₃ ＋ 3Fe₂(SO₄)₃ ＋ 7H₂O）
+    rightOrder: ["K2SO4", "Cr2(SO4)3", "Fe2(SO4)3", "H2O"],
     intro: "二クロム酸カリウムに Fe²⁺ を加えると、橙色が緑色に変わる",
   },
   {
@@ -3087,6 +3089,8 @@ const REDOX_STAGES = [
     id: "rs4", title: "過マンガン酸カリウム × ヨウ化カリウム（中性）",
     ox: "I_ox", red: "MnO4_red_MnO2", answer: [3, 2], mode: "solution",
     bottles: ["KMnO4", "KI", "H2O"],
+    // 化学反応式の右辺の並び（教科書の書き方 2KMnO₄ ＋ 6KI ＋ 4H₂O → 2MnO₂ ＋ 3I₂ ＋ 8KOH）
+    rightOrder: ["MnO2", "I2", "KOH"],
     intro: "中性の過マンガン酸カリウムにヨウ化カリウムを加えると、黒褐色の MnO₂ ができる",
   },
   {
@@ -3095,6 +3099,8 @@ const REDOX_STAGES = [
     id: "ra1", title: "ニトロベンゼン × スズ（塩酸）",
     ox: "Sn_ox", red: "PhNO2_red", answer: [3, 2],
     bottles: ["C6H5NO2", "Sn", "HCl"],
+    // 化学反応式の右辺の並び（参考書 aniline#prep: 2C₆H₅NH₃Cl ＋ 3SnCl₄ ＋ 4H₂O）
+    rightOrder: ["C6H5NH3Cl", "SnCl4", "H2O"],
     intro: "ニトロベンゼンにスズと塩酸を加えて温めると、アニリン塩酸塩ができる",
     /* クリアのあとに1行だけ言う続き（設計「NaOH で遊離は、クリアの後の1行で言い、参考書へつなぐ」）。
        式は項で持ち、つり合いをテストで確かめる（文字列の式を手で書かない） */
@@ -3113,6 +3119,8 @@ const REDOX_STAGES = [
     id: "rs5", title: "オゾン × ヨウ化カリウム（KI デンプン紙）",
     ox: "I_ox", red: "O3_red", answer: [1, 1], mode: "solution", medium: "basic",
     bottles: ["O3", "KI", "H2O"],
+    // 化学反応式の右辺の並び（参考書 oxygen-ozone: I₂ ＋ 2KOH ＋ O₂）
+    rightOrder: ["I2", "KOH", "O2"],
     intro: "湿らせたヨウ化カリウムデンプン紙にオゾンを当てると、I₂ ができて青くなる",
   },
   {
@@ -3134,6 +3142,8 @@ const REDOX_STAGES = [
     id: "ri3", title: "ヨードホルム反応（アセトン・参考）",
     ox: "acetone_io_ox", red: "I2_red", answer: [1, 3], mode: "solution", medium: "basic",
     bottles: ["CH3COCH3", "I2", "NaOH"],
+    // 化学反応式の右辺の並び（参考書 iodoform: R−COONa ＋ CHI₃ ＋ 3NaI ＋ 3H₂O）
+    rightOrder: ["CH3COONa", "CHI3", "NaI", "H2O"],
     intro: "アセトンにヨウ素と NaOH を加えると、黄色の CHI₃ が沈殿する（半反応式の立て方がほかと違う参考の段）",
   },
 ];
@@ -5752,6 +5762,19 @@ function rxSheetRows(stage, a, b) {
 /* ⑥⑦ 右辺を「分数を許して」組み切った姿。★ **カードは割らない** ——
    枠（Fe₂(SO₄)₃）は満たされていて、**くり返し回数のほうが 5/2 になる**。
    ⚠ 分数が出るのは rs1 だけ（実測）。他の8ステージはここも整数で返る。 */
+/* 化学反応式の右辺の並び（2026-09-26・ユーザー指示「参考書の並びに合わせる」・I-0178）。
+   組み立ては「塩が先・分子があと」で行を作るが、参考書の式は反応ごとに並びがまちまちで、
+   1つの規則では合わない（ra1 は塩が先、rs4・rs5 は分子が先、ri3 は塩と分子が交互）。
+   ステージが rightOrder を持つときはその順、持たずに模範解答（molecularEq.products）を持つときはその順に並べ替える
+   （ro1〜ro3 は模範解答が「生成した有機物が先」なのに、画面は塩を先に出していた）。どちらも無いステージは今までどおり。
+   ⚠ 並べ替えるのは行（rows）だけ。係数も組み方（units）も変えない */
+function sortRightRows(stage, rows) {
+  const ord = stage && (stage.rightOrder || (stage.molecularEq && stage.molecularEq.products));
+  if (!ord) return rows;
+  const at = (sp) => { const i = ord.indexOf(sp); return i < 0 ? ord.length : i; };
+  return rows.map((r, i) => ({ r, i })).sort((x, y) => at(x.r.sp) - at(y.r.sp) || x.i - y.i).map((x) => x.r);
+}
+
 function rxRightUnits(stage, a, b) {
   const plan = bottlePlan(stage, a, b, 1);
   if (!plan || plan.dataError) return null;
@@ -5769,8 +5792,8 @@ function rxRightUnits(stage, a, b) {
       usedC += (f.num / f.den) * u.cn;
     }
     if (Math.abs(usedC - c.n) > 1e-9) return null;
-    const rows = units.map((u) => ({ sp: u.sp, f: u.f, unit: u }))
-      .concat(plan.neutral.map((t) => ({ sp: t.sp, f: rxFrac(t.n, 1), unit: null })));
+    const rows = sortRightRows(stage, units.map((u) => ({ sp: u.sp, f: u.f, unit: u }))
+      .concat(plan.neutral.map((t) => ({ sp: t.sp, f: rxFrac(t.n, 1), unit: null }))));
     const fracs = rows.filter((r) => r.f.den !== 1);
     return { units, rows, neutral: plan.neutral, anion: null, anions: plan.anions, hasFraction: fracs.length > 0, fracs };
   }
@@ -5785,8 +5808,8 @@ function rxRightUnits(stage, a, b) {
     used += (f.num / f.den) * u.an;
   }
   if (anion && Math.abs(used - anion.n) > 1e-9) return null;
-  const rows = units.map((u) => ({ sp: u.sp, f: u.f, unit: u }))
-    .concat(plan.neutral.map((t) => ({ sp: t.sp, f: rxFrac(t.n, 1), unit: null })));
+  const rows = sortRightRows(stage, units.map((u) => ({ sp: u.sp, f: u.f, unit: u }))
+    .concat(plan.neutral.map((t) => ({ sp: t.sp, f: rxFrac(t.n, 1), unit: null }))));
   const fracs = rows.filter((r) => r.f.den !== 1);
   return { units, rows, neutral: plan.neutral, anion, hasFraction: fracs.length > 0, fracs };
 }

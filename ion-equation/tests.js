@@ -2875,6 +2875,30 @@ function runModelTests() {
   const liqKey = (side) => side.map((x) => x.sp + ":" + x.n).sort().join(",");
   const liqNOf = (side, sp) => (side.find((x) => x.sp === sp) || { n: 0 }).n;
 
+  /* ★ 2026-09-26（ユーザー指示「化学反応式の右辺の並びを参考書に合わせる」）。
+     組み立ては塩を先に出すが、参考書の並びは反応ごとにまちまち ＝ ステージの rightOrder か模範解答（molecularEq）の順に並べる。
+     参考書の式: aniline#prep・oxygen-ozone・iodoform・redox-equation。rs4 は参考書に式が無いので教科書の並び */
+  t("化学反応式の右辺の並びが参考書と同じ（rs2・rs4・ra1・rs5・ri3・ro1〜ro3）・並べ替えても係数は変わらない", () => {
+    const want = {
+      rs2: "K2SO4,Cr2(SO4)3,Fe2(SO4)3,H2O", rs4: "MnO2,I2,KOH", ra1: "C6H5NH3Cl,SnCl4,H2O",
+      rs5: "I2,KOH,O2", ri3: "CH3COONa,CHI3,NaI,H2O",
+      ro1: "CH3CHO,Cr2(SO4)3,K2SO4,H2O", ro2: "CH3COOH,Cr2(SO4)3,K2SO4,H2O", ro3: "CH3COCH3,Cr2(SO4)3,K2SO4,H2O",
+    };
+    for (const [id, w] of Object.entries(want)) {
+      const st = REDOX_STAGES.find((x) => x.id === id);
+      const r = rxRightUnits(st, st.answer[0], st.answer[1]);
+      assert(r, id + ": 右辺が組めない");
+      assert(r.rows.map((x) => x.sp).join() === w, id + ": 右辺の並びが参考書と違う: " + r.rows.map((x) => x.sp).join());
+      // 並べ替えは行の順だけ ＝ 並べ替えを外した組み方と種ごとの係数が同じ
+      const bare = rxRightUnits(Object.assign({}, st, { rightOrder: [], molecularEq: undefined }), st.answer[0], st.answer[1]);
+      const key = (rows) => rows.map((x) => x.sp + ":" + x.f.num + "/" + x.f.den).sort().join();
+      assert(key(r.rows) === key(bare.rows), id + ": 並べ替えで係数が変わった");
+    }
+    // 否定対照: 並びの指定が無いステージ（rs1）は今までどおり（塩が先）
+    const rs1 = REDOX_STAGES.find((x) => x.id === "rs1");
+    assert(!rs1.rightOrder && !rs1.molecularEq, "rs1 に並びの指定がある（参考書に式が無いので付けていないはず）");
+  });
+
   t("LIQ 書き直しの本体: 塩基性は condition.html の toBasicHalf と同じ式に着く（b1〜b4）・数を外すと通らない", () => {
     for (const st of CONDITION_STAGES) {
       const hr = HALF_REACTIONS[st.half];
