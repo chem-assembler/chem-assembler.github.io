@@ -1075,6 +1075,9 @@ main.timelineMain {
 #stepLiq .liqSheet { margin: 6px 0 2px; }
 #stepLiq .liqIn { width: 2.6em; }
 #stepLiq .liqIn::placeholder { color: #b0442f; font-weight: bold; opacity: 1; }
+/* 右辺の写し（左に入れた数をそのまま映す）。入れる前は左の「？」と同じ色の「？」 */
+#stepLiq .liqMirror { font-weight: bold; }
+#stepLiq .liqMirror.unset { color: #b0442f; }
 #stepLiq .formula { font-weight: bold; }
 #stepLiq .cSpan.footNote { padding-top: 2px; }
 /* 類題・参考（3つのまとまり）。⚠ 字は本文と同じ大きさ・1行1件（ui-text-density） */

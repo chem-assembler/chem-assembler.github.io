@@ -1868,14 +1868,24 @@ function refreshLiq() {
     if (!P) continue;
     const k = liqVals[t.key];
     const has = Number.isInteger(k) && k > 0;
-    P.add.right.textContent = has ? `${k} ${D(s.add)}` : "";
+    /* 右辺は左の写し（同じ数を両辺に足す）。**まだ入れていないうちも「？」で写す** ——
+       空けておくと、片側にだけ足す操作に見える（2026-09-26 統合の検収で指摘） */
+    P.add.right.innerHTML = "";
+    const q = document.createElement("span");
+    q.className = has ? "liqMirror" : "liqMirror unset";
+    q.textContent = has ? String(k) : "？";
+    const fm = document.createElement("span");
+    fm.className = "formula";
+    fm.textContent = D(s.add);
+    P.add.right.append(q, " ", fm);
     const r = liquidRewrite(t.eq, s.medium, has ? k : 0);
     /* 結びついたあと（相殺の前）。足した数を書いたら出す（多すぎ・少なすぎも見える）。
        ⚠ ぴったりで相殺する H₂O も無い回（酸性のアミン）は、この行がそのままできあがりと同じになる
        ＝ 同じ式を2行続けて出さない */
     const showJoin = has && !(r.ok && !r.cancelled);
     P.join.row.hidden = !showJoin;
-    P.rule1.hidden = !has;
+    // 結びつく行を省いた回は、その上の線も出さない（線が2本続いて見える）
+    P.rule1.hidden = !showJoin;
     if (has) {
       const nL = (r.joined.left.find((x) => x.sp === "H2O") || { n: 0 }).n;
       const nR = (r.joined.right.find((x) => x.sp === "H2O") || { n: 0 }).n;
@@ -1894,6 +1904,8 @@ function refreshLiq() {
     P.done.row.classList.toggle("doneRow", !!r.ok);
     const j = liquidJudge(t.eq, s.medium, k);
     setStatusMsg(P.msg, j.text, j.kind === "ok" ? "ok" : j.kind === "none" ? "" : "ng");
+    // 言うことが無いあいだは枠ごと隠す（空の枠に 💡 だけが出るのを避ける）
+    P.msg.hidden = !j.text;
     const inp = document.getElementById("lq_" + t.key);
     if (inp) inp.classList.toggle("ng", j.kind === "short" || j.kind === "over");
   }
