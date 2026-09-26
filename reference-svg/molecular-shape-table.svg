@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="700" viewBox="0 0 680 700" role="img">
+  <!-- 代表的な分子の形（電子式・構造式・形の模式図・結合角）。2026-09-26 I-0169「表には電子式・構造式が必要」で、文字の表を1枚の図にした。形の模式図はくさび（手前）・破線（奥）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 16px; }
+    .sym { font-size: 24px; font-weight: 700; text-anchor: middle; }
+    .b { font-weight: 700; font-size: 17px; }
+    .s { font-size: 15px; fill: #444; }
+    .hd { font-weight: 700; font-size: 15px; fill: #333; text-anchor: middle; }
+    .c { text-anchor: middle; }
+    .red { fill: #c62828; font-weight: 700; }
+    .blue { fill: #1f618d; font-weight: 700; }
+    .grid { stroke: #cfd6de; stroke-width: 1; }
+    .shell { fill: none; stroke: #1f618d; stroke-width: 2; }
+    .nuc { fill: #fde2c4; stroke: #e0762b; stroke-width: 2; }
+    .e { fill: #ffe14d; stroke: #1f618d; stroke-width: 2; }
+    .bond { stroke: #222; stroke-width: 2.4; }
+  </style>
+  <text class="hd" x="58" y="36">分子</text>
+  <text class="hd" x="190" y="36">電子式</text>
+  <text class="hd" x="332" y="36">構造式</text>
+  <text class="hd" x="478" y="36">分子の形</text>
+  <text class="hd" x="622" y="36">結合角</text>
+  <line class="grid" x1="12" y1="52" x2="668" y2="52"/>
+  <text class="c" x="58" y="123">二酸化炭素</text>
+  <text class="c b" x="58" y="145">CO₂</text>
+  <g transform="translate(0 127)">
+  <text class="sym" x="132" y="8">O</text>
+  <text class="sym" x="190" y="8">C</text>
+  <text class="sym" x="248" y="8">O</text>
+  <circle cx="156.5" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="156.5" cy="5" r="3.2" fill="#222"/>
+  <circle cx="165.5" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="165.5" cy="5" r="3.2" fill="#222"/>
+  <circle cx="214.5" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="214.5" cy="5" r="3.2" fill="#222"/>
+  <circle cx="223.5" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="223.5" cy="5" r="3.2" fill="#222"/>
+  <circle cx="127" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="137" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="127" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="137" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="243" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="253" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="243" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="253" cy="18" r="3.2" fill="#1f618d"/>
+  <text class="c b" x="332" y="6">O＝C＝O</text>
+  <text class="sym" x="434" y="8">O</text>
+  <text class="sym" x="478" y="8">C</text>
+  <text class="sym" x="522" y="8">O</text>
+  <line class="bond" x1="467" y1="-3" x2="445" y2="-3"/><line class="bond" x1="467" y1="3" x2="445" y2="3"/>
+  <line class="bond" x1="489" y1="-3" x2="511" y2="-3"/><line class="bond" x1="489" y1="3" x2="511" y2="3"/>
+  <text class="c s" x="478" y="40">直線形</text>
+  </g>
+  <text class="c b" x="622" y="133">180°</text>
+  <line class="grid" x1="12" y1="198" x2="668" y2="198"/>
+  <text class="c" x="58" y="269">水</text>
+  <text class="c b" x="58" y="291">H₂O</text>
+  <g transform="translate(0 273)">
+  <text class="sym" x="138" y="8">H</text>
+  <text class="sym" x="190" y="8">O</text>
+  <text class="sym" x="242" y="8">H</text>
+  <circle cx="164" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="164" cy="5" r="3.2" fill="#222"/>
+  <circle cx="216" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="216" cy="5" r="3.2" fill="#222"/>
+  <circle cx="185" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="195" cy="-18" r="3.2" fill="#1f618d"/>
+  <circle cx="185" cy="18" r="3.2" fill="#1f618d"/>
+  <circle cx="195" cy="18" r="3.2" fill="#1f618d"/>
+  <text class="c b" x="332" y="6">H−O−H</text>
+  <text class="sym" x="478" y="-14">O</text>
+  <text class="sym" x="438.5" y="16.6">H</text>
+  <text class="sym" x="517.5" y="16.6">H</text>
+  <line class="bond" x1="468.5" y1="-14.7" x2="446.4" y2="2.5"/>
+  <line class="bond" x1="487.5" y1="-14.7" x2="509.6" y2="2.5"/>
+  <path d="M 495.4 -8.5 A 22 22 0 0 1 460.6 -8.5" fill="none" stroke="#888" stroke-width="1.3"/>
+  <text class="c s" x="478" y="62">折れ線形</text>
+  </g>
+  <text class="c b" x="622" y="279">104.5°</text>
+  <line class="grid" x1="12" y1="344" x2="668" y2="344"/>
+  <text class="c" x="58" y="415">アンモニア</text>
+  <text class="c b" x="58" y="437">NH₃</text>
+  <g transform="translate(0 419)">
+  <text class="sym" x="138" y="0">H</text>
+  <text class="sym" x="190" y="0">N</text>
+  <text class="sym" x="242" y="0">H</text>
+  <text class="sym" x="190" y="46">H</text>
+  <circle cx="164" cy="-13" r="3.2" fill="#222"/>
+  <circle cx="164" cy="-3" r="3.2" fill="#222"/>
+  <circle cx="216" cy="-13" r="3.2" fill="#222"/>
+  <circle cx="216" cy="-3" r="3.2" fill="#222"/>
+  <circle cx="185" cy="15" r="3.2" fill="#222"/>
+  <circle cx="195" cy="15" r="3.2" fill="#222"/>
+  <circle cx="185" cy="-26" r="3.2" fill="#1f618d"/>
+  <circle cx="195" cy="-26" r="3.2" fill="#1f618d"/>
+  <text class="c b" x="332" y="0">N</text>
+  <text class="c" x="296" y="0">H</text>
+  <text class="c" x="368" y="0">H</text>
+  <text class="c" x="332" y="38">H</text>
+  <line class="bond" x1="305" y1="-6" x2="323" y2="-6"/><line class="bond" x1="341" y1="-6" x2="359" y2="-6"/><line class="bond" x1="332" y1="4" x2="332" y2="22"/>
+  <text class="sym" x="478" y="-18">N</text>
+  <text class="sym" x="430" y="12">H</text>
+  <text class="sym" x="482" y="36">H</text>
+  <text class="sym" x="528" y="8">H</text>
+  <line class="bond" x1="467.8" y1="-19.6" x2="439.3" y2="-1.8"/>
+  <polygon points="478.9,-14 474.1,15.6 488,14.5" fill="#222"/>
+  <line x1="492.9" y1="-16.9" x2="494" y2="-19" stroke="#222" stroke-width="1.6"/>
+  <line x1="497.1" y1="-13.4" x2="499.3" y2="-17.6" stroke="#222" stroke-width="1.6"/>
+  <line x1="501.4" y1="-9.9" x2="504.6" y2="-16.1" stroke="#222" stroke-width="1.6"/>
+  <line x1="505.6" y1="-6.4" x2="509.9" y2="-14.7" stroke="#222" stroke-width="1.6"/>
+  <line x1="509.9" y1="-2.8" x2="515.3" y2="-13.2" stroke="#222" stroke-width="1.6"/>
+  <line x1="514.1" y1="0.7" x2="520.6" y2="-11.7" stroke="#222" stroke-width="1.6"/>
+  <text class="c s" x="478" y="64">三角錐形</text>
+  </g>
+  <text class="c b" x="622" y="425">106.7°</text>
+  <line class="grid" x1="12" y1="490" x2="668" y2="490"/>
+  <text class="c" x="58" y="561">メタン</text>
+  <text class="c b" x="58" y="583">CH₄</text>
+  <g transform="translate(0 565)">
+  <text class="sym" x="138" y="8">H</text>
+  <text class="sym" x="190" y="8">C</text>
+  <text class="sym" x="242" y="8">H</text>
+  <text class="sym" x="190" y="-34">H</text>
+  <text class="sym" x="190" y="50">H</text>
+  <circle cx="164" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="164" cy="5" r="3.2" fill="#222"/>
+  <circle cx="216" cy="-5" r="3.2" fill="#222"/>
+  <circle cx="216" cy="5" r="3.2" fill="#222"/>
+  <circle cx="185" cy="-21" r="3.2" fill="#222"/>
+  <circle cx="195" cy="-21" r="3.2" fill="#222"/>
+  <circle cx="185" cy="21" r="3.2" fill="#222"/>
+  <circle cx="195" cy="21" r="3.2" fill="#222"/>
+  <text class="c b" x="332" y="8">C</text>
+  <text class="c" x="296" y="8">H</text>
+  <text class="c" x="368" y="8">H</text>
+  <text class="c" x="332" y="-26">H</text>
+  <text class="c" x="332" y="44">H</text>
+  <line class="bond" x1="305" y1="2" x2="323" y2="2"/><line class="bond" x1="341" y1="2" x2="359" y2="2"/><line class="bond" x1="332" y1="-22" x2="332" y2="-9"/><line class="bond" x1="332" y1="12" x2="332" y2="26"/>
+  <text class="sym" x="478" y="-2">C</text>
+  <text class="sym" x="478" y="-46">H</text>
+  <text class="sym" x="430" y="20">H</text>
+  <text class="sym" x="484" y="48">H</text>
+  <text class="sym" x="528" y="14">H</text>
+  <line class="bond" x1="478" y1="-22" x2="478" y2="-42"/>
+  <line class="bond" x1="467.1" y1="-5" x2="440" y2="7.4"/>
+  <polygon points="479.4,1.9 475.5,27.9 489.4,26.3" fill="#222"/>
+  <line x1="493.6" y1="-3.8" x2="494.3" y2="-6" stroke="#222" stroke-width="1.6"/>
+  <line x1="497.8" y1="-1.2" x2="499.2" y2="-5.7" stroke="#222" stroke-width="1.6"/>
+  <line x1="501.9" y1="1.3" x2="504.1" y2="-5.3" stroke="#222" stroke-width="1.6"/>
+  <line x1="506.1" y1="3.9" x2="508.9" y2="-5" stroke="#222" stroke-width="1.6"/>
+  <line x1="510.3" y1="6.5" x2="513.8" y2="-4.7" stroke="#222" stroke-width="1.6"/>
+  <line x1="514.4" y1="9" x2="518.7" y2="-4.3" stroke="#222" stroke-width="1.6"/>
+  <text class="c s" x="478" y="66">正四面体形</text>
+  </g>
+  <text class="c b" x="622" y="571">109.5°</text>
+  <line class="grid" x1="12" y1="636" x2="668" y2="636"/>
+  <text x="12" y="670" class="s">電子式の点: 黒 ＝ 共有電子対　青 ＝ 非共有電子対　／　形の模式図: くさび ＝ 手前　破線 ＝ 奥</text>
+  <text x="12" y="690" class="s">構造式は原子のつながりだけを表し、形は表さない（H−O−H と書いても直線ではない）</text>
+</svg>

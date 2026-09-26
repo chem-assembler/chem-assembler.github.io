@@ -159,7 +159,7 @@
         /* ★ 電子対でみる分子のかたち（2026-09-26・公開①・DESIGN_bond_app.md §5-2）。id はお題（molecules.json の id）。
            `NH4+` の + は appHref が %2B にする（受け側は空白に読まれた形も戻して受ける）。
            受け側の表は shape/tests.js の refReceivers（自分宛てのリンクだけを見る）。埋め込み可 */
-        'shape': { path: '/shape/', param: 'm', embeddable: true }
+        'shape': { path: '/shape/', param: 'm', embeddable: true, views: ['shape'] }
     };
     /* 受け口へ渡す id の綴り。⚠ `MnO4-`（化学式）・`MnO4_red,Fe2_ox`（半反応式の列）・`u-gas` を受ける */
     var APP_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.,+-]*$/;
@@ -171,9 +171,11 @@
      *  ★ `embed` が真なら **`embed=1` を足すだけ**（DESIGN_reference_centric.md §2-4 (1)）——
      *    ⛔ 埋め込み専用の引数は作らない。⛔ `?v=` も付けない（§2-6）。
      *  ⚠ 素の href（`embed` なし）は**残す** —— 面Bのリンクと「▶ 大きな画面で開く」がそれを使う。 */
-    function appHref(app, id, pageId, embed, proc) {
+    /* ★ `view` … 開いたときの画面（2026-09-26・shape の「形」の画面から始める ＝ 結合角の縮み M6 に直接着く）。
+       proc と同じく受け口の台帳（APP_TARGETS の views）が名指しした値だけ。埋め込みでも素のリンクでも同じ値を渡す */
+    function appHref(app, id, pageId, embed, proc, view) {
         var t = APP_TARGETS[app];
-        var from = (proc ? 'proc=' + proc + '&' : '') + (embed ? 'embed=1&' : '') + APP_FROM + (pageId ? '&page=' + encodeURIComponent(pageId) : '');
+        var from = (proc ? 'proc=' + proc + '&' : '') + (view ? 'view=' + view + '&' : '') + (embed ? 'embed=1&' : '') + APP_FROM + (pageId ? '&page=' + encodeURIComponent(pageId) : '');
         if (t.param === '#') return t.path + '?' + from + (id ? '#' + id : '');
         return t.path + '?' + (id ? t.param + '=' + encodeURIComponent(id).replace(/%2C/g, ',') + '&' : '') + from;
     }
@@ -614,7 +616,7 @@
                        押すまで iframe を作らないのは面Aの生成器の仕事で、ここは「埋めてよい相手か」だけを見る。
            ⚠ 付けてよいのは `app:` の行き先が `embeddable` の受け口のときだけ（それ以外は赤）。
            ⚠ `embedHref` も**書く欄ではない**（`href` と同じく読むときに焼き込む）。 */
-        link: { order: ['to', 'open', 'formula', 'cls', 'app', 'id', 'proc', 'embed', 'text'], req: ['text'], list: [], prose: ['text'], bool: ['embed'] },
+        link: { order: ['to', 'open', 'formula', 'cls', 'app', 'id', 'proc', 'view', 'embed', 'text'], req: ['text'], list: [], prose: ['text'], bool: ['embed'] },
 
         stageTable: { order: ['variant', 'series', 'source', 'caption'], req: ['series', 'source', 'caption'], list: ['series'], prose: ['caption'] },
         mechanismTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
@@ -1408,7 +1410,15 @@
                         fail(where, ':::link の proc は ' + tgt.procs.join(' / ') + ' のどれかです（いまは「' + b.proc + '」）');
                     }
                 }
-                b.href = appHref(b.app, b.id, CTX_PAGE, false, b.proc);
+                if (Object.prototype.hasOwnProperty.call(b, 'view')) {
+                    if (!tgt || !tgt.views) {
+                        fail(where, ':::link の view は、開く画面を選べる受け口にだけ書きます（いまの app は「' + b.app + '」）'
+                            + '\n    ★ 書けるのは ' + Object.keys(APP_TARGETS).filter(function (k) { return APP_TARGETS[k].views; }).join(' / '));
+                    } else if (tgt.views.indexOf(b.view) < 0) {
+                        fail(where, ':::link の view は ' + tgt.views.join(' / ') + ' のどれかです（いまは「' + b.view + '」）');
+                    }
+                }
+                b.href = appHref(b.app, b.id, CTX_PAGE, false, b.proc, b.view);
             }
             /* ★★ 埋め込み（`embed: true`・DESIGN_reference_centric.md §2-4）。
                ⚠⚠ **相手が `embed=1` を知らないと、参考書の中に看板と帯がもう1枚出る**（しかも
@@ -1429,7 +1439,7 @@
                 }
                 /* ★ 焼き込むのは**素の href に `embed=1` を足しただけ**のもの（§2-4 (1)）。
                    ⚠ `href`（素のまま）も残す —— 部品の下の「▶ 大きな画面で開く」がそれを使う。 */
-                b.embedHref = appHref(b.app, b.id, CTX_PAGE, true, b.proc);
+                b.embedHref = appHref(b.app, b.id, CTX_PAGE, true, b.proc, b.view);
             }
             if (b.to && !ANCHOR_RE.test(b.to)) {
                 fail(where, ':::link の to は参考書のページ id です（英小文字・数字・ハイフン。いまは「' + b.to + '」）');

@@ -56163,7 +56163,7 @@
                     assert(btn, `${where}: 埋め込みの箱に押しものが無い`);
                     /* ★ URL は**台帳から組んだもの**（原稿に URL を書かない・§2-4 (1)）。
                        ⚠ 手で書き換えても、台帳を変えて焼き忘れてもここが赤くなる。 */
-                    const want = RM.appHref(emb.app, emb.id, p.id, true, emb.proc);
+                    const want = RM.appHref(emb.app, emb.id, p.id, true, emb.proc, emb.view);
                     assert(btn.getAttribute('data-embed') === want,
                         `${where}: 埋め込みの URL が台帳と違う\n    焼いたもの: ${btn.getAttribute('data-embed')}\n    台帳から  : ${want}`);
                     assert(/[?&]embed=1(&|$)/.test(want), `${where}: 埋め込みの URL に embed=1 が付いていない（${want}）`);
@@ -58048,7 +58048,7 @@
         const pages = JSON.parse(await grab('reference.json', 'reference.json'));
         pages.forEach(p => (p.blocks || []).forEach(b => {
             if (b.kind !== 'link' || !b.app) return;
-            assert(b.href === RM.appHref(b.app, b.id, p.id, false, b.proc), `${p.id}: app: ${b.app} の href が台帳と違う（node tools/gen-reference.mjs）`);
+            assert(b.href === RM.appHref(b.app, b.id, p.id, false, b.proc, b.view), `${p.id}: app: ${b.app} の href が台帳と違う（node tools/gen-reference.mjs）`);
         }));
 
         /* ── ③ 区分 ── */
