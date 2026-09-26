@@ -612,6 +612,9 @@ let spawnedE = 0;       // これまでに出した e⁻ の数（プールの�
 let arrivedE = [];      // 正極まで着いた e⁻（受け渡し待ち）
 let deposited = 0;
 let gasUp = 0;          // 泡になって上がった気体の数（置き場所をずらすのに使う）
+/* 液の中へ広がったイオン・分子の数（極ごと）。行き先の x を2列に振り分ける（2026-09-26）。
+   同じ x を目指すと、1単位に2個できる生成物（燃料電池の負極の 2H₂O）が縦 24 間隔で重なって数えられなかった */
+let ionOut = [0, 0];
 let clock = 0;          // 再生開始からの秒数（advance で決定論的に進む）
 let nextRelease = 0;
 
@@ -742,6 +745,7 @@ function layoutRun() {
   cleared = false;
   clearEl.hidden = true;
   gasUp = 0;
+  ionOut = [0, 0];
   /* 自分で足し合わせた段3は、盤面を並べ直しても閉じない（K）。
      「足す → つないで確かめる」の行き来で消えると、作った式を見ながら見比べられない。
      倍率を変えたときだけは onMultChange が sumOpened を倒すので、ちゃんと閉じる */
@@ -805,7 +809,10 @@ function spawnProducts(side, i, baseY) {
         flash(plateFaceX(i), dy, "#7fb08a");
         deposited++;
       } else {
-        spawn("ion", t.sp, plateFaceX(i), y, { tx: driftX(i), ty: y });
+        // 2列目は仕切り（素焼き板）から離れる向きへ 32（粒の直径 30 ＋ すきま）
+        const away = i === 0 ? -1 : 1;
+        spawn("ion", t.sp, plateFaceX(i), y, { tx: driftX(i) + away * (ionOut[i] % 2) * 32, ty: y });
+        ionOut[i]++;
         flash(plateFaceX(i), y, "#f2c14e");
       }
     }
@@ -817,6 +824,9 @@ function step(dt) {
      「発生した」と言うことになる）。判定はもう済んでいるので数には影響しない。 */
   if (phase === "done") {
     for (const x of particles) if (x.kind === "gas") { stepToward(x, x.tx, x.ty, GAS_SPEED, dt); moveEl(x); }
+    /* 液の中へ広がるイオンも行き先まで動かしきる（2026-09-26）。最後の単位でできたイオンは、
+       できた直後に判定が済むので、止めると板の面に積み重なったまま残る（燃料電池の正極の 4OH⁻） */
+      else if (x.kind === "ion") { stepToward(x, x.tx, x.ty, ION_SPEED, dt); moveEl(x); }
     return;
   }
   if (phase !== "running") return;
