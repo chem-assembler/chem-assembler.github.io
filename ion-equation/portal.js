@@ -211,9 +211,10 @@ function buildSeriesIndex() {
       a.append(el("span", "chipNo", String(s.no)), el("span", "chipMode", info.label),
                el("span", "chipTitle", s.title));
       // 難度は札。**系列からは抜かない**（有機の酸化は酸化還元そのもの）
-      if (typeof isOrganicStage === "function" && isOrganicStage(s.stage)) {
-        a.appendChild(el("span", "chipLevel", ORGANIC_TAG));
-      }
+      // 札の文字は model.js の stageLevelTag（有機（発展）・参考（発展））。帯と見出しと同じもの
+      const lv = typeof stageLevelTag === "function" ? stageLevelTag(s.stage)
+        : (typeof isOrganicStage === "function" && isOrganicStage(s.stage) ? ORGANIC_TAG : null);
+      if (lv) a.appendChild(el("span", "chipLevel", lv));
       if (!info.param && MODE_HINT[s.mode]) hints.add(MODE_HINT[s.mode]);
       list.appendChild(a);
     }

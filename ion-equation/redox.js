@@ -923,7 +923,8 @@ function showClear() {
     d.className = "clearAfter";
     d.id = "clearAfter";
     const say = (terms) => terms.map((x) => (x.n > 1 ? x.n : "") + SPECIES[x.sp].disp).join(" ＋ ");
-    d.textContent = `${af.lead}: ${say(af.left)} → ${say(af.right)} `;
+    /* 式を持たない1行もある（さらし粉・I-0180: 複塩の化学反応式は組まず、言葉で言うだけ） */
+    d.textContent = af.left ? `${af.lead}: ${say(af.left)} → ${say(af.right)} ` : `${af.lead}。`;
     if (af.ref) {
       const a = document.createElement("a");
       a.href = "../reference/" + af.ref + "/" + (af.anchor ? "#" + af.anchor : "");
@@ -1272,6 +1273,14 @@ function buildSheetSkeleton() {
   SHEET.ionic  = sheetRow(calcSheetEl, "rowIonic");
   // ③の係数を自分で書いているあいだの判定文と、行き止まりを作らないための降参口（v193）
   SHEET.calcMsg = sheetSpan(calcSheetEl, "calcMsg", "footNote");
+  /* 全体を割る段（I-0180・さらし粉）。足した式の係数が全部同じ数で割れる回だけ出す（updateDivRows）。
+     ÷〔？〕) の行 → 線 → 割ったあとの式。⑧〔全体を整数倍〕の逆向き */
+  SHEET.divAdd  = sheetRow(calcSheetEl, "rowDiv");
+  SHEET.divRule = sheetRule(calcSheetEl, "ruleDiv");
+  SHEET.divDone = sheetRow(calcSheetEl, "rowDivDone");
+  SHEET.divMsg  = sheetSpan(calcSheetEl, "divMsg", "footNote");
+  divBuiltKey = null;
+  hideDivRows();
   /* ⚠ 2026-09-08: ここに④⑤の行（head4 / rowAdd / addMsg / rowWork / roleWrap＋#molFigure /
      rule2 / head5 / rowMol）があった。**筆算はイオン反応式（③）で終わり**にして、
      ④⑤⑥は下の #stepBottles 1本に畳んだ（DESIGN_redox.md「筆算の④⑤を畳む」）。
@@ -1609,12 +1618,110 @@ function updateSheetTail() {
      A を選んでいるあいだは、液性を直し終えるまで③を出さない（直した式を足すので） */
   const path = liqPathNow();
   const aReady = path !== "A" || liqAllDone();
-  updateLiqStep(path === "A" ? balanced : (!!chk.ok && !calcPending()));
+  // B の道は、全体を割る段がある回（I-0180）は割り終えてから
+  updateLiqStep(path === "A" ? balanced : (!!chk.ok && !calcPending() && divDone()));
   revealStep(stepCalcEl, balanced && aReady);
-  if (!balanced || !aReady) return;
+  if (!balanced || !aReady) { hideDivRows(); return; }
   updateSumRows(chk);
   updateIonicRow(chk);
   updateCalcMsg();
+  updateDivRows(chk);
+}
+
+/* ================================================================================
+   全体を割る段（2026-09-26・I-0180・さらし粉）
+   ★ 割る数は model.js の eqDivisorOf が式から導く（データに書かない）。判定は divideJudge。
+   ★ ③の係数を書き終えてから出す（書いている途中に出すと、割ったあとの式から③の答えが漏れる）。
+   ⚠ 既存のステージはどれも割る数が 1 ＝ この行は1行も出ない
+   ================================================================================ */
+let divVal = null;        // 割る数（人が書いた数）
+let divBuiltKey = null;   // 入力欄を作り直した「ステージ／倍率／液性の位置」の組
+
+/* いまの③の式（割る前）と割る数 */
+function divEqNow() { return combineHalves(calcStage(), mult[0], mult[1]); }
+function divNeeded() {
+  const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
+  return !!chk.ok && eqDivisorOf(divEqNow()) > 1;
+}
+/* 割る段が済んだか（要らない回は済んだものとする） */
+function divDone() { return !divNeeded() || divideJudge(divEqNow(), divVal).ok; }
+
+function hideDivRows() {
+  if (!SHEET.divAdd) return;
+  SHEET.divAdd.row.hidden = true;
+  SHEET.divRule.hidden = true;
+  SHEET.divDone.row.hidden = true;
+  SHEET.divMsg.hidden = true;
+}
+
+function updateDivRows(chk) {
+  if (!SHEET.divAdd) return;
+  if (!chk.ok || !divNeeded() || calcPending()) { hideDivRows(); return; }
+  const key = `${stage().id}/${mult[0]}/${mult[1]}/${liqPathNow() || "-"}`;
+  const o = SHEET.divAdd;
+  if (divBuiltKey !== key) {
+    divBuiltKey = key;
+    divVal = null;
+    o.mark.innerHTML = "";
+    o.mark.append(document.createTextNode("÷"));
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.min = "1";
+    inp.max = "99";
+    inp.inputMode = "numeric";
+    inp.className = "fcoefIn divIn";
+    inp.id = "divIn";
+    inp.placeholder = "？";
+    inp.setAttribute("aria-label", "全体を割る数");
+    inp.oninput = () => {
+      const v = parseInt(inp.value, 10);
+      divVal = Number.isInteger(v) && v >= 1 ? v : null;
+      refreshDiv();
+      updateSheetTail();
+    };
+    o.mark.append(inp, document.createTextNode(")"));
+    o.left.className = "cLeft halfFormula";
+    o.right.className = "cRight halfFormula";
+    o.left.textContent = "";
+    o.right.textContent = "";
+    o.arrow.textContent = "";
+    o.note.innerHTML = "";
+    const tag = document.createElement("span");
+    tag.className = "rowTag";
+    tag.textContent = "全体を同じ数で割る";
+    o.note.appendChild(tag);
+  }
+  o.row.hidden = false;
+  refreshDiv();
+}
+
+function refreshDiv() {
+  const eq = divEqNow();
+  const j = divideJudge(eq, divVal);
+  const inp = document.getElementById("divIn");
+  if (inp) inp.classList.toggle("ng", j.kind === "short" || j.kind === "over");
+  SHEET.divRule.hidden = !j.ok;
+  SHEET.divDone.row.hidden = !j.ok;
+  SHEET.divDone.row.classList.toggle("doneRow", !!j.ok);
+  if (j.ok) {
+    const d = SHEET.divDone;
+    const r = divideEq(eq, eqDivisorOf(eq));
+    d.mark.textContent = "";
+    d.arrow.textContent = "→";
+    d.left.className = "cLeft halfFormula";
+    d.right.className = "cRight halfFormula";
+    renderTerms(d.left, r.left, stageOxChanges(), null);
+    renderTerms(d.right, r.right, stageOxChanges(), null);
+    d.note.innerHTML = "";
+    const tag = document.createElement("span");
+    tag.className = "rowTag strong";
+    tag.textContent = "イオン反応式";
+    d.note.appendChild(tag);
+  }
+  /* 何も書いていないあいだは、なぜ割るのかを1行（答えの数は言わない） */
+  const text = divVal === null ? "係数がすべて同じ数で割り切れる。全体を割って、いちばん小さい整数にしよう" : j.text;
+  setStatusMsg(SHEET.divMsg, text, j.kind === "ok" ? "ok" : divVal === null ? "info" : "ng");
+  SHEET.divMsg.hidden = !text;
 }
 
 /* ================================================================================
@@ -1658,7 +1765,8 @@ function liqTargets() {
       tag: key === "ox" ? "【還元剤】の式" : "【酸化剤】の式",
     }));
   }
-  return [{ key: "sum", eq: combineHalves(st, mult[0], mult[1]), tag: "③の式" }];
+  // ★ 全体を割る段がある回（I-0180）は、割ったあとの式を直す
+  return [{ key: "sum", eq: sumOf(st, mult[0], mult[1]), tag: "③の式" }];
 }
 function liqAllDone() {
   const s = liqStep();
@@ -1702,6 +1810,8 @@ function resetBelowCalc() {
   calcVals = { ox: {}, red: {}, sum: {} };
   calcDone = false;
   calcKey = null;
+  divVal = null;          // 全体を割る段（I-0180）も白紙に
+  divBuiltKey = null;
 }
 
 function updateLiqStep(show) {
@@ -2118,8 +2228,10 @@ function updateIonicRow(chk) {
   renderTerms(o.left, combined.left, stageOxChanges(), null, calcSlots("sum", 0));
   renderTerms(o.right, combined.right, stageOxChanges(), null, calcSlots("sum", combined.left.length));
   const tag = document.createElement("span");
-  tag.className = "rowTag strong";
-  tag.textContent = "イオン反応式";
+  // 全体を割る段がある回（I-0180）は、割ったあとの式がイオン反応式。ここは「足し合わせた式」
+  const toDivide = !!chk.ok && eqDivisorOf(combined) > 1;
+  tag.className = "rowTag" + (toDivide ? "" : " strong");
+  tag.textContent = toDivide ? "足し合わせた式" : "イオン反応式";
   o.note.appendChild(tag);
   if (!chk.ok) {
     const w = document.createElement("span");
@@ -2236,7 +2348,7 @@ function updateBottleStep() {
   /* ③の係数を筆算の中で書いているあいだは、この段も出さない。
      ④の問いに**係数がそのまま入っている**ので、出したままにすると答えが下から漏れる */
   /* ★ 液性の段がある回は、書き直し終えるまで④も出さない（④の柱は書き直したあとの式の左辺・I-0178） */
-  const rows = (chk.ok && !calcPending() && liqAllDone()) ? bottleRows() : null;
+  const rows = (chk.ok && !calcPending() && divDone() && liqAllDone()) ? bottleRows() : null;
   revealStep(stepBottlesEl, !!rows);
   if (!rows) {
     revealStep(stepHissanEl, false);
@@ -3192,16 +3304,20 @@ function buildStageNav() {
     const b = document.createElement("button");
     b.textContent = String(i + 1);
     // 自由組み立て中はどのステージも開いていないので、印は付けない
-    const org = isOrganicStage(st);
-    b.className = ((!freeStage && !freeIdle && i === stageIdx) ? "active" : "") + (org ? " organic" : "");
-    b.title = stageLabel(i) + (org ? `（${ORGANIC_TAG}）` : "");
+    /* 札は有機（発展）のほか、参考（発展）もある（さらし粉・I-0180）。どれを貼るかは model.js の stageLevelTag。
+       色は同じ（どちらも「化学基礎の範囲の外」の印）。class は分ける（organic は有機だけ・refLevel は参考） */
+    const lv = stageLevelTag(st);
+    const org = !!lv;
+    b.className = ((!freeStage && !freeIdle && i === stageIdx) ? "active" : "") +
+      (isOrganicStage(st) ? " organic" : org ? " refLevel" : "");
+    b.title = stageLabel(i) + (org ? `（${lv}）` : "");
     // ヘッダーの「☰ 一覧」が読む行き先の名前（header-ui.js）。
     // title は指では出ないので、タッチでも読めるところに同じ中身を置く。
     /* **札もこの文字列に混ぜる**（header-ui.js は見た目係で中身を知らない約束なので、
        区別のために向こうを書き換えない ＝ index / condition と共有したままにできる）。
        ⚠ 札の文字は見出しの札と**1文字も違えない**こと —— 既存の STAGELIST テストが
        「一覧に出ていた名前が、開いたステージの題に含まれる」を見張っている（良い規則なので合わせる） */
-    b.dataset.label = st.title + (org ? ORGANIC_TAG : "");
+    b.dataset.label = st.title + (org ? lv : "");
     // 自由組み立てからでも収録ステージへ戻れる（行き止まりを作らない。§4-1）
     b.onclick = () => { freeStage = null; freeIdle = false; stageIdx = i; initStage(); };
     stageNavEl.appendChild(b);
@@ -3835,11 +3951,14 @@ function initStage() {
     : (freeIdle ? "<strong>自由に組み合わせる</strong>" : `<strong>${stageLabel(stageIdx)}</strong>`);
   /* 【F】有機（発展）の札。**化学基礎の範囲ではない**ことを見出しの隣で言う。
      ここだけに出すと帯を見ているときに分からないので、帯の番号と「☰ 一覧」にも同じ印を出す */
-  if (isOrganicStage(stage())) {
+  const lvTag = stageLevelTag(stage());
+  if (lvTag) {
     const tag = document.createElement("span");
-    tag.className = "levelTag organic";
-    tag.textContent = ORGANIC_TAG;
-    tag.title = "化学基礎の範囲ではなく、有機化合物の酸化として扱う段";
+    tag.className = "levelTag " + (isOrganicStage(stage()) ? "organic" : "refLevel");
+    tag.textContent = lvTag;
+    tag.title = isOrganicStage(stage())
+      ? "化学基礎の範囲ではなく、有機化合物の酸化として扱う段"
+      : "化学基礎の範囲ではなく、参考として扱う段";
     stageTitleEl.appendChild(tag);
   }
   buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
@@ -3904,7 +4023,23 @@ window.RedoxEq = {
         head: liqHeadEl ? liqHeadEl.textContent : "",
       },
       ionic: ionicOf(stage(), mult[0], mult[1]),
+      /* 全体を割る段（I-0180）。need は割る数（1 なら段は出ない）、shown は ÷ の行が出ているか */
+      div: {
+        need: eqDivisorOf(combineHalves(calcStage(), mult[0], mult[1])),
+        shown: !!(SHEET.divAdd && !SHEET.divAdd.row.hidden),
+        val: divVal,
+        done: divDone(),
+        doneShown: !!(SHEET.divDone && !SHEET.divDone.row.hidden),
+        msg: SHEET.divMsg && !SHEET.divMsg.hidden ? SHEET.divMsg.textContent : "",
+      },
     };
+  },
+  /* 全体を割る数を書く（画面の入力欄と同じ道を通す） */
+  setDiv(k) {
+    const inp = document.getElementById("divIn");
+    if (!inp) throw new Error("全体を割る欄が出ていない");
+    inp.value = k === null ? "" : String(k);
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
   },
   /* 自由組み立てモード（?free=1）のフック。判定そのものは model.js が持つので、
      ここで見るのは「画面に何が出たか」だけ。 */
