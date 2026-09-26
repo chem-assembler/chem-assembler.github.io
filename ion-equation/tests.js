@@ -3139,14 +3139,14 @@ function runModelTests() {
   t("LIQ 類題の一覧: 3つのまとまり・行き先が実在・いま開いているステージは外す", () => {
     const all = liquidRelatedFor("r1");
     assert(all.map((g) => g.key).join() === "A,B,C", "まとまりが A・B・C でない: " + all.map((g) => g.key).join());
-    assert(all.map((g) => g.items.length).join() === "6,5,1", "件数が 6・5・1 でない: " + all.map((g) => g.items.length).join());
-    const exist = { condition: CONDITION_STAGES, electrolysis: ELECTROLYSIS_STAGES, redox: REDOX_STAGES };
+    assert(all.map((g) => g.items.length).join() === "9,5,1", "件数が 9・5・1 でない（I-0181 で A に燃料電池の3件）: " + all.map((g) => g.items.length).join());
+    const exist = { condition: CONDITION_STAGES, electrolysis: ELECTROLYSIS_STAGES, redox: REDOX_STAGES, battery: BATTERY_STAGES };
     for (const g of all) {
       assert(g.head && g.head.trim(), g.key + ": 見出しが空");
       for (const it of g.items) {
         assert(exist[it.page].some((s) => s.id === it.id), g.key + ": 行き先 " + it.page + ":" + it.id + " が無い");
         assert(it.title && it.title.trim(), g.key + ": 題が空: " + it.id);
-        assert(/^(condition|electrolysis|redox)\.html\?(s|rxn)=/.test(it.href), g.key + ": 行き先の形が違う: " + it.href);
+        assert(/^(condition|electrolysis|redox|battery)\.html\?(s|rxn)=/.test(it.href), g.key + ": 行き先の形が違う: " + it.href);
       }
     }
     // 酸性で直すのはニトロベンゼン（C）、A の最後は rs4 を A の道で開く口
@@ -3155,7 +3155,11 @@ function runModelTests() {
     // いま開いているステージは外す（rs4 なら A の口も B の行も消える・ra1 なら C ごと消える）
     const on4 = liquidRelatedFor("rs4");
     assert(!on4.some((g) => g.items.some((it) => it.page === "redox" && it.id === "rs4")), "開いている rs4 が一覧に残る");
-    assert(on4.map((g) => g.items.length).join() === "5,4,1", "rs4 を外した件数が違う: " + on4.map((g) => g.items.length).join());
+    // 燃料電池（I-0181）: 両極の練習（condition b5・b6）と電池のステージ（battery b3）が A にある
+    assert(["condition:b5", "condition:b6", "battery:b3"].every((k) => all[0].items.some((it) => it.page + ":" + it.id === k)),
+      "A に燃料電池の3件がそろっていない: " + all[0].items.map((it) => it.page + ":" + it.id).join());
+    assert(all[0].items.find((it) => it.page === "battery").href === "battery.html?s=b3", "燃料電池の行き先が違う");
+    assert(on4.map((g) => g.items.length).join() === "8,4,1", "rs4 を外した件数が違う: " + on4.map((g) => g.items.length).join());
     assert(liquidRelatedFor("ra1").map((g) => g.key).join() === "A,B", "ra1 を開いているのに C が残る");
     // 橋は液性もそろえる: 酸性で選んだ O₃ × KI から中性の rs5 へは渡らない
     assert(stagesForHalves("I_ox", "O3_red", "acid").length === 0, "酸性の O₃ × KI から中性の rs5 へ橋がかかる");
@@ -8770,8 +8774,8 @@ async function runRedoxUITests(iframe) {
     assert(box && !doc.getElementById("stepLiq").hidden, "液性の段が出ていない");
     const lists = [...box.querySelectorAll(".liqMoreList")];
     assert(lists.map((u) => u.dataset.group).join() === "A,B,C", "まとまりが A・B・C でない");
-    assert(lists.map((u) => u.querySelectorAll("li").length).join() === "5,4,1",
-      "件数が 5・4・1 でない（rs4 を外していない？）: " + lists.map((u) => u.querySelectorAll("li").length).join());
+    assert(lists.map((u) => u.querySelectorAll("li").length).join() === "8,4,1",
+      "件数が 8・4・1 でない（rs4 を外していない？）: " + lists.map((u) => u.querySelectorAll("li").length).join());
     const links = [...box.querySelectorAll(".liqMoreList a")];
     assert(!links.some((a) => a.dataset.page === "redox" && a.dataset.id === "rs4"), "開いている rs4 が一覧に出ている");
     // 1行1件・字は本文と同じ大きさ（小さい字の説明を積み増さない）
@@ -8780,7 +8784,8 @@ async function runRedoxUITests(iframe) {
       assert(parseFloat(win.getComputedStyle(a).fontSize) >= 14, "類題の字が小さすぎる: " + win.getComputedStyle(a).fontSize);
     }
     const hrefs = links.map((a) => a.getAttribute("href"));
-    for (const h of ["condition.html?s=b1", "electrolysis.html?s=e6", "redox.html?rxn=rs5", "redox.html?rxn=ra1"]) {
+    for (const h of ["condition.html?s=b1", "electrolysis.html?s=e6", "redox.html?rxn=rs5", "redox.html?rxn=ra1",
+      "condition.html?s=b5", "condition.html?s=b6", "battery.html?s=b3"]) {
       assert(hrefs.includes(h), "類題に " + h + " が無い: " + hrefs.join(" "));
     }
     // ra1 を開いているときは C（酸性）のまとまりごと出ない

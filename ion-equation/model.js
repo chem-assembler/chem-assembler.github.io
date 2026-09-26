@@ -4771,12 +4771,14 @@ function ionicOf(stage, a, b) {
 /* 類題・参考の一覧（液性の段の下・DESIGN_redox.md「追加の収録と類題の一覧」）。
    収録ステージへのリンクで、3つのまとまりに分ける。**題は各モードのステージから引く**（ここに書き写さない。
    title を持つのは「同じステージを別の道で開く」rs4 の A だけ）。
-   ⚠ アルカリ形燃料電池は battery.html にステージが無いので入れていない（電極の式は半反応式の一覧にだけある） */
+   ★ アルカリ形燃料電池（I-0181）: 両極を書き直す練習（condition b5・b6）と、電池のステージ（battery b3）を A に入れた */
 const LIQUID_RELATED = [
   { key: "A", head: "半反応式の段で直す", items: [
     { page: "condition", id: "b1" }, { page: "condition", id: "b2" },
     { page: "condition", id: "b3" }, { page: "condition", id: "b4" },
+    { page: "condition", id: "b5" }, { page: "condition", id: "b6" },
     { page: "electrolysis", id: "e6" },
+    { page: "battery", id: "b3" },
     { page: "redox", id: "rs4", liq: "A", title: "過マンガン酸カリウム（中性）を半反応式のうちに直す" },
   ] },
   { key: "B", head: "足し合わせた後で直す（塩基性）", items: [
@@ -4790,6 +4792,7 @@ const LIQUID_RELATED = [
 const LIQUID_RELATED_PAGES = {
   condition:    { file: "condition.html",    param: "s",   stages: () => CONDITION_STAGES },
   electrolysis: { file: "electrolysis.html", param: "s",   stages: () => ELECTROLYSIS_STAGES },
+  battery:      { file: "battery.html",      param: "s",   stages: () => BATTERY_STAGES },
   redox:        { file: "redox.html",        param: "rxn", stages: () => REDOX_STAGES },
 };
 /* いま開いている酸化還元ステージ（currentId）を外した一覧。空のまとまりは返さない。
