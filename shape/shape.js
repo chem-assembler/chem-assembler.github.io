@@ -1,6 +1,7 @@
 /* shape.js — 電子対でみる分子のかたち（shape）の画面。M1: 原子を置く・タップで結合・電子式⇄構造式・判定・お題。M2: 形を見る（中心 → まとまり → 配置 → 形・2D と 3D）。M3: 配位結合（青い対 → H⁺）。
    M4（公開②・発展）: 電子不足（BF₃）・超原子価（青い対 →「ほどく」: PCl₅・SF₆）・三方両錐・正八面体。
    M6（発展）: 結合角の縮み（CH₄・NH₃・H₂O の形の画面で「反発で縮める」。数値は教科書の実測値）。
+   M5（公開③・発展）: 錯イオン（金属イオン4種・出来合いの配位子・青い対 → 金属イオン・形は金属イオンの表で引く・電荷は和）。
    設計の正は DESIGN_bond_app.md。化学の判断は model.js（window.ChemShape.model）だけが持つ。
    ここが持つのは「見た目」: 原子の位置・4つの側（スロット）・描画・タップ。
    ⚠ グローバルは window.ChemShape の1つだけ（IIFE・§2）。 */
@@ -58,7 +59,12 @@
      ================================================================ */
   var SVGNS = 'http://www.w3.org/2000/svg';
   var VIEW_W = 400, VIEW_H = 300;
+  /* 錯イオン（M5）の盤は広く取る: 金属イオンのまわりに配位子が4〜6個・それぞれに H や N がぶら下がるので、
+     400×300 には収まらない。viewBox だけを広げる（同じ縦横比 4:3 ・台の画面上の大きさは同じ ＝ 高さは変わらない）。
+     タップの座標は getScreenCTM で読むので、広げても当たり判定はそのまま正しい */
+  var SMALL = { w: 400, h: 300 }, BIG = { w: 560, h: 420 };
   var L = 60;              // 結合した2原子の中心の距離（viewBox 単位）
+  var LM = 75;             // 金属イオンと配位子のあいだ（M5）。隣の配位子の H どうしが重ならない長さ
   var HIT = 28;            // 原子の的の半径（viewBox 単位）。下で「CSS 22px 以上」も保証する（直径 44px）
   var TAP_SLOP = 8;        // 指がこれ以上動いたらタップではなく移動（client px・DESIGN_hit_areas.md §8-3）
   var MARGIN = 22;         // 原子を台の端から離す量
@@ -133,10 +139,45 @@
     return s;
   }
 
-  // 組む途中の「まとまり」: 結合相手 ＋ 非共有電子対 ＋ 不対電子（1個ずつ）
+  // 組む途中の「まとまり」: 結合相手 ＋ 非共有電子対 ＋ 不対電子（1個ずつ）。
+  // 金属イオン（M5）は配位数ぶんの枠（結合相手 ＋ 空き）＝ Ag⁺ は一直線・Cu²⁺・Zn²⁺ は十字・Fe³⁺ は 60° おき
   function groups(id) {
     var A = M.atomOf(st.mol, id);
+    if (M.isMetal(A)) return M.bondsOf(st.mol, id).length + A.vacancy;
     return M.bondsOf(st.mol, id).length + A.lp + A.un;
+  }
+  function isMetalId(id) { return M.isMetal(M.atomOf(st.mol, id)); }
+  function metalLabel(a) { return M.PARTS[a.part].label; }
+  // 盤の上の金属イオン（M5）
+  function metalsOnBoard() { return st.mol.atoms.filter(function (a) { return M.isMetal(a); }); }
+  // まだ空きのある受け手の名前（「わたす相手（Cu²⁺）」の声かけ用）
+  function acceptorNames() {
+    var seen = [];
+    st.mol.atoms.forEach(function (a) {
+      if (!(a.vacancy > 0)) return;
+      var nm = a.part && M.PARTS[a.part] ? M.PARTS[a.part].label : a.el;
+      if (seen.indexOf(nm) < 0) seen.push(nm);
+    });
+    return seen.join('・') || 'H⁺';
+  }
+
+  /* 盤の広さ（M5）: 金属イオンが盤にあれば広い盤。切り替えるときは、置いてある原子を新しい盤の中央へずらす */
+  function syncBoardSize(big) {
+    if (big === undefined) big = metalsOnBoard().length > 0;
+    var want = big ? BIG : SMALL;
+    if (want.w === VIEW_W && want.h === VIEW_H) return;
+    var dx = (want.w - VIEW_W) / 2, dy = (want.h - VIEW_H) / 2;
+    Object.keys(st.pos).forEach(function (k) { st.pos[k] = { x: st.pos[k].x + dx, y: st.pos[k].y + dy }; });
+    VIEW_W = want.w; VIEW_H = want.h;
+    svg.setAttribute('viewBox', '0 0 ' + VIEW_W + ' ' + VIEW_H);
+  }
+  /* 金属イオンに配位した原子の枠（M5）: 金属へ向かう1つ ＋ 残りを外向きの扇（±60°）に開く。
+     十字に開くと、隣り合う NH₃ の H どうしが金属の斜めの位置でぴったり重なる（Cu²⁺ の十字で踏んだ） */
+  function fanSlots(n, out) {
+    var r = [{ ang: norm(out + 180), k: null }];
+    var m = n - 1;
+    for (var k = 0; k < m; k++) r.push({ ang: norm(out + (m === 1 ? 0 : -60 + 120 * k / (m - 1))), k: null });
+    return r;
   }
   function openSlots(n, back) {
     var out = [];
@@ -164,7 +205,8 @@
 
   function pickSlot(id, ang) {
     var s = st.slots[id] || [];
-    var withPairs = M.openVacancy(st.mol) > 0 || canUnfoldHere(id);
+    // ⚠ CN⁻ の N（nd）の青い対は選ばせない（配位するのは C・M5）
+    var withPairs = (M.openVacancy(st.mol) > 0 && !M.atomOf(st.mol, id).nd) || canUnfoldHere(id);
     var cand = [];
     for (var k = 0; k < s.length; k++) if (s[k].k === 'u' || (withPairs && s[k].k === 'p')) cand.push(k);
     if (!cand.length) return null;
@@ -210,12 +252,14 @@
     return null;
   }
 
-  function relayout(anyId) {
+  // at … 置く場所（anyId がそこに来るように置く・M5 の配位子のパーツ）。無ければ台の中央へ
+  function relayout(anyId, at) {
     var comp = M.componentOf(st.mol, anyId);
     if (comp.length === 1) { st.slots[anyId] = looseSlots(anyId); return; }
+    // 根は金属イオンを先に（M5: [Ag(NH₃)₂]⁺ は N のほうが結合相手が多いが、組み直しの中心は Ag）
     var root = comp.slice().sort(function (a, b) {
       var ha = M.atomOf(st.mol, a).el === 'H' ? 1 : 0, hb = M.atomOf(st.mol, b).el === 'H' ? 1 : 0;
-      return (degree(b) - degree(a)) || (ha - hb) || (a - b);
+      return (isMetalId(b) - isMetalId(a)) || (degree(b) - degree(a)) || (ha - hb) || (a - b);
     })[0];
     var rel = {}; rel[root] = { x: 0, y: 0 };
     var slots = {};
@@ -238,7 +282,7 @@
         // まとまり4（正四面体）の原子の2本目の結合は、1本目の反対（180°）に置かない（H₂O・H₂O₂ は L 字 ＝ 109.5° を 90° で見せる）
         var bondAngs = slots[u].filter(function (sl) { return sl.k && typeof sl.k === 'object'; }).map(function (sl) { return sl.ang; });
         var opp = function (k) {
-          return (slots[u].length === 4 && bondAngs.length === 1 && angDist(slots[u][k].ang, bondAngs[0]) > 135) ? 1 : 0;
+          return (slots[u].length === 4 && !isMetalId(u) && bondAngs.length === 1 && angDist(slots[u][k].ang, bondAngs[0]) > 135) ? 1 : 0;
         };
         free.sort(function (p, q) {
           return (opp(p) - opp(q)) || (want === null ? 0 : angDist(slots[u][p].ang, want) - angDist(slots[u][q].ang, want));
@@ -254,9 +298,10 @@
         var ang = slots[u][pick].ang;
         slots[u][pick].k = { b: v };
         var d = dirOf(ang);
-        rel[v] = { x: rel[u].x + d.x * L, y: rel[u].y + d.y * L };
+        var len = (isMetalId(u) || isMetalId(v)) ? LM : L;
+        rel[v] = { x: rel[u].x + d.x * len, y: rel[u].y + d.y * len };
         inAng[v] = ang;
-        slots[v] = openSlots(groups(v), norm(ang + 180));
+        slots[v] = isMetalId(u) ? fanSlots(groups(v), ang) : openSlots(groups(v), norm(ang + 180));
         slots[v][0].k = { b: u };
         placedList.push(v);
         queue.push(v);
@@ -295,7 +340,8 @@
       });
     });
     comp.forEach(function (id) { st.slots[id] = slots[id]; st.pos[id] = { x: rel[id].x, y: rel[id].y }; });
-    centerComponent(comp); // 組んでいる分子を台の中央へ（ユーザー指摘: 分子が下に寄っていた）
+    if (at) shiftIds(comp, at.x - st.pos[anyId].x, at.y - st.pos[anyId].y);
+    else centerComponent(comp); // 組んでいる分子を台の中央へ（ユーザー指摘: 分子が下に寄っていた）
     clampComponent(comp);
     pushOthersAway(comp);
   }
@@ -334,18 +380,22 @@
   // 組み直した分子に重なったほかの分子を、近くの空いている所へ動かす
   function pushOthersAway(comp) {
     var inComp = new Set(comp);
+    // 錯イオン（M5）: 組んでいるイオンの [ ] の内側（＋少し）にはほかのパーツを置かない（括弧の線に H が重なった）
+    var box = null;
+    if (comp.some(isMetalId)) { var bb = bbox(comp); box = { x0: bb.minX - 44, x1: bb.maxX + 44, y0: bb.minY - 44, y1: bb.maxY + 44 }; }
     var done = new Set();
     st.mol.atoms.forEach(function (a) {
       if (inComp.has(a.id) || done.has(a.id)) return;
       var oth = M.componentOf(st.mol, a.id);
       oth.forEach(function (id) { done.add(id); });
       var fixed = st.mol.atoms.map(function (x) { return x.id; }).filter(function (id) { return oth.indexOf(id) < 0; });
-      var clash = oth.some(function (id) { return minDistTo(st.pos[id], comp) < L * 0.9; });
-      if (clash) moveToFree(oth, fixed);
+      var clash = oth.some(function (id) { return minDistTo(st.pos[id], comp) < L * 0.9 || inBox(st.pos[id], box); });
+      if (clash) moveToFree(oth, fixed, box);
     });
   }
 
-  function moveToFree(ids, fixed) {
+  function inBox(p, box) { return !!box && p.x > box.x0 && p.x < box.x1 && p.y > box.y0 && p.y < box.y1; }
+  function moveToFree(ids, fixed, box) {
     var ref = st.pos[ids[0]];
     var rl = ids.map(function (id) { return { id: id, x: st.pos[id].x - ref.x, y: st.pos[id].y - ref.y }; });
     var best = null, bestD = Infinity;
@@ -354,7 +404,7 @@
         var okAll = rl.every(function (r) {
           var p = { x: x + r.x, y: y + r.y };
           if (p.x < MARGIN || p.x > VIEW_W - MARGIN || p.y < MARGIN || p.y > VIEW_H - MARGIN) return false;
-          return minDistTo(p, fixed) >= L;
+          return minDistTo(p, fixed) >= L && !inBox(p, box);
         });
         if (!okAll) continue;
         var d = Math.hypot(x - ref.x, y - ref.y);
@@ -385,7 +435,8 @@
     return {
       mol: M.clone(st.mol),
       pos: JSON.parse(JSON.stringify(st.pos)),
-      slots: JSON.parse(JSON.stringify(st.slots))
+      slots: JSON.parse(JSON.stringify(st.slots)),
+      big: VIEW_W === BIG.w // 盤の広さ（M5）。位置はこの広さの座標で覚えている
     };
   }
   function pushHistory() {
@@ -394,8 +445,19 @@
   }
 
   function placeAtom(el, p) {
+    if (M.PARTS[el] && M.PARTS[el].metal) syncBoardSize(true); // 金属イオンを置くなら先に盤を広げる（M5）
     var at = p || freeSpot(); // 置く前に場所を決める（置いた後だと位置の無い原子を数えてしまう）
     var id = M.addAtom(st.mol, el);
+    if (M.LIGANDS[el]) {
+      // 出来合いの配位子（M5）: パーツの原子を組んだ姿で置く（配位する原子が at に来る）
+      M.componentOf(st.mol, id).forEach(function (k) { st.pos[k] = { x: at.x, y: at.y }; });
+      relayout(id, at);
+      var comp = M.componentOf(st.mol, id);
+      clampComponent(comp);
+      var fixed = st.mol.atoms.map(function (x) { return x.id; }).filter(function (k) { return comp.indexOf(k) < 0; });
+      if (comp.some(function (k) { return minDistTo(st.pos[k], fixed) < L * 0.9; })) moveToFree(comp, fixed);
+      return id;
+    }
     st.pos[id] = at;
     st.slots[id] = looseSlots(id);
     return id;
@@ -413,16 +475,25 @@
   // お題の原子を並べて置く（結合はしない）。台の真ん中を中心に並べる
   function setupBoard() {
     st.mol = M.create(); st.pos = {}; st.slots = {}; st.sel = null; st.history = []; st.notice = null; st.fresh = {};
-    st.view = 'build'; st.centerId = null; st.wasComplete = false; st.check = false;
+    st.view = 'build'; st.centerId = null; st.wasComplete = false; st.check = false; st.specIds = [];
     // 書き方: お題が既定を持てばそれ（PCl₅・SF₆ は構造式 ＝ 教科書は電子式を描かない・§3-5）、無ければ利用者が選んだもの
     var tg = !st.free && st.targets[st.taskIdx];
     st.mode = (tg && tg.mode && !st.modeFromUrl) ? tg.mode : st.userMode;
-    if (!st.free && st.targets[st.taskIdx]) {
-      var els = st.targets[st.taskIdx].atoms;
+    syncBoardSize(!!(tg && tg.complex));
+    if (tg && tg.complex) {
+      // 錯イオンのお題（M5）: 金属イオンを中央に、出来合いの配位子をまわりの輪に置く（まだ配位していない）
+      var ligs = tg.atoms.slice(1), cx = VIEW_W / 2, cy = VIEW_H / 2;
+      st.specIds.push(placeAtom(tg.atoms[0], { x: cx, y: cy }));
+      ligs.forEach(function (k, i) {
+        var a = -Math.PI / 2 + (i + 0.5) * 2 * Math.PI / ligs.length;
+        st.specIds.push(placeAtom(k, { x: cx + 195 * Math.cos(a), y: cy + 125 * Math.sin(a) }));
+      });
+    } else if (tg) {
+      var els = tg.atoms;
       var cols = Math.min(els.length, 3), rows = Math.ceil(els.length / 3);
       els.forEach(function (el, i) {
         var c = i % 3, r = Math.floor(i / 3);
-        placeAtom(el, { x: VIEW_W / 2 + (c - (cols - 1) / 2) * 110, y: VIEW_H / 2 + (r - (rows - 1) / 2) * 100 });
+        st.specIds.push(placeAtom(el, { x: VIEW_W / 2 + (c - (cols - 1) / 2) * 110, y: VIEW_H / 2 + (r - (rows - 1) / 2) * 100 }));
       });
     }
     update();
@@ -469,7 +540,19 @@
     var isPair = st.slots[id][slot].k === 'p';
     if (isPair && canUnfoldHere(id)) {
       say(M.openVacancy(st.mol) > 0 ? '「ほどく」を押すか、わたす相手（H⁺）をタップしよう' : '「ほどく」を押すと、青い対が赤い点2つになる', 'info');
-    } else say(isPair ? 'この対をわたす相手（H⁺）をタップしよう' : '相手の原子をタップしよう', 'info');
+    } else say(isPair ? 'この対をわたす相手（' + acceptorNames() + '）をタップしよう' : '相手の原子をタップしよう', 'info');
+  }
+
+  // 金属イオンが配位数で満杯のときの1行（M5）
+  function fullText(m) { return metalLabel(m) + ' の配位数は ' + M.METALS[m.part].cn + '。もうつながらない'; }
+  // 1つめのタップで選べる枠が無いときの理由（M5 で金属イオン・CN⁻ の N・満杯を足した）
+  function whyNotPick(A) {
+    if (M.isMetal(A)) return A.vacancy > 0 ? metalLabel(A) + ' は受け取る側。先に配位子の青い対をタップしよう' : fullText(A);
+    if (A.vacancy > 0) return 'H⁺ は電子をもたない。先に青い対をタップしよう';
+    if (A.nd && A.lp > 0) return 'CN⁻ は C の青い対でつなごう';
+    var full = metalsOnBoard().filter(function (m) { return !(m.vacancy > 0); })[0];
+    if (A.lp > 0 && full && !A.un) return fullText(full);
+    return 'この原子には不対電子がありません';
   }
 
   function tapAtom(id, ang) {
@@ -478,7 +561,7 @@
     if (!st.sel) {
       var s0 = pickSlot(id, ang);
       if (s0 === null) {
-        say(A.vacancy > 0 ? 'H⁺ は電子をもたない。先に青い対をタップしよう' : 'この原子には不対電子がありません');
+        say(whyNotPick(A));
         update();
         return;
       }
@@ -501,7 +584,9 @@
       var cd = M.canDonate(st.mol, st.sel.id, id);
       if (!cd.ok) {
         if (cd.reason === 'no-vacancy' && canUnfoldHere(st.sel.id) && M.openVacancy(st.mol) === 0) say('青い対は「ほどく」で赤い点にしてからつなごう');
-        else say(cd.reason === 'no-vacancy' ? '青い対（非共有電子対）は H⁺ にわたそう' : 'ここにはわたせません');
+        else if (cd.reason === 'no-vacancy' && M.isMetal(A)) say(fullText(A)); // ⚠ 配位数を超えては配位できない（M5）
+        else if (cd.reason === 'bonded') say('この2つはもうつながっています');
+        else say(cd.reason === 'no-vacancy' ? '青い対（非共有電子対）は ' + acceptorNames() + ' にわたそう' : 'ここにはわたせません');
         update();
         return;
       }
@@ -514,7 +599,7 @@
     }
     if (A.un < 1) {
       // ⚠ 赤い点（不対電子）から H⁺ へはつながらない（H⁺ は不対電子を持たない）
-      say(A.vacancy > 0 ? 'H⁺ には青い対（非共有電子対）をわたそう' : 'この原子には不対電子がありません');
+      say(M.isMetal(A) ? metalLabel(A) + ' には青い対（非共有電子対）をわたそう' : A.vacancy > 0 ? 'H⁺ には青い対（非共有電子対）をわたそう' : 'この原子には不対電子がありません');
       update();
       return;
     }
@@ -551,7 +636,7 @@
   function assembleTarget() {
     var t = st.targets[st.taskIdx];
     if (!t) return;
-    var ids = st.mol.atoms.map(function (x) { return x.id; });
+    var ids = st.specIds; // お題の atoms の1件ごとの id（配位子のパーツは配位する原子・M5）
     (t.unfold || []).forEach(function (k) { if (M.unfold(st.mol, ids[k])) relayout(ids[k]); });
     t.bonds.forEach(function (bd) {
       if (bd[3] === 'dative') { var ps = pairSlots(ids[bd[0]]); donateAtoms(ids[bd[0]], ps.length ? ps[0] : null, ids[bd[1]]); return; }
@@ -563,7 +648,8 @@
   function undo() {
     var h = st.history.pop();
     if (!h) return;
-    st.mol = h.mol; st.pos = h.pos; st.slots = h.slots; st.sel = null; st.notice = null;
+    st.mol = h.mol; st.slots = h.slots; st.sel = null; st.notice = null;
+    st.pos = {}; syncBoardSize(!!h.big); st.pos = h.pos; // 位置は覚えたときの盤の座標のまま戻す（ずらさない）
     update();
   }
 
@@ -644,15 +730,25 @@
     var t = currentTarget();
     var j = M.judge(st.mol, t ? { allowedUnpaired: t.allowedUnpaired } : null);
     var res = { complete: j.complete, leftover: j.leftover, match: null, text: '', kind: '' };
+    // M5: 空きのある金属イオン（配位子をあと何か所つなげるか）
+    var mv = metalsOnBoard().filter(function (m) { return m.vacancy > 0; })[0] || null;
+    var mvText = mv ? '配位子の青い対を ' + metalLabel(mv) + ' にわたそう（あと ' + mv.vacancy + ' か所）' : '';
     if (t) {
       var r = M.checkTarget(st.mol, t);
       res.match = r.match;
-      if (r.match) { res.text = '完成！ ' + t.formula + '（' + t.name + '）ができた'; res.kind = 'done'; }
+      // 錯イオン（M5）は名前が長い（テトラアンミン銅(Ⅱ)イオン）ので化学式だけ ＝ 375px でも1行（名前はお題の見出しにある）。
+      // 2行に折れると、参考書に埋めたとき「形 ⇄ 組む」で高さが変わる
+      if (r.match) { res.text = '完成！ ' + t.formula + (t.complex ? ' ' : '（' + t.name + '）') + 'ができた'; res.kind = 'done'; }
+      else if (j.complete && mv) { res.text = mvText; res.kind = 'info'; }
       else if (j.complete && r.openVacancy > 0) { res.text = 'H⁺ に青い対（非共有電子対）をわたそう'; res.kind = 'info'; }
       else if (j.complete && !r.sameFormula) { res.text = '完成。でも原子の数がお題とちがいます'; res.kind = 'warn'; }
       else if (j.complete) { res.text = '完成。でもつなぎ方がお題とちがいます'; res.kind = 'warn'; }
+    } else if (j.complete && mv) {
+      res.text = mvText; res.kind = 'info';
     } else if (j.complete && M.openVacancy(st.mol) > 0) {
       res.text = 'H⁺ に青い対（非共有電子対）をわたせる'; res.kind = 'info';
+    } else if (j.complete && metalsOnBoard().length) {
+      res.text = '完成！ 錯イオンができた（配位数 ' + M.bondsOf(st.mol, metalsOnBoard()[0].id).length + '）'; res.kind = 'done';
     } else if (j.complete) {
       res.text = '完成！ 不対電子が1つも残っていない'; res.kind = 'done';
     }
@@ -670,8 +766,12 @@
     return res;
   }
 
+  // 錯イオンの形の画面の1行（M5）。375px でも1行に収まる長さ（15px 太字で 21 字）
+  var COMPLEX_LINE = '形は電子対の反発でなく、イオンごとに決まる';
   // 形の画面の1行（配置と形の名前は SVG の中に別々に出す。ここは理由の1行）
   function shapeLine(sh) {
+    // M5: 錯イオンの形は金属イオンの表で引く（参考書 molecular-shape「反発だけでは説明できない形（発展）」と同じ立場）
+    if (sh.complex) return COMPLEX_LINE;
     if (M.openVacancy(st.mol) > 0 && !sh.twoAtoms && sh.lone > 0) return '青い対を H⁺ にわたすと、形が変わる';
     if (sh.twoAtoms) return '原子が2個の分子は、いつも直線';
     if (!sh.supported) return 'この形はここでは扱いません';
@@ -691,8 +791,12 @@
   function update() {
     var ev = evaluate();
     st.last = ev;
-    if (ev.complete && !st.wasComplete) st.check = true; // 完成したら数を確かめる（参考書の確かめの図と同じ）
-    st.wasComplete = ev.complete;
+    // 完成したら数を確かめる（参考書の確かめの図と同じ）。M5: 金属イオンに空きがあるあいだは「完成」と数えない
+    // （錯イオンのお題は、配位子のパーツを置いた最初の盤で不対電子が 0 ＝ そのままだと最初から確かめの丸が出る）
+    var evDone = ev.complete && !metalsOnBoard().some(function (m) { return m.vacancy > 0; });
+    if (evDone && !st.wasComplete) st.check = true;
+    st.wasComplete = evDone;
+    syncBoardSize();
     st.shape = M.moleculeShape(st.mol, st.centerId);
     if (st.view === 'shape' && !st.shape) st.view = 'build';
     st.sqInfo = st.view === 'shape' ? squeezeTarget() : null;
@@ -744,6 +848,7 @@
     if (st.check) {
       st.mol.atoms.forEach(function (a) {
         var p = st.pos[a.id], t = M.tag(st.mol, a.id);
+        if (t.kind === 'metal') return; // 金属イオン（M5）は電子を数えない
         el('circle', { cx: p.x, cy: p.y, r: L / 2 + 5, 'class': 'chk' }, gChk);
         var tx = el('text', { x: p.x + 24, y: p.y - 22, 'class': 'chkNum' + (t.label ? ' ok' : ''), 'data-id': a.id }, gChk);
         tx.textContent = String(t.count);
@@ -816,10 +921,12 @@
       var x0 = bb.minX - pad, x1 = bb.maxX + pad, y0 = bb.minY - pad, y1 = bb.maxY + pad;
       el('path', { d: 'M' + (x0 + 7) + ' ' + y0 + ' H' + x0 + ' V' + y1 + ' H' + (x0 + 7) +
         ' M' + (x1 - 7) + ' ' + y0 + ' H' + x1 + ' V' + y1 + ' H' + (x1 - 7), 'class': 'ionBracket' }, gBond);
-      txt(gBond, x1 + 9, y0 + 2, (Math.abs(q) > 1 ? Math.abs(q) : '') + (q > 0 ? '+' : '−'), 'ionCharge');
+      // 電荷は括弧の右上の外へ（左寄せ）。「2+」「3−」の2文字でも括弧の線に重ならない（M5）
+      txt(gBond, x1 + 3, y0 + 2, (Math.abs(q) > 1 ? Math.abs(q) : '') + (q > 0 ? '+' : '−'), 'ionCharge', { 'text-anchor': 'start' });
     });
 
     // 原子（元素記号＋枠の中身）
+    var metalVacant = metalsOnBoard().some(function (m) { return m.vacancy > 0; });
     st.mol.atoms.forEach(function (a) {
       var p = st.pos[a.id];
       var g = el('g', { 'class': 'atom', 'data-id': a.id, 'data-el': a.el }, gAtom);
@@ -827,7 +934,8 @@
       txt(g, p.x, p.y, lone ? M.PARTS[a.part].label : a.el, 'sym' + (lone ? ' part' : ''));
       // ★ 構造式では非共有電子対を書かない。ただし「ほどける」対（発展のお題の P・S）だけは青で出す ＝ 「ほどく」操作の的。
       //   PCl₅・SF₆ は構造式が既定（§3-5）なので、ここで出さないと、ほどく所が画面から消える
-      var showPairs = st.mode === 'dot' || canUnfoldHere(a.id);
+      // M5: 空きのある金属イオンが盤にあれば、配位できる青い対も構造式で出す（出さないと、つなぐ所が画面から消える）
+      var showPairs = st.mode === 'dot' || canUnfoldHere(a.id) || (metalVacant && a.lp > 0 && !a.nd);
       (st.slots[a.id] || []).forEach(function (sl) {
         if (sl.k !== 'u' && sl.k !== 'p') return;
         var q = slotPoint(p, a.el, sl.ang);
@@ -1045,7 +1153,9 @@
     items.forEach(function (it) {
       var dv = disp2D(it.v, items.length), v = [dv[0], dv[1], it.v[2]], ex = P2.x + v[0] * B2, ey = P2.y + v[1] * B2;
       if (it.kind === 'lp') { lobe(g, P2.x, P2.y, v[0], v[1], 1, 'lp2d' + (v[2] < -0.3 ? ' back' : '')); return; }
-      var sx = P2.x + v[0] * 14, sy = P2.y + v[1] * 14, tx = P2.x + v[0] * (B2 - 12), ty = P2.y + v[1] * (B2 - 12);
+      if (it.ligand) { ex = P2.x + v[0] * (B2 + 6); ey = P2.y + v[1] * (B2 + 6); } // 配位子の記号（NH₃ など）は字が長いので少し外へ（M5）
+      var cutE = it.ligand ? 20 : 12; // 配位子の記号の手前で線を止める
+      var sx = P2.x + v[0] * 14, sy = P2.y + v[1] * 14, tx = P2.x + v[0] * (B2 - cutE), ty = P2.y + v[1] * (B2 - cutE);
       if (v[2] > 0.3) {
         // 手前へ出る結合は塗ったくさび
         var nx = -(ty - sy), ny = tx - sx, nl = Math.hypot(nx, ny) || 1;
@@ -1063,7 +1173,7 @@
         bondLines(g, sx, sy, tx, ty, it.order, 2.4);
         bonds2.push(it);
       }
-      txt(g, ex, ey, it.el, 'sym s2');
+      txt(g, ex, ey, it.el, 'sym s2' + (it.ligand ? ' lig' : ''));
     });
     txt(g, P2.x, P2.y, M.atomOf(st.mol, sh.center).el, 'sym s2 center');
     // 結合角: 非共有電子対が無いときだけ、表の理想の角を紙面の2本のあいだに書く（あるときは文で「少し狭い」）
@@ -1123,8 +1233,10 @@
         var len = Math.hypot(o.x - P3.x, o.y - P3.y), t = len > 1 ? Math.min(0.9, HUB / len) : 0; // 中心の円のふちから引く
         bondLines(gg, P3.x + (o.x - P3.x) * t, P3.y + (o.y - P3.y) * t, o.x, o.y, o.it.order, (2.6 * o.k).toFixed(2), 'bond3');
       }
-      el('circle', { cx: o.x.toFixed(1), cy: o.y.toFixed(1), r: (12 * o.k).toFixed(1), 'class': 'ball' }, gg);
-      txt(gg, o.x, o.y, o.it.el, 'sym s3', { style: 'font-size:' + (15 * o.k).toFixed(1) + 'px' });
+      // 配位子（M5）は記号が長い（NH₃・CN⁻）ので、玉を大きく・字を小さく
+      var lg = !!o.it.ligand;
+      el('circle', { cx: o.x.toFixed(1), cy: o.y.toFixed(1), r: ((lg ? 16 : 12) * o.k).toFixed(1), 'class': 'ball' }, gg);
+      txt(gg, o.x, o.y, o.it.el, 'sym s3' + (lg ? ' lig' : ''), { style: 'font-size:' + ((lg ? 11 : 15) * o.k).toFixed(1) + 'px' });
     });
   }
 
@@ -1136,6 +1248,10 @@
     if (sh.twoAtoms) {
       txt(head, 200, 24, '原子が2個だけの分子', 'hd1');
       txt(head, 200, 52, '直線形', 'hd2 shp');
+    } else if (sh.complex) {
+      // M5: 錯イオン。⚠ 「電子のまとまり」「〜の配置」を出さない（VSEPR を通さない）。配位数と、表で引いた形だけ
+      txt(head, 200, 24, '中心 ' + sh.ion + '・配位数 ' + sh.coordination, 'hd1 dom cplx');
+      txt(head, 200, 52, sh.shape + '（発展）', 'hd2 shp');
     } else {
       txt(head, 200, 24, '中心 ' + sh.el + '・電子のまとまり ' + sh.domains + ' 組', 'hd1 dom');
       var arr = el('text', { x: 200, y: 52, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'class': 'hd2' }, head);
@@ -1235,6 +1351,9 @@
     svg.style.display = shapeMode ? 'none' : '';
     svgShape.style.display = shapeMode ? '' : 'none';
     $('palette').style.visibility = shapeMode ? 'hidden' : '';
+    var p2 = $('palette2');
+    p2.style.display = (st.free || (t && t.complex)) ? '' : 'none';
+    p2.style.visibility = shapeMode ? 'hidden' : '';
     $('undoBtn').style.display = $('resetBtn').style.display = shapeMode ? 'none' : '';
     // 「ほどく」: 選んだのが青い対で、その原子がほどけるときだけ出す（N・O では出さない）
     var sl = st.sel && st.slots[st.sel.id] && st.slots[st.sel.id][st.sel.slot];
@@ -1280,6 +1399,20 @@
       b.setAttribute('aria-label', M.PARTS[key].label + ' を置く');
       b.addEventListener('click', function () { addFromPalette(key); });
       pal.appendChild(b);
+    });
+    // 公開③（M5・発展）: 金属イオン4種と出来合いの配位子。錯イオンのお題と自由のときだけ出す（公開①②の画面は変えない）
+    var pal2 = $('palette2');
+    M.METAL_ORDER.concat(M.LIGAND_ORDER).forEach(function (key) {
+      var isM = !!M.METALS[key];
+      var lb = isM ? M.METALS[key].label : M.LIGANDS[key].label;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = lb;
+      b.setAttribute('data-el', key);
+      b.className = isM ? 'part metal' : 'lig';
+      b.setAttribute('aria-label', lb + ' を置く');
+      b.addEventListener('click', function () { addFromPalette(key); });
+      pal2.appendChild(b);
     });
   }
 

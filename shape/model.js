@@ -64,13 +64,63 @@
   /* ---- パーツ（受け手・M3）----
      H⁺ は「電子 0・空き1」。不対電子を持たないので、ふつうの結合（不対電子どうし）の相手にならない。
      結合ができたら、ほかの H と区別しない（el は 'H'・コードのラベルも同じ）。電荷は置いたパーツの電荷の和で、イオン全体で持つ。
-     金属イオン（M5）はここに足す（空き ＝ 配位数）。 */
+     金属イオン（M5）もここに乗る（空き ＝ 配位数・metal の印）。 */
   var PARTS = {
     'H+': { el: 'H', un: 0, lp: 0, vacancy: 1, charge: 1, label: 'H⁺' }
   };
   var PART_ORDER = ['H+'];
 
+  /* ---- 金属イオン（公開③・M5・§4-2 の表）----
+     ⚠⚠ 錯イオンの形は**この表で引く**。電子対の反発（まとまりの数）からは出さない（§3-4）。
+        まとまりで数えると [Cu(NH₃)₄]²⁺ が正四面体になる ＝ 化学の誤り（数研 化学基礎 p.38 図18・参考書 complex-ion の表）。
+     ⚠ 金属イオンの電子（d 電子）は数えない。受け手としての「空き」（＝ 配位数）だけを持つ。
+     ⚠ 錯イオンに dsp²・d²sp³ の混成を付けない（§0・§3-7。高校の範囲外・参考書 complex-ion の決めと同じ）。
+     Fe²⁺（[Fe(CN)₆]⁴⁻）は表にあるが、お題は Fe³⁺ の1つにした（§3-1 のパレットの4種）。足すときはこの表に1行 */
+  var METALS = {
+    'Ag+': { el: 'Ag', charge: 1, cn: 2, shape: '直線形', label: 'Ag⁺' },
+    'Cu2+': { el: 'Cu', charge: 2, cn: 4, shape: '正方形', label: 'Cu²⁺' },
+    'Zn2+': { el: 'Zn', charge: 2, cn: 4, shape: '正四面体形', label: 'Zn²⁺' },
+    'Fe3+': { el: 'Fe', charge: 3, cn: 6, shape: '正八面体形', label: 'Fe³⁺' }
+  };
+  var METAL_ORDER = ['Ag+', 'Cu2+', 'Zn2+', 'Fe3+'];
+  METAL_ORDER.forEach(function (k) {
+    var m = METALS[k];
+    PARTS[k] = { el: m.el, un: 0, lp: 0, vacancy: m.cn, charge: m.charge, label: m.label, metal: true };
+  });
+
+  /* ---- 出来合いの配位子（公開③・M5・§4-2・ユーザー決定 2026-09-26）----
+     原子と結合の表で持ち、置くときに bond() で組む（組んだ後の電子の数はふつうの分子と同じに数える）。
+     陰イオンは「その原子に電子を1個足す」: 組んだあとに不対電子を1個足し、2個そろえば非共有電子対にする
+     （OH⁻ の O は非共有電子対3組・CN⁻ の C は1組）。電荷は -1 をその原子に置く（イオン全体の電荷は和で出す）。
+     donor … 配位する原子（atoms の添字）。⚠ CN⁻ は C で配位する（N の非共有電子対は配位させない ＝ nd の印）。
+     Cl⁻ は置かない: パレットに Cl⁻ があると [CuCl₄]²⁻ が組め、表の「Cu²⁺ は正方形」が当たらない（実際は正四面体に近い）ため */
+  var LIGANDS = {
+    'NH3': { label: 'NH₃', atoms: ['N', 'H', 'H', 'H'], bonds: [[0, 1, 1], [0, 2, 1], [0, 3, 1]], donor: 0 },
+    'H2O': { label: 'H₂O', atoms: ['O', 'H', 'H'], bonds: [[0, 1, 1], [0, 2, 1]], donor: 0 },
+    'OH-': { label: 'OH⁻', atoms: ['O', 'H'], bonds: [[0, 1, 1]], donor: 0, anion: 0 },
+    'CN-': { label: 'CN⁻', atoms: ['C', 'N'], bonds: [[0, 1, 3]], donor: 0, anion: 0, noDonor: [1] }
+  };
+  var LIGAND_ORDER = ['NH3', 'H2O', 'OH-', 'CN-'];
+
+  function isMetal(a) { return !!(a && a.part && PARTS[a.part] && PARTS[a.part].metal); }
+
+  // 配位子のパーツを組む。返すのは配位する原子（donor）の id。パーツの原子には lig（パーツの名前）と grp（同じパーツの印）を付ける
+  function addLigand(s, key) {
+    var L = LIGANDS[key];
+    var grp = s.nextId;
+    var ids = L.atoms.map(function (el) { return addAtom(s, el); });
+    L.bonds.forEach(function (t) { for (var o = 0; o < t[2]; o++) bond(s, ids[t[0]], ids[t[1]]); });
+    if (typeof L.anion === 'number') {
+      var X = atomOf(s, ids[L.anion]);
+      X.un += 1; X.lp += Math.floor(X.un / 2); X.un = X.un % 2; X.charge = -1;
+    }
+    (L.noDonor || []).forEach(function (k) { atomOf(s, ids[k]).nd = true; });
+    ids.forEach(function (id) { var a = atomOf(s, id); a.lig = key; a.grp = grp; });
+    return ids[L.donor];
+  }
+
   function addAtom(s, el) {
+    if (LIGANDS[el]) return addLigand(s, el);
     var pt = PARTS[el];
     if (pt) {
       var ap = { id: s.nextId++, el: pt.el, un: pt.un, lp: pt.lp, unfold: 0, vacancy: pt.vacancy, charge: pt.charge, part: el };
@@ -122,6 +172,8 @@
     var D = atomOf(s, donor), A = atomOf(s, acceptor);
     if (!D || !A) return { ok: false, reason: 'missing' };
     if (D.lp < 1) return { ok: false, reason: 'no-pair' };
+    if (D.nd) return { ok: false, reason: 'not-donor' }; // CN⁻ の N（配位するのは C・M5）
+    // ⚠ 配位数を超えては配位できない（金属イオンの空き ＝ 配位数。H⁺ は1）
     if (!(A.vacancy > 0)) return { ok: false, reason: 'no-vacancy' };
     if (bondBetween(s, donor, acceptor)) return { ok: false, reason: 'bonded' };
     return { ok: true };
@@ -169,6 +221,8 @@
   function tag(s, id) {
     var A = atomOf(s, id);
     var n = electronCount(s, id);
+    // 金属イオン（M5）は電子の数を数えない（d 電子を数えないモデル。「8個」と出すとオクテットと読まれる）
+    if (isMetal(A)) return { count: null, kind: 'metal', label: null };
     if (A.un > 0) return { count: n, kind: 'open', label: null };
     if (A.el === 'H') return n === 2 ? { count: n, kind: 'stable', label: '安定' } : { count: n, kind: 'other', label: null };
     if (n === 8) return { count: n, kind: 'octet', label: 'オクテット' };
@@ -283,6 +337,26 @@
       adj[j].push({ j: i, t: String(b.order) });
     });
     var labels = s.atoms.map(function (a) { return a.el + '|' + a.lp + '|' + a.unfold; });
+    /* 錯イオン（M5・金属イオンを含む盤）だけ、ラベルに2つを足す（写した2関数は触らない）。
+       なぜ: [Cu(NH₃)₄]²⁺ は H が12個・どれも同じラベルで、探索（canonicalRowsCore）は「まだどこにもつながっていない H」から
+       並べ始める ＝ 12! 通りを試して止まらない（2026-09-26 に node で踏んだ）。
+       ① 重原子を先に並べる（頭に a・H は z）→ H はつながった重原子の位置で見分けられる
+       ② 同じ重原子にぶら下がる H（末端）に 1・2・3 の番号 → 兄弟の H どうしの入れ替え（3! 通り）を探索しない。
+          兄弟の末端 H は入れ替えても同じグラフ（自己同型）なので、番号の振り方でコードは変わらない
+       どちらも「グラフだけで決まる」規則 ＝ 同じ分子なら同じコード・違う分子なら違うコードのまま。
+       ⚠ 金属イオンが無い盤のコードは1文字も変えない（公開①②のお題とテストはそのまま） */
+    if (s.atoms.some(isMetal)) {
+      var leafNo = {};
+      labels = s.atoms.map(function (a, i) {
+        if (a.el !== 'H') return 'a' + labels[i];
+        var bs = bondsOf(s, a.id);
+        if (bs.length === 1) {
+          var p = bs[0].a === a.id ? bs[0].b : bs[0].a;
+          if (atomOf(s, p).el !== 'H') { leafNo[p] = (leafNo[p] || 0) + 1; return 'z' + labels[i] + '#' + leafNo[p]; }
+        }
+        return 'z' + labels[i];
+      });
+    }
     return 'q' + charge(s) + ':' + canonicalRowsCore(n, adj, labels).join(';');
   }
 
@@ -314,6 +388,7 @@
   /* ---- お題（molecules.json の1件）----
      データは「原子と結合の表」。コードは人が書かず、ここで組んでから計算する。
      組むときも bond() を通す ＝ データの誤り（手の数を超える結合）は ok:false で出る。 */
+  // atoms の1件がパーツの名前（配位子）なら、返す id はその配位する原子（bonds の添字はこれを指す）
   function fromSpec(spec) {
     var s = create();
     var ids = spec.atoms.map(function (el) { return addAtom(s, el); });
@@ -345,6 +420,8 @@
         unfold: (spec.unfold || []).slice(), advanced: !!spec.advanced, mode: spec.mode || null,
         // M6: 教科書の実測の結合角（CH₄・NH₃・H₂O だけ。値の無いお題は null ＝ 数値を出さない）
         bondAngle: typeof spec.bondAngle === 'number' ? spec.bondAngle : null,
+        // M5: 錯イオンのお題（金属イオンを含む）。atoms の1件は「原子」か「パーツの名前」（NH3・CN- ＝ 出来合いの配位子・Cu2+ など）
+        complex: spec.atoms.some(function (k) { return !!METALS[k]; }),
         code: code(built.state), counts: formulaCounts(built.state), charge: charge(built.state), errors: built.errors
       };
     });
@@ -365,7 +442,7 @@
      形を見る（M2・§3-4・§4-2）
      中心 → 電子のまとまりの数 → 電子対の配置 → 分子の形。配置と形は**別々の名前**で出す
      （1段に潰すと NH₃ を「正四面体」と覚える事故になる）。
-     ⚠ 錯イオン（M5）は金属イオンの表で引く ＝ ここ（まとまりの数）を通さない。金属イオンが入る段でここに分岐を足す。
+     ⚠ 錯イオン（M5）は金属イオンの表（METALS）で引く ＝ ここ（まとまりの数）を通さない。分岐は shapeAt の頭（complexShapeAt）。
      ================================================================ */
   var ARRANGEMENT = {
     2: { name: '直線', angle: '180°' },
@@ -392,8 +469,23 @@
     return bondsOf(s, id).length + A.lp;
   }
 
+  /* 錯イオンの形（M5）: 中心の金属イオンの表で引く。⚠ まとまりの数（domains）も配置の名前も**出さない**（VSEPR を通さない）。
+     配位数が表の数に届いていない（あと何か所か空いている）ときは形を出さない（null） */
+  function complexShapeAt(s, id) {
+    var A = atomOf(s, id);
+    var m = METALS[A.part];
+    var n = bondsOf(s, id).length;
+    if (!m || A.vacancy > 0 || n !== m.cn) return null;
+    return {
+      center: id, el: A.el, complex: true, ion: m.label, coordination: n,
+      domains: null, bonded: n, lone: 0, arrangement: null, idealAngle: null,
+      shape: m.shape, supported: true, advanced: true
+    };
+  }
+
   function shapeAt(s, id) {
     var A = atomOf(s, id);
+    if (A && isMetal(A)) return complexShapeAt(s, id);
     if (!A || A.un > 0) return null; // 手が余っている原子の形は数えない（完成してから）
     var n = domains(s, id), lone = A.lp;
     var arr = ARRANGEMENT[n] || null;
@@ -412,6 +504,9 @@
   function shapeCenters(s) {
     if (s.atoms.length <= 2) return [];
     var deg = function (id) { return bondsOf(s, id).length; };
+    // 錯イオン（M5）: 中心は金属イオンだけ（[Ag(NH₃)₂]⁺ は N の結合相手 4 のほうが Ag の 2 より多いが、形を見るのは Ag）
+    var metals = s.atoms.filter(function (a) { return isMetal(a) && deg(a.id) > 0; });
+    if (metals.length) return metals.sort(function (a, b) { return a.id - b.id; }).map(function (a) { return a.id; });
     var max = 0;
     s.atoms.forEach(function (a) { max = Math.max(max, deg(a.id)); });
     return s.atoms.filter(function (a) { return deg(a.id) === max; })
@@ -438,6 +533,7 @@
     var cands = shapeCenters(s);
     var c = cands.indexOf(centerId) >= 0 ? centerId : cands[0];
     var r = shapeAt(s, c);
+    if (!r) return null; // 配位数に届いていない錯イオン（M5）
     r.candidates = cands;
     return r;
   }
@@ -461,8 +557,36 @@
 
   /* 中心のまわりの 3D の並び: [{ kind: 'lp' }｜{ kind: 'bond', partner, order, el }, v ]。
      結合は「次数の大きい順・H 以外を先」に、非共有電子対の残りの向きへ置く（HCHO の O は上） */
+  /* 錯イオンの形の向き（M5）: 表の形の名前から引く（まとまりの数は使わない）。
+     正方形は紙面の十字（z = 0 ＝ 4本とも同じ平面）。正四面体・正八面体・直線は分子と同じ理想の向き */
+  var COMPLEX_VECS = {
+    '直線形': IDEAL[2],
+    '正方形': [[1, 0, 0], [0, -1, 0], [-1, 0, 0], [0, 1, 0]],
+    '正四面体形': IDEAL[4],
+    '正八面体形': IDEAL[6]
+  };
+  /* 配位子の名前（形の画面の記号）。出来合いのパーツならその名前、自分で組んだ NH₃・H₂O なら数えて出す */
+  function ligandLabel(s, donor, metal) {
+    var D = atomOf(s, donor);
+    if (D.lig && LIGANDS[D.lig]) return LIGANDS[D.lig].label;
+    var nb = bondsOf(s, donor).map(function (b) { return b.a === donor ? b.b : b.a; }).filter(function (k) { return k !== metal; });
+    var h = nb.filter(function (k) { return atomOf(s, k).el === 'H'; }).length;
+    var sub = ['', '', '₂', '₃', '₄'];
+    if (nb.length !== h) return D.el;
+    if (D.el === 'O' && h === 2) return 'H₂O';
+    return D.el + (h ? 'H' + sub[h] : '');
+  }
+  function complexGeometry(s, center) {
+    var sh = complexShapeAt(s, center);
+    var vecs = sh ? COMPLEX_VECS[sh.shape] : null;
+    if (!vecs) return [];
+    return bondsOf(s, center).map(function (b) { return b.a === center ? b.b : b.a; }).sort(function (x, y) { return x - y; })
+      .map(function (p, k) { return { kind: 'bond', partner: p, order: 1, el: ligandLabel(s, p, center), ligand: true, v: vecs[k].slice() }; });
+  }
+
   function shapeGeometry(s, center) {
     var A = atomOf(s, center);
+    if (isMetal(A)) return complexGeometry(s, center);
     var n = domains(s, center);
     var vecs = idealVectors(n);
     var used = new Array(vecs.length).fill(false);
@@ -534,7 +658,9 @@
     ARRANGEMENT: ARRANGEMENT, SHAPE_NAME: SHAPE_NAME,
     domains: domains, shapeAt: shapeAt, shapeCenters: shapeCenters, moleculeShape: moleculeShape,
     idealVectors: idealVectors, shapeGeometry: shapeGeometry, angleDeg: angleDeg,
-    shapeState: shapeState, squeezeGeometry: squeezeGeometry
+    shapeState: shapeState, squeezeGeometry: squeezeGeometry,
+    METALS: METALS, METAL_ORDER: METAL_ORDER, LIGANDS: LIGANDS, LIGAND_ORDER: LIGAND_ORDER,
+    isMetal: isMetal, addLigand: addLigand, complexShapeAt: complexShapeAt, ligandLabel: ligandLabel, COMPLEX_VECS: COMPLEX_VECS
   };
 
   if (typeof module === 'object' && module.exports) module.exports = api;

@@ -116,6 +116,12 @@ main { max-width: 720px; margin: 0 auto; padding: 8px 12px 12px; }
   font-size: 18px; font-weight: bold; color: #222; cursor: pointer;
 }
 .palette button:active { background: #e8f1ef; }
+/* 公開③（M5）: 金属イオン4種＋配位子4種の2段目。記号が長い（Cu²⁺・NH₃）ので字を小さく */
+.palette2 { grid-template-columns: repeat(8, minmax(0, 1fr)); margin-top: 4px; }
+.palette2 button { font-size: 15px; }
+.palette2 button.metal { color: #7a3a9a; }
+.palette2 button.lig { color: #1f5fbf; }
+.sym.s2.lig { font-size: 16px; }
 
 .legend { font-size: 12px; color: #555; margin: 8px 2px 0; }
 .legend span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 3px 0 8px; vertical-align: middle; }
