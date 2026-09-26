@@ -470,6 +470,37 @@
       "difficulty": 5
     },
     {
+      "id": "redox-kmno4-ki-neutral",
+      "reactants": ["KMnO4", "KI", "H2O"],
+      "products": ["MnO2", "I2", "KOH"],
+      "coeffs": [2, 6, 4, 2, 3, 8],
+      "netIonic": "2MnO₄⁻ ＋ 6I⁻ ＋ 4H₂O → 2MnO₂ ＋ 3I₂ ＋ 8OH⁻（中性。黒褐色の MnO₂ ができる）",
+      "classes": { "type": "酸化還元", "saltType": null, "redox": "溶液中の酸化剤還元剤" },
+      "units": ["酸化還元", "液性"],
+      "species": ["KMnO4", "KI", "H2O", "MnO2", "I2", "KOH", "K+", "MnO4-", "I-", "OH-"],
+      "animationType": "redox-solution",
+      "redoxStage": "rs4",
+      "ionic": { "reactants": ["MnO4-", "I-", "H2O"], "products": ["MnO2", "I2", "OH-"], "answer": [2, 6, 4, 2, 3, 8] },
+      "note": "中性では MnO₄⁻ は Mn²⁺ まで行かず、黒褐色の MnO₂ で止まる（Mn: +7→+4 で e⁻ を 3 個受け取る）。半反応式は H⁺ で書いたまま足し、最後に液性に合わせて書き直す：中性の液に H⁺ はほとんど無いので、両辺に OH⁻ を足して H⁺ を H₂O にし、両辺の H₂O を相殺する。右辺に OH⁻ が残るので、化学反応式では K⁺ と組んで KOH になる。酸化還元モードで遊べる。",
+      "difficulty": 5
+    },
+    {
+      "id": "redox-nitrobenzene-sn",
+      "reactants": ["C6H5NO2", "Sn", "HCl"],
+      "products": ["C6H5NH3Cl", "SnCl4", "H2O"],
+      "coeffs": [2, 3, 14, 2, 3, 4],
+      "netIonic": "2C₆H₅NO₂ ＋ 3Sn ＋ 14H⁺ → 2C₆H₅NH₃⁺ ＋ 3Sn⁴⁺ ＋ 4H₂O（塩酸の中なので、できるのはアニリン塩酸塩）",
+      "classes": { "type": "酸化還元", "saltType": null, "redox": "溶液中の酸化剤還元剤" },
+      "units": ["酸化還元", "液性", "芳香族窒素化合物"],
+      "species": ["C6H5NO2", "Sn", "HCl", "C6H5NH3Cl", "SnCl4", "H2O", "H+", "Cl-", "C6H5NH3+", "OH-", "Sn^4+"],
+      "animationType": "redox-metal",
+      "redoxStage": "ra1",
+      "ionic": { "reactants": ["C6H5NO2", "Sn", "H+"], "products": ["C6H5NH3+", "Sn^4+", "H2O"], "answer": [2, 3, 14, 2, 3, 4] },
+      "related": [{ "id": "aniline-free-naoh", "label": "▸ この塩からアニリンに戻すには" }],
+      "note": "ニトロベンゼンをスズと塩酸で還元すると、N が +3→−3 で e⁻ を 6 個受け取ってアニリンになる。ただし塩酸の中なので、アニリンは H⁺ を受け取ってアニリニウムイオン（アニリン塩酸塩）になっている ＝ 足し合わせた式を、酸性の液性に合わせてもう一度書き直す。スズは Sn⁴⁺ まで酸化される。NaOH を加えると、アニリンが遊離する。酸化還元モードで遊べる。",
+      "difficulty": 5
+    },
+    {
       "id": "complex-cu-nh3",
       "reactants": ["CuSO4", "NH3"],
       "products": ["Cu(NH3)4SO4"],

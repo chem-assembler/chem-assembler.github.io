@@ -140,6 +140,11 @@ const SPECIES = {
   "SnCl2":         { disp: "SnCl₂",          name: "塩化スズ(Ⅱ)",                      atoms: { Sn: 1, Cl: 2 }, charge: 0 },
   "Sn^2+":         { disp: "Sn²⁺",           name: "スズ(Ⅱ)イオン",                    atoms: { Sn: 1 }, charge: 2 },
   "Sn^4+":         { disp: "Sn⁴⁺",           name: "スズ(Ⅳ)イオン",                    atoms: { Sn: 1 }, charge: 4 },
+  /* ニトロベンゼンの還元（2026-09-26・I-0178）。スズと塩酸で還元し、塩酸の中なので
+     できるのはアニリン塩酸塩。スズは Sn⁴⁺ まで酸化され、SnCl₄ として右辺に残る */
+  "Sn":            { disp: "Sn",             name: "スズ",                             atoms: { Sn: 1 }, charge: 0 },
+  "SnCl4":         { disp: "SnCl₄",          name: "塩化スズ(Ⅳ)",                      atoms: { Sn: 1, Cl: 4 }, charge: 0 },
+  "C6H5NO2":       { disp: "C₆H₅NO₂",        name: "ニトロベンゼン",                   atoms: { C: 6, H: 5, N: 1, O: 2 }, charge: 0 },
   /* 有機の酸化還元（アルコールの段階的酸化）。disp は構造が見えるように書く
      — 酸化数を「どの炭素か」の真下に出すには、化学式の中で炭素の位置が分かる必要がある */
   "C2H5OH":        { disp: "CH₃CH₂OH",       name: "エタノール",                       atoms: { C: 2, H: 6, O: 1 }, charge: 0 },
@@ -436,6 +441,9 @@ const DISSOCIATION = {
   "Cr2(SO4)3": ["Cr^3+", "Cr^3+", "SO4^2-", "SO4^2-", "SO4^2-"],
   "H2C2O4":    ["H+", "H+", "C2O4^2-"],
   "SnCl2":     ["Sn^2+", "Cl-", "Cl-"],
+  /* ニトロベンゼンの還元の右辺（I-0178）。⚠ 化学のうえでは SnCl₄ は分子性（塩酸中では [SnCl₆]²⁻）だが、
+     イオン反応式を Sn⁴⁺ で書く（設計・参考書 aniline#prep と同じ）ので、ここも Sn⁴⁺ ＋ 4Cl⁻ として扱う */
+  "SnCl4":     ["Sn^4+", "Cl-", "Cl-", "Cl-", "Cl-"],
   "Cu(NO3)2":  ["Cu^2+", "NO3-", "NO3-"],
   // 錯塩は「錯イオン＋対イオン」に電離する（錯イオンは水中でひとまとまりのまま）
   "Cu(NH3)4SO4": ["Cu(NH3)4^2+", "SO4^2-"],
@@ -456,6 +464,8 @@ const DISSOCIATION = {
   "CH3COONa":   ["Na+", "CH3COO-"],
   "HCOONa":     ["Na+", "HCOO-"],
   "NaI":        ["Na+", "I-"],
+  // KMnO₄ × KI（中性）で化学反応式まで組むのに要る（I-0178）。NaI と同じ強電解質
+  "KI":         ["K+", "I-"],
   // 弱塩基の塩も強電解質
   "NH4Cl":      ["NH4+", "Cl-"],
   "(NH4)2SO4":  ["NH4+", "NH4+", "SO4^2-"],
@@ -1583,6 +1593,18 @@ const HALF_REACTIONS = {
   "MnO4_red_neutral": { disp: "MnO₄⁻ ＋ 2H₂O ＋ 3e⁻ → MnO₂ ＋ 4OH⁻", kind: "reduction", couple: "MnO4-/MnO2",
                  left: [{ sp: "MnO4-", n: 1 }, { sp: "H2O", n: 2 }, { sp: "e-", n: 3 }],
                  right: [{ sp: "MnO2", n: 1 }, { sp: "OH-", n: 4 }] },
+  /* ★ 同じ MnO₄⁻ → MnO₂ を **H⁺ で書いた形**（2026-09-26・I-0178「液性の工程を組み立ての中に入れる」）。
+     半反応式はいつも H⁺ で書き、**液性に合わせて書き直すのは組み立ての中の1工程**にする
+     （DESIGN_redox.md の同名の節）。両辺に OH⁻ を4個足して H₂O を相殺すると、
+     上の MnO4_red_neutral にぴったり戻る（テストで固定）。
+     medium は「この式を使う液性」。H⁺ で書いてあっても、酸性なら MnO₄⁻ は Mn²⁺ まで行く
+     ＝ この行き先（MnO₂）は中性・塩基性でしか起きない。conditionOfHalf はここを見る。
+     ⚠ 対は MnO4_red_neutral と同じ（同じ反応の書き方違い）。対の検査は
+     「書き直すと互いに一致する2本」だけを重複として許す */
+  "MnO4_red_MnO2": { disp: "MnO₄⁻ ＋ 4H⁺ ＋ 3e⁻ → MnO₂ ＋ 2H₂O", kind: "reduction", couple: "MnO4-/MnO2",
+                 medium: "basic",
+                 left: [{ sp: "MnO4-", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 3 }],
+                 right: [{ sp: "MnO2", n: 1 }, { sp: "H2O", n: 2 }] },
   "Cr2O7_red": { disp: "Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O", kind: "reduction", couple: "Cr2O7^2-/Cr^3+",
                  left: [{ sp: "Cr2O7^2-", n: 1 }, { sp: "H+", n: 14 }, { sp: "e-", n: 6 }],
                  right: [{ sp: "Cr^3+", n: 2 }, { sp: "H2O", n: 7 }] },
@@ -1765,6 +1787,16 @@ const HALF_REACTIONS = {
   /* 電気分解の陽極に来るハロゲン化物イオン3本のうち、残っていた臭素 */
   "Br_ox":     { disp: "2Br⁻ → Br₂ ＋ 2e⁻", kind: "oxidation", couple: "Br2/Br-",
                  left: [{ sp: "Br-", n: 2 }], right: [{ sp: "Br2", n: 1 }, { sp: "e-", n: 2 }] },
+
+  /* ニトロベンゼンの還元（2026-09-26・I-0178・有機（発展））。スズと塩酸で還元する。
+     N が +3 → −3 で e⁻ 6個。スズは Sn⁴⁺ まで（参考書 aniline#prep の式 3Sn ＋ … → 3SnCl₄ と同じ）。
+     ⚠ 塩酸の中なので、できたアニリンはそのままではいない（H⁺ を受け取ってアニリニウムイオン）。
+     それは半反応式ではなく、**足し合わせた後の液性の工程（酸性）**で書き直す */
+  "Sn_ox":     { disp: "Sn → Sn⁴⁺ ＋ 4e⁻", kind: "oxidation", couple: "Sn^4+/Sn",
+                 left: [{ sp: "Sn", n: 1 }], right: [{ sp: "Sn^4+", n: 1 }, { sp: "e-", n: 4 }] },
+  "PhNO2_red": { disp: "C₆H₅NO₂ ＋ 6H⁺ ＋ 6e⁻ → C₆H₅NH₂ ＋ 2H₂O", kind: "reduction", couple: "C6H5NO2/C6H5NH2",
+                 left: [{ sp: "C6H5NO2", n: 1 }, { sp: "H+", n: 6 }, { sp: "e-", n: 6 }],
+                 right: [{ sp: "C6H5NH2", n: 1 }, { sp: "H2O", n: 2 }] },
 };
 
 /* 半反応式の e⁻ の数（酸化なら出す数、還元なら受け取る数） */
@@ -1839,6 +1871,13 @@ const OXIDATION = {
   // 塩化スズ(Ⅱ)（2026-09-17）。Sn は +2 → +4
   "Sn^2+":    { Sn: 2 },
   "Sn^4+":    { Sn: 4 },
+  /* ニトロベンゼンの還元（2026-09-26・I-0178）。動くのは N だけ（+3 → −3 ＝ e⁻ 6個）。
+     ベンゼン環の C は原子ごとに持つ（N と結ぶ C は +1、H と結ぶ5個は −1）＝ 合計 −4 で、
+     還元の前後で1つも動かない。単体のスズは 0 */
+  "Sn":       { Sn: 0 },
+  "C6H5NO2":  { C: [{ ox: 1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }], H: 1, N: 3, O: -2 },
+  "C6H5NH2":  { C: [{ ox: 1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }], H: 1, N: -3 },
+  "C6H5NH3+": { C: [{ ox: 1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }], H: 1, N: -3 },
   /* ---- 電池・電気分解の電極（2026-09-18・段2）----
      ⚠ 単体は 0、単原子イオンは電荷そのもの、と規則で出るものも**表に書く**。
      oxChangeOfHalf は「OXIDATION に無い種は数えない」ので、書かないと
@@ -2716,6 +2755,8 @@ const HALF_CATALOG_META = {
   "O3_red":        { name: "オゾン",               sp: "O3",      subject: "basic", level: 2, section: "oxidant" },
   "I2_red":        { name: "ヨウ素",               sp: "I2",      subject: "basic", level: 2, section: "oxidant" },
   "MnO4_red_neutral": { name: "過マンガン酸カリウム", sp: "KMnO4", subject: "basic", level: 3, section: "oxidant" },
+  // 同じ MnO₄⁻ → MnO₂ を H⁺ で書いた形（I-0178）。組み立ての中の液性の工程で上の形に直す
+  "MnO4_red_MnO2": { name: "過マンガン酸カリウム（中性・H⁺ で書いた形）", sp: "KMnO4", subject: "basic", level: 3, section: "oxidant" },
   // --- 化学基礎: 主な還元剤（スライド p.39 の並び） ---
   "oxalate_ox":    { name: "シュウ酸",             sp: "H2C2O4",  subject: "basic", level: 1, section: "reductant" },
   "Fe2_ox":        { name: "硫酸鉄(Ⅱ)",            sp: "FeSO4",   subject: "basic", level: 1, section: "reductant" },
@@ -2759,6 +2800,9 @@ const HALF_CATALOG_META = {
   "iodoform_ox":   { name: "ヨードホルム反応（メチル基）",   sp: "CH3+",   subject: "chem", level: 3, section: "organic" },
   "acylRest_ox":   { name: "ヨードホルム反応（残りの断片）", sp: "CH3CO-", subject: "chem", level: 3, section: "organic" },
   "formylRest_ox": { name: "ヨードホルム反応（残りの断片）", sp: "CHO-",   subject: "chem", level: 3, section: "organic" },
+  // ニトロベンゼンの還元（I-0178）。スズはこの反応のためだけに置く（Sn²⁺ でなく Sn⁴⁺ まで）
+  "PhNO2_red":     { name: "ニトロベンゼン",       sp: "C6H5NO2", subject: "chem",  level: 3, section: "organic" },
+  "Sn_ox":         { name: "スズ（ニトロベンゼンの還元）", sp: "Sn", subject: "chem", level: 3, section: "organic" },
 };
 
 /* 項の並びを式の文字列にする（一覧・分子の形で使う）。係数 1 は書かない */
@@ -3002,6 +3046,35 @@ const REDOX_STAGES = [
     },
     intro: "同じ銅と硝酸でも、濃いと赤褐色の NO₂ が出る",
   },
+  /* ★ 液性の工程（2026-09-26・I-0178・DESIGN_redox.md「液性の工程を組み立ての中に入れる」）。
+     半反応式は H⁺ で書いたまま足し、**その液性で実際にいる形に書き直す**のは組み立ての1工程。
+     ⚠ 番号（ステージ1〜14）は動かさないように末尾に足す（ユーザーは番号で呼ぶ）。
+     どちらも液性は**データに書かずに導く**（liquidMediumOf。MnO4_red_MnO2 の medium と、
+     右辺にできるアニリン＝塩基から）。 */
+  {
+    /* 自由に組み合わせるの KMnO₄ × KI（中性・塩基性）と同じ組。自由モードだけだと見つからないので収録にも置く。
+       H₂O は「はじめに入れたもの」として左辺に立つ（中性の水溶液の水そのもの）。 */
+    id: "rs4", title: "過マンガン酸カリウム × ヨウ化カリウム（中性）",
+    ox: "I_ox", red: "MnO4_red_MnO2", answer: [3, 2], mode: "solution",
+    bottles: ["KMnO4", "KI", "H2O"],
+    intro: "中性の過マンガン酸カリウムにヨウ化カリウムを加えると、黒褐色の MnO₂ ができる",
+  },
+  {
+    /* 有機（発展）。ニトロベンゼンをスズと塩酸で還元する（参考書 aniline#prep）。
+       塩酸の中なので、できるのはアニリンではなくアニリン塩酸塩 ＝ 液性（酸性）の工程が要る */
+    id: "ra1", title: "ニトロベンゼン × スズ（塩酸）",
+    ox: "Sn_ox", red: "PhNO2_red", answer: [3, 2],
+    bottles: ["C6H5NO2", "Sn", "HCl"],
+    intro: "ニトロベンゼンにスズと塩酸を加えて温めると、アニリン塩酸塩ができる",
+    /* クリアのあとに1行だけ言う続き（設計「NaOH で遊離は、クリアの後の1行で言い、参考書へつなぐ」）。
+       式は項で持ち、つり合いをテストで確かめる（文字列の式を手で書かない） */
+    after: {
+      lead: "NaOH を加えると、アニリンが遊離する",
+      left: [{ sp: "C6H5NH3Cl", n: 1 }, { sp: "NaOH", n: 1 }],
+      right: [{ sp: "C6H5NH2", n: 1 }, { sp: "NaCl", n: 1 }, { sp: "H2O", n: 1 }],
+      ref: "aniline", anchor: "prep",
+    },
+  },
 ];
 
 /* ================================================================================
@@ -3103,7 +3176,10 @@ const ORGANIC_OXIDANTS = {
    ちょうど一致する ——「有機の官能基の酸化として扱うか」で線が引かれており、
    シュウ酸は無機の還元剤とまったく同じ扱い方をするため。この一致は回帰テストで固定する。 */
 function isOrganicStage(stage) {
-  return !!(stage && ORGANIC_OXIDANTS[stage.ox]);
+  /* ★ 2026-09-26（I-0178）: 有機が**還元される側**に来る反応（ニトロベンゼンの還元）も有機（発展）。
+     こちらは LISTED_OXIDANTS の organic 印で見る（id の一覧を手で書かないのは同じ） */
+  return !!(stage && (ORGANIC_OXIDANTS[stage.ox] ||
+    (LISTED_OXIDANTS[stage.red] && LISTED_OXIDANTS[stage.red].organic)));
 }
 
 /* ORGANIC_OXIDANTS の**逆向き版**。順位を持たない「酸化剤の側」について、相手を明示列挙する。
@@ -3127,6 +3203,22 @@ const LISTED_OXIDANTS = {
     partners: ["I_ox"],
     why: "強さの順位（梯子）は酸性条件のものだけを持っています。この液性でのこの組み合わせは、" +
       "このアプリでは強弱を決めていません。",
+  },
+  /* 同じ MnO₄⁻ → MnO₂ を H⁺ で書いた形（I-0178）。自由モードの KMnO₄（中性・塩基性）はいまこちらを使う。
+     相手は上と同じ I_ox 1本（教科書がこの液性で扱う組み合わせ）。
+     ⚠ H⁺ で書いてあるので、酸性の書き方の相手（エタノールなど）とも**書き方は食い違わない**
+     ＝ そこで止まる理由は「この液性の組は収録していない」の方になる（下の文） */
+  "MnO4_red_MnO2": {
+    partners: ["I_ox"],
+    why: "中性・塩基性の過マンガン酸カリウムの相手は、このアプリではヨウ化カリウムだけを収録しています" +
+      "（強さの順位は酸性条件のものしか持っていないため）。",
+  },
+  /* ニトロベンゼンの還元（I-0178・有機（発展））。順位を持たない有機の酸化剤なので、相手を列挙する。
+     organic: true ＝ このステージを「有機（発展）」として扱う印（isOrganicStage が見る） */
+  "PhNO2_red": {
+    partners: ["Sn_ox"],
+    organic: true,
+    why: "ニトロベンゼンの還元は、このアプリではスズと塩酸の組み合わせだけを収録しています。",
   },
   /* 熱濃硫酸は**順位を持たせない**（M6-F）。標準電極電位でいえば SO₄²⁻/SO₂ は
      Cu²⁺/Cu より下にあり、梯子に素直に置くと「銅は溶けない」になってしまう。
@@ -3205,7 +3297,9 @@ const REAGENTS = [
      中性・塩基性なら MnO₂（黒褐色）。「液性が足りないから反応しない」のではないことを、
      この1本で実物として見せる（DESIGN §2-4）。 */
   { id: "KMnO4", sp: "KMnO4", side: "ox", label: "過マンガン酸カリウム",
-    half: { acid: "MnO4_red", basic: "MnO4_red_neutral" },
+    /* ★ 中性・塩基性は H⁺ で書いた MnO₄⁻ → MnO₂（MnO4_red_MnO2）を使う（I-0178）。
+       液性に合わせて OH⁻ で書き直すのは、組み立ての中の「液性の工程」の仕事 */
+    half: { acid: "MnO4_red", basic: "MnO4_red_MnO2" },
     note: "赤紫色。酸性なら Mn²⁺（ほぼ無色）、中性・塩基性なら MnO₂（黒褐色）になる" },
   { id: "K2Cr2O7", sp: "K2Cr2O7", side: "ox", label: "二クロム酸カリウム",
     half: { acid: "Cr2O7_red" }, note: "橙色。還元されると緑色の Cr³⁺ になる" },
@@ -3356,6 +3450,9 @@ function rankOfHalf(halfId) { return rankOfCouple(coupleOf(halfId)); }
    言い過ぎになる。ただし**酸性の書き方の式と塩基性の書き方の式はそのまま足せない**ので、
    その judgement は writtenFor() が別に受け持つ。 */
 function conditionOfHalf(hr) {
+  /* ★ H⁺ で書いてあっても、その行き先が中性・塩基性でしか起きない式（MnO4_red_MnO2）は
+     medium に書いてある（I-0178）。書き方（writtenFor）とは別の話なので、ここだけが見る */
+  if (hr.medium) return hr.medium;
   if (hr.left.some((t) => t.sp === "H+")) return "acid";
   if ([...hr.left, ...hr.right].some((t) => t.sp === "OH-")) return "basic";
   return "any";
@@ -3401,6 +3498,10 @@ function composeStage(oxHalfId, redHalfId) {
   };
   // 酸化される側の出発種が板として置けないなら「溶液中」。置けるなら板ありで mode は持たない
   if (!ox.left.some((t) => isPlateable(t.sp))) st.mode = "solution";
+  /* 液性（I-0178）。式が「この液性で使う」と持っていれば、ステージもその液性で組む
+     ＝ 自由モードの KMnO₄（中性・塩基性）にも液性の工程が出る */
+  const med = ox.medium || red.medium;
+  if (med) st.medium = med;
   return st;
 }
 
@@ -4131,7 +4232,10 @@ const CURRICULUM = [
     units: [
       { id: "u-redox-half", name: "酸化還元と半反応式", redox: ["rs1", "rs2", "rs3", "rn1", "rn2"],
         note: "半反応式を整数倍して e⁻ をそろえ、足し合わせる" },
+      /* ★ rs4・ra1（I-0178）は液性の工程が見どころの2本なので、ここに入れる
+         （足し合わせたあとで書き直す。練習の b1〜b4 は半反応式1本を書き直す） */
       { id: "u-condition", name: "液性による書き換え（酸性 ⇄ 塩基性）", condition: ["b1", "b2", "b3", "b4"],
+        redox: ["rs4", "ra1"],
         note: "両辺に OH⁻ を足して H₂O にまとめ、相殺する" },
       { id: "u-redox-organic", name: "有機の酸化（アルコール）", redox: ["ro1", "ro2", "ro3"],
         note: "官能基のついた炭素1個の酸化数が上がる" },
@@ -4356,9 +4460,15 @@ function checkMolecularEq(stage, coeffs) {
   return { ok: false, cmp, reason: "左右で原子の数が合っていません" };
 }
 
+/* ステージの半反応式（key は "ox" / "red"）。液性の工程を「半反応式の後（A）」で済ませた道では、
+   stage.halves に**書き直した式**が入っている（liquidStageA）。無ければ登録どおりの式 */
+function halfOfStage(stage, key) {
+  return (stage && stage.halves && stage.halves[key]) || HALF_REACTIONS[stage[key]];
+}
+
 /* 半反応式×倍率を足し合わせ、両辺に現れる種（e⁻）を打ち消したイオン反応式を返す */
 function combineHalves(stage, a, b) {
-  const ox = HALF_REACTIONS[stage.ox], red = HALF_REACTIONS[stage.red];
+  const ox = halfOfStage(stage, "ox"), red = halfOfStage(stage, "red");
   const L = {}, R = {};
   const add = (map, terms, k) => { for (const t of terms) map[t.sp] = (map[t.sp] || 0) + t.n * k; };
   add(L, ox.left, a); add(L, red.left, b);
@@ -4371,6 +4481,189 @@ function combineHalves(stage, a, b) {
   }
   const toTerms = (m) => Object.entries(m).filter(([, n]) => n > 0).map(([sp, n]) => ({ sp, n }));
   return { left: toTerms(L), right: toTerms(R) };
+}
+
+/* ================================================================================
+   液性の工程（2026-09-26・I-0178・DESIGN_redox.md「液性の工程を組み立ての中に入れる」）
+
+   ユーザーの決定:「液性はイオン反応式の1工程で取り込んだ方がよいのでは？」。
+   半反応式はいつも H⁺ で書き、**その液性で実際に存在する形に書き直す**のを組み立ての1工程にする。
+   中の操作は結びつきの表（LIQUID_JOINS）1枚で表す ——
+     ・塩基性 … H⁺ ＋ OH⁻ → H₂O（condition.html の toBasicHalf と同じ。テストで一致を固定）
+     ・塩基性 … カルボン酸 ＋ OH⁻ → カルボン酸イオン ＋ H₂O（H⁺ を手放す）
+     ・酸性   … 塩基（アミン）＋ H⁺ → 共役酸（H⁺ を受け取る）
+   置く位置は2つ（どちらで直しても同じ式になる。テストで固定）:
+     A … 半反応式の後（各半反応式を直してから③で足す）。塩基性だけ
+     B … 足し合わせた後（③の式を直す）。既定。酸性の工程は B だけ
+       （塩基は生成物の側に出るので、足す前の半反応式には「受け取る H⁺」がまだ無い）
+   **要らない回には段を出さない**（liquidStepOf が null）。既存14ステージはどれも null。
+   ⚠ ここは判定と式だけ。画面の言葉のうち「段の見出し・判定の1行」だけはここで作る
+   （同じ言い方を redox.js とテストで2回書かないため）。
+   ================================================================================ */
+
+/* 結びつきの表。その液性で、両辺に足したもの（add）が from と結びついて to になる。
+   ⚠ 並びが結びつく順（足した数が足りないときは上から取る）。name は見出しで呼ぶ名前 */
+const LIQUID_JOINS = [
+  { medium: "basic", add: "OH-", from: "H+",      to: [{ sp: "H2O", n: 1 }], op: "neutralize" },
+  { medium: "basic", add: "OH-", from: "CH3COOH", to: [{ sp: "CH3COO-", n: 1 }, { sp: "H2O", n: 1 }], op: "acidOff", name: "酢酸" },
+  { medium: "acid",  add: "H+",  from: "C6H5NH2", to: [{ sp: "C6H5NH3+", n: 1 }], op: "baseOn", name: "アニリン" },
+];
+/* 液性ごとに両辺に足すもの */
+const LIQUID_ADD = { basic: "OH-", acid: "H+" };
+
+function liquidJoinsOf(medium) { return LIQUID_JOINS.filter((j) => j.medium === medium); }
+
+/* 書き直すのに足す数 ＝ 結びつく相手（H⁺・カルボン酸・アミン）の数。両辺ぶんを数える。
+   eq は { left, right }（半反応式でもイオン反応式でもよい） */
+function liquidNeed(eq, medium) {
+  let n = 0;
+  for (const j of liquidJoinsOf(medium)) {
+    for (const side of [eq.left, eq.right]) for (const t of side) if (t.sp === j.from) n += t.n;
+  }
+  return n;
+}
+
+/* ステージの液性。**データに書かずに導く**:
+     stage.medium（composeStage が式から写したもの）→ 式の medium（MnO4_red_MnO2）→
+     H⁺ で書いた式があれば酸性 → どれでもなければ null（Zn × Cu²⁺ のように液性に関係しない） */
+function liquidMediumOf(stage) {
+  if (!stage) return null;
+  if (stage.medium) return stage.medium;
+  const ox = halfOfStage(stage, "ox"), red = halfOfStage(stage, "red");
+  if (!ox || !red) return null;
+  const m = ox.medium || red.medium;
+  if (m) return m;
+  return (writtenFor(ox) === "acid" || writtenFor(red) === "acid") ? "acid" : null;
+}
+
+/* このステージに液性の段を出すか。出さない回は null。
+   返すもの { medium, add, need, paths, halves, ops }
+     paths  … 選べる位置。塩基性で直す半反応式があれば ["A","B"]、無ければ ["B"]
+     halves … A の位置で直す半反応式（"ox" / "red"。H⁺ などを含むものだけ）
+     ops    … 使う結びつき（見出しの言葉を決める） */
+function liquidStepOf(stage) {
+  const medium = liquidMediumOf(stage);
+  if (!medium || !stage.answer) return null;
+  const c = combineHalves(stage, stage.answer[0], stage.answer[1]);
+  const need = liquidNeed(c, medium);
+  if (!need) return null;
+  const halves = medium === "basic"
+    ? ["ox", "red"].filter((k) => liquidNeed(halfOfStage(stage, k), medium) > 0)
+    : [];
+  const ops = liquidJoinsOf(medium)
+    .filter((j) => [...c.left, ...c.right].some((t) => t.sp === j.from)).map((j) => j.op);
+  return { medium, add: LIQUID_ADD[medium], need, paths: halves.length ? ["A", "B"] : ["B"], halves, ops };
+}
+
+/* 1本の式を、その液性の形へ書き直す。k は両辺に足す数（人が書いた数）。
+   筆算の行がそのまま取れるように、途中の姿も返す:
+     added  … ＋) の行（両辺に add を k 個ずつ）
+     joined … 結びついたあと・相殺の前（H⁺ ＋ OH⁻ → H₂O など）
+     left / right … 両辺の H₂O を相殺した、できあがり
+     need / k / cancelled（相殺した H₂O）/ rest（結びつく相手がまだ残っている数）/ ok
+   ⚠ 項の並びは崩さない（できたものは結びついた相手の場所に置く）＝ 画面の式が読みやすい */
+function liquidRewrite(eq, medium, k) {
+  const add = LIQUID_ADD[medium];
+  const need = liquidNeed(eq, medium);
+  const copy = (side) => side.map((t) => ({ sp: t.sp, n: t.n }));
+  if (!add || !Number.isInteger(k) || k < 0) {
+    return { ok: false, medium, add, need, k, left: copy(eq.left), right: copy(eq.right) };
+  }
+  const put = (side, sp, n) => {
+    const hit = side.find((t) => t.sp === sp);
+    if (hit) hit.n += n; else side.push({ sp, n });
+  };
+  const added = {
+    left: copy(eq.left).concat(k > 0 ? [{ sp: add, n: k }] : []),
+    right: copy(eq.right).concat(k > 0 ? [{ sp: add, n: k }] : []),
+  };
+  const joinSide = (side) => {
+    const s = copy(side);
+    put(s, add, k);
+    for (const j of liquidJoinsOf(medium)) {
+      const fi = s.findIndex((t) => t.sp === j.from && t.n > 0);
+      const ai = s.findIndex((t) => t.sp === add);
+      if (fi < 0 || ai < 0) continue;
+      const m = Math.min(s[fi].n, s[ai].n);
+      if (!m) continue;
+      s[fi].n -= m;
+      s[ai].n -= m;
+      j.to.forEach((p, i) => {
+        const hit = s.find((t) => t.sp === p.sp);
+        if (hit) hit.n += p.n * m;
+        else if (i === 0) s.splice(fi + 1, 0, { sp: p.sp, n: p.n * m });
+        else s.push({ sp: p.sp, n: p.n * m });
+      });
+    }
+    return s.filter((t) => t.n > 0);
+  };
+  const joined = { left: joinSide(eq.left), right: joinSide(eq.right) };
+  // 両辺に共通する H₂O を相殺する（toBasicHalf の③と同じ）
+  const left = copy(joined.left), right = copy(joined.right);
+  const wl = left.find((t) => t.sp === "H2O"), wr = right.find((t) => t.sp === "H2O");
+  const cancelled = wl && wr ? Math.min(wl.n, wr.n) : 0;
+  if (cancelled) { wl.n -= cancelled; wr.n -= cancelled; }
+  const done = { left: left.filter((t) => t.n > 0), right: right.filter((t) => t.n > 0) };
+  const rest = liquidNeed(done, medium);
+  return {
+    medium, add, need, k, added, joined, left: done.left, right: done.right, cancelled, rest,
+    ok: need > 0 && k === need && rest === 0,
+  };
+}
+
+/* 段の見出し（設計書の言葉そのまま）。塩基性でカルボン酸もあるときは、その1句を足す */
+function liquidHeadText(step) {
+  if (!step) return "";
+  const D = (sp) => SPECIES[sp].disp;
+  if (step.medium === "acid") {
+    const j = liquidJoinsOf("acid").find((x) => step.ops.includes(x.op));
+    return `酸性では${j ? j.name : "塩基"}は H⁺ を受け取っている。H⁺ を足して書き直そう`;
+  }
+  const extra = liquidJoinsOf("basic").filter((j) => j.op !== "neutralize" && step.ops.includes(j.op))
+    .map((j) => `、${D(j.from)} は ${D(j.to[0].sp)} になっている`).join("");
+  return `液性に合わせて書き直そう（中性・塩基性では H⁺ は OH⁻ と結びついて H₂O になっている${extra}）`;
+}
+
+/* 足した数の判定1行。⚠ 答えの数は言わない（多い・足りないの向きだけ） */
+function liquidJudge(eq, medium, k) {
+  const D = (sp) => SPECIES[sp].disp;
+  const add = LIQUID_ADD[medium];
+  if (!Number.isInteger(k) || k < 0) return { kind: "none", text: "" };
+  const r = liquidRewrite(eq, medium, k);
+  if (r.ok) {
+    const used = liquidJoinsOf(medium).filter((j) => [...eq.left, ...eq.right].some((t) => t.sp === j.from));
+    return { kind: "ok", text: used.map((j) => `${D(j.from)} は残らず ${D(j.to[0].sp)} になった`).join("。") };
+  }
+  if (k < r.need) {
+    const j = liquidJoinsOf(medium).find((x) => [...r.left, ...r.right].some((t) => t.sp === x.from));
+    return { kind: "short", text: `${j ? D(j.from) : "相手"} がまだ残っている。${D(add)} を増やそう` };
+  }
+  return { kind: "over", text: `${D(add)} が余る。減らそう` };
+}
+
+/* ④以降が使うイオン反応式 ＝ 液性の工程を通したあとの式。工程が要らない回は combineHalves そのもの */
+function ionicOf(stage, a, b) {
+  const c = combineHalves(stage, a, b);
+  const medium = liquidMediumOf(stage);
+  const need = medium ? liquidNeed(c, medium) : 0;
+  if (!need) return c;
+  const r = liquidRewrite(c, medium, need);
+  return { left: r.left, right: r.right };
+}
+
+/* A の道（半反応式の後で直す）で③に使うステージ。直す半反応式を書き直した形で差し替える。
+   塩基性でなければそのまま返す（酸性の工程は B だけ） */
+function liquidStageA(stage) {
+  const medium = liquidMediumOf(stage);
+  if (medium !== "basic") return stage;
+  const halves = Object.assign({}, stage.halves || {});
+  for (const key of ["ox", "red"]) {
+    const hr = halfOfStage(stage, key);
+    if (!liquidNeed(hr, medium)) continue;
+    const r = liquidRewrite(hr, medium, liquidNeed(hr, medium));
+    halves[key] = Object.assign({}, hr, { left: r.left, right: r.right, disp: null, rewritten: true });
+  }
+  return Object.assign({}, stage, { halves, medium });
 }
 
 /* ================================================================================
@@ -4395,9 +4688,9 @@ function combineHalves(stage, a, b) {
 /* 係数を聞く項の並び（左辺 → 右辺。e⁻ は消えているので出てこない）。
    各項に「どちらの半反応式から来て、何倍されるか」を添える ＝ 外したときの助言に使う。 */
 function ionicCoeffRows(stage, a, b) {
-  if (!stage || !HALF_REACTIONS[stage.ox] || !HALF_REACTIONS[stage.red]) return null;
+  if (!stage || !halfOfStage(stage, "ox") || !halfOfStage(stage, "red")) return null;
   const ionic = combineHalves(stage, a, b);
-  const ox = HALF_REACTIONS[stage.ox], red = HALF_REACTIONS[stage.red];
+  const ox = halfOfStage(stage, "ox"), red = halfOfStage(stage, "red");
   const inHalf = (hr, sp) => hr.left.some((t) => t.sp === sp) || hr.right.some((t) => t.sp === sp);
   const decorate = (side) => ionic[side].filter((t) => t.sp !== "e-").map((t) => {
     const fromOx = inHalf(ox, t.sp), fromRed = inHalf(red, t.sp);
@@ -4481,8 +4774,8 @@ function calcSheetRows(stage, a, b) {
     hr.left.map((t) => ({ side: "left", sp: t.sp, n: t.n * k }))
       .concat(hr.right.map((t) => ({ side: "right", sp: t.sp, n: t.n * k })));
   return {
-    ox: mk(HALF_REACTIONS[stage.ox], a),
-    red: mk(HALF_REACTIONS[stage.red], b),
+    ox: mk(halfOfStage(stage, "ox"), a),
+    red: mk(halfOfStage(stage, "red"), b),
     sum: rows.terms.map((t) => ({ side: t.side, sp: t.sp, n: t.n, from: t.from, mult: t.mult })),
   };
 }
@@ -4649,6 +4942,10 @@ const SALT_FORMULA = {
   "Zn^2+|Cl-":    "ZnCl2",
   "Cu^2+|NO3-":   "Cu(NO3)2",
   "Ag+|NO3-":     "AgNO3",
+  // 液性の工程のあとで右辺に残るイオン（I-0178）。KMnO₄ × KI（中性）とニトロベンゼンの還元
+  "K+|OH-":       "KOH",
+  "Sn^4+|Cl-":    "SnCl4",
+  "C6H5NH3+|Cl-": "C6H5NH3Cl",
   // 価数＝高さのブロック（DESIGN_ion_blocks.md）が組ませる対。④⑤の導出では使わない
   // （Ba を含む REDOX_STAGES が無いので bottlePlan の結果は変わらない）が、
   // 表に置けば上の機械検査（原子数の突き合わせ）がそのまま効く
@@ -4792,7 +5089,9 @@ function bottlePlan(stage, a, b, scale) {
   const list = stage && stage.bottles;
   if (!list || !list.length) return null;
   const s = Number.isInteger(scale) && scale >= 1 ? scale : 1;
-  const ionic = combineHalves(stage, a, b);
+  /* ★ 液性の工程（I-0178）を通したあとのイオン反応式から組む。液性の工程が要らない回は
+     combineHalves そのもの（既存14ステージの終点は1つも動かない。テストで固定） */
+  const ionic = ionicOf(stage, a, b);
   const need = ionic.left.filter((t) => t.sp !== "e-").map((t) => ({ sp: t.sp, n: t.n * s }));
   const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
 

@@ -29,7 +29,7 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=228">
+<link rel="stylesheet" href="style.css?v=229">
 </head>
 <!-- redoxPage … このページだけ字を1割大きくする（style.css の --fs-u）。
      class を持たないページは既定の 1px のままなので、何も変わらない -->
@@ -38,7 +38,7 @@
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v228</div>
+  <div class="version">v229</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -174,6 +174,17 @@
       <div id="multMsg"></div>
     </section>
 
+    <!-- ★ 液性の段（2026-09-26・I-0178・DESIGN_redox.md「液性の工程を組み立ての中に入れる」）。
+         その液性で実際にいる形に書き直す。**要らない回には出さない**（既存14ステージには出ない）。
+         ⚠ 段は1つだけで、置き場所を redox.js が動かす: A（半反応式の後）なら③の前、B（足し合わせた後・既定）なら③の後。
+         番号は「②′」「③′」（前後の段の番号を動かさない）。操作は condition.html の筆算と同じ -->
+    <section class="step" id="stepLiq" hidden>
+      <div class="stepHead"><span class="stepNo" id="liqNo">③′</span><span id="liqHead"></span></div>
+      <div id="liqPathBar" class="hbProc" role="group" aria-label="液性を直す位置を選ぶ" hidden></div>
+      <div id="liqBody"></div>
+      <div class="footNote"><a id="liqHow" href="condition.html">やり方を見る →</a></div>
+    </section>
+
     <!-- ③〜⑤ は1枚の筆算。→ の位置がそろうよう同じグリッドに置き、段ごとに現れる -->
     <section class="step" id="stepCalc" hidden>
       <!-- 【C′】③の係数は筆算の中で自分で書く（v193）。3行とも空欄で出て、人が埋める。
@@ -252,11 +263,11 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=228"></script>
-<script src="schematic.js?v=228"></script>
+<script src="model.js?v=229"></script>
+<script src="schematic.js?v=229"></script>
 <!-- ⑥ の「価数＝高さのブロック」（DESIGN_ion_blocks.md）。redox.js より前に読む -->
-<script src="blocks.js?v=228"></script>
-<script src="header-ui.js?v=228"></script>
-<script src="redox.js?v=228"></script>
+<script src="blocks.js?v=229"></script>
+<script src="header-ui.js?v=229"></script>
+<script src="redox.js?v=229"></script>
 </body>
 </html>

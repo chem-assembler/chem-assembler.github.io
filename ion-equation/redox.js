@@ -103,6 +103,12 @@ const RSTYLE = {
   "CHI3":     { color: "#f0d65a", r: 20, darkText: true },
   "CH3COO-":  { color: "#e8ddc6", r: 26, darkText: true },
   "HCOO-":    { color: "#e8ddc6", r: 22, darkText: true },
+  // ニトロベンゼンの還元（I-0178）。スズは銀白色の金属、ニトロベンゼンは淡黄色の液体
+  "Sn":       { color: "#b9c0c7", r: 16, darkText: true },
+  "Sn^4+":    { color: "#8e9aa6", r: 16 },
+  "C6H5NO2":  { color: "#efe2a2", r: 27, darkText: true },
+  "C6H5NH2":  { color: "#e4d8c8", r: 27, darkText: true },
+  "C6H5NH3+": { color: "#d9c8b4", r: 27, darkText: true },
 };
 
 let stageIdx = 0;
@@ -147,6 +153,13 @@ function schedule(delay, fn) {
 function stage() { return freeStage || REDOX_STAGES[stageIdx]; }
 function oxHR() { return HALF_REACTIONS[stage().ox]; }
 function redHR() { return HALF_REACTIONS[stage().red]; }
+/* ビーカーと模式図が使う半反応式（I-0178）。**その液性で実際にいる形**で描く ——
+   中性の KMnO₄ × KI なら、ビーカーの中にいるのは H⁺ ではなく H₂O で、できるのは OH⁻。
+   H⁺ で書いた式のまま描くと、中性の液に H⁺ が泳いでいる絵になる。
+   書き直しは model.js の liquidStageA（塩基性の回だけ。ほかは登録どおりの式がそのまま返る）。
+   ⚠ 段2・③の筆算は H⁺ で書いた式のまま（書き直すのは液性の段の仕事） */
+function labOxHR() { return halfOfStage(liquidStageA(stage()), "ox"); }
+function labRedHR() { return halfOfStage(liquidStageA(stage()), "red"); }
 /* 溶液中モード（板なし・両者溶液中の浮遊粒・色変化）。既定は金属モード */
 function isSolution() { return stage().mode === "solution"; }
 /* 酸化側の源となる種（左辺の非 e⁻ 項。金属モードでは板の金属、溶液モードでは還元剤イオン） */
@@ -563,8 +576,8 @@ function layoutLab() {
   simTime = 0; events = [];
   const a = mult[0], b = mult[1];
   const sol = isSolution();
-  const oxSps = expandTerms(oxHR().left.filter((t) => t.sp !== "e-"));
-  const ionTerms = redHR().left.filter((t) => t.sp !== "e-");
+  const oxSps = expandTerms(labOxHR().left.filter((t) => t.sp !== "e-"));
+  const ionTerms = labRedHR().left.filter((t) => t.sp !== "e-");
   const redSps = expandTerms(ionTerms);
   // 溶液モードは半反応式1回ぶんをひとかたまりにして、左右の列に向かい合わせて置く
   const oxCell = cellPlan(oxSps.map(spRadius));
@@ -699,7 +712,7 @@ function oxidizeAtom(atom) {
   removeParticle(atom);
   oxFlash(x, y);
   // 酸化生成物（金属イオン1個 / シュウ酸なら CO₂ の泡が2個、のように複数・気体もあり）
-  for (const t of oxHR().right.filter((t) => t.sp !== "e-")) {
+  for (const t of labOxHR().right.filter((t) => t.sp !== "e-")) {
     for (let k = 0; k < t.n; k++) {
       if (BUBBLE_SP.has(t.sp)) {
         const bub = spawnParticle(t.sp, x + rnd(-8, 8), y, "bubble");
@@ -718,7 +731,7 @@ function oxidizeAtom(atom) {
 }
 
 function startReduction() {
-  const redIonDisp = redHR().left.find((t) => t.sp !== "e-").sp;
+  const redIonDisp = labRedHR().left.find((t) => t.sp !== "e-").sp;
   setMsg(isSolution()
     ? `${SPECIES[redIonDisp].disp} が、渡ってきた e⁻ を受け取る…`
     : `${SPECIES[redIonDisp].disp} が板へ近づき、e⁻ を受け取る…`);
@@ -826,7 +839,7 @@ function transformUnit(unit) {
   const my = unit.ions.reduce((s, p) => s + p.y, 0) / unit.ions.length;
   unit.ions.forEach(removeParticle);
   oxFlash(mx, my);
-  for (const t of redHR().right.filter((t) => t.sp !== "e-")) {
+  for (const t of labRedHR().right.filter((t) => t.sp !== "e-")) {
     for (let k = 0; k < t.n; k++) {
       if (BUBBLE_SP.has(t.sp)) {
         const bub = spawnParticle(t.sp, mx, my, "bubble");
@@ -897,6 +910,22 @@ function showClear() {
      組み上げたなら、そちらが最後（半反応式の足し合わせはその途中） */
   t.textContent = molShown() ? "化学反応式ができた" : "半反応式の足し合わせができた";
   clearEl.appendChild(t);
+  /* このあと何が起きるかを1行だけ（ra1 の NaOH で遊離・I-0178）。参考書の該当の節へつなぐ */
+  const af = stage().after;
+  if (af) {
+    const d = document.createElement("div");
+    d.className = "clearAfter";
+    d.id = "clearAfter";
+    const say = (terms) => terms.map((x) => (x.n > 1 ? x.n : "") + SPECIES[x.sp].disp).join(" ＋ ");
+    d.textContent = `${af.lead}: ${say(af.left)} → ${say(af.right)} `;
+    if (af.ref) {
+      const a = document.createElement("a");
+      a.href = "../reference/" + af.ref + "/" + (af.anchor ? "#" + af.anchor : "");
+      a.textContent = "参考書で見る →";
+      d.appendChild(a);
+    }
+    clearEl.appendChild(d);
+  }
   if (stageIdx < REDOX_STAGES.length - 1) {
     const b = document.createElement("button");
     b.textContent = "次のステージへ →";
@@ -1065,7 +1094,7 @@ function refreshHUD() {
   const eCount = particles.filter((p) => p.sp === "e-").length;
   if (eCount > 0) chip(`e⁻ ×${eCount}（板の上）`, RSTYLE["e-"].color);
   if (deposited > 0) {
-    const depSp = redHR().right.find((t) => t.sp !== "e-").sp;
+    const depSp = labRedHR().right.find((t) => t.sp !== "e-").sp;
     if (depSp !== "H2") chip(`${SPECIES[depSp].disp} ×${deposited}（析出）`, (RSTYLE[depSp] || {}).color);
   }
   for (const sp of Object.keys(escaped)) chip(`${SPECIES[sp].disp}↑ ×${escaped[sp]}（空気中へ）`, null, "escaped");
@@ -1344,22 +1373,10 @@ function updateMultMsg() {
 function onMultChange() {
   refreshHalfRows();
   // 倍率が変わればイオン反応式も変わる＝足すイオンの数も本数も変わるので、④⑤⑥は白紙に戻す
-  bottlePick = {};
-  bottleCounts = {};
-  bottleRightN = {};
-  bottleMol = {};
-  bottleDbl = {};
-  saltKey = null;          // ⑥で組み上げたものも白紙に戻す（前の回の答えを持ち越さない）
-  bottleAdd = {};
-  bottleSlotActive = null;   // 筆算の「いま置く先」も白紙に戻す
-  ownerKey = null;
-  sheetKey = null;
-  doubleKey = null;
-  molDone = false;
-  placeSheet(5);
-  calcVals = { ox: {}, red: {}, sum: {} };
-  calcDone = false;
-  calcKey = null;
+  // （⑥で組み上げたもの・筆算の「いま置く先」も。前の回の答えを持ち越さない）
+  resetBelowCalc();
+  /* 液性の段（B）の式も変わるので、足した数も白紙に戻す。A の道は半反応式1本ずつを直すので倍率に関係しない */
+  delete liqVals.sum;
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
@@ -1404,7 +1421,7 @@ function halfCore(hr) {
 
 function buildRedoxSchematic() {
   if (!schematicSvg) return;
-  const ox = oxHR(), red = redHR();
+  const ox = labOxHR(), red = labRedHR();
   const givePer = electronsOf(ox), takePer = electronsOf(red);
   const mkUnit = (hr, per, idx) => ({
     core: halfCore(hr), per, count: mult[idx], tag: `e⁻${per}個`,
@@ -1484,7 +1501,7 @@ const acidSrcMsgEl = document.getElementById("acidSourceMsg");
 function acidSourcePlan() {
   const st = stage();
   if (!st.bottles || !acidSrcSvg) return null;
-  const red = redHR();
+  const red = labRedHR();
   const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
   const hPer = nOf(red.left, "H+");
   if (!hPer) return null;
@@ -1582,11 +1599,260 @@ function updateSheetTail() {
   updateCalcInput(chk);
   // ④⑤⑥は筆算とは別立て。**呼び出しはここ1か所だけ**にする
   updateBottleStep();
-  revealStep(stepCalcEl, balanced);
-  if (!balanced) return;
+  /* ★ 液性の段（I-0178）。A（半反応式の後）なら③より前・B（足し合わせた後）なら③の後。
+     A を選んでいるあいだは、液性を直し終えるまで③を出さない（直した式を足すので） */
+  const path = liqPathNow();
+  const aReady = path !== "A" || liqAllDone();
+  updateLiqStep(path === "A" ? balanced : (!!chk.ok && !calcPending()));
+  revealStep(stepCalcEl, balanced && aReady);
+  if (!balanced || !aReady) return;
   updateSumRows(chk);
   updateIonicRow(chk);
   updateCalcMsg();
+}
+
+/* ================================================================================
+   液性の段（2026-09-26・I-0178・DESIGN_redox.md「液性の工程を組み立ての中に入れる」）
+
+   ★ その液性で実際に存在する形に書き直す1工程。判定と式はすべて model.js
+     （liquidStepOf / liquidRewrite / liquidJudge / liquidHeadText）。ここは描いて入力を受けるだけ。
+   ★ 見た目と操作は condition.html の筆算にそろえる:
+       足す数を「？」から自分で決める → 結びつく（H⁺ ＋ OH⁻ → H₂O）→ 両辺の H₂O を相殺
+   ★ 置く位置は選択式（A: 半反応式の後／B: 足し合わせた後。既定 B）。酸性の工程は B だけ。
+   ⚠ 要らない回（既存14ステージ）には段そのものを出さない。
+   ================================================================================ */
+const stepLiqEl = document.getElementById("stepLiq");
+const liqNoEl = document.getElementById("liqNo");
+const liqHeadEl = document.getElementById("liqHead");
+const liqBarEl = document.getElementById("liqPathBar");
+const liqBodyEl = document.getElementById("liqBody");
+let liqPath = "B";       // 選んでいる位置。ステージを開き直すと B に戻る
+let liqVals = {};        // 足す数（"ox" / "red" … A の道、"sum" … B の道）
+let liqBuiltKey = null;  // 作り直す境目（ステージ／位置／B なら倍率）
+
+function liqStep() { return liquidStepOf(stage()); }
+/* いまの位置。液性の段が無い回は null。選べない位置（酸性で A）を選んでいたら B に落とす */
+function liqPathNow() {
+  const s = liqStep();
+  if (!s) return null;
+  return s.paths.includes(liqPath) ? liqPath : "B";
+}
+/* ③が足す半反応式を持つステージ（A の道なら書き直した式に差し替わっている） */
+function calcStage() { return liqPathNow() === "A" ? liquidStageA(stage()) : stage(); }
+
+/* 書き直す式の一覧。A は直す半反応式（H⁺ を含むもの）ごと、B は③の式1本 */
+function liqTargets() {
+  const st = stage(), s = liqStep();
+  if (!s) return [];
+  if (liqPathNow() === "A") {
+    return s.halves.map((key) => ({
+      key, eq: halfOfStage(st, key),
+      tag: key === "ox" ? "【還元剤】の式" : "【酸化剤】の式",
+    }));
+  }
+  return [{ key: "sum", eq: combineHalves(st, mult[0], mult[1]), tag: "③の式" }];
+}
+function liqAllDone() {
+  const s = liqStep();
+  if (!s) return true;
+  return liqTargets().every((t) => liquidRewrite(t.eq, s.medium, liqVals[t.key]).ok);
+}
+
+/* 置き場所を動かす（段は1つだけ。A なら③の前、B なら③の後） */
+function placeLiq(path) {
+  if (!stepLiqEl || !stepCalcEl) return;
+  if (path === "A") { if (stepLiqEl.nextElementSibling !== stepCalcEl) stepCalcEl.before(stepLiqEl); }
+  else if (stepCalcEl.nextElementSibling !== stepLiqEl) stepCalcEl.after(stepLiqEl);
+}
+
+function setLiqPath(p) {
+  if (p === liqPath) return;
+  liqPath = p;
+  liqVals = {};
+  liqBuiltKey = null;
+  /* 道を変えると③の中身（足す式）が変わるので、③から下は白紙に戻す（halfreaction の手順の切り替えと同じ）。
+     倍率とビーカーはそのまま（段1・段2 は液性に関係しない） */
+  resetBelowCalc();
+  updateSheetTail();
+}
+
+/* ③から下の入力を白紙に戻す（倍率を変えたときと液性の位置を変えたときに共通） */
+function resetBelowCalc() {
+  bottlePick = {};
+  bottleCounts = {};
+  bottleRightN = {};
+  bottleMol = {};
+  bottleDbl = {};
+  saltKey = null;
+  bottleAdd = {};
+  bottleSlotActive = null;
+  ownerKey = null;
+  sheetKey = null;
+  doubleKey = null;
+  molDone = false;
+  placeSheet(5);
+  calcVals = { ox: {}, red: {}, sum: {} };
+  calcDone = false;
+  calcKey = null;
+}
+
+function updateLiqStep(show) {
+  if (!stepLiqEl) return;
+  const s = liqStep();
+  if (!s || !show) { revealStep(stepLiqEl, false); return; }
+  const path = liqPathNow();
+  placeLiq(path);
+  revealStep(stepLiqEl, true);
+  const key = `${stage().id}/${path}/${path === "B" ? mult.join(",") : ""}`;
+  if (liqBuiltKey !== key) { liqBuiltKey = key; buildLiq(s, path); }
+  refreshLiq();
+}
+
+/* 1本ぶんの項を並べ、H₂O のうち cancelN 個に斜線を引く（condition.js の renderTerms と同じ見せ方）。
+   「4H₂O のうち2個が消えて 2H₂O」を式の形のまま見せる */
+function renderLiqTerms(container, terms, cancelN) {
+  container.innerHTML = "";
+  let first = true;
+  const put = (t, cancel) => {
+    if (!first) container.appendChild(sepEl("＋"));
+    container.appendChild(termSpan(t, [], cancel));
+    first = false;
+  };
+  for (const t of terms) {
+    if (t.sp === "H2O" && cancelN > 0) {
+      const c = Math.min(cancelN, t.n);
+      const span = termSpan({ sp: t.sp, n: c }, [], true);
+      if (!first) container.appendChild(sepEl("＋"));
+      container.appendChild(span);
+      first = false;
+      if (t.n > c) put({ sp: t.sp, n: t.n - c }, false);
+      continue;
+    }
+    put(t, false);
+  }
+}
+
+function liqRow(parent, id, markText, tagText, strong) {
+  const o = sheetRow(parent, id);
+  o.mark.textContent = markText || "";
+  o.arrow.textContent = "→";
+  o.left.className = "cLeft halfFormula";
+  o.right.className = "cRight halfFormula";
+  o.note.innerHTML = "";
+  const tag = document.createElement("span");
+  tag.className = "rowTag" + (strong ? " strong" : "");
+  tag.textContent = tagText || "";
+  o.note.appendChild(tag);
+  o.tag = tag;
+  return o;
+}
+
+const LIQ_PATH_LABEL = { B: "足し合わせた後で直す", A: "半反応式のうちに直す" };
+const LIQ_DONE_TAG = { basic: "中性・塩基性の形", acid: "酸性の形" };
+
+function buildLiq(s, path) {
+  liqNoEl.textContent = path === "A" ? "②′" : "③′";
+  liqHeadEl.textContent = liquidHeadText(s);
+  // 位置の切り替え（選べる回だけ）。既定 B を先に置く
+  liqBarEl.innerHTML = "";
+  liqBarEl.hidden = s.paths.length < 2;
+  for (const p of ["B", "A"]) {
+    if (!s.paths.includes(p)) continue;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.id = "liqPath" + p;
+    b.textContent = LIQ_PATH_LABEL[p];
+    b.className = p === path ? "active" : "";
+    b.setAttribute("aria-pressed", p === path ? "true" : "false");
+    b.onclick = () => setLiqPath(p);
+    liqBarEl.appendChild(b);
+  }
+  liqBodyEl.innerHTML = "";
+  const D = (sp) => SPECIES[sp].disp;
+  for (const t of liqTargets()) {
+    const scroll = document.createElement("div");
+    scroll.className = "sheetScroll";
+    const sheet = document.createElement("div");
+    sheet.className = "liqSheet";
+    sheet.id = "liqSheet_" + t.key;
+    scroll.appendChild(sheet);
+    liqBodyEl.appendChild(scroll);
+    const base = liqRow(sheet, `liq_${t.key}_base`, "", t.tag);
+    renderLiqTerms(base.left, t.eq.left, 0);
+    renderLiqTerms(base.right, t.eq.right, 0);
+    // ＋) の行: 足す数は「？」から自分で決める。右辺は写し（同じ数を両辺に）
+    const add = liqRow(sheet, `liq_${t.key}_add`, "＋)", `両辺に ${D(s.add)} を足す`);
+    add.arrow.textContent = "";
+    add.left.innerHTML = "";
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.min = "0";
+    inp.max = "99";
+    inp.inputMode = "numeric";
+    inp.className = "fcoefIn liqIn";
+    inp.id = "lq_" + t.key;
+    inp.placeholder = "？";
+    inp.setAttribute("aria-label", "両辺に足す " + D(s.add) + " の数");
+    inp.value = Number.isInteger(liqVals[t.key]) ? String(liqVals[t.key]) : "";
+    inp.oninput = () => {
+      const v = parseInt(inp.value, 10);
+      if (Number.isInteger(v) && v >= 0) liqVals[t.key] = v; else delete liqVals[t.key];
+      refreshLiq();
+      updateSheetTail();
+    };
+    const f = document.createElement("span");
+    f.className = "formula";
+    f.textContent = D(s.add);
+    add.left.append(inp, f);
+    const rule1 = sheetRule(sheet, `liq_${t.key}_rule1`);
+    const join = liqRow(sheet, `liq_${t.key}_join`, "", "");
+    const rule2 = sheetRule(sheet, `liq_${t.key}_rule2`);
+    const done = liqRow(sheet, `liq_${t.key}_done`, "", LIQ_DONE_TAG[s.medium], true);
+    const msg = sheetSpan(sheet, `liq_${t.key}_msg`, "footNote");
+    t.parts = { add, rule1, join, rule2, done, msg };
+    LIQ_PARTS[t.key] = t.parts;
+  }
+}
+const LIQ_PARTS = {};
+
+function refreshLiq() {
+  const s = liqStep();
+  if (!s) return;
+  const D = (sp) => SPECIES[sp].disp;
+  for (const t of liqTargets()) {
+    const P = LIQ_PARTS[t.key];
+    if (!P) continue;
+    const k = liqVals[t.key];
+    const has = Number.isInteger(k) && k > 0;
+    P.add.right.textContent = has ? `${k} ${D(s.add)}` : "";
+    const r = liquidRewrite(t.eq, s.medium, has ? k : 0);
+    /* 結びついたあと（相殺の前）。足した数を書いたら出す（多すぎ・少なすぎも見える）。
+       ⚠ ぴったりで相殺する H₂O も無い回（酸性のアミン）は、この行がそのままできあがりと同じになる
+       ＝ 同じ式を2行続けて出さない */
+    const showJoin = has && !(r.ok && !r.cancelled);
+    P.join.row.hidden = !showJoin;
+    P.rule1.hidden = !has;
+    if (has) {
+      const nL = (r.joined.left.find((x) => x.sp === "H2O") || { n: 0 }).n;
+      const nR = (r.joined.right.find((x) => x.sp === "H2O") || { n: 0 }).n;
+      renderLiqTerms(P.join.left, r.joined.left, Math.min(r.cancelled, nL));
+      renderLiqTerms(P.join.right, r.joined.right, Math.min(r.cancelled, nR));
+      P.join.tag.textContent = r.cancelled > 0 ? `両辺の H₂O を ${r.cancelled}個 消す`
+        : s.medium === "acid" ? "H⁺ を受け取った" : `${D("H+")} と ${D("OH-")} が H₂O に`;
+    }
+    // できあがり（ぴったりのときだけ）
+    P.done.row.hidden = !r.ok;
+    P.rule2.hidden = !r.ok;
+    if (r.ok) {
+      renderLiqTerms(P.done.left, r.left, 0);
+      renderLiqTerms(P.done.right, r.right, 0);
+    }
+    P.done.row.classList.toggle("doneRow", !!r.ok);
+    const j = liquidJudge(t.eq, s.medium, k);
+    setStatusMsg(P.msg, j.text, j.kind === "ok" ? "ok" : j.kind === "none" ? "" : "ng");
+    const inp = document.getElementById("lq_" + t.key);
+    if (inp) inp.classList.toggle("ng", j.kind === "short" || j.kind === "over");
+  }
 }
 
 /* ================================================================================
@@ -1634,8 +1900,9 @@ function updateCalcInput(chk) {
      ⚠ **問う欄が0の回は入力面にしない**（倍率が 1:1 の r1・r3）。
      合計行の項がぜんぶ①のまま降りてくるので、開いても問うものが無い。
      その回は畳んだまま（今までどおり完成した筆算）で出し、そのまま④⑤へ進む。 */
-  const on = !!chk.ok && calcAskCount(stage(), mult[0], mult[1]) > 0;
-  const key = on ? `${stage().id}/${mult[0]}/${mult[1]}` : null;
+  const on = !!chk.ok && calcAskCount(calcStage(), mult[0], mult[1]) > 0;
+  // ★ 液性の段の位置（A/B）でも③の中身が変わる（A は書き直した半反応式を足す）ので、境目に入れる
+  const key = on ? `${stage().id}/${mult[0]}/${mult[1]}/${liqPathNow() || "-"}` : null;
   if (calcKey !== key) {
     calcKey = key;
     calcVals = { ox: {}, red: {}, sum: {} };
@@ -1643,8 +1910,8 @@ function updateCalcInput(chk) {
     if (on) {
       /* 埋める欄を「入力済み」として入れておく。⚠ こうすることで **checkCalcSheet の意味を
          1文字も変えずに**「埋めた欄は入力済み」が成り立つ（空欄と 0 の区別もそのまま）。 */
-      calcGiven = calcGivenSlots(stage(), mult[0], mult[1]);
-      const rows = calcSheetRows(stage(), mult[0], mult[1]);
+      calcGiven = calcGivenSlots(calcStage(), mult[0], mult[1]);
+      const rows = calcSheetRows(calcStage(), mult[0], mult[1]);
       for (const k of ["ox", "red", "sum"]) for (const i of calcGiven[k]) calcVals[k][i] = rows[k][i].n;
     }
     calcDone = false;
@@ -1667,7 +1934,7 @@ function givenTitle(rowKey) {
    印（.ng）と判定文だけを塗り替える（refreshCalcInput）。 */
 function calcSlots(rowKey, offset) {
   if (!calcPending()) return null;
-  const res = checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  const res = checkCalcSheet(calcStage(), mult[0], mult[1], calcVals);
   const given = calcGiven[rowKey] || [];
   return (t, i) => {
     const idx = offset + i;
@@ -1690,9 +1957,9 @@ function calcSlots(rowKey, offset) {
 }
 
 function refreshCalcInput() {
-  const res = checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  const res = checkCalcSheet(calcStage(), mult[0], mult[1], calcVals);
   if (!res) return;
-  const rows = calcSheetRows(stage(), mult[0], mult[1]);
+  const rows = calcSheetRows(calcStage(), mult[0], mult[1]);
   for (const key of ["ox", "red", "sum"]) {
     rows[key].forEach((_, i) => {
       const el = document.getElementById(`cc_${key}_${i}`);
@@ -1715,7 +1982,7 @@ function updateCalcMsg(res) {
   const note = SHEET.calcGivenNote;
   if (note) {
     // 灰色の数字の説明（＝ 何が書いてあって、何を書くのか）
-    const text = calcPending() ? calcGivenNote(stage(), mult[0], mult[1]) : null;
+    const text = calcPending() ? calcGivenNote(calcStage(), mult[0], mult[1]) : null;
     note.textContent = text || "";
     note.hidden = !text;
   }
@@ -1731,7 +1998,7 @@ function updateCalcMsg(res) {
     box.append(done);
     return;
   }
-  const r = res || checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  const r = res || checkCalcSheet(calcStage(), mult[0], mult[1], calcVals);
   box.hidden = false;
   let msg = document.getElementById("calcMsgText");
   if (!msg) {
@@ -1775,8 +2042,9 @@ function updateSumRows(chk) {
   // 「還元剤＝酸化される側」の対応を行ラベルでも明示する（Gemini レビュー採用・v132）。
   // ステップ1の kindTag（還元剤/酸化剤）と同じ言葉で結び、×a・×b がどちらの式に
   // かかったかを役割名で追えるようにする
-  fill(SHEET.sumOx, oxHR(), a, 0, `【還元剤】（×${a} 酸化される式）`, "ox");
-  fill(SHEET.sumRed, redHR(), b, 1, `【酸化剤】（×${b} 還元される式）`, "red");
+  // ★ A の道（液性を半反応式の後で直した）では、書き直した式を足す（I-0178）
+  fill(SHEET.sumOx, halfOfStage(calcStage(), "ox"), a, 0, `【還元剤】（×${a} 酸化される式）`, "ox");
+  fill(SHEET.sumRed, halfOfStage(calcStage(), "red"), b, 1, `【酸化剤】（×${b} 還元される式）`, "red");
   SHEET.head3.querySelector(".stepNo").title = `e⁻ ${chk.give}個ずつ`;
 }
 
@@ -1786,7 +2054,7 @@ function updateIonicRow(chk) {
   SHEET.rule1.hidden = false;
   o.mark.textContent = "";
   o.note.innerHTML = "";
-  const combined = combineHalves(stage(), mult[0], mult[1]);
+  const combined = combineHalves(calcStage(), mult[0], mult[1]);
   o.arrow.textContent = "→";
   o.left.className = "cLeft halfFormula";
   o.right.className = "cRight halfFormula";
@@ -1911,7 +2179,8 @@ function updateBottleStep() {
   const chk = checkRedoxMultipliers(st, mult[0], mult[1]);
   /* ③の係数を筆算の中で書いているあいだは、この段も出さない。
      ④の問いに**係数がそのまま入っている**ので、出したままにすると答えが下から漏れる */
-  const rows = (chk.ok && !calcPending()) ? bottleRows() : null;
+  /* ★ 液性の段がある回は、書き直し終えるまで④も出さない（④の柱は書き直したあとの式の左辺・I-0178） */
+  const rows = (chk.ok && !calcPending() && liqAllDone()) ? bottleRows() : null;
   revealStep(stepBottlesEl, !!rows);
   if (!rows) {
     revealStep(stepHissanEl, false);
@@ -2220,7 +2489,8 @@ function buildSheet(force) {
   // --- 1行目: ③で出したイオン反応式（柱 ＋ 右辺）
   const tag = sheetCell("bwRowTag", row, 1, n + 2);
   const tb = document.createElement("b");
-  tb.textContent = "③で出したイオン反応式";
+  // 液性を足し合わせた後（B）で直した回は、③′で直した式から始まる（I-0178）
+  tb.textContent = liqPathNow() === "B" ? "③′で直したイオン反応式" : "③で出したイオン反応式";
   tag.appendChild(tb);
   row++;
   sh.pillars.forEach((p, i) => {
@@ -2987,6 +3257,7 @@ function updatePickVisibility() {
   if (!show) {
     revealStep(stepCalcEl, false);
     revealStep(stepCleaveEl, false);
+    if (stepLiqEl) revealStep(stepLiqEl, false);
     if (stepBottlesEl) revealStep(stepBottlesEl, false);
     clearEl.hidden = true;
   }
@@ -3485,6 +3756,10 @@ function initStage() {
   calcVals = { ox: {}, red: {}, sum: {} };
   calcDone = false;
   calcKey = null;
+  // 液性の段（I-0178）。開き直したら既定の B（足し合わせた後）から
+  liqPath = "B";
+  liqVals = {};
+  liqBuiltKey = null;
   cleared = false;
   soloMode = null;
   pickOpened = false;     // ステージを開き直したら段0 はたたんだ状態から
@@ -3558,6 +3833,17 @@ window.RedoxEq = {
       // 液面の上に浮かべて残した気体（I-0175）。数は escaped と同じになるはず
       floating: gasFloats.map((f) => ({ sp: f.sp, x: f.x, y: f.y, r: f.r, inDom: !!f.el.isConnected })),
       counts,
+      /* 液性の段（I-0178）。shown は画面に出ているか、before は段のすぐ後ろの段の id（位置の確かめ用） */
+      liq: {
+        step: liqStep(),
+        path: liqPathNow(),
+        shown: !!stepLiqEl && !stepLiqEl.hidden,
+        done: liqAllDone(),
+        next: stepLiqEl && stepLiqEl.nextElementSibling ? stepLiqEl.nextElementSibling.id : null,
+        no: liqNoEl ? liqNoEl.textContent : "",
+        head: liqHeadEl ? liqHeadEl.textContent : "",
+      },
+      ionic: ionicOf(stage(), mult[0], mult[1]),
     };
   },
   /* 自由組み立てモード（?free=1）のフック。判定そのものは model.js が持つので、

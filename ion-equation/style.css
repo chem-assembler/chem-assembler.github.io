@@ -644,7 +644,7 @@ main.timelineMain {
 /* 筆算は式が長いと横に伸びる。はみ出すぶんはこの箱の中だけで横スクロールさせ、
    ページ全体が横に伸びないよう「幅0＋min-width:100%」で親に幅を要求させない */
 .sheetScroll { overflow-x: auto; width: 0; min-width: 100%; padding-bottom: 2px; }
-#calcSheet, #halfSheet, #bottleSheet {
+#calcSheet, #halfSheet, #bottleSheet, .liqSheet {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr) max-content;
   align-items: center;
@@ -1066,6 +1066,33 @@ main.timelineMain {
    同じ橙で並べると押し間違える。ビーカー側の「⚡反応させる」と同じ系統の青にする */
 #clearBanner button.confirm { background: #46647e; }
 #clearBanner button.confirm:disabled { background: #9aa6b1; cursor: default; }
+/* クリアのあとの「このあと」1行（ra1 の NaOH で遊離・I-0178）。太字の帯の中で1段だけ控えめに */
+#clearBanner .clearAfter { margin-top: 6px; font-weight: normal; color: #5a4a20; }
+#clearBanner .clearAfter a { color: #2f5b7a; white-space: nowrap; }
+
+/* ---- 液性の段（I-0178）。筆算は .liqSheet（#calcSheet と同じ5列グリッド）。
+   足す数の欄は「？」から（placeholder）。見た目は condition.html の＋) の行にそろえる ---- */
+#stepLiq .liqSheet { margin: 6px 0 2px; }
+#stepLiq .liqIn { width: 2.6em; }
+#stepLiq .liqIn::placeholder { color: #b0442f; font-weight: bold; opacity: 1; }
+#stepLiq .formula { font-weight: bold; }
+#stepLiq .cSpan.footNote { padding-top: 2px; }
+/* 狭い画面では③の筆算（#calcSheet）と同じく折り返す（左辺で1行 → ＋) と → を頭に右辺で1行）。
+   横送りのままだと、足した OH⁻ の写しや右辺の OH⁻ が画面の外に隠れる（375px で確認） */
+@media (max-width: 560px) {
+  #stepLiq .liqSheet { display: block; min-width: 0; }
+  #stepLiq .liqSheet .calcRow { display: flex; flex-wrap: wrap; align-items: center; column-gap: 4px; row-gap: 2px; margin: 3px 0; }
+  #stepLiq .liqSheet .calcRow[hidden] { display: none; }
+  #stepLiq .liqSheet .cMark { flex: 0 0 auto; }
+  #stepLiq .liqSheet .cMark:empty { display: none; }
+  #stepLiq .liqSheet .cLeft { flex: 1 1 100%; text-align: left; justify-self: auto; }
+  #stepLiq .liqSheet .cArrow { flex: 0 0 auto; }
+  #stepLiq .liqSheet .cArrow:empty { display: none; }
+  #stepLiq .liqSheet .cRight { flex: 1 1 0; min-width: 0; text-align: left; }
+  #stepLiq .liqSheet .cNote { flex: 1 1 100%; }
+  #stepLiq .liqSheet .halfFormula { flex-wrap: wrap; }
+  #stepLiq .liqSheet .cSpan { width: auto; min-width: 0; }
+}
 
 /* ---- スマホ（縦持ち）: 指で押しやすいタップ標的にする ---- */
 @media (max-width: 560px) {
