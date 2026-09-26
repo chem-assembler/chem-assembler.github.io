@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, noai, noimageai"> <!-- noai/noimageai: AI 学習・生成への利用を拒否（ルートの robots.txt と対） -->
+<title>電子対でみる分子のかたち 回帰テスト</title>
+<style>
+body { font-family: "Segoe UI", "Hiragino Sans", sans-serif; margin: 20px; background: #f7f9fb; }
+h1 { font-size: 18px; }
+.version { color: #888; font-size: 12px; }
+#total { font-size: 20px; }
+#total.pass { color: #2e8b57; }
+#total.fail { color: #c0392b; }
+.case { padding: 3px 0; }
+.case.pass { color: #2e8b57; }
+.case.fail { color: #c0392b; font-weight: bold; }
+h3 { margin-top: 24px; color: #666; }
+</style>
+</head>
+<body>
+<!-- 走らせ方: node tools/run-tests.mjs http://localhost:8123/shape/test.html（終了コード 0 が全合格）。
+     モデルのテストだけなら node shape/tests.js。画面のテストは使い捨ての iframe を開いて駆動する -->
+<h1>電子対でみる分子のかたち（shape）回帰テスト <span class="version">v1</span></h1>
+<h2 id="total">実行中…</h2>
+<div id="results"></div>
+<script src="model.js?v=1"></script>
+<script src="tests.js?v=1"></script>
+</body>
+</html>
