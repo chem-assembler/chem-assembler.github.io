@@ -2878,7 +2878,7 @@ function runModelTests() {
   /* ★ 2026-09-26（ユーザー指示「化学反応式の右辺の並びを参考書に合わせる」）。
      組み立ては塩を先に出すが、参考書の並びは反応ごとにまちまち ＝ ステージの rightOrder か模範解答（molecularEq）の順に並べる。
      参考書の式: aniline#prep・oxygen-ozone・iodoform・redox-equation。rs4 は参考書に式が無いので教科書の並び */
-  t("化学反応式の右辺の並びが参考書と同じ（rs2・rs4・ra1・rs5・ri3・ro1〜ro3）・並べ替えても係数は変わらない", () => {
+  t("化学反応式の左辺・右辺の並びが参考書と同じ（rs1〜rs5・ra1・ri3・ro1〜ro3 ほか）・並べ替えても係数は変わらない", () => {
     const want = {
       rs2: "K2SO4,Cr2(SO4)3,Fe2(SO4)3,H2O", rs4: "MnO2,I2,KOH", ra1: "C6H5NH3Cl,SnCl4,H2O",
       rs5: "I2,KOH,O2", ri3: "CH3COONa,CHI3,NaI,H2O",
@@ -2893,6 +2893,18 @@ function runModelTests() {
       const bare = rxRightUnits(Object.assign({}, st, { rightOrder: [], molecularEq: undefined }), st.answer[0], st.answer[1]);
       const key = (rows) => rows.map((x) => x.sp + ":" + x.f.num + "/" + x.f.den).sort().join();
       assert(key(r.rows) === key(bare.rows), id + ": 並べ替えで係数が変わった");
+    }
+    /* ★ 左辺も参考書の並び（2026-09-26「はい」＝ 左辺も直す）。⑤の柱の並びを化学反応式の左辺の順にした。
+       順は leftOrder か bottles。rs2 だけ bottles と違う（K₂Cr₂O₇ ＋ 7H₂SO₄ ＋ 6FeSO₄） */
+    const wantL = {
+      rs1: "KMnO4,FeSO4,H2SO4", rs2: "K2Cr2O7,H2SO4,FeSO4", rs3: "KMnO4,H2C2O4,H2SO4",
+      rs4: "KMnO4,KI,H2O", ra1: "C6H5NO2,Sn,HCl", rs5: "O3,KI,H2O", ri3: "CH3COCH3,I2,NaOH",
+      ro1: "C2H5OH,K2Cr2O7,H2SO4", rn1: "Cu,HNO3", r3: "Zn,HCl",
+    };
+    for (const [id, w] of Object.entries(wantL)) {
+      const st = REDOX_STAGES.find((x) => x.id === id);
+      const sh = rxSheetRows(st, st.answer[0], st.answer[1]);
+      assert(sh.leftMol.map((x) => x.sp).join() === w, id + ": 左辺の並びが参考書と違う: " + sh.leftMol.map((x) => x.sp).join());
     }
     // 否定対照: 並びの指定が無いステージ（rs1）は今までどおり（塩が先）
     const rs1 = REDOX_STAGES.find((x) => x.id === "rs1");
@@ -8764,15 +8776,18 @@ async function runRedoxUITests(iframe) {
       setupB(id);
       const sh = shB(id, a, b);
       assert(!doc.getElementById("stepHissan").hidden, id + ": ⑤の筆算が出ない");
-      // ① 柱 ＝ イオン反応式の左辺の項（e⁻ を除く）。並びも表記も式のまま
+      // ① 柱 ＝ イオン反応式の左辺の項（e⁻ を除く）。表記は式のまま
+      //   ★ 2026-09-26: 並びは③の式の順ではなく、化学反応式の左辺の順（参考書に合わせる・I-0178）＝ sh.pillars の順
       const left = ionicOf(st, a, b).left.filter((x) => x.sp !== "e-");   // ★ 液性の段を通したあとの左辺（I-0178）
       const pills = sheetPills();
       assert(pills.length === left.length,
         `${id}: 柱の数が左辺の項の数と違う: ${pills.length} / ${left.length}`);
-      left.forEach((x, i) => {
-        const want = (x.n > 1 ? x.n + " " : "") + SPECIES[x.sp].disp;
-        assert(pills[i].textContent === want,
-          `${id}: 柱 ${i} が式の項と違う: ${pills[i].textContent} / ${want}`);
+      const termTxt = (x) => (x.n > 1 ? x.n + " " : "") + SPECIES[x.sp].disp;
+      assert(left.map(termTxt).sort().join("|") === pills.map((p) => p.textContent).sort().join("|"),
+        `${id}: 柱が式の項と違う: ${pills.map((p) => p.textContent).join(" / ")}`);
+      sh.pillars.forEach((x, i) => {
+        assert(pills[i].textContent === termTxt(x),
+          `${id}: 柱 ${i} の並びが違う: ${pills[i].textContent} / ${termTxt(x)}`);
       });
       // ②-a 足すイオンの欄は、引き受ける柱の**範囲の中**にある（またぐ回はその範囲が2本以上）
       for (const r of sh.add) {

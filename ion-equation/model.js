@@ -2972,6 +2972,8 @@ const REDOX_STAGES = [
     bottles: ["K2Cr2O7", "FeSO4", "H2SO4"],
     // 化学反応式の右辺の並び（参考書 redox-equation: K₂SO₄ ＋ Cr₂(SO₄)₃ ＋ 3Fe₂(SO₄)₃ ＋ 7H₂O）
     rightOrder: ["K2SO4", "Cr2(SO4)3", "Fe2(SO4)3", "H2O"],
+    // 化学反応式の左辺の並び（参考書 redox-equation: K₂Cr₂O₇ ＋ 7H₂SO₄ ＋ 6FeSO₄）。bottles の順と違うので指定する
+    leftOrder: ["K2Cr2O7", "H2SO4", "FeSO4"],
     intro: "二クロム酸カリウムに Fe²⁺ を加えると、橙色が緑色に変わる",
   },
   {
@@ -5717,7 +5719,19 @@ function rxSheetRows(stage, a, b) {
   const plan = bottlePlan(stage, a, b, 1);
   if (!plan || plan.dataError) return null;
   const left = plan.ionic.left.filter((t) => t.sp !== "e-");
-  const pillars = left.map((t) => ({ sp: t.sp, n: t.n }));
+  /* ★ 2026-09-26（ユーザー指示「左辺の並びも参考書に合わせる」・I-0178）: 柱の並びは、化学反応式の左辺の並び
+     （その柱を担当する物質の順）に合わせる。柱の順がそのまま化学反応式の左辺の順になるため。
+     物質の順は stage.leftOrder、無ければ bottles（ほとんどのステージで参考書の左辺の順と同じ）。
+     ⚠ ③のイオン反応式の並びは変えない（ここで並べ替えるのは⑤の筆算の柱だけ） */
+  const lord = stage.leftOrder || stage.bottles || [];
+  const rankOf = (sp) => {
+    const B = plan.bottles.find((x) => x.n > 0 && x.covers.some((c) => c.sp === sp));
+    const i = B ? lord.indexOf(B.sp) : -1;
+    return i < 0 ? lord.length : i;
+  };
+  const pillars = left.map((t, i) => ({ sp: t.sp, n: t.n, i }))
+    .sort((x, y) => rankOf(x.sp) - rankOf(y.sp) || x.i - y.i)
+    .map((t) => ({ sp: t.sp, n: t.n }));
   const colOf = (sp) => pillars.findIndex((p) => p.sp === sp);
 
   /* 化学反応式の左辺。柱は「その物質が担当したイオン」で決まる（模範で決める。
