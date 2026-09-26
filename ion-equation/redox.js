@@ -209,7 +209,9 @@ function drawBeakerStatic() {
   });
   if (!isSolution()) {
     // 金属板（溶液モードでは板なし）
-    mk("rect", { x: PLATE.x, y: PLATE.y - 40, width: PLATE.w, height: PLATE.h + 40, rx: 4, fill: "#aeb6bf", stroke: "#7c8792", "stroke-width": 2 });
+    mk("rect", { x: PLATE.x, y: PLATE.y - 40, width: PLATE.w, height: PLATE.h + 40, rx: 4, fill: "#aeb6bf", stroke: "#7c8792", "stroke-width": 2, id: "plateBody" });
+    // 金属樹の枝（析出が着地するたびに線を足す）。粒より奥に描く
+    mk("g", { id: "treeLayer" });
     const label = mk("text", { x: PLATE.x + PLATE.w / 2, y: PLATE.y - 48, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#4a5560" });
     label.textContent = SPECIES[oxMetal()].disp + "板";
   }
@@ -515,8 +517,43 @@ function plateESlot(atom, j, eN, nAtoms) {
     y: atom.y + (row - (rows - 1) / 2) * E_PITCH,
   };
 }
+/* ★ 2026-09-26（ユーザー決定・I-0176）: 析出は**板の面から外へ伸びる枝**に並べる（金属樹）。
+   それまでは板のすぐ右（x=121）に下から積んでいたので、溶けて抜けた跡（板の縁の虫食い）と
+   析出した金属が同じ場所に重なっていた。化学としてはどちらも同じ面で起きるので、
+   **穴は板の中（縁を削る）・析出は板の外（枝の先）**に分けて、両方が同時に読めるようにする。
+   枝は1本に4個まで。根は板の面の下から上へ並べ、右上へ伸ばす（樹が育つ向き）。
+   ⚠ 根の間隔は固定（48）。析出の数に合わせて詰めると、先に着いた枝と後の枝で間隔が食い違う。
+     48 なら5本（20個）まで水の中に収まる（根の y: 348 → 156。水面は 145）。それ以上は最後の本に重ねる */
+const BRANCH_LEN = 4, BRANCH_PITCH = 48, BRANCH_MAX = 5;
 function depositPos(d) {
-  return { x: PLATE.x + PLATE.w + 10, y: PLATE.y + PLATE.h - 16 - d * 26 };
+  const b = Math.min(BRANCH_MAX - 1, Math.floor(d / BRANCH_LEN)), j = d % BRANCH_LEN;
+  const rootY = PLATE.y + PLATE.h - 22 - b * BRANCH_PITCH;
+  // 粒の間隔は約 38（右へ 32・上へ 20）。粒の半径は酸化数の札つきで最大 19 ＝ 隣どうしが重ならない（数え物として読める）
+  return { x: PLATE.x + PLATE.w + 30 + j * 32, y: rootY - j * 20, rootX: PLATE.x + PLATE.w, rootY, j };
+}
+
+/* ---- 溶けた板の虫食い（2026-09-26・I-0176）----
+   原子が1個溶けるたびに、その高さで板の右の縁（液に向いた面）を削る。電池（cell.js）と同じ見せ方。
+   ⚠ 見た目だけ。数と判定には使わない */
+let plateBites = [];
+function applyPlateBites() {
+  const body = beakerSvg.querySelector("#plateBody");
+  const old = beakerSvg.querySelector("#plateBite");
+  if (old) old.remove();
+  if (!body) return;
+  if (!plateBites.length) { body.removeAttribute("mask"); return; }
+  const top = PLATE.y - 44, h = PLATE.h + 48;
+  const defs = beakerSvg.querySelector("defs.biteDefs") || mk("defs", { class: "biteDefs" });
+  const m = mk("mask", { id: "plateBite", maskUnits: "userSpaceOnUse", x: PLATE.x - 4, y: top, width: PLATE.w + 8, height: h }, defs);
+  mk("rect", { x: PLATE.x - 4, y: top, width: PLATE.w + 8, height: h, fill: "#fff" }, m);
+  const ex = PLATE.x + PLATE.w;
+  plateBites.forEach((y, k) => {
+    const jit = ((k * 37) % 7) - 3;
+    mk("circle", { cx: ex, cy: y, r: 10, fill: "#000", class: "bite" }, m);
+    mk("circle", { cx: ex - 6, cy: y - 8 + jit * 0.6, r: 5, fill: "#000" }, m);
+    mk("circle", { cx: ex - 4, cy: y + 8 - jit * 0.4, r: 4.5, fill: "#000" }, m);
+  });
+  body.setAttribute("mask", "url(#plateBite)");
 }
 
 function layoutLab() {
@@ -525,6 +562,7 @@ function layoutLab() {
   particles = [];
   // 浮いていた気体の絵は drawBeakerStatic が SVG ごと消すので、列を空にするだけでよい
   gasFloats = [];
+  plateBites = [];
   poolE = []; poolTotal = 0;
   units = []; deposited = 0; escaped = {};
   phase = "idle"; runExact = false;
@@ -641,6 +679,8 @@ function playSolo(kind) {
 
 function oxidizeAtom(atom) {
   const eN = electronsOf(oxHR());
+  // 板の原子が溶けたら、その高さで板の縁を削る（I-0176）。溶液モード（板なし）では何もしない
+  if (!isSolution() && atom.mode === "plateAtom") { plateBites.push(atom.y); applyPlateBites(); }
   // 置いていかれた e⁻ は**原子が元いた場所にそのまま留まる**（共通プールへ飛ばさない）。
   // どの原子が何個置いていったかが位置で分かり、余った e⁻ もその場に残る。
   // 溶液モードは板が無いので、左右のあいだの通り道へ**右向きに**渡していく
@@ -778,9 +818,20 @@ function isDepositable(sp) {
    上限・下限で止めるのは、ごく近い/遠い組み合わせで不自然に見えないようにするため。
    所要は checkAllResolved の締め（0.6秒）より短く取り、クリア表示までに着き終える。 */
 const DEPOSIT_GLIDE_SEC = 0.45;
+/* 着地した析出の1個ぶんの枝。根（板の面）または枝の1つ手前の粒から、この粒までを結ぶ */
+function drawBranch(p) {
+  const layer = beakerSvg.querySelector("#treeLayer");
+  if (!layer || !p.branch) return;
+  const b = p.branch;
+  const from = b.j === 0 ? { x: b.rootX, y: b.rootY } : depositPos(p.depIdx - 1);
+  mk("line", { x1: from.x, y1: from.y, x2: p.tx, y2: p.ty, stroke: (RSTYLE[p.sp] || {}).color || "#9aa4ae",
+    "stroke-width": 5, "stroke-linecap": "round", class: "branch" }, layer);
+}
+
 function spawnDeposit(sp, x, y, pos) {
   const p = spawnParticle(sp, x, y, "toDeposit");
   p.tx = pos.x; p.ty = pos.y;
+  p.branch = pos; p.depIdx = pos.idx;
   p.vx = 0; p.vy = 0;
   const d = Math.hypot(pos.x - x, pos.y - y);
   p.speed = Math.min(460, Math.max(120, d / DEPOSIT_GLIDE_SEC));
@@ -802,7 +853,8 @@ function transformUnit(unit) {
         const p = spawnParticle(t.sp, mx + rnd(-16, 16), my + rnd(-16, 16), "pop");
         p.vx = rnd(-30, 30); p.vy = rnd(-20, 20);
       } else {
-        const pos = depositPos(deposited++);
+        const idx = deposited++;
+        const pos = Object.assign(depositPos(idx), { idx });
         spawnDeposit(t.sp, mx + rnd(-6, 6), my + rnd(-6, 6), pos);
       }
     }
@@ -959,7 +1011,10 @@ function step(dt, now) {
         if (unit.eArrived === unit.need) transformUnit(unit);
       }
     } else if (p.mode === "toDeposit") {
-      if (moveToward(p, dt, p.speed)) p.mode = "deposit";   // 板に着いたらそこで固定
+      if (moveToward(p, dt, p.speed)) {
+        p.mode = "deposit";   // 枝の先に着いたらそこで固定
+        drawBranch(p);
+      }
     } else if (p.mode === "bubble") {
       p.vy = Math.max(p.vy - 300 * dt, -110);
       p.y += p.vy * dt;
@@ -3517,6 +3572,9 @@ window.RedoxEq = {
       poolPts: poolE.map((p) => ({ x: +p.x.toFixed(2), y: +p.y.toFixed(2), r: p.r })),
       waiting: units.filter((u) => u.waiting).length,
       deposited,
+      plateBites: plateBites.slice(),
+      branches: beakerSvg.querySelectorAll("#treeLayer line.branch").length,
+      plateMasked: !!(beakerSvg.querySelector("#plateBody") && beakerSvg.querySelector("#plateBody").getAttribute("mask")),
       escaped: Object.assign({}, escaped),
       // 液面の上に浮かべて残した気体（I-0175）。数は escaped と同じになるはず
       floating: gasFloats.map((f) => ({ sp: f.sp, x: f.x, y: f.y, r: f.r, inDom: !!f.el.isConnected })),

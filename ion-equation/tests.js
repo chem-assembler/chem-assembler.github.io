@@ -6360,28 +6360,55 @@ async function runRedoxUITests(iframe) {
 
   /* 析出はワープではなくスライド着地（v144）。板の上にいきなり湧かせると、
      どのイオンが e⁻ を受け取って金属になり板に積もったのかが、絵の上で切れてしまう。
-     途中を刻んで見て、析出の列（x=121）から離れた水中に一度は居ることを固定する。 */
-  await t("REDOX: 析出した銀は反応した場所から板へ滑ってくる（板の上に湧かない）", async () => {
-    const DEP_X = 121;
-    const posOf = (label) => $$("#beaker .particle").map((e) => {
-      const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(e.getAttribute("transform") || "");
-      const tx = e.querySelector("text");
-      return m && tx ? { t: tx.textContent, x: +m[1], y: +m[2] } : null;
-    }).filter((p) => p && p.t === label);
+     途中を刻んで見て、最後の着地点から離れた水中に一度は居ることを固定する。
+     ★ 2026-09-26（I-0176）: 着地点は板のすぐ右の列ではなく、**板の面から外へ伸びる枝の先**になった */
+  const agPos = (label) => $$("#beaker .particle").map((e) => {
+    const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(e.getAttribute("transform") || "");
+    const tx = e.querySelector("text");
+    const c = e.querySelector("circle");
+    return m && tx ? { t: tx.textContent, x: +m[1], y: +m[2], r: c ? +c.getAttribute("r") : 15 } : null;
+  }).filter((p) => p && p.t === label);
+  await t("REDOX: 析出した銀は反応した場所から枝の先へ滑ってくる（着地点に湧かない）", async () => {
     stageBtn(1).click();
     upBtns()[1].click();          // 還元側 ×2（模範）
     playBtn().click();
-    let away = 0;
+    const seen = [];
     for (let k = 0; k < 300; k++) {
       adv(50);
-      for (const p of posOf("Ag")) if (p.x > DEP_X + 20) away++;
+      seen.push(...agPos("Ag"));
       if (state().phase === "done") break;
     }
-    assert(away >= 2, "Ag が板の外に一度も現れない＝板の上にワープしている: " + away);
     adv(1000);
-    const fin = posOf("Ag");
-    assert(fin.length === 2 && fin.every((p) => Math.abs(p.x - DEP_X) < 1),
-      "最後に析出の列へそろわない: " + JSON.stringify(fin));
+    const fin = agPos("Ag");
+    assert(fin.length === 2, "Ag が2個着地していない: " + JSON.stringify(fin));
+    const away = seen.filter((p) => fin.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > 20)).length;
+    assert(away >= 2, "Ag が着地点から離れた場所に一度も現れない＝着地点にワープしている: " + away);
+  });
+
+  /* ★ I-0176（2026-09-26 ユーザー決定）: 金属樹。溶けた原子のぶん板の縁を削り（虫食い）、
+     析出は板の外へ伸びる枝の先に置く ＝ **穴と析出が重ならない**。溶液モード（板なし）では削らない */
+  await t("REDOX I-0176: 金属樹は、溶けたぶん板が虫食いになり、析出は板の外の枝に並ぶ（重ならない）", async () => {
+    stageBtn(1).click();          // Cu × Ag⁺（銀樹）
+    upBtns()[1].click();          // 還元側 ×2
+    let s = state();
+    assert(!s.plateBites.length && !s.plateMasked && s.branches === 0, "動かす前から板が削れている／枝がある");
+    playBtn().click();
+    adv(25000);
+    s = state();
+    assert(s.plateBites.length === 1 && s.plateMasked, "溶けた Cu 1個ぶん板が削れていない: " + JSON.stringify(s.plateBites));
+    assert(s.deposited === 2 && s.branches === 2, "析出2個に枝が2本でない: " + s.deposited + " / " + s.branches);
+    const plateRight = 85 + 26;
+    const deps = agPos("Ag");
+    assert(deps.length === 2 && deps.every((p) => p.x - p.r > plateRight + 2),
+      "析出が板の縁（虫食いの場所）に重なっている: " + JSON.stringify(deps));
+    // やり直すと戻る
+    stageBtn(1).click();
+    s = state();
+    assert(!s.plateBites.length && !s.plateMasked && s.branches === 0, "やり直しても削れた跡・枝が残る");
+    // 溶液モード（板なし）では削らない
+    stageBtn(REDOX_STAGES.findIndex((x) => x.id === "rs1")).click();
+    playBtn().click(); adv(25000);
+    assert(!state().plateBites.length, "板の無い回で板を削っている");
   });
 
   await t("REDOX: r3 で H₂ の泡が逃げてクリア", async () => {
