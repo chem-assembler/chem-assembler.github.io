@@ -2020,13 +2020,30 @@ main.timelineMain {
    なぜ止めないといけないか: 押せない理由（板を選ぶ・予想する）は title 属性にしか
    書いていなかった ＝ **タッチ端末では一生読めない**。次の一手は .toolbarHint で画面に出す。
    specificity は #toolbar button:disabled (1,1,1) > #toolbar .react (1,1,0) なので上書きできる */
-#toolbar button:disabled {
+#toolbar button:disabled,
+#toolbar button[aria-disabled="true"] {
   background: #d5dbe1;
   color: #8a97a3;
   cursor: not-allowed;
   box-shadow: none;
 }
-#toolbar button:disabled:active { transform: none; }
+#toolbar button:disabled:active,
+#toolbar button[aria-disabled="true"]:active { transform: none; }
+/* 押せないときに押された（電池・電気分解の ▶。I-0174）。次の一手の文と、次にさわる場所を光らせる。
+   disabled の釦は押しても無反応で「効かない」と見えていたので、aria-disabled にして押せば返す */
+@keyframes cellNudge {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 138, 60, 0); }
+  30%      { box-shadow: 0 0 0 5px rgba(224, 138, 60, .55); }
+}
+@keyframes cellNudgeText { 0%, 100% { background: transparent; } 30% { background: #fde7c8; } }
+.toolbarHint.nudge { animation: cellNudgeText .9s ease-out 2; border-radius: 4px; }
+.stepper.nudge { animation: cellNudge .9s ease-out 2; border-radius: 6px; }
+.plateGroup.nudge .plateBody { animation: cellNudgeStroke .9s ease-out 2; }
+@keyframes cellNudgeStroke { 0%, 100% { stroke: #46525e; stroke-width: 2; } 30% { stroke: #e08a3c; stroke-width: 5; } }
+@media (prefers-reduced-motion: reduce) {
+  .toolbarHint.nudge, .stepper.nudge, .plateGroup.nudge .plateBody { animation: none; }
+  .toolbarHint.nudge { background: #fde7c8; }
+}
 /* 次に何をすればよいかの1行。釦の下（flex の折り返し行いっぱい）に敷く */
 .toolbarHint {
   flex: 1 0 100%;

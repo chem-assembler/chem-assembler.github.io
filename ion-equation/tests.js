@@ -9715,6 +9715,30 @@ async function runBatteryUITests(iframe) {
       "押せる釦の色に戻らない: " + win.getComputedStyle(btn).backgroundColor);
   });
 
+  /* I-0174（2026-09-26 ユーザー指摘「つないでみる が、やり直すを押した後だと効かないことがある」）。
+     やり直すと倍率が「？」に戻り、釦は押せない状態になる。以前は disabled で**押しても無反応**
+     ＝ 壊れて見えた。押せないときも押せば、次の一手の文と、次にさわる場所が光ることを見る */
+  await t("BATTERY I-0174: やり直したあとに押すと、無反応ではなく次の一手を光らせる。置き直せば動く", async () => {
+    reset();
+    tap("Zn"); put11();
+    doc.getElementById("playBtn").click(); adv(20000);
+    assert(state().cleared, "1回目がクリアにならない: " + state().msg);
+    doc.querySelector("#toolbar .reset").click();
+    tap("Zn");
+    const before = state().nudges;
+    const btn = doc.getElementById("playBtn");
+    assert(!btn.disabled, "disabled 属性が付いている（押しても無反応に戻る）");
+    btn.click();
+    let s = state();
+    assert(s.phase === "idle", "倍率が「？」なのに動き出した: " + s.phase);
+    assert(s.nudges === before + 1, "押しても何も返していない");
+    assert(doc.getElementById("toolbarHint").classList.contains("nudge"), "次の一手の文が光らない");
+    assert(doc.querySelectorAll("#halfSheet .stepper.nudge").length === 2, "倍率の「？」が光らない");
+    put11();
+    btn.click(); adv(20000);
+    assert(state().cleared, "置き直しても2回目がクリアにならない: " + state().msg);
+  });
+
   await t("BATTERY: 板をタップして予想が当たると、負極(−)・正極(+) の札が出る", async () => {
     reset();
     tap("Zn");
@@ -10170,7 +10194,10 @@ async function runBatteryUITests(iframe) {
     palBtn("Cu").click();
     palBtn("Zn").click();
     assert(state().metals.join() === "Cu,Zn", "選んだ2枚が入らない: " + state().metals.join());
-    tap("Zn");
+    // b2 は「どちらが正極になるか」を問う（I-0174）。正極の Cu をタップする
+    assert(doc.getElementById("predictHead").textContent.includes("正極"), "問いが正極になっていない: " + doc.getElementById("predictHead").textContent);
+    tap("Cu");
+    assert(state().guessOk && state().predictMsg.startsWith("当たり"), "正極の Cu をタップしたのに当たりにならない: " + state().predictMsg);
     let s = state();
     assert(s.neg === "Zn" && s.pos === "Cu", "Cu×Zn で Cu が正極にならない: " + s.neg + "/" + s.pos);
     assert(s.halves.join() === "Zn_ox,Cu_red", "式が違う: " + s.halves.join());
@@ -10180,7 +10207,10 @@ async function runBatteryUITests(iframe) {
     s = state();
     assert(s.metals.join() === "Cu,Ag", "右の板だけ差し替わらない: " + s.metals.join());
     assert(s.guess === null && !s.halvesShown, "差し替えたのに前の予想と式が残っている");
+    // 溶ける側（Cu）をタップすると外れ。正極は Ag だと言う
     tap("Cu");
+    assert(!state().guessOk && state().predictMsg.includes("正極になるのは Ag"), "外れの文が正極を言わない: " + state().predictMsg);
+    tap("Ag");
     s = state();
     assert(s.neg === "Cu" && s.pos === "Ag", "Cu×Ag で Cu が負極にならない: " + s.neg + "/" + s.pos);
     assert(s.halves.join() === "Cu_ox,Ag_red", "式が入れ替わらない: " + s.halves.join());
@@ -10233,7 +10263,7 @@ async function runBatteryUITests(iframe) {
     goB2();
     palBtn("Mg").click();
     palBtn("Ag").click();
-    tap("Mg");
+    tap("Ag");
     assert(state().answer.join(":") === "1:2", "Mg×Ag の倍率: " + state().answer.join(":"));
     goB1();
     const s = state();

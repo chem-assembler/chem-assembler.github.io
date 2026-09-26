@@ -83,7 +83,7 @@ const INERT_LOOK = {
 };
 
 let stageIdx = 0;
-let guess = null;          // 予想（溶けると宣言した金属）。null なら未宣言
+let guess = null;          // 予想（タップした金属）。null なら未宣言。何を問うたかは asksPos() が決める
 let guessTries = 0;        // 予想した回数（クリア条件は「的中、または2回目で修正」）
 let guessOk = false;       // 予想が当たっているか
 /* [負極の酸化 ×a, 正極の還元 ×b]。**null は「まだ置いていない」**（L・2026-08-19）。
@@ -118,6 +118,9 @@ function shufflesPlates() { return rawStage().kind === "battery" && !rawStage().
 function modeKind() { return rawStage().kind; }
 function isElyz()   { return modeKind() === "electrolysis"; }
 function terms()    { return electrodeTerms(modeKind()); }
+/* 予想で問うのが「正極になる板」か（b2 の ask: "pos"）。偽なら「溶ける板」（b1）。
+   **タップした金属を guess に持つのは同じ**で、当たりの物差しだけが変わる（I-0174） */
+function asksPos()  { return !isElyz() && rawStage().ask === "pos"; }
 
 function metalsOf() { return stage().metals || []; }
 function chosenBoth() { const m = metalsOf(); return !!(m[0] && m[1]); }
@@ -263,7 +266,7 @@ function drawBatteryCell() {
     }
     const sty = METAL_STYLE[m] || { plate: "#9aa4ae" };
     const g = mk("g", { class: "plateGroup", "data-metal": m, role: "button", tabindex: "0",
-      "aria-label": m + " の板。この板が溶けると予想する" });
+      "aria-label": m + (asksPos() ? " の板。この板が正極になると予想する" : " の板。この板が溶けると予想する") });
     // タップ標的を板より広く取る（板そのものは 26 単位＝320px 端末で 17px しかない）
     mk("rect", { x: plateCX(i) - 58, y: CELL.plate.y - 14, width: 116, height: CELL.plate.h + 30,
       fill: "transparent", class: "plateHit" }, g);
@@ -541,7 +544,9 @@ function play() {
   phase = "running";
   setMsg(guessOk
     ? "つないだ。e⁻ が負極の板から導線を通って正極へ流れていく（電流はその逆向き）。"
-    : "つないだ。e⁻ は予想とは逆向きに流れる。溶けるのは " + SPECIES[p.neg].disp + " のほう。",
+    : "つないだ。e⁻ は予想とは逆向きに流れる。" + (asksPos()
+      ? "e⁻ が流れこむ正極は " + SPECIES[p.pos].disp + " のほう。"
+      : "溶けるのは " + SPECIES[p.neg].disp + " のほう。"),
     guessOk ? "info" : "ng");
 }
 
@@ -724,8 +729,9 @@ function finish() {
   }
   // 予想の当たり外れは電池だけの条件（電気分解には予想の段が無い）
   if (!isElyz() && !guessOk) {
-    setMsg("e⁻ の数はぴったり合った。ただし予想は外れていた —— 溶けたのは " +
-      SPECIES[pair().neg].disp + " のほう。板をタップして言い直してから、もう一度つないでみよう。", "ng");
+    setMsg("e⁻ の数はぴったり合った。ただし予想は外れていた —— " +
+      (asksPos() ? "正極になったのは " + SPECIES[pair().pos].disp : "溶けたのは " + SPECIES[pair().neg].disp) +
+      " のほう。板をタップして言い直してから、もう一度つないでみよう。", "ng");
     return;
   }
   cleared = true;
@@ -926,13 +932,23 @@ function predict(metal) {
   const p = pair();
   guess = metal;
   guessTries++;
-  guessOk = p.neg === metal;
+  guessOk = (asksPos() ? p.pos : p.neg) === metal;
 
   if (!p.neg) {
     // 同じ金属2枚（b1 では起きない。b2 で通る道）
-    setPredictMsg("2枚とも同じ金属なので、「どちらが溶けるか」を決める差がない。" +
+    setPredictMsg("2枚とも同じ金属なので、「" + (asksPos() ? "どちらが正極になるか" : "どちらが溶けるか") +
+      "」を決める差がない。" +
       "イオン化傾向はちがう金属どうしを比べるものなので、同じ金属では比べようがない。" +
       "▶ つないでみると、どうなるか分かる。", "info");
+  } else if (asksPos()) {
+    /* 正極を問う回（b2）。**理由は溶ける側から言う**（正極の決め手は「相手のほうが溶けやすい」こと）。
+       相手を替えると同じ板の役が変わる、を言うための足場になる */
+    const why = `イオン化傾向は ${SPECIES[p.neg].disp} ＞ ${SPECIES[p.pos].disp} で、` +
+      `大きいほうの ${SPECIES[p.neg].disp} が e⁻ を出して溶ける（負極）。`;
+    setPredictMsg(guessOk
+      ? `当たり。${why}その e⁻ を受け取る ${SPECIES[p.pos].disp} が正極(+)。`
+      : `正極になるのは ${SPECIES[p.pos].disp} のほう。${why}${SPECIES[p.pos].disp} はその e⁻ を受け取る側にまわる。`,
+      guessOk ? "ok" : "ng");
   } else if (guessOk) {
     setPredictMsg(`当たり。イオン化傾向は ${SPECIES[p.neg].disp} ＞ ${SPECIES[p.pos].disp} で、` +
       `イオン化傾向の大きいほうが e⁻ を出して溶ける。${SPECIES[p.neg].disp} が負極(−)。`, "ok");
@@ -1036,7 +1052,8 @@ function buildPalette() {
     !picked[0] ? "まず1枚目の金属を選ぼう。"
     : !picked[1] ? SPECIES[picked[0]].disp + " と組ませる相手を選ぼう。" +
         "灰色の金属は、正極側で起きることをこのアプリが用意していない組み合わせ（起きないという意味ではない）。"
-    : "板をタップして予想 → 「▶ つないでみる」。別の金属を押せば右の板を差し替えられる。";
+    : (asksPos() ? "正極になる板をタップして予想" : "板をタップして予想") +
+      " → 「▶ つないでみる」。別の金属を押せば右の板を差し替えられる。";
   paletteEl.appendChild(hint);
 }
 
@@ -1344,7 +1361,15 @@ function buildToolbar() {
   playBtn.id = "playBtn";
   playBtn.className = "react";
   playBtn.textContent = isElyz() ? "▶ 電源を入れる" : "▶ つないでみる";
-  playBtn.onclick = () => (isElyz() ? playElyz() : play());
+  /* ⚠ disabled 属性は使わない（2026-09-26・I-0174）。「やり直す」のあとは倍率が「？」に戻るので
+     釦は押せない状態になるが、disabled の釦は**押しても何も返さない** ＝ ユーザーには
+     「つないでみるが効かないことがある」と見えていた。押せないときも押せば、
+     何が足りないかを光らせて返す（nudgeBlocked）。 */
+  playBtn.onclick = () => {
+    const why = playBlockReason();
+    if (why) { nudgeBlocked(); return; }
+    isElyz() ? playElyz() : play();
+  };
   const reset = document.createElement("button");
   reset.className = "reset";
   reset.textContent = "↺ やり直す";
@@ -1372,7 +1397,8 @@ function playBlockReason() {
     const ms = metalsOf();
     if (!ms[0] && !ms[1]) return "まず板を2枚選ぼう。上の金属を押すと板が入る。";
     if (!chosenBoth()) return "あと1枚。" + SPECIES[ms[0] || ms[1]].disp + " と組ませる相手を選ぼう。";
-    if (guess === null) return "溶けると思う板をタップして予想しよう。予想してから「▶ つないでみる」。";
+    if (guess === null) return (asksPos() ? "正極になると思う板" : "溶けると思う板") +
+      "をタップして予想しよう。予想してから「▶ つないでみる」。";
   }
   /* 倍率が「？」のままでは、盤面に何単位ならべるかが決まらない（L）。
      ここで止めるのは意地悪ではなく、**自分で数を決めてから確かめる**順にするため。
@@ -1381,11 +1407,39 @@ function playBlockReason() {
   return null;
 }
 
+/* 押せないときに押された。**次にさわる場所**を光らせ、見えていなければそこまで送る。
+   どこが次かは playBlockReason と同じ順（予段 → 板 → 予想 → 倍率）で決める */
+function nudgeBlocked() {
+  const flashIt = (el) => {
+    if (!el) return;
+    el.classList.remove("nudge");
+    void el.getBoundingClientRect();   // アニメを付け直すための強制リフロー
+    el.classList.add("nudge");
+  };
+  flashIt(document.getElementById("toolbarHint"));
+  let target = null;
+  if (!preStepOk()) target = null;
+  else if (!isElyz() && !chosenBoth()) target = paletteEl;
+  else if (!isElyz() && guess === null) {
+    document.querySelectorAll(".plateGroup").forEach(flashIt);
+    target = cellSvg;
+  } else if (ready() && !multSet()) {
+    document.querySelectorAll("#halfSheet .coeff.unset").forEach((c) => flashIt(c.closest(".stepper") || c));
+    target = stepHalvesEl;
+  }
+  if (target && target.scrollIntoView) {
+    const r = target.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > window.innerHeight) target.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+  nudges++;
+}
+let nudges = 0;   // 押せないときに押された回数（テストが「押しても無反応ではない」を見る口）
+
 function updateToolbar() {
   const btn = document.getElementById("playBtn");
   if (!btn) return;
   const why = playBlockReason();
-  btn.disabled = !!why;
+  btn.setAttribute("aria-disabled", why ? "true" : "false");
   btn.title = why || "";
   const hint = document.getElementById("toolbarHint");
   if (hint) {
@@ -1428,6 +1482,7 @@ function resetRound() {
   renderDiscovery();
   predictHeadEl.textContent = isElyz()
     ? "電源につなぐと、両極で何が起きる？"
+    : asksPos() ? "板を2枚選んで、どちらが正極になるか予想しよう"
     : rawStage().choose ? "板を2枚選んで、どちらが溶けるか予想しよう"
     : "どちらの板が溶ける？ — 板をタップして予想しよう";
   stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>`;
@@ -1538,7 +1593,8 @@ window.BatteryEq = {
       return b ? { there: true, disabled: !!b.disabled, why: w ? w.textContent : "" }
         : { there: false, disabled: null, why: "" };
     })(),
-    playDisabled: !!(document.getElementById("playBtn") || {}).disabled,
+    nudges,
+    playDisabled: (document.getElementById("playBtn") || { getAttribute: () => "false" }).getAttribute("aria-disabled") === "true",
     // 押せないときに画面へ出している「次の一手」。空なら押せる（I）
     playHint: ((document.getElementById("toolbarHint") || {}).hidden === false)
       ? document.getElementById("toolbarHint").textContent : "",
