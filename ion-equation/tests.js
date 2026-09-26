@@ -6391,6 +6391,19 @@ async function runRedoxUITests(iframe) {
     const s = state();
     assert(s.escaped["H2"] === 1, "H2 が逃げない: " + JSON.stringify(s));
     assert(s.cleared, "クリアにならない");
+    /* I-0175（2026-09-26 ユーザー指示）: 水面に届いた H₂ を消さず、液面の上で漂わせて残す。
+       帯は水面より上・ガラスの内側で、突き出た亜鉛板には重ならない */
+    assert(s.floating.length === 1 && s.floating[0].sp === "H2" && s.floating[0].inDom,
+      "H₂ が液面の上に残っていない: " + JSON.stringify(s.floating));
+    const y0 = s.floating[0].y, x0 = s.floating[0].x;
+    adv(3000);
+    const f = state().floating[0];
+    assert(f.y + f.r <= 145 && f.y - f.r >= 75, "液面の上の帯から外れている: " + JSON.stringify(f));
+    assert(f.x - f.r > 111, "突き出た亜鉛板に重なっている: " + JSON.stringify(f));
+    assert(f.x !== x0 || f.y !== y0, "止まったまま（漂っていない）");
+    // やり直すと片づく（浮いた絵だけが残らない）
+    stageBtn(2).click();
+    assert(state().floating.length === 0 && ![...doc.querySelectorAll("#beaker text")].some((t) => t.textContent === "H₂"), "やり直しても浮いた H₂ が残る");
   });
 
   await t("REDOX: 酸化数が円内と式の直下に表示される（変化する原子のみ）", async () => {

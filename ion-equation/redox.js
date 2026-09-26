@@ -338,6 +338,50 @@ function splash(x, y) {
   setTimeout(() => c.remove(), 500);
 }
 
+/* ---- 液面から出た気体（2026-09-26・ユーザー指示・I-0175）----
+   「亜鉛 × 塩酸で、発生させた水素をホバリングさせる（他で実装済み）」。
+   イオン反応モード（app.js の floatOutGas）と同じ流儀: 泡が水面に届いた瞬間に消さず、
+   ガラスの内側・液面の上の帯を**ゆっくり行き来させて残す**。何が出ていったのかを見る間をつくる。
+   ⚠ 粒は particles から外す（数や判定は「水の中にあるもの」で見ている）。絵だけを別の列で持つ。
+   ⚠ 金属板は液面の上へ 25 ほど突き出ている（PLATE.y − 40 = 120 ＜ 水面 145）ので、
+     板のある回は帯の左端を板の右に置く ＝ 気体が板に重ならない。 */
+let gasFloats = [];
+function gasAir() {
+  const left = isSolution() ? WATER.x : PLATE.x + PLATE.w + 12;
+  return { top: 82, bottom: WATER.y - 6, x: left, w: WATER.x + WATER.w - left };
+}
+function floatOutGas(p) {
+  const el = p.el;
+  p.el = null;              // ここで消させない（絵は浮かべたまま残す）
+  removeParticle(p);
+  if (!el) return;
+  const air = gasAir();
+  const r = p.r || 14;
+  gasFloats.push({
+    el, r, sp: p.sp,
+    x: Math.min(Math.max(p.x, air.x + r), air.x + air.w - r),
+    y: air.bottom - r,
+    // 1個ずつ左右へ振り分けると、続けて出てきたときに重ならない
+    vx: (gasFloats.length % 2 ? 1 : -1) * 16, vy: -20,
+  });
+}
+/* 帯の中をゆっくり行き来する（壁で向きを変えるだけ） */
+function stepGasFloats(dt) {
+  if (!gasFloats.length) return;
+  const air = gasAir();
+  for (const f of gasFloats) {
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+    const lo = air.x + f.r, hi = air.x + air.w - f.r;
+    if (f.x < lo) { f.x = lo; f.vx = Math.abs(f.vx); }
+    if (f.x > hi) { f.x = hi; f.vx = -Math.abs(f.vx); }
+    const up = air.top + f.r, down = air.bottom - f.r;
+    if (f.y < up) { f.y = up; f.vy = Math.abs(f.vy); }
+    if (f.y > down) { f.y = down; f.vy = -Math.abs(f.vy); }
+    f.el.setAttribute("transform", `translate(${f.x.toFixed(1)},${f.y.toFixed(1)})`);
+  }
+}
+
 /* 酸化数が変化した瞬間の強調（黄色いリング） */
 function oxFlash(x, y) {
   const c = mk("circle", { cx: x, cy: y, r: 17, fill: "none", stroke: "#f2c14e", "stroke-width": 3, class: "splash" }, particleLayer);
@@ -479,6 +523,8 @@ function layoutLab() {
   drawBeakerStatic();
   particleLayer = mk("g", {});
   particles = [];
+  // 浮いていた気体の絵は drawBeakerStatic が SVG ごと消すので、列を空にするだけでよい
+  gasFloats = [];
   poolE = []; poolTotal = 0;
   units = []; deposited = 0; escaped = {};
   phase = "idle"; runExact = false;
@@ -921,7 +967,7 @@ function step(dt, now) {
       if (p.y <= WATER.y + p.r) {
         splash(p.x, WATER.y + 4);
         escaped[p.sp] = (escaped[p.sp] || 0) + 1;
-        removeParticle(p);
+        floatOutGas(p);
         refreshHUD();
       }
     }
@@ -929,6 +975,7 @@ function step(dt, now) {
   }
   separateParticles();
   updateTransforms(now);
+  stepGasFloats(dt);
 }
 
 function updateTransforms(now) {
@@ -3465,6 +3512,8 @@ window.RedoxEq = {
       waiting: units.filter((u) => u.waiting).length,
       deposited,
       escaped: Object.assign({}, escaped),
+      // 液面の上に浮かべて残した気体（I-0175）。数は escaped と同じになるはず
+      floating: gasFloats.map((f) => ({ sp: f.sp, x: f.x, y: f.y, r: f.r, inDom: !!f.el.isConnected })),
       counts,
     };
   },
