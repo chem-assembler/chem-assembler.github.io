@@ -1077,6 +1077,12 @@ main.timelineMain {
 #stepLiq .liqIn::placeholder { color: #b0442f; font-weight: bold; opacity: 1; }
 #stepLiq .formula { font-weight: bold; }
 #stepLiq .cSpan.footNote { padding-top: 2px; }
+/* 類題・参考（3つのまとまり）。⚠ 字は本文と同じ大きさ・1行1件（ui-text-density） */
+#liqMore { margin-top: 10px; border-top: 1px solid #dfe5ea; padding-top: 8px; }
+#liqMore .liqMoreHead { font-weight: bold; color: #46525e; font-size: calc(14 * var(--fs-u)); }
+#liqMore .liqMoreCap { margin-top: 6px; color: #5a6570; font-size: calc(13.5 * var(--fs-u)); }
+#liqMore .liqMoreList { margin: 2px 0 0; padding-left: 1.4em; font-size: calc(14 * var(--fs-u)); line-height: 1.9; }
+#liqMore .liqMoreList a { color: #2f5b7a; }
 /* 狭い画面では③の筆算（#calcSheet）と同じく折り返す（左辺で1行 → ＋) と → を頭に右辺で1行）。
    横送りのままだと、足した OH⁻ の写しや右辺の OH⁻ が画面の外に隠れる（375px で確認） */
 @media (max-width: 560px) {

@@ -1586,3 +1586,10 @@ model.js の `LIQUID_JOINS` がこの3つを1枚の表で持つ（塩基性の2�
   - B 足し合わせた後で直す（塩基性）: rs5 オゾン × KI／rs4 KMnO₄ × KI／ro4 銀鏡／ro5 フェーリング／ri3 ヨードホルム（参考）
   - C 足し合わせた後で直す（酸性）: ra1 ニトロベンゼン
 - 自由モードの橋は液性もそろえる（酸性で選んだ O₃ × KI から、中性の rs5 へは渡らない）。
+
+#### 実装の記録（v230・2026-09-26）
+- ステージ17 rs5・18 ro4・19 ro5・20 ri3 を足した（有機（発展）は 8〜12・16・18〜20）。液性は4本ともステージの `medium: "basic"` で持つ（O₃ の式は酸性でも使う式なので、式には書かない）。
+- 式を3本足した: `AgNH3_red`（[Ag(NH₃)₂]⁺ ＋ e⁻ → Ag ＋ 2NH₃）・`Cu2O_red`（2Cu²⁺ ＋ H₂O ＋ 2e⁻ → Cu₂O ＋ 2H⁺）・`acetone_io_ox`（CH₃COCH₃ ＋ 3I⁻ ＋ H₂O → CH₃COOH ＋ CHI₃ ＋ 3H⁺ ＋ 6e⁻）。半反応式の一覧は 50 → 53 件。
+- 組み立て（bottlePlan・rxRightUnits）を「**陽イオンが1種で陰イオンが2種以上**」まで広げた（ri3 の Na⁺ と CH₃COO⁻・I⁻）。陽イオンが2種以上のときは今までどおり組まない。
+- 類題・参考の一覧は model.js の `LIQUID_RELATED` ／ `liquidRelatedFor`（題は各モードのステージから引く）。rs4 を A で開く口は `redox.html?rxn=rs4&liq=A`。
+- 自由モードの橋は `stagesForHalves(ox, red, medium)` で液性もそろえる。

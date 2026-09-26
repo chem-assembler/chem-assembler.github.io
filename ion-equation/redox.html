@@ -29,7 +29,7 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=229">
+<link rel="stylesheet" href="style.css?v=230">
 </head>
 <!-- redoxPage … このページだけ字を1割大きくする（style.css の --fs-u）。
      class を持たないページは既定の 1px のままなので、何も変わらない -->
@@ -38,7 +38,7 @@
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v229</div>
+  <div class="version">v230</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -183,6 +183,8 @@
       <div id="liqPathBar" class="hbProc" role="group" aria-label="液性を直す位置を選ぶ" hidden></div>
       <div id="liqBody"></div>
       <div class="footNote"><a id="liqHow" href="condition.html">やり方を見る →</a></div>
+      <!-- 類題・参考（3つのまとまり・収録ステージへのリンク・1行1件）。中身は model.js の liquidRelatedFor -->
+      <div id="liqMore"></div>
     </section>
 
     <!-- ③〜⑤ は1枚の筆算。→ の位置がそろうよう同じグリッドに置き、段ごとに現れる -->
@@ -263,11 +265,11 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=229"></script>
-<script src="schematic.js?v=229"></script>
+<script src="model.js?v=230"></script>
+<script src="schematic.js?v=230"></script>
 <!-- ⑥ の「価数＝高さのブロック」（DESIGN_ion_blocks.md）。redox.js より前に読む -->
-<script src="blocks.js?v=229"></script>
-<script src="header-ui.js?v=229"></script>
-<script src="redox.js?v=229"></script>
+<script src="blocks.js?v=230"></script>
+<script src="header-ui.js?v=230"></script>
+<script src="redox.js?v=230"></script>
 </body>
 </html>

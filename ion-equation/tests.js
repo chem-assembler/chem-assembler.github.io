@@ -1982,8 +1982,8 @@ function runModelTests() {
   });
 
   // ★ 2026-09-26（I-0178）: 酸化還元に rs4・ra1 を足して 18 → 20
-  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元20・電池と電気分解8）", () => {
-    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 20, "sr-cell": 8 };
+  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元24・電池と電気分解8）", () => {   // ★ I-0178 の追加4本（rs5・ro4・ro5・ri3）で 20 → 24
+    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 24, "sr-cell": 8 };
     for (const g of stagesBySeries().groups) {
       assert(g.stages.length === want[g.series.id],
         g.series.id + " の件数が変わった: " + g.stages.length + "（想定 " + want[g.series.id] + "）");
@@ -2022,9 +2022,10 @@ function runModelTests() {
     const redox = stagesBySeries().groups.find((g) => g.series.id === "sr-redox");
     const organic = redox.stages.filter((s) => s.mode === "redox" && isOrganicStage(s.stage));
     // ★ 2026-09-26（I-0178）: ニトロベンゼンの還元（ra1）を末尾の16に足した（番号 1〜14 は動かさない）
-    assert(organic.length === 6, "有機（発展）が酸化還元の系列に6本そろっていない: " + organic.length);
-    assert(organic.map((s) => s.no).join(",") === "8,9,10,11,12,16",
-      "有機（発展）の番号が 8〜12・16 でない: " + organic.map((s) => s.no).join(","));
+    // ★ 追加の4本のうち ro4・ro5・ri3（18〜20）も有機（発展）
+    assert(organic.length === 9, "有機（発展）が酸化還元の系列に9本そろっていない: " + organic.length);
+    assert(organic.map((s) => s.no).join(",") === "8,9,10,11,12,16,18,19,20",
+      "有機（発展）の番号が 8〜12・16・18〜20 でない: " + organic.map((s) => s.no).join(","));
     // 液性モードも同じ系列にいる（半反応式の書き換えなので酸化還元の仲間）
     assert(redox.stages.some((s) => s.mode === "condition"), "液性モードが酸化還元の系列に入っていない");
   });
@@ -2401,7 +2402,8 @@ function runModelTests() {
       }
     }
     // ★ 2026-09-26（I-0178）: rs4・ra1 を足して 9 → 11ステージ
-    assert(checked === 22, "見た組が22でない（bottles を持つ11ステージ × ×1/×2）: " + checked);
+    // ★ 追加の4本のうち rs5・ri3 が化学反応式まで組む → 13ステージ
+    assert(checked === 26, "見た組が26でない（bottles を持つ13ステージ × ×1/×2）: " + checked);
     // ★ rs1 は ×2 にすると 1/9 → 2/18。18 は紙の筆算で書く「両辺に SO₄²⁻ を18個ずつ」と同じ数
     const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
     assert(spectatorAddRows(rs1, 5, 1, 2).find((r) => r.sp === "SO4^2-").n === 18,
@@ -2432,15 +2434,17 @@ function runModelTests() {
     }
     // ★ 2026-09-08: 4ステージ → 9ステージ（15行 × 5通り）
     // ★ 2026-09-26（I-0178）: rs4（K⁺）・ra1（Cl⁻）の2行を足して 17行 × 5通り
-    assert(cases === 85, "見た組み合わせが85でない: " + cases);
+    // ★ rs5（K⁺）・ri3（Na⁺）の2行を足して 19行 × 5通り
+    assert(cases === 95, "見た組み合わせが95でない: " + cases);
     /* ⚠ 3件（r3 の Cl⁻・rs1 の K⁺・rs3 の K⁺）は、1価どうしが1対1で組むので
        相手の個数がそのまま答えになる。⚠ **rs2・ro1〜ro3 の K⁺ は違う**
        （相手は Cr₂O₇²⁻ 1個 で答えは 2）—— そこが「2価のイオンには K⁺ が2個要る」の見せ場。
        ⚠ **rn1・rn2 の NO₃⁻ も違う**（相手は H⁺ 8個／4個 で答えは 6／2）＝ 硝酸の二役。
        数が動いたら見直すこと
        ★ 2026-09-26（I-0178）: 4件目は ra1 の Cl⁻（相手は H⁺ 14個・答えも 14 ＝ HCl の1対1）。
-       rs4 の K⁺ は違う（相手は MnO₄⁻ 2個 と I⁻ 6個 の2本・答えは 8） */
-    assert(exact === 4, "相手の個数がそのまま答えになる回が4でない: " + exact);
+       rs4 の K⁺ は違う（相手は MnO₄⁻ 2個 と I⁻ 6個 の2本・答えは 8）
+       ★ 追加の4本: rs5 の K⁺（相手は I⁻ 2個・答え 2）・ri3 の Na⁺（相手は OH⁻ 4個・答え 4）で 6件 */
+    assert(exact === 6, "相手の個数がそのまま答えになる回が6でない: " + exact);
   });
 
   t("BOTTLE: 全体の倍率は例外 — 半端が出たときだけ案内が立ち、1/2 が出ることを言う", () => {
@@ -2477,7 +2481,8 @@ function runModelTests() {
        r3（亜鉛×塩酸）は金属樹でも電池でもなく気体発生なので残す。 */
     const shown = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id).join();
     // ★ 2026-09-26（I-0178）: 液性の工程の2本（rs4・ra1）も化学反応式まで組む
-    assert(shown === "r3,rs1,rs2,rs3,ro1,ro2,ro3,rn1,rn2,rs4,ra1", "④⑤の段が出るステージが想定と違う: " + shown);
+    // ★ 追加の4本のうち rs5・ri3 だけ化学反応式まで（銀鏡・フェーリングは参考書どおりイオン反応式まで）
+    assert(shown === "r3,rs1,rs2,rs3,ro1,ro2,ro3,rn1,rn2,rs4,ra1,rs5,ri3", "④⑤の段が出るステージが想定と違う: " + shown);
     // 筆算を持つ5本もここを通る ＝ 実装が2本に割れていない
     for (const id of ["ro1", "ro2", "ro3", "rn1", "rn2"]) {
       const st = REDOX_STAGES.find((s) => s.id === id);
@@ -2633,7 +2638,8 @@ function runModelTests() {
     }
     assert(!bad.length, "0 または負の係数を持つ欄がある: " + bad.join(","));
     // ★ 2026-09-26（I-0178）: rs4（14欄）・ra1（14欄）を足して 182 → 210
-    assert(total === 210, "入力欄の総数が 210 でない: " + total);
+    // ★ 追加の4本（rs5・ro4・ro5・ri3）で 210 → 273
+    assert(total === 273, "入力欄の総数が 273 でない: " + total);
   });
 
   t("CALC-SHEET: 模範は導出から出る（HALF_REACTIONS×倍率 と combineHalves と一致）", () => {
@@ -2710,9 +2716,10 @@ function runModelTests() {
         st.id + ": 係数 1 の項が問う側に入っていない");
     }
     // ★ 2026-09-26（I-0178）: rs4・ra1 を足して 182/108/74 → 210/124/86
-    assert(total === 210 && given === 124, `欄の数が違う（総数 ${total} / 埋め ${given}）`);
+    // ★ 追加の4本で 210/124/86 → 273/161/112
+    assert(total === 273 && given === 161, `欄の数が違う（総数 ${total} / 埋め ${given}）`);
     assert(askedUp === 0, "上の2行に問う欄が残っている: " + askedUp);
-    assert(askedSum === 86, "問う欄（合計行）が 86 でない: " + askedSum);
+    assert(askedSum === 112, "問う欄（合計行）が 112 でない: " + askedSum);
   });
 
   /* ⚠⚠ **否定対照 ＝ この形の代償を数で残す。**
@@ -2733,9 +2740,11 @@ function runModelTests() {
       if (b > 1) mulRemoved += rows.red.length;
     }
     // ★ 2026-09-26（I-0178）: rs4・ra1 はどちらも both の項が無い（12欄とも真上から下ろす）。68 → 80・55 → 71
-    assert(addNeeded === 6, "足し算が要る欄が 6 でない: " + addNeeded);
-    assert(copyDown === 80, "真上から下ろすだけの欄が 80 でない: " + copyDown);
-    assert(mulRemoved === 71, "かけ算をする欄が 71 消えていない: " + mulRemoved);
+    /* ★ 追加の4本（I-0178）で 6 → 9。ro5 の H₂O（左）と H⁺（右）はどちらの式にも出る・ri3 の I⁻ も両方の式に出る */
+    assert(addNeeded === 9, "足し算が要る欄が 9 でない: " + addNeeded);
+    assert(copyDown === 103, "真上から下ろすだけの欄が 103 でない: " + copyDown);
+    // ★ 71 → 78（ro4 の ×2 の行 4欄・ri3 の ×3 の行 3欄）
+    assert(mulRemoved === 78, "かけ算をする欄が 78 消えていない: " + mulRemoved);
   });
 
   /* ★ ①-B の撤回（2026-09-07）でここが逆になった。
@@ -2746,7 +2755,7 @@ function runModelTests() {
     assert(zero.length === 0, "問う欄が0のステージが残っている: " + zero.join());
     let ask = 0;
     for (const st of REDOX_STAGES) ask += calcAskCount(st, st.answer[0], st.answer[1]);
-    assert(ask === 86, "問う欄の総数が 86 でない: " + ask);   // ★ I-0178 で rs4・ra1 の 12欄ぶん増えた
+    assert(ask === 112, "問う欄の総数が 112 でない: " + ask);   // ★ I-0178 で rs4・ra1 の 12欄・追加の4本の 26欄ぶん増えた
     for (const st of REDOX_STAGES) {
       const [a, b] = st.answer;
       const note = calcGivenNote(st, a, b);
@@ -2798,8 +2807,8 @@ function runModelTests() {
   t("LEFTC: ⑤で入れる本数と、化学反応式の左辺の係数は同じ数（bottles を持つ9ステージ全部）", () => {
     const bottled = REDOX_STAGES.filter((s) => bottleStepOf(s));
     // ★ 2026-09-26（I-0178）: rs4・ra1 を足して 11件
-    assert(bottled.map((s) => s.id).join() === "r3,rs1,rs2,rs3,ro1,ro2,ro3,rn1,rn2,rs4,ra1",
-      "bottles を持つステージが11件でない: " + bottled.map((s) => s.id).join());
+    assert(bottled.map((s) => s.id).join() === "r3,rs1,rs2,rs3,ro1,ro2,ro3,rn1,rn2,rs4,ra1,rs5,ri3",
+      "bottles を持つステージが13件でない: " + bottled.map((s) => s.id).join());
     let left = 0, right = 0;
     for (const st of bottled) {
       const [a, b] = st.answer;
@@ -2823,8 +2832,9 @@ function runModelTests() {
        ★ 2026-09-08 に 4ステージ → 9ステージ（筆算の家系5本を畳んだ）ので、
        左辺 11欄 → 24欄・右辺 14項 → 32項 に増えた。**入力させる欄が増えたぶんそのもの。** */
     // ★ 2026-09-26（I-0178）: rs4・ra1（左辺3欄・右辺3項ずつ）を足して 24 → 30・32 → 38
-    assert(left === 30, "左辺の欄が30でない: " + left);
-    assert(right === 38, "右辺の項が38でない: " + right);
+    // ★ 追加の rs5（左3・右3）・ri3（左3・右4）で 30 → 36・38 → 45
+    assert(left === 36, "左辺の欄が36でない: " + left);
+    assert(right === 45, "右辺の項が45でない: " + right);
   });
 
   t("LEFTC: ⑤の各行が、その場で「この数が左辺の係数」と言う", () => {
@@ -2846,10 +2856,11 @@ function runModelTests() {
     const org = REDOX_STAGES.filter(isOrganicStage).map((s) => s.id).join();
     /* ★ 2026-09-26（I-0178）: ニトロベンゼンの還元（ra1）を末尾（16）に足した。
        有機が**還元される側**の反応なので、ORGANIC_OXIDANTS ではなく LISTED_OXIDANTS の organic 印で決まる */
-    assert(org === "ro1,ro2,ro3,ri1,ri2,ra1", "有機と判定される並びが想定と違う: " + org);
+    assert(org === "ro1,ro2,ro3,ri1,ri2,ra1,ro4,ro5,ri3", "有機と判定される並びが想定と違う: " + org);
     // 並び順で数えても 8〜12（ユーザーの言う番号と一致すること）＋ 16
     const nums = REDOX_STAGES.map((s, i) => (isOrganicStage(s) ? i + 1 : 0)).filter(Boolean).join();
-    assert(nums === "8,9,10,11,12,16", "有機の番号が 8〜12・16 でない: " + nums);
+    // ★ 追加の4本のうち 18〜20（銀鏡・フェーリング・ヨードホルム参考）も有機。17（O₃ × KI）は化学基礎
+    assert(nums === "8,9,10,11,12,16,18,19,20", "有機の番号が 8〜12・16・18〜20 でない: " + nums);
     /* シュウ酸（rs3・ステージ7）は分子としては有機だが、ここには入らない。
        無機の還元剤とまったく同じ扱い方をする（梯子に順位を持つ）ため。
        銅×硝酸（13・14）も化学基礎のまま */
@@ -2975,6 +2986,95 @@ function runModelTests() {
     const ch = oxChangeOfHalf(HALF_REACTIONS[st.red]);
     assert(ch.length === 1 && ch[0].el === "N" && ch[0].from === 3 && ch[0].to === -3,
       "ニトロベンゼンの N が +3 → −3 になっていない: " + JSON.stringify(ch));
+  });
+
+  /* ---- 追加の4本（DESIGN_redox.md「追加の収録と類題の一覧」）----
+     終点は参考書の式（oxygen-ozone・aldehyde・iodoform）。R ＝ CH₃ として具体物で組む */
+  const LIQ_MORE = {
+    rs5: { ionic: [["O3", 1], ["I-", 2], ["H2O", 1]], to: [["O2", 1], ["I2", 1], ["OH-", 2]],
+           mol: [["O3", 1], ["KI", 2], ["H2O", 1]], molTo: [["O2", 1], ["I2", 1], ["KOH", 2]], organic: false },
+    ro4: { ionic: [["CH3CHO", 1], ["Ag(NH3)2^+", 2], ["OH-", 3]], to: [["CH3COO-", 1], ["Ag", 2], ["H2O", 2], ["NH3", 4]], organic: true },
+    ro5: { ionic: [["CH3CHO", 1], ["Cu^2+", 2], ["OH-", 5]], to: [["CH3COO-", 1], ["Cu2O", 1], ["H2O", 3]], organic: true },
+    ri3: { ionic: [["CH3COCH3", 1], ["I2", 3], ["OH-", 4]], to: [["CH3COO-", 1], ["CHI3", 1], ["I-", 3], ["H2O", 3]],
+           mol: [["CH3COCH3", 1], ["I2", 3], ["NaOH", 4]], molTo: [["CH3COONa", 1], ["NaI", 3], ["CHI3", 1], ["H2O", 3]], organic: true },
+  };
+  const liqPairs = (arr) => arr.map(([sp, n]) => sp + ":" + n).sort().join(",");
+
+  t("LIQ 追加の4本: 終点が参考書の式と一致し、A と B で同じ式に着き、足す OH⁻ を外すと通らない", () => {
+    for (const [id, w] of Object.entries(LIQ_MORE)) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      assert(st, id + " が無い");
+      const [a, b] = st.answer;
+      const step = liquidStepOf(st);
+      assert(step && step.medium === "basic" && String(step.paths) === "A,B", id + ": 塩基性の液性の段（A・B）にならない: " + JSON.stringify(step));
+      const io = ionicOf(st, a, b);
+      assert(liqKey(io.left) === liqPairs(w.ionic) && liqKey(io.right) === liqPairs(w.to),
+        id + ": 終点が参考書の式と違う: " + JSON.stringify(io));
+      assert(compareSides(io.left, io.right).balanced, id + ": 終点がつり合わない");
+      const cA = combineHalves(liquidStageA(st), a, b);
+      assert(liqKey(cA.left) === liqKey(io.left) && liqKey(cA.right) === liqKey(io.right), id + ": A の終点が B と違う");
+      const c = combineHalves(st, a, b);
+      for (const k of [step.need - 1, step.need + 1]) assert(!liquidRewrite(c, "basic", k).ok, id + ": OH⁻ " + k + "個 でも通る");
+      assert(isOrganicStage(st) === w.organic, id + ": 有機（発展）の札の付き方が違う");
+      if (w.mol) {
+        const plan = bottlePlan(st, a, b, 1);
+        assert(plan && plan.ok, id + ": 化学反応式まで組めない: " + (plan && plan.reason));
+        assert(liqKey(plan.left) === liqPairs(w.mol) && liqKey(plan.right) === liqPairs(w.molTo),
+          id + ": 化学反応式が参考書の式と違う: " + JSON.stringify([plan.left, plan.right]));
+      } else {
+        assert(!st.bottles, id + ": 参考書がイオン反応式までの反応に化学反応式の段を付けている");
+      }
+    }
+    // 酢酸になる回は、見出しで「CH₃COOH は CH₃COO⁻ になっている」まで言う（3つめの操作）
+    const ro4 = liquidStepOf(REDOX_STAGES.find((s) => s.id === "ro4"));
+    assert(ro4.ops.includes("acidOff") && /CH₃COOH は CH₃COO⁻ になっている/.test(liquidHeadText(ro4)),
+      "カルボン酸が H⁺ を手放すことを見出しで言わない: " + liquidHeadText(ro4));
+    // 半反応式の e⁻ の数（酸化数の変化と一致）
+    const e = (id) => electronsOf(HALF_REACTIONS[id]);
+    assert(e("AgNH3_red") === 1 && e("Cu2O_red") === 2 && e("acetone_io_ox") === 6, "追加の半反応式の e⁻ の数が違う");
+    const ch = oxChangeOfHalf(HALF_REACTIONS["Cu2O_red"]);
+    assert(ch.length === 1 && ch[0].el === "Cu" && ch[0].from === 2 && ch[0].to === 1 && ch[0].count === 2,
+      "Cu²⁺ → Cu₂O が +2 → +1 の2個になっていない: " + JSON.stringify(ch));
+  });
+
+  t("LIQ 3つの操作: 塩基性で H⁺ を打ち消す・酸性でアミンが H⁺ を受け取る・塩基性でカルボン酸が H⁺ を手放す（表は1枚）", () => {
+    assert(LIQUID_JOINS.map((j) => j.op).sort().join() === "acidOff,baseOn,neutralize", "操作が3種類でない");
+    // アルデヒドの半反応式を塩基性に直すと、参考書の CH₃CHO ＋ 3OH⁻ → CH₃COO⁻ ＋ 2H₂O ＋ 2e⁻ になる
+    const hr = HALF_REACTIONS["MeCHO_ox"];
+    assert(liquidNeed(hr, "basic") === 3, "H⁺ 2個 ＋ 酢酸 1個 ＝ 3 にならない");
+    const r = liquidRewrite(hr, "basic", 3);
+    assert(r.ok && liqKey(r.left) === "CH3CHO:1,OH-:3" && liqKey(r.right) === "CH3COO-:1,H2O:2,e-:2",
+      "アルデヒドの塩基性の半反応式が違う: " + JSON.stringify([r.left, r.right]));
+    // 酸性では酢酸はそのまま（ro2 の終点が動かない）・アミンは H⁺ を受け取る
+    assert(liquidNeed(hr, "acid") === 0, "酸性で酢酸に手を付けている");
+    assert(liquidNeed(HALF_REACTIONS["PhNO2_red"], "acid") === 1 && liquidNeed(HALF_REACTIONS["PhNO2_red"], "basic") === 6,
+      "ニトロベンゼンの式で、酸性はアミン1個・塩基性は H⁺ 6個 を数えていない");
+  });
+
+  t("LIQ 類題の一覧: 3つのまとまり・行き先が実在・いま開いているステージは外す", () => {
+    const all = liquidRelatedFor("r1");
+    assert(all.map((g) => g.key).join() === "A,B,C", "まとまりが A・B・C でない: " + all.map((g) => g.key).join());
+    assert(all.map((g) => g.items.length).join() === "6,5,1", "件数が 6・5・1 でない: " + all.map((g) => g.items.length).join());
+    const exist = { condition: CONDITION_STAGES, electrolysis: ELECTROLYSIS_STAGES, redox: REDOX_STAGES };
+    for (const g of all) {
+      assert(g.head && g.head.trim(), g.key + ": 見出しが空");
+      for (const it of g.items) {
+        assert(exist[it.page].some((s) => s.id === it.id), g.key + ": 行き先 " + it.page + ":" + it.id + " が無い");
+        assert(it.title && it.title.trim(), g.key + ": 題が空: " + it.id);
+        assert(/^(condition|electrolysis|redox)\.html\?(s|rxn)=/.test(it.href), g.key + ": 行き先の形が違う: " + it.href);
+      }
+    }
+    // 酸性で直すのはニトロベンゼン（C）、A の最後は rs4 を A の道で開く口
+    assert(all[2].items[0].id === "ra1", "C がニトロベンゼンでない");
+    assert(all[0].items.some((it) => it.id === "rs4" && /liq=A/.test(it.href)), "A に rs4 を A の道で開く口が無い");
+    // いま開いているステージは外す（rs4 なら A の口も B の行も消える・ra1 なら C ごと消える）
+    const on4 = liquidRelatedFor("rs4");
+    assert(!on4.some((g) => g.items.some((it) => it.page === "redox" && it.id === "rs4")), "開いている rs4 が一覧に残る");
+    assert(on4.map((g) => g.items.length).join() === "5,4,1", "rs4 を外した件数が違う: " + on4.map((g) => g.items.length).join());
+    assert(liquidRelatedFor("ra1").map((g) => g.key).join() === "A,B", "ra1 を開いているのに C が残る");
+    // 橋は液性もそろえる: 酸性で選んだ O₃ × KI から中性の rs5 へは渡らない
+    assert(stagesForHalves("I_ox", "O3_red", "acid").length === 0, "酸性の O₃ × KI から中性の rs5 へ橋がかかる");
+    assert(String(stagesForHalves("I_ox", "O3_red", "basic").map((s) => s.id)) === "rs5", "中性の O₃ × KI から rs5 へ橋がかからない");
   });
 
   /* 既存14ステージの終点（2026-09-26 に I-0178 を入れる前の値をそのまま写した）。
@@ -3480,10 +3580,11 @@ function runModelTests() {
     const hrIds = Object.keys(HALF_REACTIONS), metaIds = Object.keys(HALF_CATALOG_META);
     // ⚠ 2026-09-18（段2）: 36 → 47。電池・電気分解の電極と、金属の単体・臭素を足した
     // ⚠ 2026-09-26（I-0178）: 47 → 50。H⁺ で書いた MnO₄⁻→MnO₂・ニトロベンゼン・スズ（Sn⁴⁺ まで）
-    assert(cat.length === 50 && hrIds.length === 50, "件数が 50 でない: 一覧 " + cat.length + " / 式 " + hrIds.length);
+    // ⚠ 追加の4本（I-0178）: 50 → 53。[Ag(NH₃)₂]⁺ の還元・Cu²⁺ → Cu₂O・切り離さないヨードホルム
+    assert(cat.length === 53 && hrIds.length === 53, "件数が 53 でない: 一覧 " + cat.length + " / 式 " + hrIds.length);
     for (const id of hrIds) assert(HALF_CATALOG_META[id], id + ": 一覧のメタに無い（足した式が一覧から漏れる）");
     for (const id of metaIds) assert(HALF_REACTIONS[id], id + ": メタにあるのに式が無い");
-    assert(new Set(cat.map((e) => e.id)).size === 50, "同じ式が2回載っている");
+    assert(new Set(cat.map((e) => e.id)).size === 53, "同じ式が2回載っている");
     for (const e of cat) {
       assert(SPECIES[e.sp], e.id + ": 化学式の欄の物質が SPECIES に無い: " + e.sp);
       assert(HALF_SUBJECTS[e.subject] && HALF_LEVELS[e.level] && HALF_SECTIONS[e.section],
@@ -3499,10 +3600,10 @@ function runModelTests() {
     }
     // 件数（グループ分けの案をそのまま固定する。変えるときはここと報告の表を一緒に直す）
     const n = (f) => cat.filter(f).length;
-    assert(n((e) => e.subject === "basic") === 29 && n((e) => e.subject === "chem") === 21,
-      "科目の内訳が 29/21 でない: " + n((e) => e.subject === "basic") + "/" + n((e) => e.subject === "chem"));
+    assert(n((e) => e.subject === "basic") === 29 && n((e) => e.subject === "chem") === 24,
+      "科目の内訳が 29/24 でない: " + n((e) => e.subject === "basic") + "/" + n((e) => e.subject === "chem"));
     assert(halfCatalogFilter(cat, { upTo: "basic", maxLevel: 1 }).length === 21, "化学基礎・まず覚える が 21 件でない");
-    assert(halfCatalogFilter(cat, { upTo: "chem" }).length === 50, "化学まで で全件にならない");
+    assert(halfCatalogFilter(cat, { upTo: "chem" }).length === 53, "化学まで で全件にならない");
     // ★ スライド p.38・39 の表の行は、どれも化学基礎の「まず覚える」
     for (const id of ["MnO4_red", "Cr2O7_red", "NO3_red", "NO3_red_conc", "H2SO4_hot_red", "H2O2_red", "SO2_red", "Cl2_red",
       "oxalate_ox", "Fe2_ox", "Sn2_ox", "H2S_ox", "I_ox", "H2O2_ox", "SO2_ox"]) {
@@ -3744,7 +3845,8 @@ function runModelTests() {
     /* ⚠ 2026-09-17: 88 → 96 / 52 → 58（出題に Sn2_ox・Cl2_red の2件が入った。2件×2手順×2段 ＝ +8）
        ⚠ 2026-09-18: 96 → 124（電池・電気分解の電極などで出題が 24 → 31 件。7件×2手順×2段 ＝ +28）
        ⚠ 2026-09-26（I-0178）: 124 → 132（Sn_ox・MnO4_red_MnO2 の2件が出題に入った。2件×2手順×2段 ＝ +8） */
-    assert(total === 132, "先の段の総数が変わった: " + total);
+    // ⚠ 追加の4本（I-0178）: 132 → 140（AgNH3_red・Cu2O_red の2件が出題に入った）
+    assert(total === 140, "先の段の総数が変わった: " + total);
     assert(digits === 0, "先の段の採点の文に数が出ている（枠より先に文が漏らす）: " + digits);
     // ⚠ ここが「文だけは伏せる」根拠。0 になったら伏せる必要が消える ＝ 決め直してよい
     /* ⚠ 2026-09-17（段1.5）: 58 → 40。手順B の順番を e⁻ → H⁺（電荷）→ H₂O に変えたため。
@@ -3752,7 +3854,8 @@ function runModelTests() {
        ③の H₂O の段は O と H の両方を見るので緑になりにくい。伏せる理由（嘘の緑が 0 でない）は変わらない */
     // ⚠ 2026-09-18（段2）: 40 → 53。出題が 24 → 31 件に増えたぶん
     // ⚠ 2026-09-26（I-0178）: 53 → 56。出題に Sn_ox・MnO4_red_MnO2 が入ったぶん
-    assert(greens === 56, "先の段が嘘の緑になる件数が変わった: " + greens);
+    // ⚠ 同日の追加の4本: 56 → 59（AgNH3_red・Cu2O_red）
+    assert(greens === 59, "先の段が嘘の緑になる件数が変わった: " + greens);
     // ⚠ 見出しには数が1つも出てこない（だから見出しは先に出してよい）
     const heads = ["A", "B"].map((p) => HALF_PROCS[p].steps.map((s) => s.head).join(" ")).join(" ");
     assert(!/[0-9]/.test(heads), "段の見出しに数が出ている: " + heads);
@@ -7929,9 +8032,12 @@ async function runRedoxUITests(iframe) {
     /* いま試薬で選べないのはヨードホルムの2本（切り離した断片が出発点なので
        試薬として持てない）と、ニトロベンゼンの還元 ra1（ニトロベンゼンは自由モードの試薬に入れていない・I-0178）。
        ここが増えたら、収録を足したのに橋から届かない道ができている */
-    assert(JSON.stringify(missed) === JSON.stringify(["ri1", "ri2", "ra1"]),
+    /* ★ 追加の4本（I-0178）も試薬からは届かない: rs5 は中性のオゾンの式を試薬が持たない（O₃ は酸性の式だけ）、
+       ro4・ro5・ri3 は酸化剤（[Ag(NH₃)₂]⁺・フェーリング液）やアセトンの式を試薬に入れていない。
+       橋は液性もそろえるので、酸性で選んだ O₃ × KI から rs5 へは渡らない（モデルの LIQ 類題の一覧で固定） */
+    assert(JSON.stringify(missed) === JSON.stringify(["ri1", "ri2", "ra1", "rs5", "ro4", "ro5", "ri3"]),
       "試薬から届かない収録ステージが増えている: " + JSON.stringify(missed));
-    assert(covered === REDOX_STAGES.length - 3, "橋を確かめたステージが足りない: " + covered);
+    assert(covered === REDOX_STAGES.length - 7, "橋を確かめたステージが足りない: " + covered);
     p.cleanup();
   });
 
@@ -8531,6 +8637,83 @@ async function runRedoxUITests(iframe) {
     openB("r1");
   });
 
+  /* 追加の4本（DESIGN_redox.md「追加の収録と類題の一覧」）。終点は参考書の式。
+     rs5・ri3 は化学反応式まで、ro4・ro5 はイオン反応式まで（参考書どおり） */
+  await t("LIQ UI 追加の4本: B で直すと参考書の式に着き、rs5・ri3 は化学反応式まで・ro4・ro5 はそこで終わる", async () => {
+    const key = (side) => side.map((x) => x.sp + ":" + x.n).sort().join(",");
+    for (const id of ["rs5", "ro4", "ro5", "ri3"]) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      const [a, b] = st.answer;
+      openB(id);
+      setMultB(a, b);
+      skipCalc();
+      const s0 = state();
+      assert(s0.liq.shown && s0.liq.path === "B" && s0.liq.next === "stepBottles", id + ": ③のあとに液性の段が出ない");
+      assert(doc.getElementById("stepBottles").hidden, id + ": 書き直す前から④が出ている");
+      typeLiq("sum", liquidNeed(combineHalves(st, a, b), "basic"));
+      const s1 = state();
+      assert(s1.liq.done, id + ": 模範の数で書き直せない");
+      const fin = ionicOf(st, a, b);
+      assert(key(s1.ionic.left) === key(fin.left) && key(s1.ionic.right) === key(fin.right), id + ": 画面の式が導出と違う");
+      assert(!/H⁺/.test(liqText("sum", "done")), id + ": 書き直したのに H⁺ が残っている: " + liqText("sum", "done"));
+      if (st.bottles) {
+        assert(!doc.getElementById("stepBottles").hidden, id + ": 書き直しても④が出ない");
+        const { s, plan } = solveToMolB(id, a, b);
+        assert(s.molOk && String(s.molCoeffs) === String(plan.coeffs), id + ": 化学反応式まで行けない: " + s.molCoeffs + " / " + plan.coeffs);
+      } else {
+        assert(doc.getElementById("stepBottles").hidden, id + ": 参考書がイオン反応式までなのに④が出ている");
+      }
+    }
+    // ro5（フェーリング）はビーカーでも最後まで動き、赤色の Cu₂O が1個できる（液性に合わせた形で描く）
+    openB("ro5");
+    setMultB(1, 1);
+    adv(0);
+    doc.getElementById("playBtn").click();
+    adv(30000);
+    const rs = state();
+    assert(rs.cleared, "ro5 のビーカーが最後まで動かない: " + JSON.stringify(rs.counts));
+    assert(rs.counts["Cu2O"] === 1 && !rs.counts["H+"], "ro5 のビーカーが Cu₂O 1個・H⁺ 無し にならない: " + JSON.stringify(rs.counts));
+    openB("r1");
+  });
+
+  await t("LIQ UI 類題・参考: 3つのまとまり・1行1件・いま開いているステージは出ない・?liq=A で A から開く", async () => {
+    const st = REDOX_STAGES.find((s) => s.id === "rs4");
+    openB("rs4");
+    setMultB(st.answer[0], st.answer[1]);
+    skipCalc();
+    const box = doc.getElementById("liqMore");
+    assert(box && !doc.getElementById("stepLiq").hidden, "液性の段が出ていない");
+    const lists = [...box.querySelectorAll(".liqMoreList")];
+    assert(lists.map((u) => u.dataset.group).join() === "A,B,C", "まとまりが A・B・C でない");
+    assert(lists.map((u) => u.querySelectorAll("li").length).join() === "5,4,1",
+      "件数が 5・4・1 でない（rs4 を外していない？）: " + lists.map((u) => u.querySelectorAll("li").length).join());
+    const links = [...box.querySelectorAll(".liqMoreList a")];
+    assert(!links.some((a) => a.dataset.page === "redox" && a.dataset.id === "rs4"), "開いている rs4 が一覧に出ている");
+    // 1行1件・字は本文と同じ大きさ（小さい字の説明を積み増さない）
+    for (const a of links) {
+      assert(a.closest("li") && a.closest("li").querySelectorAll("a").length === 1, "1行に2件以上ある");
+      assert(parseFloat(win.getComputedStyle(a).fontSize) >= 14, "類題の字が小さすぎる: " + win.getComputedStyle(a).fontSize);
+    }
+    const hrefs = links.map((a) => a.getAttribute("href"));
+    for (const h of ["condition.html?s=b1", "electrolysis.html?s=e6", "redox.html?rxn=rs5", "redox.html?rxn=ra1"]) {
+      assert(hrefs.includes(h), "類題に " + h + " が無い: " + hrefs.join(" "));
+    }
+    // ra1 を開いているときは C（酸性）のまとまりごと出ない
+    openB("ra1");
+    setMultB(3, 2);
+    skipCalc();
+    const groupsRa1 = [...doc.querySelectorAll("#liqMore .liqMoreList")].map((u) => u.dataset.group).join();
+    assert(groupsRa1 === "A,B", "ra1 を開いているのに C が出ている: " + groupsRa1);
+    openB("r1");
+    // ?liq=A（類題の「半反応式のうちに直す」）で開くと、最初から A
+    const { f, win: w } = await openProbeFrame("redox.html?rxn=rs4&liq=A", (x) => x.RedoxEq,
+      "position:fixed;left:-9999px;top:0;border:0;width:1280px;height:900px");
+    assert(w, "redox.html?rxn=rs4&liq=A が起動しない");
+    const s = w.RedoxEq.state();
+    assert(s.liq.path === "A", "?liq=A で開いても A にならない: " + s.liq.path);
+    f.remove();
+  });
+
   /* ★★★ この改修のいちばんの急所（2026-09-12・発注書 §「足すイオンは1列に1つではない」）。
 
      筆算は「④の答え合わせ」ではなく、**イオン反応式 → 化学反応式 という変換そのもの**。
@@ -8544,10 +8727,11 @@ async function runRedoxUITests(iframe) {
           ⚠ **⑤に答える前は空**（先に出すと⑤の答えそのもの）
      ⚠ 9ステージ悉皆。列を決めるところは「1つの物質が2つの柱を担当する」（rn1 の HNO₃）と
      「1つの柱を2つの物質が担当する」（rs3 の H⁺）で形が変わる。 */
-  await t("BOTTLE 筆算: 足すイオンも係数も柱の列にそろい、またぐ枝で 9＝5＋4 が読める（11ステージ悉皆）", async () => {
+  await t("BOTTLE 筆算: 足すイオンも係数も柱の列にそろい、またぐ枝で 9＝5＋4 が読める（13ステージ悉皆）", async () => {
     const ids = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id);
     // ★ 2026-09-26（I-0178）: 液性の段の2本（rs4・ra1）を足して 11本
-    assert(ids.length === 11, "④⑤の段を持つステージが11本でない: " + ids.join());
+    // ★ 追加の rs5・ri3 で 13本
+    assert(ids.length === 13, "④⑤の段を持つステージが13本でない: " + ids.join());
     const overlaps = (p, q) => p.right > q.left + 1 && p.left < q.right - 1;
     let checkedStages = 0, checkedCols = 0, straddles = 0;
     for (const id of ids) {
@@ -8611,7 +8795,7 @@ async function runRedoxUITests(iframe) {
       }
       checkedStages++;
     }
-    assert(checkedStages === 11, "通したステージが11本でない: " + checkedStages);
+    assert(checkedStages === 13, "通したステージが13本でない: " + checkedStages);
     const want = REDOX_STAGES.filter((s) => bottleStepOf(s))
       .reduce((n, s) => n + s.bottles.length, 0);
     assert(checkedCols === want,
@@ -8815,11 +8999,12 @@ async function runRedoxUITests(iframe) {
   await t("REDOX: 有機（発展）の段は、見出し・帯の番号・☰一覧の3か所で区別される", async () => {
     const organics = REDOX_STAGES.map((s, i) => (isOrganicStage(s) ? i : -1)).filter((i) => i >= 0);
     // ★ 2026-09-26（I-0178）: ニトロベンゼンの還元（16）を足して6本
-    assert(organics.length === 6, "有機のステージが6本でない: " + organics.length);
+    // ★ 追加の ro4・ro5・ri3（18〜20）も有機で 9本
+    assert(organics.length === 9, "有機のステージが9本でない: " + organics.length);
     // ① 帯の番号（8〜12・16 だけに印が付き、それ以外には付かない）
     openB("ro1");
     const marked = [...doc.querySelectorAll("#stageNav button.organic")].map((b) => b.textContent).join();
-    assert(marked === "8,9,10,11,12,16", "帯の番号の印が 8〜12・16 でない: " + marked);
+    assert(marked === "8,9,10,11,12,16,18,19,20", "帯の番号の印が 8〜12・16・18〜20 でない: " + marked);
     // ② 見出しの札
     const tag = doc.querySelector("#stageTitle .levelTag");
     assert(tag && tag.textContent === "有機（発展）", "見出しに有機の札が出ない: " + (tag && tag.textContent));
@@ -8831,7 +9016,7 @@ async function runRedoxUITests(iframe) {
     // 化学基礎の段に戻ると札は消える（出しっぱなしにしない）
     openB("rs1");
     assert(!doc.querySelector("#stageTitle .levelTag"), "化学基礎の段に有機の札が残っている");
-    assert(doc.querySelectorAll("#stageNav button.organic").length === 6, "帯の印が6個から変わった");
+    assert(doc.querySelectorAll("#stageNav button.organic").length === 9, "帯の印が9個から変わった");
   });
 
   await t("REDOX: ④ - 出どころ当ての判定（誤りだけ言う・当たれば黙って⑤へ）と、消えた罠", async () => {
@@ -9124,9 +9309,9 @@ async function runRedoxUITests(iframe) {
      実測: 分数が出るのは `rs1` の1回だけ・出る分数は 1/2 だけ・倍率は 2 だけ。
      ★ 割れるのは**カードではなく枠の数** —— Fe³⁺ の枠と K⁺ の枠（どちらも2個ずつ使う枠に
      奇数個が入る）の2つで、イオンは1個も割れていない。 */
-  await t("BOTTLE 分数: ⑧が現れるのは rs1 の1回だけ・倍率は2だけ（11ステージ悉皆）", async () => {
+  await t("BOTTLE 分数: ⑧が現れるのは rs1 の1回だけ・倍率は2だけ（13ステージ悉皆）", async () => {
     const ids = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id);
-    assert(ids.length === 11, "④の段を持つステージが11本でない: " + ids.join());   // ★ I-0178 で rs4・ra1
+    assert(ids.length === 13, "④の段を持つステージが13本でない: " + ids.join());   // ★ I-0178 で rs4・ra1・rs5・ri3
     let withFrac = 0, ks = {};
     for (const id of ids) {
       const st = REDOX_STAGES.find((s) => s.id === id);
@@ -9326,7 +9511,7 @@ async function runReactionLibraryTests() {
     }
   });
 
-  await t("遊べるかは導出で決まる: 54件が遊べ、12件が準備中（内訳を固定）", () => {
+  await t("遊べるかは導出で決まる: 60件が遊べ、12件が準備中（内訳を固定）", () => {
     const idx = stageIndex(STAGES, REDOX_STAGES);
     const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
@@ -9343,7 +9528,8 @@ async function runReactionLibraryTests() {
     assert(JSON.stringify(pending) === JSON.stringify(expected),
       "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
     // ★ 2026-09-26（I-0178）: rs4・ra1 の2本を足して 54 → 56
-    assert(playable.length === 56, "遊べる反応が 56 件でない: " + playable.length);
+    // ★ 追加の4本（rs5・ro4・ro5・ri3）で 56 → 60
+    assert(playable.length === 60, "遊べる反応が 60 件でない: " + playable.length);
     const reason = (id) => resolvePlayback(data.reactions.find((r) => r.id === id), idx).reason;
     for (const id of expected) {
       assert(reason(id) === "stage-missing", id + ": ステージ未実装のはず（" + reason(id) + "）");
@@ -9557,7 +9743,8 @@ async function runReactionLibraryTests() {
     const units = CURRICULUM.reduce((a, s) => a.concat(s.units), [])
       .filter((u) => u.id === "u-redox-organic" || u.id === "u-iodoform");
     const need = units.reduce((a, u) => a.concat(u.redox || []), []);
-    assert(need.length === 5, "対象のステージ数が想定と違う: " + need.join(","));
+    // ★ 追加の ro4・ro5（銀鏡・フェーリング）・ri3（ヨードホルム参考）で 8本
+    assert(need.length === 8, "対象のステージ数が想定と違う: " + need.join(","));
     for (const id of need) {
       assert(data.reactions.some((rx) => rx.redoxStage === id),
         "索引に " + id + " が無い（portal の単元カードからしか行けない）");
@@ -9565,10 +9752,10 @@ async function runReactionLibraryTests() {
     // 索引の入口は物質検索なので、代表的な物質で必ず当たること
     const hits = (q) => data.reactions.filter((rx) => matchesQuery(rx, q)).map((r) => r.id);
     assert(hits("C2H5OH").length === 1, "エタノールで引けない: " + hits("C2H5OH").join(","));
-    assert(hits("CHI3").length === 2, "ヨードホルムで引けない: " + hits("CHI3").join(","));
+    assert(hits("CHI3").length === 3, "ヨードホルムで引けない: " + hits("CHI3").join(","));   // ★ ri3
     // ★ 2026-09-26（I-0178）: KMnO₄ × KI（中性）でも I₂ ができるので 3件
-    assert(hits("I2").length === 3, "I₂ で引けない: " + hits("I2").join(","));
-    assert(hits("CH3COCH3").length === 2, "アセトンで引けない: " + hits("CH3COCH3").join(","));
+    assert(hits("I2").length === 5, "I₂ で引けない: " + hits("I2").join(","));   // ★ 追加の rs5・ri3
+    assert(hits("CH3COCH3").length === 3, "アセトンで引けない: " + hits("CH3COCH3").join(","));   // ★ ri3
   });
 
   await t("金属×イオンの4反応が索引に載っている（P-5 第3波: r1〜r4）", () => {
@@ -12077,16 +12264,16 @@ async function runLibraryUITests(iframe) {
   /* Phase 3。遊べるかどうかを導出に切り替えても、**画面に出る内訳が変わっていない**ことを
      DOM で実測する。ロジックのテスト（resolvePlayback）は同じ関数を呼び直すだけなので、
      配線を間違えても気づけない ＝ ここは組み上がった行を数える。 */
-  await t("LIB: 「▶遊ぶ」56件・「準備中」12件が実際に出ていて、行き先が全部そろっている", async () => {
+  await t("LIB: 「▶遊ぶ」60件・「準備中」12件が実際に出ていて、行き先が全部そろっている", async () => {
     const s = state();
     assert(s.rows === s.total, "全件表示になっていない: " + s.rows + "/" + s.total);
-    assert(s.playLinks.length === 56, "「▶遊ぶ」が 56 件でない: " + s.playLinks.length);   // ★ I-0178 で rs4・ra1
+    assert(s.playLinks.length === 60, "「▶遊ぶ」が 60 件でない: " + s.playLinks.length);   // ★ I-0178 で rs4・ra1・rs5・ro4・ro5・ri3
     assert(s.pendingCount === 12, "「準備中（参照のみ）」が 12 件でない: " + s.pendingCount);
     assert(s.playLinks.length + s.pendingCount === s.total, "遊べる＋準備中が全件にならない");
     // 行き先は2画面だけ。空リンクや undefined が混ざっていないこと
     const files = s.playLinks.map((h) => String(h).split("?")[0]);
     assert(files.every((f) => f === "index.html" || f === "redox.html"), "未知の行き先: " + [...new Set(files)].join(","));
-    assert(files.filter((f) => f === "redox.html").length === 16, "酸化還元モード行きが 16 件でない");
+    assert(files.filter((f) => f === "redox.html").length === 20, "酸化還元モード行きが 20 件でない");
     assert(s.playLinks.every((h) => /\?rxn=[^&]+$/.test(h)), "?rxn= の付いていないリンクがある");
     // 行き先のステージが相手側に実在すること（iframe の外＝テスト側の model.js で照合）
     for (const h of s.playLinks) {
@@ -12364,19 +12551,19 @@ async function runPortalUITests(iframe) {
         checked++;
       });
     }
-    assert(checked === 68, "突き合わせた件数が 68 でない: " + checked);   // ★ I-0178 で酸化還元に rs4・ra1
+    assert(checked === 72, "突き合わせた件数が 72 でない: " + checked);   // ★ I-0178 で酸化還元に rs4・ra1・rs5・ro4・ro5・ri3
   });
 
   /* 系列（区画）と難度（札）は別の軸。両方が同時に見えること。
      ⚠ 札の文字列は redox.js の ORGANIC_TAG と1文字も違えない（別レーンが触る側なので、
      参照しに行かずに**実際の画面から読んで**突き合わせる）。 */
-  await t("PORTAL: 有機（発展）の札が、酸化還元モードが出す札と同じ文字列で 6 枚だけ付く", async () => {
+  await t("PORTAL: 有機（発展）の札が、酸化還元モードが出す札と同じ文字列で 9 枚だけ付く", async () => {
     const chips = win.Portal.seriesState().chips;
     const tagged = chips.filter((c) => c.level);
     // ★ 2026-09-26（I-0178）: ニトロベンゼンの還元（16）を足して6枚
-    assert(tagged.length === 6, "難度の札が 6 枚でない: " + tagged.length);
+    assert(tagged.length === 9, "難度の札が 9 枚でない: " + tagged.length);   // ★ 追加の ro4・ro5・ri3
     assert(tagged.every((c) => c.mode === "酸化還元"), "酸化還元モード以外に札が付いている");
-    assert(tagged.map((c) => c.no).join(",") === "8,9,10,11,12,16",
+    assert(tagged.map((c) => c.no).join(",") === "8,9,10,11,12,16,18,19,20",
       "札が付く番号が 8〜12・16 でない: " + tagged.map((c) => c.no).join(","));
     // 酸化還元モードの帯が実際に出している札と、1文字も違わないこと
     const d = document.getElementById("appRedox").contentDocument;
@@ -12385,7 +12572,7 @@ async function runPortalUITests(iframe) {
     assert(label.includes(word), "索引の札「" + word + "」が酸化還元モードの札と食い違う: " + label);
     // 系列としては酸化還元に残っている（難度で別の系列に切り出していない）
     const box = doc.getElementById("sr-redox");
-    assert(box && box.querySelectorAll(".chipLevel").length === 6,   // ★ I-0178 でニトロベンゼンの還元
+    assert(box && box.querySelectorAll(".chipLevel").length === 9,   // ★ I-0178 でニトロベンゼン・銀鏡・フェーリング・ヨードホルム参考
       "有機（発展）が酸化還元の区画から抜けている");
   });
 

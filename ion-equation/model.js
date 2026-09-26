@@ -145,6 +145,8 @@ const SPECIES = {
   "Sn":            { disp: "Sn",             name: "スズ",                             atoms: { Sn: 1 }, charge: 0 },
   "SnCl4":         { disp: "SnCl₄",          name: "塩化スズ(Ⅳ)",                      atoms: { Sn: 1, Cl: 4 }, charge: 0 },
   "C6H5NO2":       { disp: "C₆H₅NO₂",        name: "ニトロベンゼン",                   atoms: { C: 6, H: 5, N: 1, O: 2 }, charge: 0 },
+  /* フェーリング反応（I-0178）。Cu²⁺ が還元されてできる赤色の沈殿 */
+  "Cu2O":          { disp: "Cu₂O",           name: "酸化銅(Ⅰ)（赤色沈殿）",            atoms: { Cu: 2, O: 1 }, charge: 0 },
   /* 有機の酸化還元（アルコールの段階的酸化）。disp は構造が見えるように書く
      — 酸化数を「どの炭素か」の真下に出すには、化学式の中で炭素の位置が分かる必要がある */
   "C2H5OH":        { disp: "CH₃CH₂OH",       name: "エタノール",                       atoms: { C: 2, H: 6, O: 1 }, charge: 0 },
@@ -1797,6 +1799,25 @@ const HALF_REACTIONS = {
   "PhNO2_red": { disp: "C₆H₅NO₂ ＋ 6H⁺ ＋ 6e⁻ → C₆H₅NH₂ ＋ 2H₂O", kind: "reduction", couple: "C6H5NO2/C6H5NH2",
                  left: [{ sp: "C6H5NO2", n: 1 }, { sp: "H+", n: 6 }, { sp: "e-", n: 6 }],
                  right: [{ sp: "C6H5NH2", n: 1 }, { sp: "H2O", n: 2 }] },
+
+  /* 銀鏡反応とフェーリング反応の酸化剤（I-0178・有機（発展））。相手はアルデヒド（MeCHO_ox）。
+     どちらも塩基性で起きる反応だが、半反応式は H⁺ で書いておき、足し合わせた後（または半反応式の後）の
+     液性の工程で OH⁻ の形に直す（参考書 aldehyde の「塩基性条件に合わせて両辺の酸性の物質を OH⁻ で中和」）。
+       銀 … [Ag(NH₃)₂]⁺ の Ag が +1 → 0。配位子の NH₃ はそのまま外れる
+       銅 … Cu²⁺ 2個が +2 → +1 の Cu₂O（赤色沈殿）。O を H₂O から持ってくるので H⁺ が出る */
+  "AgNH3_red": { disp: "[Ag(NH₃)₂]⁺ ＋ e⁻ → Ag ＋ 2NH₃", kind: "reduction", couple: "Ag(NH3)2^+/Ag",
+                 left: [{ sp: "Ag(NH3)2^+", n: 1 }, { sp: "e-", n: 1 }],
+                 right: [{ sp: "Ag", n: 1 }, { sp: "NH3", n: 2 }] },
+  "Cu2O_red":  { disp: "2Cu²⁺ ＋ H₂O ＋ 2e⁻ → Cu₂O ＋ 2H⁺", kind: "reduction", couple: "Cu^2+/Cu2O",
+                 left: [{ sp: "Cu^2+", n: 2 }, { sp: "H2O", n: 1 }, { sp: "e-", n: 2 }],
+                 right: [{ sp: "Cu2O", n: 1 }, { sp: "H+", n: 2 }] },
+  /* ヨードホルム反応を**切り離さずに**1本で書いた形（I-0178・ri3「参考」）。
+     ri1・ri2 はメチル基を CH₃⁺ として切り離してから組むが、こちらはヨウ素が炭素に入るぶんを I⁻ で受ける
+     （I は −1 のまま動かない。iodoform_ox と同じ媒介役）。動くのは炭素だけで、正味 +6 ＝ e⁻ 6個
+     （メチル基の C: −3 → +2（CHI₃）、カルボニルの C: +2 → +3（酢酸））。 */
+  "acetone_io_ox": { disp: "CH₃COCH₃ ＋ 3I⁻ ＋ H₂O → CH₃COOH ＋ CHI₃ ＋ 3H⁺ ＋ 6e⁻", kind: "oxidation", couple: "CHI3/CH3COCH3",
+                 left: [{ sp: "CH3COCH3", n: 1 }, { sp: "I-", n: 3 }, { sp: "H2O", n: 1 }],
+                 right: [{ sp: "CH3COOH", n: 1 }, { sp: "CHI3", n: 1 }, { sp: "H+", n: 3 }, { sp: "e-", n: 6 }] },
 };
 
 /* 半反応式の e⁻ の数（酸化なら出す数、還元なら受け取る数） */
@@ -1878,6 +1899,11 @@ const OXIDATION = {
   "C6H5NO2":  { C: [{ ox: 1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }], H: 1, N: 3, O: -2 },
   "C6H5NH2":  { C: [{ ox: 1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }], H: 1, N: -3 },
   "C6H5NH3+": { C: [{ ox: 1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }, { ox: -1, at: 0 }], H: 1, N: -3 },
+  /* 銀鏡反応・フェーリング反応（I-0178）。錯イオンの Ag は +1、配位子の NH₃ は N −3 のまま（動かない）。
+     Cu₂O の Cu は +1（Cu²⁺ から e⁻ を1個ずつ受け取る） */
+  "NH3":        { N: -3, H: 1 },
+  "Ag(NH3)2^+": { Ag: 1, N: -3, H: 1 },
+  "Cu2O":       { Cu: 1, O: -2 },
   /* ---- 電池・電気分解の電極（2026-09-18・段2）----
      ⚠ 単体は 0、単原子イオンは電荷そのもの、と規則で出るものも**表に書く**。
      oxChangeOfHalf は「OXIDATION に無い種は数えない」ので、書かないと
@@ -2803,6 +2829,10 @@ const HALF_CATALOG_META = {
   // ニトロベンゼンの還元（I-0178）。スズはこの反応のためだけに置く（Sn²⁺ でなく Sn⁴⁺ まで）
   "PhNO2_red":     { name: "ニトロベンゼン",       sp: "C6H5NO2", subject: "chem",  level: 3, section: "organic" },
   "Sn_ox":         { name: "スズ（ニトロベンゼンの還元）", sp: "Sn", subject: "chem", level: 3, section: "organic" },
+  // 銀鏡反応・フェーリング反応の酸化剤と、切り離さないヨードホルム反応（I-0178）
+  "AgNH3_red":     { name: "アンモニア性硝酸銀（銀鏡反応）", sp: "Ag(NH3)2^+", subject: "chem", level: 3, section: "organic" },
+  "Cu2O_red":      { name: "フェーリング液（Cu²⁺）", sp: "Cu^2+", subject: "chem", level: 3, section: "organic" },
+  "acetone_io_ox": { name: "ヨードホルム反応（アセトン・切り離さない形）", sp: "CH3COCH3", subject: "chem", level: 3, section: "organic" },
 };
 
 /* 項の並びを式の文字列にする（一覧・分子の形で使う）。係数 1 は書かない */
@@ -3075,6 +3105,37 @@ const REDOX_STAGES = [
       ref: "aniline", anchor: "prep",
     },
   },
+  /* ★ 追加の4本（2026-09-26・I-0178・DESIGN_redox.md「追加の収録と類題の一覧」）。番号 17〜20。
+     終点は参考書の式と一致させる（oxygen-ozone・aldehyde・iodoform）。どれも液性は塩基性（中性）。 */
+  {
+    /* オゾンの検出。湿らせたヨウ化カリウムデンプン紙が青くなる。オゾンの式は H⁺ で書いたまま足し、
+       中性の水の中なので OH⁻ の形に直す。⚠ O₃ の式は酸性でも使う式なので、液性はステージに書く */
+    id: "rs5", title: "オゾン × ヨウ化カリウム（KI デンプン紙）",
+    ox: "I_ox", red: "O3_red", answer: [1, 1], mode: "solution", medium: "basic",
+    bottles: ["O3", "KI", "H2O"],
+    intro: "湿らせたヨウ化カリウムデンプン紙にオゾンを当てると、I₂ ができて青くなる",
+  },
+  {
+    /* 有機（発展）。アンモニア性硝酸銀水溶液で温めると、試験管の内側に銀が鏡のように付く。
+       参考書（aldehyde）もイオン反応式までなので、化学反応式（④以降）は組まない ＝ bottles を持たない */
+    id: "ro4", title: "銀鏡反応（アセトアルデヒド）",
+    ox: "MeCHO_ox", red: "AgNH3_red", answer: [1, 2], mode: "solution", medium: "basic",
+    intro: "アンモニア性硝酸銀水溶液にアセトアルデヒドを加えて温めると、銀が鏡のように付く",
+  },
+  {
+    // 有機（発展）。フェーリング液を加えて加熱すると、赤色の Cu₂O が沈殿する（イオン反応式まで）
+    id: "ro5", title: "フェーリング反応（アセトアルデヒド）",
+    ox: "MeCHO_ox", red: "Cu2O_red", answer: [1, 1], mode: "solution", medium: "basic",
+    intro: "フェーリング液にアセトアルデヒドを加えて加熱すると、赤色の Cu₂O が沈殿する",
+  },
+  {
+    /* 有機（発展）・参考。ri1 と同じ反応を、メチル基を切り離さずに1本の半反応式で組む。
+       右辺に陰イオンが2種（CH₃COO⁻・I⁻）残るが、陽イオンは Na⁺ だけなので組み方は1通り */
+    id: "ri3", title: "ヨードホルム反応（アセトン・参考）",
+    ox: "acetone_io_ox", red: "I2_red", answer: [1, 3], mode: "solution", medium: "basic",
+    bottles: ["CH3COCH3", "I2", "NaOH"],
+    intro: "アセトンにヨウ素と NaOH を加えると、黄色の CHI₃ が沈殿する（半反応式の立て方がほかと違う参考の段）",
+  },
 ];
 
 /* ================================================================================
@@ -3157,7 +3218,9 @@ const REDOX_LADDER_ACID = {
    ステージ ri1 / ri2 が使うので相手（I₂）を書いておく。 */
 const ORGANIC_OXIDANTS = {
   "EtOH_ox":       ["Cr2O7_red", "MnO4_red"],
-  "MeCHO_ox":      ["Cr2O7_red", "MnO4_red"],
+  // 銀鏡反応・フェーリング反応（I-0178）もアルデヒドの酸化
+  "MeCHO_ox":      ["Cr2O7_red", "MnO4_red", "AgNH3_red", "Cu2O_red"],
+  "acetone_io_ox": ["I2_red"],
   "iPrOH_ox":      ["Cr2O7_red", "MnO4_red"],
   "iodoform_ox":   ["I2_red"],
   "acylRest_ox":   ["I2_red"],
@@ -3534,8 +3597,12 @@ function halfOfReagent(rg, condition) {
 /* 収録ステージのうち、この (ox, red) と一致するもの**一覧**。
    対応表を別に持たない（収録を変えたときに黙って壊れるのを防ぐ）。
    同じ組で複数のステージがある（ri1 と ri2）ので、1件ではなく一覧を返す。 */
-function stagesForHalves(oxHalfId, redHalfId) {
-  return REDOX_STAGES.filter((s) => s.ox === oxHalfId && s.red === redHalfId);
+function stagesForHalves(oxHalfId, redHalfId, medium) {
+  /* ★ 液性もそろえる（I-0178）。medium を渡したときだけ、塩基性（中性）か否かが同じステージに絞る
+     ＝ 酸性で選んだ O₃ × KI から、中性の rs5 へは渡らない。渡さなければ今までどおり式2本だけで引く */
+  const basic = (st) => liquidMediumOf(st) === "basic";
+  return REDOX_STAGES.filter((s) => s.ox === oxHalfId && s.red === redHalfId &&
+    (medium === undefined || basic(s) === (medium === "basic")));
 }
 
 /* 半反応式を「その対の代表的な姿」で呼ぶ（メッセージ用）。
@@ -4235,11 +4302,12 @@ const CURRICULUM = [
       /* ★ rs4・ra1（I-0178）は液性の工程が見どころの2本なので、ここに入れる
          （足し合わせたあとで書き直す。練習の b1〜b4 は半反応式1本を書き直す） */
       { id: "u-condition", name: "液性による書き換え（酸性 ⇄ 塩基性）", condition: ["b1", "b2", "b3", "b4"],
-        redox: ["rs4", "ra1"],
+        redox: ["rs4", "ra1", "rs5"],
         note: "両辺に OH⁻ を足して H₂O にまとめ、相殺する" },
-      { id: "u-redox-organic", name: "有機の酸化（アルコール）", redox: ["ro1", "ro2", "ro3"],
+      // ★ 銀鏡反応・フェーリング反応（ro4・ro5・I-0178）もアルデヒドの酸化としてここに入れる
+      { id: "u-redox-organic", name: "有機の酸化（アルコール）", redox: ["ro1", "ro2", "ro3", "ro4", "ro5"],
         note: "官能基のついた炭素1個の酸化数が上がる" },
-      { id: "u-iodoform", name: "ヨードホルム反応", redox: ["ri1", "ri2"],
+      { id: "u-iodoform", name: "ヨードホルム反応", redox: ["ri1", "ri2", "ri3"],
         note: "メチル基の H が I に置き換わり、切れて黄色い沈殿になる" },
       { id: "u-precip", name: "沈殿とイオンの組み合わせ", tags: ["沈殿"],
         note: "水に溶けない組み合わせができると固体になって沈む" },
@@ -4651,6 +4719,49 @@ function ionicOf(stage, a, b) {
   return { left: r.left, right: r.right };
 }
 
+/* 類題・参考の一覧（液性の段の下・DESIGN_redox.md「追加の収録と類題の一覧」）。
+   収録ステージへのリンクで、3つのまとまりに分ける。**題は各モードのステージから引く**（ここに書き写さない。
+   title を持つのは「同じステージを別の道で開く」rs4 の A だけ）。
+   ⚠ アルカリ形燃料電池は battery.html にステージが無いので入れていない（電極の式は半反応式の一覧にだけある） */
+const LIQUID_RELATED = [
+  { key: "A", head: "半反応式の段で直す", items: [
+    { page: "condition", id: "b1" }, { page: "condition", id: "b2" },
+    { page: "condition", id: "b3" }, { page: "condition", id: "b4" },
+    { page: "electrolysis", id: "e6" },
+    { page: "redox", id: "rs4", liq: "A", title: "過マンガン酸カリウム（中性）を半反応式のうちに直す" },
+  ] },
+  { key: "B", head: "足し合わせた後で直す（塩基性）", items: [
+    { page: "redox", id: "rs5" }, { page: "redox", id: "rs4" },
+    { page: "redox", id: "ro4" }, { page: "redox", id: "ro5" }, { page: "redox", id: "ri3" },
+  ] },
+  { key: "C", head: "足し合わせた後で直す（酸性）", items: [
+    { page: "redox", id: "ra1" },
+  ] },
+];
+const LIQUID_RELATED_PAGES = {
+  condition:    { file: "condition.html",    param: "s",   stages: () => CONDITION_STAGES },
+  electrolysis: { file: "electrolysis.html", param: "s",   stages: () => ELECTROLYSIS_STAGES },
+  redox:        { file: "redox.html",        param: "rxn", stages: () => REDOX_STAGES },
+};
+/* いま開いている酸化還元ステージ（currentId）を外した一覧。空のまとまりは返さない。
+   返すもの [{ key, head, items: [{ page, id, title, href }] }] */
+function liquidRelatedFor(currentId) {
+  return LIQUID_RELATED.map((g) => ({
+    key: g.key, head: g.head,
+    items: g.items
+      .filter((it) => !(it.page === "redox" && it.id === currentId))
+      .map((it) => {
+        const pg = LIQUID_RELATED_PAGES[it.page];
+        const st = pg.stages().find((s) => s.id === it.id);
+        return {
+          page: it.page, id: it.id,
+          title: it.title || (st ? st.title : it.id),
+          href: pg.file + "?" + pg.param + "=" + encodeURIComponent(it.id) + (it.liq ? "&liq=" + it.liq : ""),
+        };
+      }),
+  })).filter((g) => g.items.length);
+}
+
 /* A の道（半反応式の後で直す）で③に使うステージ。直す半反応式を書き直した形で差し替える。
    塩基性でなければそのまま返す（酸性の工程は B だけ） */
 function liquidStageA(stage) {
@@ -4946,6 +5057,9 @@ const SALT_FORMULA = {
   "K+|OH-":       "KOH",
   "Sn^4+|Cl-":    "SnCl4",
   "C6H5NH3+|Cl-": "C6H5NH3Cl",
+  // ヨードホルム反応を液性の工程で組む回（ri3）。陽イオンは Na⁺ だけで、陰イオンが2種
+  "Na+|CH3COO-":  "CH3COONa",
+  "Na+|I-":       "NaI",
   // 価数＝高さのブロック（DESIGN_ion_blocks.md）が組ませる対。④⑤の導出では使わない
   // （Ba を含む REDOX_STAGES が無いので bottlePlan の結果は変わらない）が、
   // 表に置けば上の機械検査（原子数の突き合わせ）がそのまま効く
@@ -5188,14 +5302,30 @@ function bottlePlan(stage, a, b, scale) {
     const q = SPECIES[sp].charge;
     (q > 0 ? cations : q < 0 ? anions : neutral).push({ sp, n: pool[sp] });
   }
-  // 陰イオンが2種あると「どちらと組むか」がデータの決めごとになるので、この図法では扱わない
-  if (anions.length > 1) dataError.push("蒸発後に陰イオンが2種以上ある: " + anions.map((x) => x.sp).join("・"));
+  /* 陰イオンが2種あると「どちらと組むか」がデータの決めごとになるので、この図法では扱わない。
+     ★ ただし**陽イオンが1種だけ**なら組み方は1通り（ri3 の Na⁺ と CH₃COO⁻・I⁻・I-0178）なので、それは組む */
+  const oneCation = anions.length > 1 && cations.length === 1;
+  if (anions.length > 1 && !oneCation) dataError.push("蒸発後に陰イオンが2種以上ある: " + anions.map((x) => x.sp).join("・"));
 
   // --- ④ 対にして塩に戻す ---
   const salts = [], leftover = [];
+  if (oneCation) {
+    // 陽イオン1種を、陰イオンごとに組む（陰イオンの側から数を決める）
+    const c = cations[0];
+    let restC = c.n;
+    for (const an of anions) {
+      const u = saltOf(c.sp, an.sp);
+      if (!u) { leftover.push({ sp: an.sp, n: an.n, why: "noSalt" }); continue; }
+      const units = Math.floor(an.n / u.an);
+      if (units > 0) { salts.push(Object.assign({}, u, { n: units })); restC -= units * u.cn; }
+      const spare = an.n - units * u.an;
+      if (spare > 0) leftover.push({ sp: an.sp, n: spare, why: "spare" });
+    }
+    if (restC !== 0) leftover.push({ sp: c.sp, n: Math.abs(restC), why: "spare" });
+  }
   const anion = anions.length === 1 ? anions[0] : null;
   let rest = anion ? anion.n : 0;
-  for (const c of cations) {
+  for (const c of (oneCation ? [] : cations)) {
     const u = anion && saltOf(c.sp, anion.sp);
     if (!u) { leftover.push({ sp: c.sp, n: c.n, why: "noSalt" }); continue; }
     const units = Math.floor(c.n / u.cn);
@@ -5625,7 +5755,25 @@ function rxSheetRows(stage, a, b) {
 function rxRightUnits(stage, a, b) {
   const plan = bottlePlan(stage, a, b, 1);
   if (!plan || plan.dataError) return null;
-  if (plan.anions.length > 1) return null;
+  /* ★ 陽イオンが1種で陰イオンが2種以上（ri3 の Na⁺ と CH₃COO⁻・I⁻・I-0178）は、陰イオンごとに組む */
+  if (plan.anions.length > 1) {
+    if (plan.cations.length !== 1) return null;
+    const c = plan.cations[0];
+    const units = [];
+    let usedC = 0;
+    for (const an of plan.anions) {
+      const u = saltOf(c.sp, an.sp);
+      if (!u) return null;
+      const f = rxFrac(an.n, u.an);
+      units.push({ cation: c.sp, anion: an.sp, cn: u.cn, an: u.an, sp: u.sp, f, cn0: c.n });
+      usedC += (f.num / f.den) * u.cn;
+    }
+    if (Math.abs(usedC - c.n) > 1e-9) return null;
+    const rows = units.map((u) => ({ sp: u.sp, f: u.f, unit: u }))
+      .concat(plan.neutral.map((t) => ({ sp: t.sp, f: rxFrac(t.n, 1), unit: null })));
+    const fracs = rows.filter((r) => r.f.den !== 1);
+    return { units, rows, neutral: plan.neutral, anion: null, anions: plan.anions, hasFraction: fracs.length > 0, fracs };
+  }
   const anion = plan.anions[0] || null;
   const units = [];
   let used = 0;

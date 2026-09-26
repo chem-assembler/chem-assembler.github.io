@@ -109,6 +109,12 @@ const RSTYLE = {
   "C6H5NO2":  { color: "#efe2a2", r: 27, darkText: true },
   "C6H5NH2":  { color: "#e4d8c8", r: 27, darkText: true },
   "C6H5NH3+": { color: "#d9c8b4", r: 27, darkText: true },
+  // 追加の4本（I-0178）。オゾン・銀鏡反応・フェーリング反応
+  "O3":         { color: "#cfe3f0", r: 16, darkText: true },
+  "O2":         { color: "#e4f2f7", r: 15, darkText: true },
+  "Ag(NH3)2^+": { color: "#b8c0ca", r: 26, darkText: true },
+  "NH3":        { color: "#dfe8ef", r: 16, darkText: true },
+  "Cu2O":       { color: "#b8452f", r: 18 },
 };
 
 let stageIdx = 0;
@@ -1627,6 +1633,8 @@ const liqHeadEl = document.getElementById("liqHead");
 const liqBarEl = document.getElementById("liqPathBar");
 const liqBodyEl = document.getElementById("liqBody");
 let liqPath = "B";       // 選んでいる位置。ステージを開き直すと B に戻る
+/* 最初に開くときの位置（?liq=A）。initStage が1回だけ使って消す */
+let liqStartPath = new URLSearchParams(location.search).get("liq") === "A" ? "A" : null;
 let liqVals = {};        // 足す数（"ox" / "red" … A の道、"sum" … B の道）
 let liqBuiltKey = null;  // 作り直す境目（ステージ／位置／B なら倍率）
 
@@ -1811,6 +1819,42 @@ function buildLiq(s, path) {
     const msg = sheetSpan(sheet, `liq_${t.key}_msg`, "footNote");
     t.parts = { add, rule1, join, rule2, done, msg };
     LIQ_PARTS[t.key] = t.parts;
+  }
+  drawLiqMore();
+}
+
+/* 類題・参考（3つのまとまり）。いま開いているステージは外す（model.js の liquidRelatedFor）。
+   ⚠ 字は本文と同じ大きさ・1行1件（小さい字の説明を積み増さない） */
+function drawLiqMore() {
+  const box = document.getElementById("liqMore");
+  if (!box) return;
+  box.innerHTML = "";
+  const groups = liquidRelatedFor(stage().id);
+  if (!groups.length) return;
+  const head = document.createElement("div");
+  head.className = "liqMoreHead";
+  head.textContent = "類題・参考";
+  box.appendChild(head);
+  for (const g of groups) {
+    const cap = document.createElement("div");
+    cap.className = "liqMoreCap";
+    cap.dataset.group = g.key;
+    cap.textContent = g.head;
+    box.appendChild(cap);
+    const ul = document.createElement("ul");
+    ul.className = "liqMoreList";
+    ul.dataset.group = g.key;
+    for (const it of g.items) {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = it.href;
+      a.textContent = it.title;
+      a.dataset.page = it.page;
+      a.dataset.id = it.id;
+      li.appendChild(a);
+      ul.appendChild(li);
+    }
+    box.appendChild(ul);
   }
 }
 const LIQ_PARTS = {};
@@ -3454,7 +3498,9 @@ function runPick() {
   /* 収録ステージへの橋（§3-3）。合成ステージの ox / red は**半反応式2本**そのものなので、
      それで REDOX_STAGES を走査する。反応しなかったときに橋が出ないのは当然で、
      収録14ステージは全部 reacts になることをモデル側のテストが固定している。 */
-  buildStageBridge(pickBridgeEl, res.stage ? res.stage.ox : null, res.stage ? res.stage.red : null);
+  // ★ 液性もそろえて引く（酸性で選んだ O₃ × KI から中性の rs5 へは渡らない・I-0178）
+  buildStageBridge(pickBridgeEl, res.stage ? res.stage.ox : null, res.stage ? res.stage.red : null,
+    res.stage ? (liquidMediumOf(res.stage) || "none") : undefined);
   renderWhy(oxId, redId, res);
 }
 
@@ -3470,9 +3516,9 @@ function runPick() {
 
    行き先はページを開き直さず、**ステージ帯を押したときと同じその場の切り替え**にする
    （?free=1 が外れないので、見たあとまた組み合わせに戻れる ＝ 行き止まりを作らない）。 */
-function buildStageBridge(box, oxHalfId, redHalfId) {
+function buildStageBridge(box, oxHalfId, redHalfId, medium) {
   box.innerHTML = "";
-  const list = (oxHalfId && redHalfId) ? stagesForHalves(oxHalfId, redHalfId) : [];
+  const list = (oxHalfId && redHalfId) ? stagesForHalves(oxHalfId, redHalfId, medium) : [];
   box.hidden = list.length === 0;
   if (!list.length) return list;
   const head = document.createElement("div");
@@ -3756,8 +3802,10 @@ function initStage() {
   calcVals = { ox: {}, red: {}, sum: {} };
   calcDone = false;
   calcKey = null;
-  // 液性の段（I-0178）。開き直したら既定の B（足し合わせた後）から
-  liqPath = "B";
+  // 液性の段（I-0178）。開き直したら既定の B（足し合わせた後）から。
+  // ?liq=A で開いたときだけ、最初の1回は A から（類題の一覧の「半反応式のうちに直す」）
+  liqPath = liqStartPath || "B";
+  liqStartPath = null;
   liqVals = {};
   liqBuiltKey = null;
   cleared = false;
