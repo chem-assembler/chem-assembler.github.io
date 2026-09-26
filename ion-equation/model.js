@@ -309,7 +309,7 @@ const MODES = [
      帯には束の代表（familyHead）だけを出し、束の中の行き来はページ上端の切り替え（header-ui.js の
      familyTabs）でする。tab はその切り替えに出す短い名前。
        redox … 収録ステージで組む ⇄ 酸化剤と還元剤を自分で選ぶ（「酸化還元反応の組み立て」に統合）
-       half  … 一覧で覚える ⇄ 自分で組む（「半反応式を組む」に統合） */
+       half  … 一覧で覚える ⇄ 自分で組む ⇄ 液性で書き換える（「半反応式を組む」に統合。液性は I-0173） */
   { id: "redox",     href: "redox.html",         label: "酸化還元モード",        group: "play",
     family: "redox", familyHead: true, tab: "ステージで組む" },
   { id: "battery",   href: "battery.html",       label: "🔋 電池をつくる",       group: "play" },
@@ -325,7 +325,11 @@ const MODES = [
     family: "half", tab: "一覧で覚える" },
   { id: "halfbuild", href: "halfreaction.html",  label: "⚡ 半反応式を組む",     group: "tool",
     family: "half", familyHead: true, tab: "自分で組む" },
-  { id: "condition", href: "condition.html",     label: "⚖ 液性で書き換える",    group: "tool" },
+  /* 2026-09-26（ユーザー決定・I-0173）: 液性で書き換えるは**半反応式の束の3つ目の面**。
+     書き換えるのは半反応式（酸性で組んだ式に OH⁻ を足す）なので、組む → 書き換える、と続けて読める。
+     ⚠ ただし半反応式の中だけに閉じない（ニトロベンゼンの還元などでも液性が出る）＝ 外からの入口は I-0177 */
+  { id: "condition", href: "condition.html",     label: "⚖ 液性で書き換える",    group: "tool",
+    family: "half", tab: "塩基性に直す" },
   { id: "portal",    href: "portal.html",        label: "☰ 単元から入る",       group: "find" },
   { id: "library",   href: "library.html",       label: "🔎 反応インデックス",   group: "find" },
 ];

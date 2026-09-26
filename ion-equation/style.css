@@ -2533,3 +2533,8 @@ html.embed .refBack { display: none; }
 .familyTabs a + a { border-left: 1px solid #3b82c4; }
 .familyTabs a.active { background: #3b82c4; color: #fff; }
 .familyTabs a:not(.active):hover { background: #eef5fb; }
+/* 3つ並ぶ束（半反応式）は 320px で1つ 96px しかない。語の途中で折れないよう、狭い画面では字と余白を詰める
+   （札の名前も6字以内にそろえてある: 一覧で覚える／自分で組む／塩基性に直す） */
+@media (max-width: 400px) {
+  .familyTabs a { font-size: calc(12.5 * var(--fs-u)); padding: 6px 4px; }
+}

@@ -11687,7 +11687,8 @@ async function runPortalUITests(iframe) {
     const s = win.Portal.state();
     // 枚数は MODES から導く（モードを足したら1枚増えるのが正しい）。
     // hub（化学レンズへ戻る）はモードではないのでカードにしない
-    const modeCount = MODES.filter((m) => m.id !== "hub" && m.id !== "portal").length;
+    // 束（family）の仲間は代表の札から入る（2026-09-26）ので、代表だけを数える
+    const modeCount = MODES.filter((m) => m.id !== "hub" && m.id !== "portal" && (!m.family || m.familyHead)).length;
     assert(s.roles >= modeCount,
       "役割カードがモードの数に足りない: " + s.roles + " < " + modeCount);
     assert(s.subjects === 2, "科目が2つでない: " + s.subjects);
@@ -11744,9 +11745,9 @@ async function runPortalUITests(iframe) {
        ⚠ 2026-09-18: 半反応式を「一覧（覚える）」と「組む」に分けたので、部品が3→4になった。
        **一覧が先**（読む順が学ぶ順） */
     /* ★ 2026-09-26: ③ は3本柱（酸化数 → 半反応式 → 反応式）。一覧は半反応式に、自分で選ぶは組み立てに統合し、
-       ページ上端の切り替えで行き来する（MODES の family）。液性は置き場所を相談中（I-0173）なので末尾の小さい札 */
+       ページ上端の切り替えで行き来する（MODES の family）。液性は半反応式の3つ目の面（I-0173） */
     const redox = us.find((u) => u.id === "ru-redox");
-    assert(redox.hrefs.join() === "oxidation.html,halfreaction.html,redox.html,condition.html",
+    assert(redox.hrefs.join() === "oxidation.html,halfreaction.html,redox.html",
       "③ の並びが3本柱でない: " + redox.hrefs.join());
     const cellU = us.find((u) => u.id === "ru-cell");
     assert(cellU.hrefs.join() === "battery.html,electrolysis.html", "④ が電池・電気分解でない: " + cellU.hrefs.join());
@@ -11992,8 +11993,10 @@ async function runPortalUITests(iframe) {
     const cases = [
       ["redox.html", (w) => w.RedoxEq, "redox", "redox,free"],
       ["redox.html?free=1", (w) => w.RedoxEq && w.RedoxEq.free, "free", "redox,free"],
-      ["halfreaction.html", (w) => w.document.querySelector("main .familyTabs"), "halfbuild", "halflist,halfbuild"],
-      ["halflist.html", (w) => w.HalfList && w.document.querySelector("main .familyTabs"), "halflist", "halflist,halfbuild"],
+      ["halfreaction.html", (w) => w.document.querySelector("main .familyTabs"), "halfbuild", "halflist,halfbuild,condition"],
+      ["halflist.html", (w) => w.HalfList && w.document.querySelector("main .familyTabs"), "halflist", "halflist,halfbuild,condition"],
+      // ★ 液性は半反応式の3つ目の面（2026-09-26・I-0173）
+      ["condition.html", (w) => w.document.querySelector("main .familyTabs"), "condition", "halflist,halfbuild,condition"],
     ];
     for (const [src, ready, want, members] of cases) {
       const { f, win: w } = await openProbeFrame(src, ready, "position:absolute;left:-9999px;width:800px;height:700px");
