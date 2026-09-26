@@ -61,7 +61,22 @@
 
   function bondsOf(s, id) { return s.bonds.filter(function (b) { return b.a === id || b.b === id; }); }
 
+  /* ---- パーツ（受け手・M3）----
+     H⁺ は「電子 0・空き1」。不対電子を持たないので、ふつうの結合（不対電子どうし）の相手にならない。
+     結合ができたら、ほかの H と区別しない（el は 'H'・コードのラベルも同じ）。電荷は置いたパーツの電荷の和で、イオン全体で持つ。
+     金属イオン（M5）はここに足す（空き ＝ 配位数）。 */
+  var PARTS = {
+    'H+': { el: 'H', un: 0, lp: 0, vacancy: 1, charge: 1, label: 'H⁺' }
+  };
+  var PART_ORDER = ['H+'];
+
   function addAtom(s, el) {
+    var pt = PARTS[el];
+    if (pt) {
+      var ap = { id: s.nextId++, el: pt.el, un: pt.un, lp: pt.lp, unfold: 0, vacancy: pt.vacancy, charge: pt.charge, part: el };
+      s.atoms.push(ap);
+      return ap.id;
+    }
     var e = ELEMENTS[el];
     if (!e) throw new Error('置けない元素: ' + el);
     var a = { id: s.nextId++, el: el, un: e.un, lp: e.lp, unfold: 0, vacancy: 0, charge: 0 };
@@ -96,6 +111,30 @@
     else s.bonds.push({ a: a, b: b, order: 1, dative: false, hint: hint || null });
     return { ok: true, order: c.order };
   }
+
+  /* ---- 配位結合（M3・§3-2・§4-2）----
+     与える側の非共有電子対1組 → 受け手（空きのある原子）との結合1本（次数1）。
+     できた結合は、判定でも正準コードでも**ふつうの共有結合と区別しない**（dative は「どうできたか」の記録だけ。
+     画面が「できた直後は青 → 2秒で黒」に使う）。
+     ⚠ 受け手の空きは1つの結合で1つ埋まる（H⁺ に2つ目は配位できない）。すでに結合している相手には配位しない。 */
+  function canDonate(s, donor, acceptor) {
+    if (donor === acceptor) return { ok: false, reason: 'same' };
+    var D = atomOf(s, donor), A = atomOf(s, acceptor);
+    if (!D || !A) return { ok: false, reason: 'missing' };
+    if (D.lp < 1) return { ok: false, reason: 'no-pair' };
+    if (!(A.vacancy > 0)) return { ok: false, reason: 'no-vacancy' };
+    if (bondBetween(s, donor, acceptor)) return { ok: false, reason: 'bonded' };
+    return { ok: true };
+  }
+  function donate(s, donor, acceptor, hint) {
+    var c = canDonate(s, donor, acceptor);
+    if (!c.ok) return c;
+    atomOf(s, donor).lp--;
+    atomOf(s, acceptor).vacancy--;
+    s.bonds.push({ a: donor, b: acceptor, order: 1, dative: true, donor: donor, hint: hint || null });
+    return { ok: true, order: 1 };
+  }
+  function openVacancy(s) { return s.atoms.reduce(function (t, a) { return t + (a.vacancy || 0); }, 0); }
 
   /* ---- 「ほどく」（公開②・M4。UI はまだ無い）----
      非共有電子対1組 → 不対電子2個。「既定 + 2×ほどいた数」が取りうる手の数に入るときだけ。 */
@@ -270,7 +309,13 @@
     var ids = spec.atoms.map(function (el) { return addAtom(s, el); });
     var errors = [];
     (spec.unfold || []).forEach(function (k) { if (!unfold(s, ids[k])) errors.push('unfold ' + k); });
+    // 結合の表の1行は [i, j, 次数] 。4つめが 'dative' なら i の非共有電子対を j（受け手）へ（配位結合）
     spec.bonds.forEach(function (t) {
+      if (t[3] === 'dative') {
+        var d = donate(s, ids[t[0]], ids[t[1]]);
+        if (!d.ok) errors.push(t.join('-') + ':' + d.reason);
+        return;
+      }
       for (var o = 0; o < t[2]; o++) {
         var r = bond(s, ids[t[0]], ids[t[1]]);
         if (!r.ok) errors.push(t.join('-') + ':' + r.reason);
@@ -286,7 +331,7 @@
         id: spec.id, formula: spec.formula, name: spec.name,
         atoms: spec.atoms.slice(), bonds: spec.bonds.map(function (t) { return t.slice(); }),
         allowedUnpaired: spec.allowedUnpaired || 0,
-        code: code(built.state), counts: formulaCounts(built.state), errors: built.errors
+        code: code(built.state), counts: formulaCounts(built.state), charge: charge(built.state), errors: built.errors
       };
     });
   }
@@ -294,9 +339,10 @@
   /* 盤面をお題と照べる。判定は judge を通す（完成の条件はここで作り直さない） */
   function checkTarget(s, target) {
     var j = judge(s, { allowedUnpaired: target.allowedUnpaired });
-    var sameFormula = sameCounts(formulaCounts(s), target.counts);
+    // 化学式は元素の数と電荷の両方で見る（NH₄⁺ は N1・H4・電荷 +1）
+    var sameFormula = sameCounts(formulaCounts(s), target.counts) && charge(s) === (target.charge || 0);
     return {
-      complete: j.complete, leftover: j.leftover, sameFormula: sameFormula,
+      complete: j.complete, leftover: j.leftover, sameFormula: sameFormula, openVacancy: openVacancy(s),
       match: j.complete && sameFormula && code(s) === target.code
     };
   }
@@ -361,7 +407,9 @@
 
   /* 分子の形。完成して1つにつながった分子だけ（それ以外は null）。
      centerId が候補にあればそれを中心に、無ければ候補の先頭 */
-  function moleculeShape(s, centerId) {
+  function moleculeShape(s0, centerId) {
+    // まだ配位していない受け手（ひとりの H⁺）は形に入れない ＝ 配位する前の NH₃（三角錐形）と後の NH₄⁺（正四面体形）を見比べられる
+    var s = { atoms: s0.atoms.filter(function (a) { return !(a.vacancy > 0 && !bondsOf(s0, a.id).length); }), bonds: s0.bonds };
     if (!judge(s).complete || !s.atoms.length) return null;
     if (componentOf(s, s.atoms[0].id).length !== s.atoms.length) return null;
     if (s.atoms.length === 2) {
@@ -432,6 +480,7 @@
     wlRefine: wlRefine, canonicalRowsCore: canonicalRowsCore, code: code,
     componentOf: componentOf, formulaCounts: formulaCounts, sameCounts: sameCounts,
     fromSpec: fromSpec, prepareTargets: prepareTargets, checkTarget: checkTarget,
+    PARTS: PARTS, PART_ORDER: PART_ORDER, canDonate: canDonate, donate: donate, openVacancy: openVacancy,
     ARRANGEMENT: ARRANGEMENT, SHAPE_NAME: SHAPE_NAME,
     domains: domains, shapeAt: shapeAt, shapeCenters: shapeCenters, moleculeShape: moleculeShape,
     idealVectors: idealVectors, shapeGeometry: shapeGeometry, angleDeg: angleDeg

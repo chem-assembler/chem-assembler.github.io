@@ -1,4 +1,4 @@
-/* shape.js — 電子対でみる分子のかたち（shape）の画面。M1: 原子を置く・タップで結合・電子式⇄構造式・判定・お題。M2: 形を見る（中心 → まとまり → 配置 → 形・2D と 3D）。
+/* shape.js — 電子対でみる分子のかたち（shape）の画面。M1: 原子を置く・タップで結合・電子式⇄構造式・判定・お題。M2: 形を見る（中心 → まとまり → 配置 → 形・2D と 3D）。M3: 配位結合（青い対 → H⁺）。
    設計の正は DESIGN_bond_app.md。化学の判断は model.js（window.ChemShape.model）だけが持つ。
    ここが持つのは「見た目」: 原子の位置・4つの側（スロット）・描画・タップ。
    ⚠ グローバルは window.ChemShape の1つだけ（IIFE・§2）。 */
@@ -78,7 +78,7 @@
     mol: M.create(), pos: {}, slots: {},
     history: [], mode: 'dot', check: false, sel: null,
     targets: [], taskIdx: 0, free: false, notice: null, ready: false,
-    view: 'build', centerId: null, rotY: 0.55, rotX: -0.35
+    view: 'build', centerId: null, rotY: 0.55, rotX: -0.35, fresh: {}
   };
 
   var $ = function (id) { return document.getElementById(id); };
@@ -140,6 +140,29 @@
     for (var k = 0; k < s.length; k++) if (s[k].k === 'u') out.push(k);
     return out;
   }
+  /* タップで選べる枠（M3）: 不対電子（赤）はいつでも。非共有電子対（青）は、台に受け手（空きのある H⁺）が
+     あるときだけ（受け手が無いのに青を選ぶと、赤をねらったタップを青に取られる）。
+     中心のタップ（ang が null）は赤を先に。向きがあれば、選べる枠のうちいちばん近いもの */
+  function pickSlot(id, ang) {
+    var s = st.slots[id] || [];
+    var withPairs = M.openVacancy(st.mol) > 0;
+    var cand = [];
+    for (var k = 0; k < s.length; k++) if (s[k].k === 'u' || (withPairs && s[k].k === 'p')) cand.push(k);
+    if (!cand.length) return null;
+    if (ang === null) {
+      var us = cand.filter(function (k2) { return s[k2].k === 'u'; });
+      return us.length ? us[0] : cand[0];
+    }
+    if (cand.length === 1) return cand[0];
+    return cand.slice().sort(function (a, b) { return angDist(s[a].ang, ang) - angDist(s[b].ang, ang); })[0];
+  }
+  function pairSlots(id) {
+    var s = st.slots[id] || [];
+    var out = [];
+    for (var k = 0; k < s.length; k++) if (s[k].k === 'p') out.push(k);
+    return out;
+  }
+
   // タップした向きに近い不対電子（1か所しか無ければそれ・§3-2）。ang が null（中心）なら最初のもの
   function pickUnpaired(id, ang) {
     var us = unpairedSlots(id);
@@ -370,7 +393,7 @@
 
   // お題の原子を並べて置く（結合はしない）。台の真ん中を中心に並べる
   function setupBoard() {
-    st.mol = M.create(); st.pos = {}; st.slots = {}; st.sel = null; st.history = []; st.notice = null;
+    st.mol = M.create(); st.pos = {}; st.slots = {}; st.sel = null; st.history = []; st.notice = null; st.fresh = {};
     st.view = 'build'; st.centerId = null; st.wasComplete = false; st.check = false;
     if (!st.free && st.targets[st.taskIdx]) {
       var els = st.targets[st.taskIdx].atoms;
@@ -393,25 +416,77 @@
     return r;
   }
 
+  /* 配位結合（M3）: a の非共有電子対（枠 sA）を受け手 b へ。できた対は、できた直後は青 → 2秒くらいで黒へ溶かす
+     （ユーザー決定 2026-09-26。参考書の図「どの対が来たか」と、本文「ふつうの共有結合と区別がつかない」の両方を言う）。
+     ⚠ 色は見た目だけ。判定・正準コードでは最初からふつうの結合（次数1） */
+  var FRESH_BLUE_MS = 1200, FRESH_MS = 2000;
+  function bondKey(a, b) { return a < b ? a + '-' + b : b + '-' + a; }
+  function donateAtoms(a, sA, b) {
+    var hint = (sA !== null && st.slots[a][sA]) ? { from: a, ang: st.slots[a][sA].ang } : null;
+    var r = M.donate(st.mol, a, b, hint);
+    if (!r.ok) return r;
+    relayout(a);
+    var key = bondKey(a, b);
+    st.fresh[key] = Date.now();
+    // 1.2 秒は青のまま → そこから CSS の transition（0.8 秒）で黒へ溶かす ＝ 2 秒で黒
+    setTimeout(function () {
+      [].forEach.call(svg.querySelectorAll('[data-fresh="' + key + '"]'), function (n) {
+        n.setAttribute('class', n.getAttribute('class').replace('e-co', 'e-sh').replace('bond co', 'bond'));
+      });
+    }, FRESH_BLUE_MS);
+    setTimeout(function () { delete st.fresh[key]; if (st.view === 'build') render(); }, FRESH_MS + 100);
+    return r;
+  }
+  function freshStage(b) {
+    var t = st.fresh[bondKey(b.a, b.b)];
+    return (t !== undefined && Date.now() - t < FRESH_BLUE_MS) ? 'blue' : null;
+  }
+
   function tapAtom(id, ang) {
     var A = M.atomOf(st.mol, id);
     st.notice = null;
     if (!st.sel) {
-      if (A.un < 1) { say('この原子には不対電子がありません'); update(); return; }
-      st.sel = { id: id, slot: pickUnpaired(id, ang) };
-      say('相手の原子をタップしよう', 'info');
+      var s0 = pickSlot(id, ang);
+      if (s0 === null) {
+        say(A.vacancy > 0 ? 'H⁺ は電子をもたない。先に青い対をタップしよう' : 'この原子には不対電子がありません');
+        update();
+        return;
+      }
+      st.sel = { id: id, slot: s0 };
+      say(st.slots[id][s0].k === 'p' ? 'この対をわたす相手（H⁺）をタップしよう' : '相手の原子をタップしよう', 'info');
       update();
       return;
     }
     if (st.sel.id === id) {
-      var s2 = pickUnpaired(id, ang);
+      var s2 = pickSlot(id, ang);
       if (s2 === st.sel.slot) st.sel = null;
       else { st.sel.slot = s2; say('相手の原子をタップしよう', 'info'); }
       update();
       return;
     }
     // ここからは A ＝ 2つめにタップした相手
-    if (A.un < 1) { say('この原子には不対電子がありません'); update(); return; }
+    var selKind = st.slots[st.sel.id][st.sel.slot] && st.slots[st.sel.id][st.sel.slot].k;
+    if (selKind === 'p') {
+      // 配位結合: 青い対 → 受け手（空きのある原子）
+      var cd = M.canDonate(st.mol, st.sel.id, id);
+      if (!cd.ok) {
+        say(cd.reason === 'no-vacancy' ? '青い対（非共有電子対）は H⁺ にわたそう' : 'ここにはわたせません');
+        update();
+        return;
+      }
+      var dn = st.sel.id, sD = st.sel.slot;
+      pushHistory();
+      st.sel = null;
+      donateAtoms(dn, sD, id);
+      update();
+      return;
+    }
+    if (A.un < 1) {
+      // ⚠ 赤い点（不対電子）から H⁺ へはつながらない（H⁺ は不対電子を持たない）
+      say(A.vacancy > 0 ? 'H⁺ には青い対（非共有電子対）をわたそう' : 'この原子には不対電子がありません');
+      update();
+      return;
+    }
     var c = M.canBond(st.mol, st.sel.id, id);
     if (!c.ok) {
       say(c.reason === 'max-order' ? '三重結合より多くはつくれません' : 'ここは結合できません');
@@ -432,8 +507,10 @@
     if (!t) return;
     var ids = st.mol.atoms.map(function (x) { return x.id; });
     t.bonds.forEach(function (bd) {
+      if (bd[3] === 'dative') { var ps = pairSlots(ids[bd[0]]); donateAtoms(ids[bd[0]], ps.length ? ps[0] : null, ids[bd[1]]); return; }
       for (var o = 0; o < bd[2]; o++) bondAtoms(ids[bd[0]], pickUnpaired(ids[bd[0]], 0), ids[bd[1]]); // 右向きから（C=C・O=C=O を横に）
     });
+    st.fresh = {}; // 組んだ姿から始めるときは、できた直後の青を見せない
   }
 
   function undo() {
@@ -524,8 +601,11 @@
       var r = M.checkTarget(st.mol, t);
       res.match = r.match;
       if (r.match) { res.text = '完成！ ' + t.formula + '（' + t.name + '）ができた'; res.kind = 'done'; }
+      else if (j.complete && r.openVacancy > 0) { res.text = 'H⁺ に青い対（非共有電子対）をわたそう'; res.kind = 'info'; }
       else if (j.complete && !r.sameFormula) { res.text = '完成。でも原子の数がお題とちがいます'; res.kind = 'warn'; }
       else if (j.complete) { res.text = '完成。でもつなぎ方がお題とちがいます'; res.kind = 'warn'; }
+    } else if (j.complete && M.openVacancy(st.mol) > 0) {
+      res.text = 'H⁺ に青い対（非共有電子対）をわたせる'; res.kind = 'info';
     } else if (j.complete) {
       res.text = '完成！ 不対電子が1つも残っていない'; res.kind = 'done';
     }
@@ -539,6 +619,7 @@
 
   // 形の画面の1行（配置と形の名前は SVG の中に別々に出す。ここは理由の1行）
   function shapeLine(sh) {
+    if (M.openVacancy(st.mol) > 0 && !sh.twoAtoms && sh.lone > 0) return '青い対を H⁺ にわたすと、形が変わる';
     if (sh.twoAtoms) return '原子が2個の分子は、いつも直線';
     if (!sh.supported) return 'この形はここでは扱いません';
     if (sh.lone === 0) return '非共有電子対が無いので、配置どおりの形';
@@ -581,7 +662,7 @@
     t.textContent = s;
     return t;
   }
-  function dot(g, x, y, cls) { el('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: 3.4, 'class': cls }, g); }
+  function dot(g, x, y, cls) { return el('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: 3.4, 'class': cls }, g); }
 
   // 元素記号のまわりの点の位置（2文字の記号は横に広げる）
   function slotPoint(p, sym, ang) {
@@ -627,30 +708,52 @@
       var ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
       if (st.mode === 'dot') {
         var mx = (pa.x + pb.x) / 2, my = (pa.y + pb.y) / 2;
+        var fr = b.dative && freshStage(b) === 'blue';
+        var dcls = fr ? 'e-co' : 'e-sh';
         for (var i = 0; i < b.order; i++) {
           var off = (i - (b.order - 1) / 2) * 8.5;
           var cx = mx + ux * off, cy = my + uy * off;
-          dot(gBond, cx + nx * 4.6, cy + ny * 4.6, 'e-sh');
-          dot(gBond, cx - nx * 4.6, cy - ny * 4.6, 'e-sh');
+          var d1 = dot(gBond, cx + nx * 4.6, cy + ny * 4.6, dcls);
+          var d2 = dot(gBond, cx - nx * 4.6, cy - ny * 4.6, dcls);
+          if (b.dative && st.fresh[bondKey(b.a, b.b)] !== undefined) { d1.setAttribute('data-fresh', bondKey(b.a, b.b)); d2.setAttribute('data-fresh', bondKey(b.a, b.b)); }
         }
       } else {
         var cut = 14;
         var offs = b.order === 1 ? [0] : b.order === 2 ? [-3.5, 3.5] : [-5.5, 0, 5.5];
+        var lfr = b.dative && freshStage(b) === 'blue';
         offs.forEach(function (o) {
-          el('line', {
+          var ln = el('line', {
             x1: (pa.x + ux * cut + nx * o).toFixed(1), y1: (pa.y + uy * cut + ny * o).toFixed(1),
             x2: (pb.x - ux * cut + nx * o).toFixed(1), y2: (pb.y - uy * cut + ny * o).toFixed(1),
-            'class': 'bond'
+            'class': lfr ? 'bond co' : 'bond'
           }, gBond);
+          if (b.dative && st.fresh[bondKey(b.a, b.b)] !== undefined) ln.setAttribute('data-fresh', bondKey(b.a, b.b));
         });
       }
+    });
+
+    // イオン（電荷をもつ2原子以上のまとまり）は [ ] でくくり、右上に電荷（教科書の NH₄⁺ の書き方）
+    var seen = {};
+    st.mol.atoms.forEach(function (a) {
+      if (seen[a.id]) return;
+      var comp = M.componentOf(st.mol, a.id);
+      comp.forEach(function (k) { seen[k] = true; });
+      if (comp.length < 2) return;
+      var q = comp.reduce(function (t, k) { return t + (M.atomOf(st.mol, k).charge || 0); }, 0);
+      if (!q) return;
+      var bb = bbox(comp), pad = st.check ? 38 : 26; // 確かめの丸（半径 35）の外側に
+      var x0 = bb.minX - pad, x1 = bb.maxX + pad, y0 = bb.minY - pad, y1 = bb.maxY + pad;
+      el('path', { d: 'M' + (x0 + 7) + ' ' + y0 + ' H' + x0 + ' V' + y1 + ' H' + (x0 + 7) +
+        ' M' + (x1 - 7) + ' ' + y0 + ' H' + x1 + ' V' + y1 + ' H' + (x1 - 7), 'class': 'ionBracket' }, gBond);
+      txt(gBond, x1 + 9, y0 + 2, (Math.abs(q) > 1 ? Math.abs(q) : '') + (q > 0 ? '+' : '−'), 'ionCharge');
     });
 
     // 原子（元素記号＋枠の中身）
     st.mol.atoms.forEach(function (a) {
       var p = st.pos[a.id];
       var g = el('g', { 'class': 'atom', 'data-id': a.id, 'data-el': a.el }, gAtom);
-      txt(g, p.x, p.y, a.el, 'sym');
+      var lone = a.part && !M.bondsOf(st.mol, a.id).length;
+      txt(g, p.x, p.y, lone ? M.PARTS[a.part].label : a.el, 'sym' + (lone ? ' part' : ''));
       (st.slots[a.id] || []).forEach(function (sl) {
         if (sl.k !== 'u' && sl.k !== 'p') return;
         var q = slotPoint(p, a.el, sl.ang);
@@ -934,6 +1037,17 @@
       b.addEventListener('click', function () { addFromPalette(sym); });
       pal.appendChild(b);
     });
+    // 受け手のパーツ（M3: H⁺）。記号の右上に電荷
+    M.PART_ORDER.forEach(function (key) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = M.PARTS[key].label;
+      b.setAttribute('data-el', key);
+      b.className = 'part';
+      b.setAttribute('aria-label', M.PARTS[key].label + ' を置く');
+      b.addEventListener('click', function () { addFromPalette(key); });
+      pal.appendChild(b);
+    });
   }
 
   function bindBars() {
@@ -972,6 +1086,7 @@
     var mode = q.get('mode');
     if (mode === 'line' || mode === 'dot') st.mode = mode;
     var m = q.get('m');
+    if (m) m = m.replace(/ /g, '+'); // ?m=NH4+ の「+」はクエリでは空白に読まれる（NH4%2B でも同じに着く）
     if (m) {
       var idx = -1;
       st.targets.forEach(function (t, i) { if (t.id === m) idx = i; });
@@ -1011,6 +1126,12 @@
       if (!p) return null;
       var q = side === undefined || side === null ? p : { x: p.x + dirOf(SIDE_ANG[side]).x * 18, y: p.y + dirOf(SIDE_ANG[side]).y * 18 };
       return svgToClient(q.x, q.y);
+    },
+    clientAtAng: function (id, ang) {
+      var p = st.pos[id];
+      if (!p) return null;
+      var d = dirOf(ang);
+      return svgToClient(p.x + d.x * 18, p.y + d.y * 18);
     },
     idsOf: function (elSym) { return st.mol.atoms.filter(function (a) { return a.el === elSym; }).map(function (a) { return a.id; }); },
     // 2つの結合の間の角（度・台の上の見た目）

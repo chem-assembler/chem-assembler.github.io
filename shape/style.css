@@ -77,6 +77,14 @@ main { max-width: 720px; margin: 0 auto; padding: 8px 12px 12px; }
 .e-sh { fill: var(--c-sh); }
 .bond { stroke: var(--c-sh); stroke-width: 2.4; stroke-linecap: round; }
 .hand { stroke: var(--c-un); stroke-width: 3; stroke-linecap: round; }
+/* 配位結合でできた対: できた直後は青（e-co・bond co）→ 1.2 秒後に黒へ 0.8 秒で溶かす ＝ 2 秒で黒（ユーザー決定） */
+.e-co { fill: var(--c-lp); }
+.bond.co { stroke: var(--c-lp); }
+.layer-bond circle { transition: fill .8s linear; }
+.layer-bond line { transition: stroke .8s linear; }
+.ionBracket { fill: none; stroke: #222; stroke-width: 1.6; }
+.ionCharge { font-size: 17px; font-weight: bold; fill: #222; }
+.palette button.part { color: #7a3a9a; }
 .selWedge { fill: var(--c-sel); fill-opacity: .28; }
 .chk { fill: none; stroke: #7a8f8c; stroke-width: 1; stroke-dasharray: 3 3; }
 .chkNum { font-size: 12px; font-weight: bold; fill: #555; }
@@ -86,7 +94,7 @@ main { max-width: 720px; margin: 0 auto; padding: 8px 12px 12px; }
 .msg.done { color: #1d7a46; }
 .msg.warn { color: #b3541e; }
 
-.palette { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; }
+.palette { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
 .palette button {
   min-height: 44px; padding: 0;
   border: 1px solid #b8c9c6; border-radius: 8px; background: #fff;

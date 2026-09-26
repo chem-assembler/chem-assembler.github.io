@@ -17,6 +17,7 @@
       var ids = atoms.map(function (el) { return M.addAtom(s, el); });
       var bad = [];
       bonds.forEach(function (t) {
+        if (t[3] === 'dative') { var d = M.donate(s, ids[t[0]], ids[t[1]]); if (!d.ok) bad.push(d.reason); return; }
         for (var o = 0; o < t[2]; o++) { var r = M.bond(s, ids[t[0]], ids[t[1]]); if (!r.ok) bad.push(r.reason); }
       });
       return { s: s, ids: ids, bad: bad };
@@ -37,6 +38,7 @@
       var inv = []; perm.forEach(function (orig, k) { inv[orig] = k; });
       var atoms = perm.map(function (orig) { return spec.atoms[orig]; });
       var bonds = shuffled(spec.bonds, seed + 7).map(function (t) {
+        if (t[3] === 'dative') return [inv[t[0]], inv[t[1]], t[2], 'dative']; // 配位結合は与える側・受け手の向きを変えない
         return (seed % 2) ? [inv[t[1]], inv[t[0]], t[2]] : [inv[t[0]], inv[t[1]], t[2]];
       });
       return build(atoms, bonds);
@@ -240,6 +242,49 @@
       ok('NH₃: 非共有電子対1つ（上）＋結合3本', gn.filter(function (x) { return x.kind === 'lp'; }).length === 1 && gn[0].kind === 'lp' && gn[0].v[1] === -1 &&
         gn.filter(function (x) { return x.kind === 'bond'; }).length === 3);
     })();
+
+    section('モデル: 5 配位結合（H⁺ ＝ 電子 0・空き1・§3-2・§4-2）');
+    (function () {
+      var n = build(['N', 'H', 'H', 'H'], [[0, 1, 1], [0, 2, 1], [0, 3, 1]]);
+      var N = n.ids[0], s = n.s;
+      var hp = M.addAtom(s, 'H+');
+      var HP = M.atomOf(s, hp);
+      ok('H⁺ は電子 0（不対電子 0・非共有電子対 0）・空き1・電荷 +1', HP.un === 0 && HP.lp === 0 && HP.vacancy === 1 && HP.charge === 1 && M.electronCount(s, hp) === 0);
+      var before = M.moleculeShape(s);
+      ok('配位する前: NH₃（＋ひとりの H⁺）は三角錐形', !!before && before.shape === '三角錐形' && before.domains === 4);
+      var h0 = M.addAtom(s, 'H');
+      ok('⚠ 否定対照: H⁺ は不対電子の相手にならない（H・N の不対電子とは結合できない）',
+        !M.canBond(s, h0, hp).ok && M.canBond(s, h0, hp).reason === 'no-unpaired');
+      s.atoms = s.atoms.filter(function (a) { return a.id !== h0; });
+      var r = M.donate(s, N, hp);
+      var b = M.bondBetween(s, N, hp);
+      ok('NH₃ の N の非共有電子対 → H⁺ で配位結合（次数1）', r.ok && !!b && b.order === 1 && b.dative === true);
+      ok('NH₄⁺: 電荷 +1・N の結合4本・N は 8個・H⁺ だった H は 2個', M.charge(s) === 1 && M.bondsOf(s, N).length === 4 &&
+        M.electronCount(s, N) === 8 && M.electronCount(s, hp) === 2 && M.atomOf(s, N).lp === 0);
+      ok('NH₄⁺ は完成（不対電子 0）・お題の NH₄⁺ と一致', M.judge(s).complete && M.checkTarget(s, byId['NH4+']).match);
+      var after = M.moleculeShape(s);
+      ok('配位した後: NH₄⁺ は正四面体形（手が1本増えて形が変わる）', after.shape === '正四面体形' && after.domains === 4 && after.lone === 0);
+      ok('できた結合はふつうの結合と区別しない（4つの H が同じクラス ＝ H が4行とも同じラベル）',
+        (M.code(s).match(/H\|0\|0\[c(\d+)\]/g) || []).filter(function (x, i, arr) { return x === arr[0]; }).length === 4);
+      var n2 = build(['N', 'H', 'H', 'H'], [[0, 1, 1], [0, 2, 1], [0, 3, 1]]);
+      var N2 = M.addAtom(s, 'N'); // 別の N（非共有電子対1組）を足して同じ H⁺ に2つ目を試す
+      ok('⚠ 否定対照: H⁺ に2つ目は配位できない（空きは1つ）', !M.donate(s, N2, hp).ok && M.canDonate(s, N2, hp).reason === 'no-vacancy');
+      ok('⚠ 否定対照: NH₄⁺ の N にはもう非共有電子対が無い', M.canDonate(s, N, M.addAtom(s, 'H+')).reason === 'no-pair');
+      ok('⚠ 否定対照: 空きの無い原子（ふつうの H）には配位できない', M.canDonate(n2.s, n2.ids[0], n2.ids[1]).reason === 'no-vacancy');
+    })();
+    (function () {
+      var w = build(['O', 'H', 'H', 'H+'], [[0, 1, 1], [0, 2, 1], [0, 3, 1, 'dative']]);
+      var sh = M.moleculeShape(w.s);
+      ok('H₂O＋H⁺ → H₃O⁺: 電荷 +1・O の結合3本・非共有電子対1組・8個・三角錐形', !w.bad.length && M.charge(w.s) === 1 &&
+        M.bondsOf(w.s, w.ids[0]).length === 3 && M.atomOf(w.s, w.ids[0]).lp === 1 && M.electronCount(w.s, w.ids[0]) === 8 &&
+        sh.shape === '三角錐形' && M.checkTarget(w.s, byId['H3O+']).match);
+      var w0 = build(['O', 'H', 'H'], [[0, 1, 1], [0, 2, 1]]);
+      ok('配位する前の H₂O は折れ線形', M.moleculeShape(w0.s).shape === '折れ線形');
+      ok('⚠ 否定対照: NH₄⁺ と H₃O⁺ のコードは電荷を頭に持つ（q1:）・NH₃ とは違う', /^q1:/.test(byId['NH4+'].code) && byId['NH4+'].code !== byId.NH3.code);
+      var loose = build(['N', 'H', 'H', 'H', 'H+'], [[0, 1, 1], [0, 2, 1], [0, 3, 1]]);
+      var r = M.checkTarget(loose.s, byId['NH4+']);
+      ok('⚠ 否定対照: NH₃ と H⁺ を並べただけでは NH₄⁺ と一致しない（空きが残っている）', !r.match && r.openVacancy === 1 && r.sameFormula);
+    })();
   }
 
   /* ================================================================
@@ -332,7 +377,7 @@
     ok('アプリが立ち上がる', !!A.win);
     if (!A.win) return;
     var pal = [].map.call(A.doc.querySelectorAll('#palette button'), function (b) { return b.textContent; });
-    ok('原子のパレットは9つ（H・B・C・N・O・F・P・S・Cl）', pal.join(',') === 'H,B,C,N,O,F,P,S,Cl');
+    ok('パレットは9元素（H・B・C・N・O・F・P・S・Cl）＋ H⁺', pal.join(',') === 'H,B,C,N,O,F,P,S,Cl,H⁺');
     ok('既定はお題 H₂ で、H が2つ置いてある', A.doc.getElementById('taskLabel').textContent.indexOf('H₂') === 0 && A.app.idsOf('H').length === 2);
     ok('電子式が既定（赤い点 2・H の不対電子）', A.doc.getElementById('dotMode').className === 'on' && A.doc.querySelectorAll('#board .e-un').length === 2);
     ok('はじめの声かけが1行で出る', /赤い点をタップ/.test(msg(A)));
@@ -447,6 +492,7 @@
 
     await runEmbedTests();
     await runShapeUITests();
+    await runDativeUITests();
     await runWidthTests();
   }
 
@@ -572,6 +618,99 @@
     A.f.remove();
     A = await openApp('index.html?m=H2O2&view=shape');
     ok('H₂O₂: 中心の候補は O が2つ（切り替えが出る）', st(A).shape.candidates.length === 2 && A.doc.getElementById('centerBtn').style.visibility === '');
+    A.f.remove();
+  }
+
+  /* ---- M3: 配位結合（§6 の 5）---- */
+  function slotOfKind(A, id, kind) {
+    var sl = st(A).slots[id];
+    for (var k = 0; k < sl.length; k++) if (sl[k].k === kind) return sl[k].ang;
+    return null;
+  }
+  function tapAng(A, id, ang) {
+    var pt = A.app.clientAtAng(id, ang);
+    ptr(A, 'pointerdown', pt); ptr(A, 'pointerup', pt);
+  }
+
+  async function runDativeUITests() {
+    section('画面: 5 配位結合（NH₃＋H⁺ → NH₄⁺・H₂O＋H⁺ → H₃O⁺）');
+    var A = await openApp('index.html?m=NH4%2B');
+    ok('?m=NH4%2B で NH₄⁺ のお題が開く（見出しに電荷）', A.doc.getElementById('taskLabel').textContent.indexOf('NH₄⁺（アンモニウムイオン）') === 0);
+    var N = A.app.idsOf('N')[0], H = A.app.idsOf('H');
+    var HP = st(A).mol.atoms.filter(function (a) { return a.part === 'H+'; })[0].id;
+    var hs = H.filter(function (x) { return x !== HP; });
+    ok('H⁺ は「H⁺」と書いて置かれる', !!A.doc.querySelector('#board .atom[data-id="' + HP + '"] .sym.part') &&
+      A.doc.querySelector('#board .atom[data-id="' + HP + '"] .sym').textContent === 'H⁺');
+    tap(A, HP);
+    ok('⚠ H⁺ を先にタップしても選べない（電子をもたない）', !st(A).sel && /H⁺ は電子をもたない/.test(msg(A)));
+    tapAng(A, N, slotOfKind(A, N, 'u')); tap(A, HP);
+    ok('⚠ 否定対照: N の不対電子（赤）から H⁺ へはつながらない', st(A).mol.bonds.length === 0 && /H⁺ には青い対/.test(msg(A)));
+    st(A).sel = null;
+    hs.forEach(function (h) { tapAng(A, N, slotOfKind(A, N, 'u')); tap(A, h); }); // 赤い点をねらってタップ（H⁺ があると青も選べるので）
+    ok('NH₃ まで組むと「H⁺ に青い対をわたそう」', st(A).mol.bonds.length === 3 && /H⁺ に青い対/.test(msg(A)) && st(A).last.match === false);
+    ok('配位する前でも「形」が押せる（ひとりの H⁺ は形に入れない）', !A.doc.getElementById('shapeViewBtn').disabled);
+    A.doc.getElementById('shapeViewBtn').click();
+    A.app.stopSpin();
+    ok('配位する前: NH₃ は「正四面体の配置 → 三角錐形」・「H⁺ にわたすと形が変わる」', A.app.shapeSvg.querySelector('.shp').textContent === '三角錐形' &&
+      /形が変わる/.test(msg(A)));
+    A.doc.getElementById('buildView').click();
+    var lpAng = slotOfKind(A, N, 'p');
+    tapAng(A, N, lpAng);
+    ok('受け手が台にあると、N の青い対（非共有電子対）を選べる', !!st(A).sel && st(A).slots[N][st(A).sel.slot].k === 'p' && /わたす相手/.test(msg(A)));
+    tap(A, HP);
+    var b = A.win.ChemShape.model.bondBetween(st(A).mol, N, HP);
+    ok('青い対 → H⁺ で配位結合ができる（次数1）', !!b && b.order === 1 && b.dative === true);
+    ok('NH₄⁺: 電荷 +1・N の結合4本・N は 8個', A.win.ChemShape.model.charge(st(A).mol) === 1 &&
+      A.win.ChemShape.model.bondsOf(st(A).mol, N).length === 4 && A.win.ChemShape.model.electronCount(st(A).mol, N) === 8);
+    ok('完成: 「完成！ NH₄⁺（アンモニウムイオン）ができた」', /完成！ NH₄⁺（アンモニウムイオン）ができた/.test(msg(A)) && st(A).last.match === true);
+    ok('イオンを [ ] でくくり、右上に「+」', !!A.doc.querySelector('#board .ionBracket') && A.doc.querySelector('#board .ionCharge').textContent === '+');
+    var fresh = A.doc.querySelectorAll('#board .layer-bond circle.e-co');
+    ok('できた直後は、その対だけ青（2個）・ほかの共有電子対は黒（6個）', fresh.length === 2 && A.doc.querySelectorAll('#board .layer-bond circle.e-sh').length === 6);
+    await wait(700);
+    ok('⚠ 0.7秒ではまだ青', A.doc.querySelectorAll('#board .layer-bond circle.e-co').length === 2);
+    await wait(1600);
+    var all = A.doc.querySelectorAll('#board .layer-bond circle');
+    var black = [].every.call(all, function (c) { return A.win.getComputedStyle(c).fill === 'rgb(34, 34, 34)'; });
+    ok('2秒後には黒（ふつうの共有電子対と区別がつかない・8個とも同じ色）', all.length === 8 &&
+      A.doc.querySelectorAll('#board .layer-bond circle.e-co').length === 0 && black);
+    A.doc.getElementById('shapeViewBtn').click();
+    A.app.stopSpin();
+    ok('配位した後: NH₄⁺ は「正四面体の配置 → 正四面体形」（手が1本増えて形が変わる）', A.app.shapeSvg.querySelector('.shp').textContent === '正四面体形' &&
+      A.app.shapeSvg.querySelector('.arr').textContent === '正四面体の配置');
+    A.f.remove();
+
+    A = await openApp('index.html?m=NH4+');
+    ok('?m=NH4+（「+」が空白に読まれる形）でも NH₄⁺ が開く', A.doc.getElementById('taskLabel').textContent.indexOf('NH₄⁺') === 0 && !/まだありません/.test(msg(A)));
+    A.f.remove();
+
+    A = await openApp('index.html?m=H3O%2B&view=shape');
+    A.app.stopSpin();
+    ok('H₃O⁺: 形の画面は「正四面体の配置 → 三角錐形」・電荷 +1', A.app.shapeSvg.querySelector('.shp').textContent === '三角錐形' &&
+      A.win.ChemShape.model.charge(st(A).mol) === 1 && st(A).shape.domains === 4);
+    A.doc.getElementById('buildView').click();
+    ok('H₃O⁺ を組んだ姿: 完成・お題と一致・青の対は残っていない', /完成！ H₃O⁺/.test(msg(A)) && A.doc.querySelectorAll('#board circle.e-co').length === 0);
+    A.f.remove();
+
+    section('画面: 5 配位結合の否定対照');
+    A = await openApp('index.html?m=H2O');
+    var O = A.app.idsOf('O')[0];
+    tapAng(A, O, slotOfKind(A, O, 'p'));
+    ok('⚠ 受け手が台に無いときは、青い対のあたりをタップしても赤（不対電子）が選ばれる', !!st(A).sel && st(A).slots[O][st(A).sel.slot].k === 'u');
+    st(A).sel = null;
+    A.doc.querySelector('#palette button[data-el="H+"]').click();
+    var hp = st(A).mol.atoms.filter(function (a) { return a.part === 'H+'; })[0].id;
+    var Hs = A.app.idsOf('H').filter(function (x) { return x !== hp; });
+    tapAng(A, O, slotOfKind(A, O, 'p')); tap(A, Hs[0]);
+    ok('⚠ 青い対はふつうの H（空きが無い）にはわたせない', st(A).mol.bonds.length === 0 && /H⁺ にわたそう/.test(msg(A)));
+    st(A).sel = null;
+    Hs.forEach(function (h) { tapAng(A, O, slotOfKind(A, O, 'u')); tap(A, h); });
+    tapAng(A, O, slotOfKind(A, O, 'p')); tap(A, hp);
+    ok('H₂O ＋ H⁺ も配位できる（H₂O のお題とはちがう）', A.win.ChemShape.model.charge(st(A).mol) === 1 && st(A).mol.bonds.length === 3 && st(A).last.match === false);
+    A.doc.querySelector('#palette button[data-el="N"]').click();
+    var n2 = A.app.idsOf('N')[0];
+    tapAng(A, n2, slotOfKind(A, n2, 'p') === null ? 0 : slotOfKind(A, n2, 'p'));
+    tap(A, hp);
+    ok('⚠ 否定対照: H⁺ に2つ目は配位できない（空きは1つ）', A.win.ChemShape.model.bondsOf(st(A).mol, hp).length === 1);
     A.f.remove();
   }
 
