@@ -1705,7 +1705,9 @@ function refreshDiv() {
   SHEET.divDone.row.classList.toggle("doneRow", !!j.ok);
   if (j.ok) {
     const d = SHEET.divDone;
-    const r = divideEq(eq, eqDivisorOf(eq));
+    const r0 = divideEq(eq, eqDivisorOf(eq));
+    // 割ったあとがそのまま最後のイオン反応式になる回（A の道・液性の段が無い回）だけ、教科書の並びにそろえる
+    const r = (!liqStep() || liqPathNow() === "A") ? orderIonic(stage(), r0) : r0;
     d.mark.textContent = "";
     d.arrow.textContent = "→";
     d.left.className = "cLeft halfFormula";
@@ -2008,8 +2010,10 @@ function refreshLiq() {
     P.done.row.hidden = !r.ok;
     P.rule2.hidden = !r.ok;
     if (r.ok) {
-      renderLiqTerms(P.done.left, r.left, 0);
-      renderLiqTerms(P.done.right, r.right, 0);
+      // 足し合わせた式を直した行（B の道）は、そのまま最後のイオン反応式 ＝ 教科書の並びにそろえる
+      const fin = t.key === "sum" ? orderIonic(stage(), { left: r.left, right: r.right }) : r;
+      renderLiqTerms(P.done.left, fin.left, 0);
+      renderLiqTerms(P.done.right, fin.right, 0);
     }
     P.done.row.classList.toggle("doneRow", !!r.ok);
     const j = liquidJudge(t.eq, s.medium, k);

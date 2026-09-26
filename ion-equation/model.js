@@ -3173,6 +3173,8 @@ const REDOX_STAGES = [
     id: "rs6", title: "塩素 × 水酸化物（さらし粉）",
     ox: "Cl2_ox_HClO", red: "Cl2_red", answer: [1, 1], mode: "solution", medium: "basic",
     levelTag: "参考（発展）",
+    // イオン反応式の右辺の並び（教科書どおり Cl₂ ＋ 2OH⁻ → Cl⁻ ＋ ClO⁻ ＋ H₂O・ユーザー指示 2026-09-26）
+    ionicOrder: { right: ["Cl-", "ClO-", "H2O"] },
     after: { lead: "水酸化カルシウムに吸収させると、さらし粉 CaCl(ClO)・H₂O になる",
       ref: "chlorine", anchor: "chlorine-reactions" },
     intro: "塩素を塩基の水溶液に通すと、同じ Cl₂ が酸化剤にも還元剤にもなる（自己酸化還元）",
@@ -4840,9 +4842,24 @@ function ionicOf(stage, a, b) {
   const c = sumOf(stage, a, b);   // 全体を割る段がある回は割ったあと（I-0180）
   const medium = liquidMediumOf(stage);
   const need = medium ? liquidNeed(c, medium) : 0;
-  if (!need) return c;
+  if (!need) return orderIonic(stage, c);
   const r = liquidRewrite(c, medium, need);
-  return { left: r.left, right: r.right };
+  return orderIonic(stage, { left: r.left, right: r.right });
+}
+
+/* できあがったイオン反応式の項の並び（2026-09-26・ユーザー指示「教科書どおり Cl⁻ ＋ ClO⁻ ＋ H₂O に揃えて」）。
+   組み立ては足し合わせ・書き直しの順で項が並ぶので、教科書の並びと違うことがある（rs6）。
+   ステージが ionicOrder: { left?, right? } を持つときだけ、その順に並べ替える（持たない回は何もしない）。
+   ⚠ 並べ替えるのは**できあがりの行だけ**（③の途中の行は足し合わせの順のまま ＝ 筆算が縦に読める） */
+function orderIonic(stage, eq) {
+  const ord = stage && stage.ionicOrder;
+  if (!ord || !eq) return eq;
+  const sortSide = (side, list) => {
+    if (!list) return side;
+    const at = (sp) => { const i = list.indexOf(sp); return i < 0 ? list.length : i; };
+    return side.map((t, i) => ({ t, i })).sort((x, y) => at(x.t.sp) - at(y.t.sp) || x.i - y.i).map((x) => x.t);
+  };
+  return { left: sortSide(eq.left, ord.left), right: sortSide(eq.right, ord.right) };
 }
 
 /* 類題・参考の一覧（液性の段の下・DESIGN_redox.md「追加の収録と類題の一覧」）。

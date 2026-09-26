@@ -3007,6 +3007,17 @@ function runModelTests() {
       const sh = rxSheetRows(st, st.answer[0], st.answer[1]);
       assert(sh.leftMol.map((x) => x.sp).join() === w, id + ": 左辺の並びが参考書と違う: " + sh.leftMol.map((x) => x.sp).join());
     }
+    /* ★ イオン反応式の並び（2026-09-26「教科書どおり Cl⁻ ＋ ClO⁻ ＋ H₂O に揃えて」）。rs6 だけが ionicOrder を持つ */
+    {
+      const st = REDOX_STAGES.find((x) => x.id === "rs6");
+      const e = ionicOf(st, st.answer[0], st.answer[1]);
+      assert(e.left.map((t) => t.n + t.sp).join() === "1Cl2,2OH-" && e.right.map((t) => t.n + t.sp).join() === "1Cl-,1ClO-,1H2O",
+        "rs6 のイオン反応式が Cl₂ ＋ 2OH⁻ → Cl⁻ ＋ ClO⁻ ＋ H₂O でない: " + JSON.stringify(e));
+      // 否定対照: ionicOrder を持たない回は並べ替えない（orderIonic は何もしない）
+      const rs5 = REDOX_STAGES.find((x) => x.id === "rs5");
+      const e5 = ionicOf(rs5, rs5.answer[0], rs5.answer[1]);
+      assert(JSON.stringify(orderIonic(rs5, e5)) === JSON.stringify(e5), "ionicOrder の無い回まで並べ替えている");
+    }
     // 否定対照: 並びの指定が無いステージ（rs1）は今までどおり（塩が先）
     const rs1 = REDOX_STAGES.find((x) => x.id === "rs1");
     assert(!rs1.rightOrder && !rs1.molecularEq, "rs1 に並びの指定がある（参考書に式が無いので付けていないはず）");
