@@ -18,5 +18,10 @@
 {"id":"H3O+","formula":"H₃O⁺","name":"オキソニウムイオン","atoms":["O","H","H","H+"],"bonds":[[0,1,1],[0,2,1],[0,3,1,"dative"]]},
 {"id":"BF3","formula":"BF₃","name":"三フッ化ホウ素","atoms":["B","F","F","F"],"bonds":[[0,1,1],[0,2,1],[0,3,1]],"advanced":true},
 {"id":"PCl5","formula":"PCl₅","name":"五塩化リン","atoms":["P","Cl","Cl","Cl","Cl","Cl"],"unfold":[0],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[0,5,1]],"advanced":true,"mode":"line"},
-{"id":"SF6","formula":"SF₆","name":"六フッ化硫黄","atoms":["S","F","F","F","F","F","F"],"unfold":[0,0],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[0,5,1],[0,6,1]],"advanced":true,"mode":"line"}
+{"id":"SF6","formula":"SF₆","name":"六フッ化硫黄","atoms":["S","F","F","F","F","F","F"],"unfold":[0,0],"bonds":[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[0,5,1],[0,6,1]],"advanced":true,"mode":"line"},
+{"id":"ag-nh3-2","formula":"[Ag(NH₃)₂]⁺","name":"ジアンミン銀(Ⅰ)イオン","atoms":["Ag+","NH3","NH3"],"bonds":[[1,0,1,"dative"],[2,0,1,"dative"]],"advanced":true},
+{"id":"cu-nh3-4","formula":"[Cu(NH₃)₄]²⁺","name":"テトラアンミン銅(Ⅱ)イオン","atoms":["Cu2+","NH3","NH3","NH3","NH3"],"bonds":[[1,0,1,"dative"],[2,0,1,"dative"],[3,0,1,"dative"],[4,0,1,"dative"]],"advanced":true},
+{"id":"zn-nh3-4","formula":"[Zn(NH₃)₄]²⁺","name":"テトラアンミン亜鉛(Ⅱ)イオン","atoms":["Zn2+","NH3","NH3","NH3","NH3"],"bonds":[[1,0,1,"dative"],[2,0,1,"dative"],[3,0,1,"dative"],[4,0,1,"dative"]],"advanced":true},
+{"id":"zn-oh-4","formula":"[Zn(OH)₄]²⁻","name":"テトラヒドロキシド亜鉛(Ⅱ)酸イオン","atoms":["Zn2+","OH-","OH-","OH-","OH-"],"bonds":[[1,0,1,"dative"],[2,0,1,"dative"],[3,0,1,"dative"],[4,0,1,"dative"]],"advanced":true},
+{"id":"fe-cn-6","formula":"[Fe(CN)₆]³⁻","name":"ヘキサシアニド鉄(Ⅲ)酸イオン","atoms":["Fe3+","CN-","CN-","CN-","CN-","CN-","CN-"],"bonds":[[1,0,1,"dative"],[2,0,1,"dative"],[3,0,1,"dative"],[4,0,1,"dative"],[5,0,1,"dative"],[6,0,1,"dative"]],"advanced":true}
 ]

@@ -138,12 +138,13 @@
       var inv = b.state.atoms.every(function (a) {
         var n = M.electronCount(b.state, a.id);
         if (cc && a.el === cc[0]) return n === cc[1];
+        if (M.isMetal(a)) return M.tag(b.state, a.id).kind === 'metal'; // M5: 金属イオンは電子を数えない（札も付けない）
         return a.el === 'H' ? n === 2 : n === 8;
       });
-      ok(t.id + ': 表どおりに組めて完成し、自分のコードと一致（' + (cc ? cc[0] + ' は' + cc[1] + '個・' : '') + 'H は2個・他は8個）',
+      ok(t.id + ': 表どおりに組めて完成し、自分のコードと一致（' + (cc ? cc[0] + ' は' + cc[1] + '個・' : '') + (t.complex ? '金属イオンは数えない・' : '') + 'H は2個・他は8個）',
         !t.errors.length && M.judge(b.state).complete && M.checkTarget(b.state, t).match && inv);
     });
-    ok('「発展」の札はオクテットに収まらないお題（BF₃・PCl₅・SF₆）だけ', T.filter(function (t) { return t.advanced; }).map(function (t) { return t.id; }).join() === 'BF3,PCl5,SF6');
+    ok('「発展」の札はオクテットに収まらないお題（BF₃・PCl₅・SF₆）と錯イオン（公開③）だけ', T.filter(function (t) { return t.advanced; }).map(function (t) { return t.id; }).join() === 'BF3,PCl5,SF6,ag-nh3-2,cu-nh3-4,zn-nh3-4,zn-oh-4,fe-cn-6');
     ok('お題のコードはすべて互いに違う', new Set(T.map(function (t) { return t.code; })).size === T.length);
 
     (function () {
@@ -383,6 +384,101 @@
       ok('⚠ 終点の角は引数（データ）で決まる ＝ 模型は角度を計算しない（100° を渡せば 100°）',
         Math.abs(bondPairs(M.squeezeGeometry(geo('NH3'), 100, 1))[0] - 100) < 0.01);
     })();
+
+    /* ---- 公開③（M5）: 錯イオン（§4-2・§6）---- */
+    section('モデル: 公開③ 錯イオン（金属イオンの表・出来合いの配位子・電荷は和）');
+    (function () {
+      var spec = function (id) { return molecules.filter(function (x) { return x.id === id; })[0]; };
+      var st5 = function (id) { return M.fromSpec(spec(id)).state; };
+      var tb = M.METAL_ORDER.map(function (k) { var m = M.METALS[k]; return k + ':' + m.cn + ':' + m.shape; }).join();
+      ok('金属イオンの表（§4-2）: Ag⁺ 2 直線形・Cu²⁺ 4 正方形・Zn²⁺ 4 正四面体形・Fe³⁺ 6 正八面体形',
+        tb === 'Ag+:2:直線形,Cu2+:4:正方形,Zn2+:4:正四面体形,Fe3+:6:正八面体形');
+      var s0 = M.create(), cu = M.addAtom(s0, 'Cu2+'), CU = M.atomOf(s0, cu);
+      ok('Cu²⁺ は電子 0（不対電子・非共有電子対なし）・空き4（配位数）・電荷 +2', CU.un === 0 && CU.lp === 0 && CU.vacancy === 4 && CU.charge === 2 && M.isMetal(CU));
+      var h0 = M.addAtom(s0, 'H');
+      ok('⚠ 否定対照: 金属イオンは不対電子の相手にならない', !M.canBond(s0, h0, cu).ok);
+
+      // 出来合いの配位子（ユーザー決定: パーツで置く）
+      var p = M.create(), n = M.addAtom(p, 'NH3');
+      ok('NH₃ のパーツ: N＋H 3つが組んである・N は非共有電子対1組・8個・完成', p.atoms.length === 4 && M.bondsOf(p, n).length === 3 &&
+        M.atomOf(p, n).lp === 1 && M.electronCount(p, n) === 8 && M.judge(p).complete && M.charge(p) === 0);
+      var q = M.create(), c = M.addAtom(q, 'CN-'), nN = q.atoms.filter(function (a) { return a.el === 'N'; })[0].id;
+      ok('CN⁻ のパーツ: C≡N・C と N に非共有電子対1組ずつ・どちらも8個・電荷 −1', M.bondBetween(q, c, nN).order === 3 && M.atomOf(q, c).el === 'C' &&
+        M.atomOf(q, c).lp === 1 && M.atomOf(q, nN).lp === 1 && M.electronCount(q, c) === 8 && M.electronCount(q, nN) === 8 && M.charge(q) === -1 && M.judge(q).complete);
+      var o = M.create(), oh = M.addAtom(o, 'OH-');
+      ok('OH⁻ のパーツ: O は非共有電子対3組・8個・電荷 −1', M.atomOf(o, oh).lp === 3 && M.electronCount(o, oh) === 8 && M.charge(o) === -1);
+      var fe0 = M.addAtom(q, 'Fe3+');
+      ok('⚠ 否定対照: CN⁻ の N の非共有電子対では配位しない（C で配位する）', M.canDonate(q, nN, fe0).reason === 'not-donor' && M.canDonate(q, c, fe0).ok);
+
+      // [Cu(NH₃)₄]²⁺ ＝ 正方形（正四面体ではない）
+      var cuS = st5('cu-nh3-4'), shCu = M.moleculeShape(cuS), cuId = cuS.atoms.filter(M.isMetal)[0].id;
+      ok('[Cu(NH₃)₄]²⁺: 電荷 +2（2 ＋ 0×4）・配位数4・完成', M.charge(cuS) === 2 && M.bondsOf(cuS, cuId).length === 4 && M.judge(cuS).complete && M.openVacancy(cuS) === 0);
+      ok('⚠⚠ [Cu(NH₃)₄]²⁺ の形は正方形（正四面体ではない）', !!shCu && shCu.complex && shCu.shape === '正方形' && shCu.shape !== '正四面体形');
+      ok('⚠ 錯イオンは VSEPR を通さない（まとまりの数も配置の名前も持たない）', shCu.domains === null && shCu.arrangement === null && shCu.center === cuId);
+      var gCu = M.shapeGeometry(cuS, cuId), prs = [];
+      for (var i = 0; i < gCu.length; i++) for (var j = i + 1; j < gCu.length; j++) prs.push(Math.round(M.angleDeg(gCu[i].v, gCu[j].v)));
+      ok('正方形の向き: 4本とも同じ平面（z = 0）・90° が4組・180° が2組', gCu.length === 4 && gCu.every(function (x) { return x.v[2] === 0; }) &&
+        prs.sort(function (a, b) { return a - b; }).join() === '90,90,90,90,180,180');
+      ok('立体の配位子の記号は「NH₃」（出来合いのパーツの名前）', gCu.every(function (x) { return x.el === 'NH₃' && x.kind === 'bond'; }));
+
+      var agS = st5('ag-nh3-2'), shAg = M.moleculeShape(agS);
+      ok('[Ag(NH₃)₂]⁺: 電荷 +1・直線形・中心は Ag（N の結合相手 4 のほうが多くても）', M.charge(agS) === 1 && shAg.shape === '直線形' &&
+        M.atomOf(agS, shAg.center).el === 'Ag' && shAg.candidates.length === 1);
+      var znS = st5('zn-nh3-4'), shZn = M.moleculeShape(znS);
+      ok('[Zn(NH₃)₄]²⁺: 電荷 +2・正四面体形（同じ配位数4でも Cu と形が違う＝イオンごとの表）', M.charge(znS) === 2 && shZn.shape === '正四面体形' &&
+        shCu.coordination === shZn.coordination && M.code(znS) !== M.code(cuS));
+      var feS = st5('fe-cn-6'), shFe = M.moleculeShape(feS);
+      ok('[Fe(CN)₆]³⁻: 電荷 −3（3 ＋ (−1)×6）・配位数6・正八面体形', M.charge(feS) === -3 && shFe.coordination === 6 && shFe.shape === '正八面体形');
+      ok('[Zn(OH)₄]²⁻: 電荷 −2（2 ＋ (−1)×4）・正四面体形', M.charge(st5('zn-oh-4')) === -2 && M.moleculeShape(st5('zn-oh-4')).shape === '正四面体形');
+      ok('錯イオンの金属イオンに電子の数の札を付けない（オクテット・電子不足と読ませない）', M.tag(cuS, cuId).kind === 'metal' && M.tag(cuS, cuId).label === null);
+
+      // 配位数を超えては配位できない（否定対照）
+      var extra = M.addAtom(cuS, 'NH3');
+      ok('⚠ 否定対照: [Cu(NH₃)₄]²⁺ に5つ目の NH₃ は配位できない（配位数4）', M.canDonate(cuS, extra, cuId).reason === 'no-vacancy' && !M.donate(cuS, extra, cuId).ok &&
+        M.bondsOf(cuS, cuId).length === 4);
+      var ag3 = st5('ag-nh3-2'), agId = ag3.atoms.filter(M.isMetal)[0].id, n3 = M.addAtom(ag3, 'NH3');
+      ok('⚠ 否定対照: [Ag(NH₃)₂]⁺ に3つ目は配位できない（配位数2）', !M.donate(ag3, n3, agId).ok);
+      // 途中（配位数に届いていない）は形を出さない・お題と一致しない
+      var part = M.create(), cu2 = M.addAtom(part, 'Cu2+');
+      for (var k = 0; k < 3; k++) M.donate(part, M.addAtom(part, 'NH3'), cu2);
+      ok('⚠ NH₃ が3つだけ: 空きが1つ残り、形は出さず、お題と一致しない', M.openVacancy(part) === 1 && M.moleculeShape(part) === null &&
+        !M.checkTarget(part, byId['cu-nh3-4']).match);
+      M.donate(part, M.addAtom(part, 'NH3'), cu2);
+      ok('4つ目を配位すると一致・正方形', M.checkTarget(part, byId['cu-nh3-4']).match && M.moleculeShape(part).shape === '正方形');
+
+      // ⚠⚠ NH₂−Ag と NH₃→Ag のコードが違う（§4-1 ① の再発防止）
+      var a1 = M.create(), ag1 = M.addAtom(a1, 'Ag+'), nA = M.addAtom(a1, 'NH3');
+      M.donate(a1, nA, ag1);
+      // NH₂−Ag: N の不対電子1つと Ag がつながった形を手で作る（アプリの操作では作れない ＝ 型としての比較）
+      var a2 = M.create(), ag2 = M.addAtom(a2, 'Ag+'), nB = M.addAtom(a2, 'N'), hb1 = M.addAtom(a2, 'H'), hb2 = M.addAtom(a2, 'H');
+      M.bond(a2, nB, hb1); M.bond(a2, nB, hb2);
+      M.atomOf(a2, nB).un--; a2.bonds.push({ a: nB, b: ag2, order: 1, dative: false, hint: null });
+      ok('⚠⚠ NH₂−Ag と NH₃→Ag のコードが違う（H も頂点・非共有電子対の数もラベル）', M.code(a1) !== M.code(a2));
+      // 対照: H を落として空き価標で見る（assembler の canonicalCode の見方）と、2つは見分けられない ＝ この検査は事故を捕まえられる
+      var heavy = function (s) {
+        return s.atoms.filter(function (a) { return a.el !== 'H'; }).map(function (a) {
+          var used = M.bondsOf(s, a.id).filter(function (b) { return M.atomOf(s, b.a === a.id ? b.b : b.a).el !== 'H'; }).length;
+          return a.el + ':' + used;
+        }).sort().join();
+      };
+      ok('対照: H を落とした重原子だけの見方では NH₂−Ag と NH₃→Ag が同じになる（§4-1 ① の事故の形）', heavy(a1) === heavy(a2));
+      // 自分で組んだ NH₃ でも、出来合いの NH₃ でも同じ錯イオン
+      var self = M.create(), cu3 = M.addAtom(self, 'Cu2+');
+      for (var m = 0; m < 4; m++) {
+        var nn = M.addAtom(self, 'N');
+        for (var h = 0; h < 3; h++) M.bond(self, nn, M.addAtom(self, 'H'));
+        M.donate(self, nn, cu3);
+      }
+      ok('自分で組んだ NH₃ ×4 でも [Cu(NH₃)₄]²⁺ と一致（配位子の作り方によらない）', M.checkTarget(self, byId['cu-nh3-4']).match);
+      ok('配位結合はふつうの結合と区別しない（Cu−N は次数1）', M.bondsOf(cuS, cuId).every(function (b) { return b.order === 1; }));
+      // ⚠ 錯イオンに dsp²・d²sp³ を付けない（§0・§3-7）
+      var src5 = JSON.stringify(M.METALS) + JSON.stringify(M.LIGANDS) + JSON.stringify(shCu) + JSON.stringify(shFe);
+      ok('⚠ モデルは錯イオンに dsp²・d²sp³ の札を持たない', !/dsp|d²sp|d2sp|sp³d|sp3d/.test(src5));
+      // 速さ: 錯イオンのコードは一瞬で出る（H 12個の並べ替えを探索しない）
+      var t0 = Date.now();
+      for (var r = 0; r < 20; r++) M.code(st5('cu-nh3-4'));
+      ok('[Cu(NH₃)₄]²⁺ のコードを20回計算して 1 秒未満（' + (Date.now() - t0) + 'ms）', Date.now() - t0 < 1000);
+    })();
   }
 
   /* ================================================================
@@ -593,6 +689,7 @@
     await runDativeUITests();
     await runAdvancedUITests();
     await runSqueezeUITests();
+    await runComplexUITests();
     await runWidthTests();
   }
 
@@ -1069,6 +1166,170 @@
     ok('embed=1: 縮めても・組むへ戻っても高さが変わらない（' + [h0, h1, h2].map(Math.round).join('→') + '）', near(h0, h1) && near(h0, h2));
     A.f.remove();
   }
+
+  /* ---- 公開③（M5）: 錯イオン（§4-2・§6）---- */
+  function metalId(A) { return st(A).mol.atoms.filter(function (a) { return A.win.ChemShape.model.isMetal(a); })[0].id; }
+  function textsOf(A, sel) { return [].map.call(A.doc.querySelectorAll(sel), function (t) { return t.textContent; }); }
+
+  async function runComplexUITests() {
+    section('画面: 公開③ 錯イオン（[Cu(NH₃)₄]²⁺ ＝ 青い対 → Cu²⁺・形は正方形）');
+    var A = await openApp('index.html?m=cu-nh3-4');
+    var M2 = A.win.ChemShape.model;
+    var tl = A.doc.getElementById('taskLabel');
+    ok('?m=cu-nh3-4 でお題が開き、見出しの後ろに「発展」の札', tl.textContent.indexOf('[Cu(NH₃)₄]²⁺（テトラアンミン銅(Ⅱ)イオン）') === 0 && !!tl.querySelector('.advBadge'));
+    ok('2段目のパレット: 金属イオン4種と出来合いの配位子4種', vis(A, 'palette2') &&
+      textsOf(A, '#palette2 button').join(',') === 'Ag⁺,Cu²⁺,Zn²⁺,Fe³⁺,NH₃,H₂O,OH⁻,CN⁻');
+    var cu = metalId(A), Ns = A.app.idsOf('N');
+    ok('盤: Cu²⁺ が1つ（「Cu²⁺」と書く）・NH₃ のパーツが4つ（組んだ姿: N 4・H 12・N の結合3本ずつ）',
+      atomG(A, cu).querySelector('.sym').textContent === 'Cu²⁺' && Ns.length === 4 && A.app.idsOf('H').length === 12 &&
+      Ns.every(function (n) { return M2.bondsOf(st(A).mol, n).length === 3; }));
+    ok('盤は広く取る（viewBox 560×420・同じ 4:3）', A.app.svg.getAttribute('viewBox') === '0 0 560 420');
+    ok('はじめの声かけ「配位子の青い対を Cu²⁺ にわたそう（あと 4 か所）」・確かめの丸はまだ出さない',
+      msg(A) === '配位子の青い対を Cu²⁺ にわたそう（あと 4 か所）' && !st(A).check && A.doc.getElementById('shapeViewBtn').disabled);
+    tap(A, cu);
+    ok('⚠ Cu²⁺ を先にタップしても選べない（受け取る側）', !st(A).sel && /Cu²⁺ は受け取る側/.test(msg(A)));
+    tap(A, Ns[0]);
+    ok('NH₃ の N をタップ → 青い対（非共有電子対）が選ばれる・「わたす相手（Cu²⁺）」', !!st(A).sel && st(A).slots[Ns[0]][st(A).sel.slot].k === 'p' &&
+      /わたす相手（Cu²⁺）/.test(msg(A)));
+    tap(A, cu);
+    var b = M2.bondBetween(st(A).mol, Ns[0], cu);
+    ok('青い対 → Cu²⁺ で配位結合（次数1）・あと 3 か所', !!b && b.order === 1 && b.dative === true && /あと 3 か所/.test(msg(A)) &&
+      M2.atomOf(st(A).mol, cu).vacancy === 3);
+    ok('できた直後は、その対だけ青（2個）', A.doc.querySelectorAll('#board .layer-bond circle.e-co').length === 2);
+    ok('配位数に届いていないあいだは「形」を押せない', A.doc.getElementById('shapeViewBtn').disabled);
+    Ns.slice(1).forEach(function (n) { tap(A, n); tap(A, cu); });
+    ok('4つ配位すると「完成！ [Cu(NH₃)₄]²⁺ ができた」（名前は見出しにあるので化学式だけ・375px で1行）', msg(A) === '完成！ [Cu(NH₃)₄]²⁺ ができた' &&
+      st(A).last.match === true && M2.bondsOf(st(A).mol, cu).length === 4);
+    ok('電荷は和: 全体を [ ] でくくり右上に「2+」（Cu²⁺ ＋ NH₃ 0×4）', M2.charge(st(A).mol) === 2 && textsOf(A, '#board .ionCharge').join() === '2+' &&
+      A.doc.querySelectorAll('#board .ionBracket').length === 1);
+    ok('確かめ: N は 8・H は 2・金属イオンには数を付けない', !A.doc.querySelector('#board .chkNum[data-id="' + cu + '"]') &&
+      Ns.every(function (n) { return A.doc.querySelector('#board .chkNum[data-id="' + n + '"]').textContent === '8'; }) &&
+      A.doc.querySelectorAll('#board .chkTag').length === 0);
+    await wait(2300);
+    var all = A.doc.querySelectorAll('#board .layer-bond circle');
+    ok('2秒後には配位でできた対もすべて黒（M3 と同じ・ふつうの共有電子対と区別がつかない）', A.doc.querySelectorAll('#board circle.e-co').length === 0 &&
+      [].every.call(all, function (c) { return A.win.getComputedStyle(c).fill === 'rgb(34, 34, 34)'; }));
+    // 配位数を超えては配位できない（否定対照）
+    A.doc.querySelector('#palette2 button[data-el="NH3"]').click();
+    var n5 = A.app.idsOf('N').filter(function (n) { return Ns.indexOf(n) < 0; })[0];
+    tap(A, n5);
+    ok('⚠ 否定対照: 5つ目の NH₃ は選べない・「Cu²⁺ の配位数は 4。もうつながらない」', !st(A).sel && msg(A) === 'Cu²⁺ の配位数は 4。もうつながらない');
+    st(A).sel = { id: n5, slot: pairSlotIdx(A, n5) }; tap(A, cu);
+    ok('⚠ 否定対照: 青い対を選んだことにしても Cu²⁺ には5本目がつながらない', M2.bondsOf(st(A).mol, cu).length === 4 && /配位数は 4/.test(msg(A)));
+    A.doc.getElementById('undoBtn').click();
+    ok('戻すで5つ目の NH₃ が消え、完成に戻る（盤は広いまま）', A.app.idsOf('N').length === 4 && st(A).last.match === true &&
+      A.app.svg.getAttribute('viewBox') === '0 0 560 420');
+    A.doc.getElementById('shapeViewBtn').click();
+    A.app.stopSpin();
+    var sv = A.app.shapeSvg;
+    ok('形: 見出し「中心 Cu²⁺・配位数 4」「正方形（発展）」', sv.querySelector('.dom').textContent === '中心 Cu²⁺・配位数 4' &&
+      sv.querySelector('.shp').textContent === '正方形（発展）');
+    ok('⚠⚠ [Cu(NH₃)₄]²⁺ を正四面体と言わない', !/正四面体/.test(sv.textContent + msg(A)));
+    ok('⚠ 錯イオンでは「電子のまとまり」「〜の配置」を出さない（VSEPR を通さない）', !sv.querySelector('.arr') && !/まとまり|配置/.test(sv.textContent));
+    ok('1行で「形は電子対の反発でなく、イオンごとに決まる」', msg(A) === '形は電子対の反発でなく、イオンごとに決まる');
+    var it4 = A.app.shapeItems();
+    ok('立体: 配位子 NH₃ が4つ・4本とも同じ平面（z = 0）・非共有電子対のふくらみは無い', qa(A, '.pane3d .ball').length === 4 &&
+      textsOf(A, '#shapeView .pane3d .sym.lig').join() === 'NH₃,NH₃,NH₃,NH₃' && it4.every(function (x) { return x.v[2] === 0; }) && qa(A, '.lobe').length === 0);
+    ok('模式図: 紙面の十字（くさび・破線なし）・NH₃ が4つ', qa(A, '.pane2d .wedge').length === 0 && qa(A, '.pane2d .hash').length === 0 &&
+      textsOf(A, '#shapeView .pane2d .sym.lig').length === 4);
+    ok('⚠ 錯イオンに dsp²・d²sp³ を付けない（画面のどこにも出ない）', !/dsp|d²sp|d2sp|sp³|sp3/.test(A.doc.body.textContent + sv.textContent));
+    ok('⚠ 錯イオンの形の画面に「反発で縮める」「もう一方の中心」を出さない', !vis(A, 'squeezeBtn') && !vis(A, 'cmpSeg') &&
+      A.doc.getElementById('centerBtn').style.visibility === 'hidden');
+    A.f.remove();
+
+    section('画面: 公開③ 形は金属イオンの表で引く（Ag⁺ 直線・Zn²⁺ 正四面体・Fe³⁺ 正八面体）');
+    var cases = [['ag-nh3-2', '直線形', 2, 1, 'NH₃'], ['zn-nh3-4', '正四面体形', 4, 2, 'NH₃'], ['zn-oh-4', '正四面体形', 4, -2, 'OH⁻'], ['fe-cn-6', '正八面体形', 6, -3, 'CN⁻']];
+    for (var i = 0; i < cases.length; i++) {
+      var c = cases[i];
+      A = await openApp('index.html?m=' + c[0] + '&view=shape');
+      A.app.stopSpin();
+      sv = A.app.shapeSvg;
+      ok(c[0] + ': ' + c[1] + '（発展）・配位数 ' + c[2] + '・電荷 ' + c[3] + '・立体の配位子「' + c[4] + '」' + c[2] + 'つ',
+        st(A).view === 'shape' && sv.querySelector('.shp').textContent === c[1] + '（発展）' && /配位数 /.test(sv.querySelector('.dom').textContent) &&
+        sv.querySelector('.dom').textContent.indexOf('配位数 ' + c[2]) > 0 && A.win.ChemShape.model.charge(st(A).mol) === c[3] &&
+        qa(A, '.pane3d .ball').length === c[2] && textsOf(A, '#shapeView .pane3d .sym.lig').every(function (t) { return t === c[4]; }) &&
+        msg(A) === '形は電子対の反発でなく、イオンごとに決まる');
+      if (c[0] === 'zn-nh3-4') {
+        ok('⚠ 同じ配位数4でも Zn²⁺ は正四面体（くさびと破線）・Cu²⁺ は正方形（イオンごとに決まる）', qa(A, '.pane2d .wedge').length === 1 && qa(A, '.pane2d .hash').length > 0);
+      }
+      if (c[0] === 'ag-nh3-2') {
+        ok('⚠ [Ag(NH₃)₂]⁺ の中心は Ag（N ではない）', /中心 Ag⁺/.test(sv.querySelector('.dom').textContent));
+      }
+      A.doc.getElementById('buildView').click();
+      ok(c[0] + ': 組んだ姿は完成・お題と一致・全体の電荷を右上に（' + textsOf(A, '#board .ionCharge').join() + '）', st(A).last.match === true &&
+        textsOf(A, '#board .ionCharge').join() === ({ 1: '+', 2: '2+', '-2': '2−', '-3': '3−' })[c[3]]);
+      A.f.remove();
+    }
+
+    section('画面: 公開③ CN⁻ は C で配位する・構造式でも配位できる');
+    A = await openApp('index.html?m=fe-cn-6');
+    M2 = A.win.ChemShape.model;
+    var fe = metalId(A);
+    var cnN = A.app.idsOf('N')[0];
+    ok('CN⁻ のパーツは [ ] と「−」つき（6つ）', textsOf(A, '#board .ionCharge').filter(function (t) { return t === '−'; }).length === 6);
+    tap(A, cnN);
+    ok('⚠ CN⁻ の N をタップしても選べない（「CN⁻ は C の青い対でつなごう」）', !st(A).sel && msg(A) === 'CN⁻ は C の青い対でつなごう');
+    var cs = A.app.idsOf('C');
+    cs.forEach(function (x) { tap(A, x); tap(A, fe); });
+    ok('C の青い対を6つ Fe³⁺ にわたすと完成（電荷 3 − 6 ＝ −3）', st(A).last.match === true && M2.charge(st(A).mol) === -3 &&
+      /完成！ \[Fe\(CN\)₆\]³⁻/.test(msg(A)));
+    var inside = st(A).mol.atoms.every(function (a) { var p = st(A).pos[a.id]; return p.x >= 0 && p.x <= 560 && p.y >= 0 && p.y <= 420; });
+    ok('配位子6つの錯イオンも盤の中に収まる', inside);
+    A.f.remove();
+    A = await openApp('index.html?m=cu-nh3-4&mode=line');
+    Ns = A.app.idsOf('N'); cu = metalId(A);
+    ok('構造式: 空きのある金属イオンがあれば、配位できる青い対を出す（N 4つ × 2個）・H の手は出ない',
+      A.doc.querySelectorAll('#board .e-lp').length === 8 && A.doc.querySelectorAll('#board line.hand').length === 0);
+    Ns.forEach(function (n) { tap(A, n); tap(A, cu); });
+    ok('構造式でも組めて完成・青い対は残らない（配位し終えたら構造式は線だけ）', st(A).last.match === true && A.doc.querySelectorAll('#board .e-lp').length === 0);
+    A.f.remove();
+
+    section('画面: 公開③ 自由（自分で組んだ NH₃ も配位できる）と、公開①②の画面を変えない');
+    A = await openApp('index.html');
+    ok('⚠ 公開①のお題（H₂）では2段目のパレットを出さない', !vis(A, 'palette2') && A.app.svg.getAttribute('viewBox') === '0 0 400 300');
+    A.doc.getElementById('freeMode').click();
+    ok('自由では2段目のパレットを出す', vis(A, 'palette2'));
+    A.doc.querySelector('#palette2 button[data-el="Ag+"]').click();
+    ok('金属イオンを置くと盤が広くなる', A.app.svg.getAttribute('viewBox') === '0 0 560 420');
+    A.doc.querySelector('#palette button[data-el="N"]').click();
+    ['H', 'H', 'H'].forEach(function () { A.doc.querySelector('#palette button[data-el="H"]').click(); });
+    var nF = A.app.idsOf('N')[0], ag = metalId(A);
+    A.app.idsOf('H').forEach(function (h) { tapAng(A, nF, slotOfKind(A, nF, 'u')); tap(A, h); });
+    tapAng(A, nF, slotOfKind(A, nF, 'p')); tap(A, ag);
+    ok('自分で組んだ NH₃ の青い対 → Ag⁺ で配位（あと 1 か所）', !!A.win.ChemShape.model.bondBetween(st(A).mol, nF, ag) && /Ag⁺ にわたそう（あと 1 か所）/.test(msg(A)));
+    for (var u = 0; u < 20 && st(A).history.length; u++) A.doc.getElementById('undoBtn').click();
+    ok('戻して金属イオンが消えると、盤はもとの広さ（400×300）', st(A).mol.atoms.length === 0 && A.app.svg.getAttribute('viewBox') === '0 0 400 300');
+    A.f.remove();
+
+    section('画面: 公開③ 375px・1280px・埋め込み');
+    A = await openApp('index.html?m=cu-nh3-4', 375, 700);
+    cu = metalId(A);
+    var p2 = [].slice.call(A.doc.querySelectorAll('#palette2 button'));
+    ok('375px: 2段目のパレットは1行（8つが同じ高さ）', p2.every(function (x) { return Math.abs(x.getBoundingClientRect().top - p2[0].getBoundingClientRect().top) < 2; }));
+    A.app.idsOf('N').forEach(function (n) { tap(A, n); tap(A, cu); });
+    ok('375px: [Cu(NH₃)₄]²⁺ を組み終えても横スクロールが出ない・完成（' + A.doc.documentElement.scrollWidth + 'px）',
+      A.doc.documentElement.scrollWidth <= 376 && st(A).last.match === true);
+    A.doc.getElementById('shapeViewBtn').click();
+    A.app.stopSpin();
+    ok('375px: 形の画面で横スクロールが出ない・声かけは1行', A.doc.documentElement.scrollWidth <= 376 && A.doc.getElementById('msg').getBoundingClientRect().height < 30);
+    A.f.remove();
+    A = await openApp('index.html?m=fe-cn-6&view=shape', 375, 700);
+    ok('375px: [Fe(CN)₆]³⁻ の形の画面で横スクロールが出ない', A.doc.documentElement.scrollWidth <= 376);
+    A.f.remove();
+    A = await openApp('index.html?m=cu-nh3-4', 1280, 800);
+    ok('1280px: 錯イオンの盤で横スクロールが出ない（' + A.doc.documentElement.scrollWidth + 'px）', A.doc.documentElement.scrollWidth <= 1280);
+    A.f.remove();
+    A = await openApp('index.html?m=cu-nh3-4&view=shape&embed=1', 375, 700);
+    A.app.stopSpin();
+    var h0 = A.doc.documentElement.getBoundingClientRect().height;
+    A.doc.getElementById('buildView').click();
+    var h1 = A.doc.documentElement.getBoundingClientRect().height;
+    A.doc.getElementById('shapeViewBtn').click();
+    var h2 = A.doc.documentElement.getBoundingClientRect().height;
+    ok('embed=1（complex-ion に埋める形）: 形 ⇄ 組む で高さが変わらない（' + [h0, h1, h2].map(Math.round).join('→') + '）', near(h0, h1) && near(h0, h2) && st(A).view === 'shape');
+    A.f.remove();
+  }
+  function pairSlotIdx(A, id) { var sl = st(A).slots[id]; for (var k = 0; k < sl.length; k++) if (sl[k].k === 'p') return k; return null; }
 
   /* ---- 7 埋め込み（ion-equation/tests.js の REF7〜REF10 を写した）---- */
   async function runEmbedTests() {
