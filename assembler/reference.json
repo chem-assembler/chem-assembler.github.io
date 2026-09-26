@@ -1516,6 +1516,7 @@
 {"kind":"link","app":"ion-equation/redox","id":"ro4","text":"銀鏡反応の反応式を組み立てる（カルボン酸が R−COO⁻ になる）","href":"/ion-equation/redox.html?rxn=ro4&from=reference&page=half-reaction-condition"},
 {"kind":"link","app":"ion-equation/redox","id":"ro5","text":"フェーリング反応の反応式を組み立てる","href":"/ion-equation/redox.html?rxn=ro5&from=reference&page=half-reaction-condition"},
 {"kind":"link","app":"ion-equation/redox","id":"ri3","text":"ヨードホルム反応の反応式を組み立てる（参考）","href":"/ion-equation/redox.html?rxn=ri3&from=reference&page=half-reaction-condition"},
+{"kind":"link","to":"aromatic-homologs","text":"トルエンの側鎖の酸化（塩基性で MnO₂・安息香酸カリウムになり、強酸で遊離する。反応式までは問われない）"},
 {"kind":"heading","title":"足し合わせてから直す（酸性）"},
 {"kind":"link","app":"ion-equation/redox","id":"ra1","text":"ニトロベンゼン × スズ（塩酸）の反応式を組み立てる（アニリンが H⁺ を受け取る）","href":"/ion-equation/redox.html?rxn=ra1&from=reference&page=half-reaction-condition"},
 {"kind":"link","to":"aniline","text":"アニリン塩酸塩から NaOH でアニリンを遊離させる流れは「アニリン」で"}
@@ -6617,6 +6618,8 @@
 {"kind":"section","anchor":"oxidation","title":"側鎖の酸化 —— 環は酸化されない","lead":"過マンガン酸カリウムで酸化すると、側鎖は長さにかかわらず根もとの炭素1個だけが残って −COOH になります。","terms":["側鎖の酸化","安息香酸","フタル酸","テレフタル酸","無水フタル酸"],"codes":["org.aro.sidechain-oxidation","org.aro.xylene-oxidation","org.aro.naphthalene-oxidation"]},
 {"kind":"text","text":"ベンゼン環に炭化水素基が付いた化合物を過マンガン酸カリウム KMnO₄ で酸化すると、<b>ベンゼン環は変化せず、側鎖だけが酸化されてカルボキシ基 −COOH になります</b>。"},
 {"kind":"reaction","left":"C₆H₅CH₃ ＋ 3［O］","over":"KMnO₄","under":"加熱","right":"C₆H₅COOH ＋ H₂O","level":"★★★","note":"トルエンのメチル基がカルボキシ基になって、安息香酸ができます。"},
+{"kind":"callout","tone":"note","text":"実際の操作は<b>中性〜塩基性</b>で行います。そのため KMnO₄ は <b>MnO₂</b>（黒褐色の沈殿・Mn の酸化数は +7 → +4）になり、できた安息香酸は<b>安息香酸カリウム</b>（塩）のまま溶けています。最後に<b>強酸を加えて</b>はじめて安息香酸が遊離します。入試では、Mn の酸化数の変化や「最後に強酸を加える理由」が問われます。"},
+{"kind":"link","to":"half-reaction-condition","text":"液性によって、その液性で実際に存在する形（MnO₂・カルボン酸の塩）で書く"},
 {"kind":"text","text":"<b>「側鎖はどんなに長くても、環に付いている根もとの炭素1個だけが残って −COOH になる」と覚えましょう。</b>たとえばエチルベンゼン C₆H₅CH₂CH₃ でも、酸化の後に残るのは、トルエンのときと同じ安息香酸です。"},
 {"kind":"text","text":"側鎖が2本あれば、2本とも −COOH になります。o-キシレンからは<b>フタル酸</b>、p-キシレンからは<b>テレフタル酸</b>ができます。"},
 {"kind":"reaction","left":"C₆H₄(CH₃)₂（o-キシレン）","over":"KMnO₄","right":"C₆H₄(COOH)₂（フタル酸）","gen":"o-キシレン → フタル酸","level":"★★★","note":"2本のメチル基が、どちらもカルボキシ基になります。","img":"rx-fd388ea9.png"},
