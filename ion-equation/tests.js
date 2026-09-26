@@ -9752,6 +9752,27 @@ async function runBatteryUITests(iframe) {
     assert(state().cleared, "置き直しても2回目がクリアにならない: " + state().msg);
   });
 
+  /* I-0176（2026-09-26 ユーザー指示）: 溶けた板を虫食いにして、質量が減ったことを見せる。
+     削るのは**溶ける板（負極）だけ**・溶けた原子の数だけ・その高さで。正極（析出する側）は削らない */
+  await t("BATTERY I-0176: 負極の原子が溶けるたびに、その板が虫食いになる（正極は削らない・やり直すと戻る）", async () => {
+    reset();
+    let s = state();
+    assert(!s.bites.length && !s.biteMasks[0] && !s.biteMasks[1], "つなぐ前から板が削れている");
+    tap("Zn"); win.BatteryEq.setMult(2, 2);
+    doc.getElementById("playBtn").click(); adv(30000);
+    s = state();
+    const zi = s.metals.indexOf("Zn"), ci = s.metals.indexOf("Cu");
+    assert(s.released === 2 && s.bites.length === 2, "溶けた数だけ削れていない: " + JSON.stringify(s.bites) + " / " + s.released);
+    assert(s.bites.every((b) => b.i === zi), "削れたのが負極（Zn）でない: " + JSON.stringify(s.bites));
+    assert(s.biteMasks[zi] && !s.biteMasks[ci], "マスクが負極だけに掛かっていない: " + s.biteMasks.join());
+    assert(doc.querySelectorAll("#plateBite" + zi + " circle.bite").length === 2, "かじり跡の数が違う");
+    // 析出した Cu と削れた穴が同じ板にない（衝突しない）ことの裏づけ
+    assert(s.deposited === 2, "Cu が析出していない: " + s.deposited);
+    doc.querySelector("#toolbar .reset").click();
+    s = state();
+    assert(!s.bites.length && !s.biteMasks[0] && !s.biteMasks[1], "やり直しても板が削れたまま");
+  });
+
   await t("BATTERY: 板をタップして予想が当たると、負極(−)・正極(+) の札が出る", async () => {
     reset();
     tap("Zn");

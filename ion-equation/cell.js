@@ -271,7 +271,8 @@ function drawBatteryCell() {
     mk("rect", { x: plateCX(i) - 58, y: CELL.plate.y - 14, width: 116, height: CELL.plate.h + 30,
       fill: "transparent", class: "plateHit" }, g);
     mk("rect", { x: CELL.plateX[i], y: CELL.plate.y, width: CELL.plate.w, height: CELL.plate.h,
-      rx: 3, fill: sty.plate, stroke: "#46525e", "stroke-width": 2, class: "plateBody" }, g);
+      rx: 3, fill: sty.plate, stroke: "#46525e", "stroke-width": 2, class: "plateBody", id: "plateBody" + i }, g);
+    applyBites(i);
     txt(SPECIES[m].disp, { x: plateCX(i), y: CELL.plate.y + 30, "text-anchor": "middle",
       "font-size": 19, "font-weight": "bold", fill: sty.darkText ? "#33404c" : "#fff" }, g);
     if (guess === m) g.classList.add("chosen");
@@ -450,6 +451,41 @@ function slotY(k, n) {
 
 let particles = [];
 let nextId = 1;
+
+/* ---- 溶けた板の虫食い（2026-09-26・ユーザー指示・I-0176）----
+   「金属が溶けだしたときに、虫食いグラフィックにして金属板の質量が減ったことを表現する」。
+   負極の原子が1個溶けるたびに、**その高さで板の内側の縁を削る**（SVG の mask）。
+   電池では溶ける板（負極）と析出する板（正極）が別なので、削った穴と析出が重ならない。
+   ⚠ 金属樹（redox.js・同じ板の上で溶けて析出する）は置き方をユーザーと相談中 ＝ ここは電池だけ。
+   ⚠ 見た目だけ。数や判定には一切使わない（数は released が持つ）。 */
+let bites = [];          // { i: 板の番号, y: 溶けた高さ, k: 通し番号（形のゆらぎに使う） }
+const biteEdgeX = (i) => (i === 0 ? CELL.plateX[0] + CELL.plate.w : CELL.plateX[1]);   // 液に向いた縁
+function applyBites(i) {
+  const body = cellSvg.querySelector("#plateBody" + i);
+  const mine = bites.filter((b) => b.i === i);
+  const old = cellSvg.querySelector("#plateBite" + i);
+  if (old) old.remove();
+  if (!body || !mine.length) { if (body) body.removeAttribute("mask"); return; }
+  const defs = cellSvg.querySelector("defs.biteDefs") || mk("defs", { class: "biteDefs" });
+  const m = mk("mask", { id: "plateBite" + i, maskUnits: "userSpaceOnUse",
+    x: CELL.plateX[i] - 4, y: CELL.plate.y - 4, width: CELL.plate.w + 8, height: CELL.plate.h + 8 }, defs);
+  mk("rect", { x: CELL.plateX[i] - 4, y: CELL.plate.y - 4, width: CELL.plate.w + 8, height: CELL.plate.h + 8, fill: "#fff" }, m);
+  const ex = biteEdgeX(i), inward = i === 0 ? -1 : 1;
+  for (const b of mine) {
+    // 大きいかじり跡1つ＋小さい2つ。k でずらして、並んでも同じ形にならないようにする。
+    // 大きさは 320px 端末（0.667 倍）でも穴と読める寸法（r10 → 約7px）。板の幅 26 のうち最大 11 を削る
+    const j = ((b.k * 37) % 7) - 3;
+    mk("circle", { cx: ex, cy: b.y, r: 10, fill: "#000", class: "bite" }, m);
+    mk("circle", { cx: ex + inward * 6, cy: b.y - 8 + j * 0.6, r: 5, fill: "#000" }, m);
+    mk("circle", { cx: ex + inward * 4, cy: b.y + 8 - j * 0.4, r: 4.5, fill: "#000" }, m);
+  }
+  body.setAttribute("mask", "url(#plateBite" + i + ")");
+}
+function addBite(i, y) {
+  if (isElyz()) return;
+  bites.push({ i, y, k: bites.length });
+  applyBites(i);
+}
 let phase = "idle";     // idle | running | done
 let cleared = false;
 let released = 0;       // 溶けた原子の数
@@ -565,6 +601,8 @@ function layoutRun() {
   particles.forEach((q) => q.el && q.el.remove());
   particles = [];
   arrivedE = [];
+  bites = [];
+  [0, 1].forEach(applyBites);
   released = 0; spawnedE = 0; deposited = 0;
   clock = 0; nextRelease = 0;
   phase = "idle";
@@ -662,6 +700,7 @@ function step(dt) {
     if (members.length) {
       const baseY = members.reduce((s, x) => s + x.y, 0) / members.length;
       members.forEach(killParticle);
+      addBite(n, baseY);   // 溶けたぶん板を削る（I-0176・電池だけ）
       spawnProducts(oxHR().right, n, baseY);
       for (let k = 0; k < givePer; k++) {
         const path = ePath(spawnedE);
@@ -1594,6 +1633,8 @@ window.BatteryEq = {
         : { there: false, disabled: null, why: "" };
     })(),
     nudges,
+    bites: bites.map((b) => ({ i: b.i, y: b.y })),
+    biteMasks: [0, 1].map((i) => { const b = cellSvg.querySelector("#plateBody" + i); return !!(b && b.getAttribute("mask")); }),
     playDisabled: (document.getElementById("playBtn") || { getAttribute: () => "false" }).getAttribute("aria-disabled") === "true",
     // 押せないときに画面へ出している「次の一手」。空なら押せる（I）
     playHint: ((document.getElementById("toolbarHint") || {}).hidden === false)
