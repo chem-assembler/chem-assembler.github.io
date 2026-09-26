@@ -1982,8 +1982,8 @@ function runModelTests() {
   });
 
   // ★ 2026-09-26（I-0178）: 酸化還元に rs4・ra1 を足して 18 → 20
-  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元24・電池と電気分解8）", () => {   // ★ I-0178 の追加4本（rs5・ro4・ro5・ri3）で 20 → 24
-    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 24, "sr-cell": 8 };
+  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元26・電池と電気分解8）", () => {   // ★ I-0178 の追加4本（rs5・ro4・ro5・ri3）で 20 → 24、I-0181 の液性 b5・b6 で 26
+    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 26, "sr-cell": 8 };
     for (const g of stagesBySeries().groups) {
       assert(g.stages.length === want[g.series.id],
         g.series.id + " の件数が変わった: " + g.stages.length + "（想定 " + want[g.series.id] + "）");
@@ -2152,6 +2152,25 @@ function runModelTests() {
     }
     // MnO₄⁻ の塩基性形のように e⁻ の数まで変わるものは、この操作では導けない（扱わない）
     assert(CONDITION_STAGES.every((st) => st.half !== "MnO4_red"), "この操作で導けない反応が混ざっている");
+  });
+
+  t("FC1 燃料電池の両極（b5・b6・I-0181）: リン酸形の式から、一覧のアルカリ形の式（H2_ox_basic・O2_red_basic）に着く", () => {
+    const key = (terms) => terms.map((t) => t.sp + ":" + t.n).sort().join(",");
+    for (const [id, from, to] of [["b5", "H_ox", "H2_ox_basic"], ["b6", "O2_red", "O2_red_basic"]]) {
+      const st = CONDITION_STAGES.find((s) => s.id === id);
+      assert(st, id + " が無い");
+      assert(st.half === from, id + ": 出発の式が " + from + " でない: " + st.half);
+      const done = toBasicHalf(HALF_REACTIONS[from], st.answerOH);
+      const hr = HALF_REACTIONS[to];
+      assert(done.ok && key(done.left) === key(hr.left) && key(done.right) === key(hr.right),
+        id + ": 導いた式が一覧の " + to + " と違う: " + key(done.left) + " → " + key(done.right));
+    }
+    // 正極は H₂O を2個相殺する（左 4H₂O・右 2H₂O）。負極は相殺が無い
+    assert(toBasicHalf(HALF_REACTIONS.O2_red, 4).cancelled === 2, "b6: 相殺する H₂O が2個でない");
+    assert(toBasicHalf(HALF_REACTIONS.H_ox, 2).cancelled === 0, "b5: 相殺が起きている");
+    // 単元（液性による書き換え）から辿れる
+    const u = CURRICULUM.flatMap((s) => s.units).find((x) => x.id === "u-condition");
+    assert(["b5", "b6"].every((id) => u.condition.includes(id)), "u-condition に b5・b6 が無い");
   });
 
   /* ---- はじめに入れたものから化学反応式を組み立てる（v180・DESIGN_redox.md）---- */
@@ -12590,7 +12609,7 @@ async function runPortalUITests(iframe) {
         checked++;
       });
     }
-    assert(checked === 72, "突き合わせた件数が 72 でない: " + checked);   // ★ I-0178 で酸化還元に rs4・ra1・rs5・ro4・ro5・ri3
+    assert(checked === 74, "突き合わせた件数が 74 でない: " + checked);   // ★ I-0178 で酸化還元に rs4・ra1・rs5・ro4・ro5・ri3、I-0181 で液性に b5・b6
   });
 
   /* 系列（区画）と難度（札）は別の軸。両方が同時に見えること。
