@@ -301,6 +301,128 @@
     };
   }
 
+  /* ================================================================
+     形を見る（M2・§3-4・§4-2）
+     中心 → 電子のまとまりの数 → 電子対の配置 → 分子の形。配置と形は**別々の名前**で出す
+     （1段に潰すと NH₃ を「正四面体」と覚える事故になる）。
+     ⚠ 錯イオン（M5）は金属イオンの表で引く ＝ ここ（まとまりの数）を通さない。金属イオンが入る段でここに分岐を足す。
+     ================================================================ */
+  var ARRANGEMENT = {
+    2: { name: '直線', angle: '180°' },
+    3: { name: '平面正三角形', angle: '120°' },
+    4: { name: '正四面体', angle: '109.5°' },
+    5: { name: '三方両錐', angle: null, advanced: true },
+    6: { name: '正八面体', angle: '90°', advanced: true }
+  };
+  // [まとまり, 非共有電子対] → 形の名前。表に無い組（5・6 まとまりで非共有電子対あり など）は扱わない（§8）
+  var SHAPE_NAME = {
+    '2,0': { name: '直線形' },
+    '3,0': { name: '平面正三角形' },
+    '3,1': { name: '折れ線形', advanced: true },
+    '4,0': { name: '正四面体形' },
+    '4,1': { name: '三角錐形' },
+    '4,2': { name: '折れ線形' },
+    '5,0': { name: '三方両錐形', advanced: true },
+    '6,0': { name: '正八面体形', advanced: true }
+  };
+
+  // 電子のまとまり ＝ 結合している相手の数（単・二重・三重はどれも1）＋ 非共有電子対
+  function domains(s, id) {
+    var A = atomOf(s, id);
+    return bondsOf(s, id).length + A.lp;
+  }
+
+  function shapeAt(s, id) {
+    var A = atomOf(s, id);
+    if (!A || A.un > 0) return null; // 手が余っている原子の形は数えない（完成してから）
+    var n = domains(s, id), lone = A.lp;
+    var arr = ARRANGEMENT[n] || null;
+    var sh = SHAPE_NAME[n + ',' + lone] || null;
+    return {
+      center: id, el: A.el, domains: n, bonded: bondsOf(s, id).length, lone: lone,
+      arrangement: arr ? arr.name : null, idealAngle: arr ? arr.angle : null,
+      shape: sh ? sh.name : null, supported: !!sh,
+      advanced: !!((arr && arr.advanced) || (sh && sh.advanced))
+    };
+  }
+
+  /* 中心の候補（ユーザー決定 2026-09-26: 中心は自動で決める）。
+     結合相手のいちばん多い原子。同じ数が2つ以上なら全部を返す（C₂H₄・H₂O₂ など。画面は切り替えのボタンを出す）。
+     並びは H 以外を先・id の小さい順。原子が2個以下なら空（数えずに「直線」） */
+  function shapeCenters(s) {
+    if (s.atoms.length <= 2) return [];
+    var deg = function (id) { return bondsOf(s, id).length; };
+    var max = 0;
+    s.atoms.forEach(function (a) { max = Math.max(max, deg(a.id)); });
+    return s.atoms.filter(function (a) { return deg(a.id) === max; })
+      .sort(function (a, b) { return ((a.el === 'H') - (b.el === 'H')) || (a.id - b.id); })
+      .map(function (a) { return a.id; });
+  }
+
+  /* 分子の形。完成して1つにつながった分子だけ（それ以外は null）。
+     centerId が候補にあればそれを中心に、無ければ候補の先頭 */
+  function moleculeShape(s, centerId) {
+    if (!judge(s).complete || !s.atoms.length) return null;
+    if (componentOf(s, s.atoms[0].id).length !== s.atoms.length) return null;
+    if (s.atoms.length === 2) {
+      return { twoAtoms: true, center: null, domains: null, arrangement: null, shape: '直線形', supported: true, advanced: false };
+    }
+    if (s.atoms.length === 1) return null;
+    var cands = shapeCenters(s);
+    var c = cands.indexOf(centerId) >= 0 ? centerId : cands[0];
+    var r = shapeAt(s, c);
+    r.candidates = cands;
+    return r;
+  }
+
+  /* 形の 3D 座標: まとまりの数ごとの理想の単位ベクトル（§4-2）。
+     座標は画面と同じ向き（x 右・y 下・z 手前）。教科書の模式図がそのまま描けるように置いてある:
+       4 … 上1本・左下（紙面）・右下の手前（くさび）・右下の奥（破線）＝ (±1,±1,±1)/√3 の交互と同じ正四面体を回したもの
+       3 … 紙面の 120°（上・右下・左下）／2 … 左右／5 … 軸2＋赤道3（72°ではなく 120°）／6 … ±x・±y・±z */
+  var R8 = Math.sqrt(8) / 3;
+  var IDEAL = {
+    1: [[1, 0, 0]],
+    2: [[1, 0, 0], [-1, 0, 0]],
+    3: [[0, -1, 0], [Math.sqrt(3) / 2, 0.5, 0], [-Math.sqrt(3) / 2, 0.5, 0]],
+    4: [[0, -1, 0], [-R8, 1 / 3, 0], [R8 / 2, 1 / 3, R8 * Math.sqrt(3) / 2], [R8 / 2, 1 / 3, -R8 * Math.sqrt(3) / 2]],
+    5: [[0, -1, 0], [0, 1, 0], [1, 0, 0], [-0.5, 0, Math.sqrt(3) / 2], [-0.5, 0, -Math.sqrt(3) / 2]],
+    6: [[1, 0, 0], [-1, 0, 0], [0, -1, 0], [0, 1, 0], [0, 0, 1], [0, 0, -1]]
+  };
+  // 非共有電子対を先に置く向きの順（NH₃ は上・H₂O は上と奥 ＝ 結合が紙面と手前に残って形が読める）
+  var LP_ORDER = { 1: [0], 2: [0, 1], 3: [0, 1, 2], 4: [0, 3, 2, 1], 5: [2, 3, 4, 0, 1], 6: [0, 1, 2, 3, 4, 5] };
+  function idealVectors(n) { return (IDEAL[n] || []).map(function (v) { return v.slice(); }); }
+
+  /* 中心のまわりの 3D の並び: [{ kind: 'lp' }｜{ kind: 'bond', partner, order, el }, v ]。
+     結合は「次数の大きい順・H 以外を先」に、非共有電子対の残りの向きへ置く（HCHO の O は上） */
+  function shapeGeometry(s, center) {
+    var A = atomOf(s, center);
+    var n = domains(s, center);
+    var vecs = idealVectors(n);
+    var used = new Array(vecs.length).fill(false);
+    var items = [];
+    var order = LP_ORDER[n] || [];
+    for (var i = 0; i < A.lp && i < order.length; i++) {
+      used[order[i]] = true;
+      items.push({ kind: 'lp', v: vecs[order[i]] });
+    }
+    var bs = bondsOf(s, center).map(function (b) {
+      var p = b.a === center ? b.b : b.a;
+      return { partner: p, order: b.order, el: atomOf(s, p).el };
+    }).sort(function (x, y) { return (y.order - x.order) || ((x.el === 'H') - (y.el === 'H')) || (x.partner - y.partner); });
+    bs.forEach(function (b) {
+      for (var k = 0; k < vecs.length; k++) {
+        if (!used[k]) { used[k] = true; items.push({ kind: 'bond', partner: b.partner, order: b.order, el: b.el, v: vecs[k] }); return; }
+      }
+    });
+    return items;
+  }
+
+  function angleDeg(u, v) {
+    var d = u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+    var nu = Math.hypot(u[0], u[1], u[2]), nv = Math.hypot(v[0], v[1], v[2]);
+    return Math.acos(Math.max(-1, Math.min(1, d / (nu * nv)))) * 180 / Math.PI;
+  }
+
   var api = {
     ELEMENTS: ELEMENTS, ELEMENT_ORDER: ORDER, MAX_ORDER: MAX_ORDER,
     create: create, clone: clone, atomOf: atomOf, bondBetween: bondBetween, bondsOf: bondsOf,
@@ -309,7 +431,10 @@
     unpairedTotal: unpairedTotal, charge: charge, judge: judge,
     wlRefine: wlRefine, canonicalRowsCore: canonicalRowsCore, code: code,
     componentOf: componentOf, formulaCounts: formulaCounts, sameCounts: sameCounts,
-    fromSpec: fromSpec, prepareTargets: prepareTargets, checkTarget: checkTarget
+    fromSpec: fromSpec, prepareTargets: prepareTargets, checkTarget: checkTarget,
+    ARRANGEMENT: ARRANGEMENT, SHAPE_NAME: SHAPE_NAME,
+    domains: domains, shapeAt: shapeAt, shapeCenters: shapeCenters, moleculeShape: moleculeShape,
+    idealVectors: idealVectors, shapeGeometry: shapeGeometry, angleDeg: angleDeg
   };
 
   if (typeof module === 'object' && module.exports) module.exports = api;

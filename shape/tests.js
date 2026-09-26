@@ -1,6 +1,6 @@
 /* tests.js — 電子対でみる分子のかたち（shape）の回帰テスト。
    - モデルのテスト（runModelTests）は node だけでも走る:  node shape/tests.js
-   - test.html では、モデルのテストのあとに iframe で画面を駆動する（DESIGN_bond_app.md §6 の 1〜4・7・8）
+   - test.html では、モデルのテストのあとに iframe で画面を駆動する（DESIGN_bond_app.md §6 の 1〜4・6・7・8。6 は M2）
    完了の合図は #total に「ALL PASS (n)」／「N FAILED / M」、失敗は div.case.fail（tools/run-tests.mjs が読む形・ratio と同じ）。
    ⚠ グローバルを作らない（ブラウザでは IIFE の中だけで閉じる）。 */
 (function () {
@@ -124,8 +124,8 @@
     })();
 
     section('モデル: 3 お題（molecules.json・§6）');
-    var must = ['H2', 'HCl', 'H2O', 'NH3', 'CH4', 'CO2', 'N2', 'HCN', 'C2H4', 'H2O2', 'H2S', 'PH3'];
-    ok('最低限のお題12件がそろっている', must.every(function (id) { return !!byId[id]; }));
+    var must = ['H2', 'HCl', 'H2O', 'NH3', 'CH4', 'CO2', 'N2', 'HCN', 'C2H4', 'H2O2', 'H2S', 'PH3', 'HCHO'];
+    ok('最低限のお題（12件＋M2 の HCHO）がそろっている', must.every(function (id) { return !!byId[id]; }));
     ok('お題の id は重ならない', new Set(T.map(function (t) { return t.id; })).size === T.length);
     T.forEach(function (t) {
       var b = M.fromSpec(molecules.filter(function (x) { return x.id === t.id; })[0]);
@@ -169,10 +169,76 @@
           if (p.bad.length || M.code(p.s) !== byId[spec.id].code) { allSame = false; where = spec.id + '#' + seed; }
         }
       });
-      ok('お題14件 × 並べ替え6通りで、すべて同じコード' + (where ? '（' + where + ' で違う）' : ''), allSame);
+      ok('お題' + molecules.length + '件 × 並べ替え6通りで、すべて同じコード' + (where ? '（' + where + ' で違う）' : ''), allSame);
       ok('コードは H も頂点にしている（H₂ のコードに H が2つ出る）', (byId.H2.code.match(/H\|/g) || []).length === 2);
       var ch = M.clone(b.s);
       ok('clone したものも同じコード（元と独立）', M.code(ch) === M.code(b.s) && ch.atoms[0] !== b.s.atoms[0]);
+    })();
+
+    section('モデル: 6 形を見る（中心 → まとまり → 配置 → 形・§3-4）');
+    var shp = function (id, center) { return M.moleculeShape(M.fromSpec(molecules.filter(function (x) { return x.id === id; })[0]).state, center); };
+    var elOf = function (id, r) { var b = M.fromSpec(molecules.filter(function (x) { return x.id === id; })[0]).state; return M.atomOf(b, r.center).el; };
+    [
+      ['CO2', 'C', 2, '直線', '直線形'],
+      ['HCN', 'C', 2, '直線', '直線形'],
+      ['H2O', 'O', 4, '正四面体', '折れ線形'],
+      ['H2S', 'S', 4, '正四面体', '折れ線形'],
+      ['NH3', 'N', 4, '正四面体', '三角錐形'],
+      ['PH3', 'P', 4, '正四面体', '三角錐形'],
+      ['CH4', 'C', 4, '正四面体', '正四面体形'],
+      ['HCHO', 'C', 3, '平面正三角形', '平面正三角形'],
+      ['C2H4', 'C', 3, '平面正三角形', '平面正三角形'],
+      ['H2O2', 'O', 4, '正四面体', '折れ線形']
+    ].forEach(function (t) {
+      var r = shp(t[0]);
+      ok(t[0] + ': 中心 ' + t[1] + ' → まとまり ' + t[2] + ' → ' + t[3] + 'の配置 → ' + t[4],
+        !!r && elOf(t[0], r) === t[1] && r.domains === t[2] && r.arrangement === t[3] && r.shape === t[4] && !r.advanced);
+    });
+    ['H2', 'HCl', 'Cl2', 'O2', 'N2'].forEach(function (id) {
+      var r = shp(id);
+      ok(id + ': 原子が2個 → 数えずに「直線形」（中心もまとまりも無い）', !!r && r.twoAtoms && r.shape === '直線形' && r.center === null && r.domains === null);
+    });
+    ok('⚠ 否定対照: NH₃ の形は「正四面体形」ではない（配置と形の名前が別）', shp('NH3').shape !== '正四面体形' && shp('NH3').arrangement === '正四面体');
+    ok('⚠ 否定対照: H₂O は原子が3個・結合2本でも「直線形」ではない（非共有電子対2組を数える）', shp('H2O').shape !== '直線形' && shp('H2O').domains === 4);
+    ok('⚠ 否定対照: CO₂ の二重結合は2組と数えない（まとまり 2）', shp('CO2').domains === 2);
+    (function () {
+      var half = build(['O', 'H', 'H'], [[0, 1, 1]]);
+      ok('⚠ 否定対照: 未完成の分子は形を出さない', M.moleculeShape(half.s) === null && M.shapeAt(half.s, half.ids[0]) === null);
+      var two = build(['H', 'H', 'H', 'H'], [[0, 1, 1], [2, 3, 1]]);
+      ok('⚠ 否定対照: 2つに分かれた分子は形を出さない', M.moleculeShape(two.s) === null);
+    })();
+
+    section('モデル: 6 中心は自動で決める（ユーザー決定）');
+    (function () {
+      var c = function (id) { var b = M.fromSpec(molecules.filter(function (x) { return x.id === id; })[0]).state; return { s: b, c: M.shapeCenters(b) }; };
+      ok('NH₃・CH₄・HCHO・CO₂・HCN は中心の候補が1つ', ['NH3', 'CH4', 'HCHO', 'CO2', 'HCN'].every(function (id) { return c(id).c.length === 1; }));
+      var e = c('C2H4');
+      ok('C₂H₄ は候補が2つ（どちらも C）', e.c.length === 2 && e.c.every(function (id) { return M.atomOf(e.s, id).el === 'C'; }));
+      var p = c('H2O2');
+      ok('H₂O₂ は候補が2つ（どちらも O）', p.c.length === 2 && p.c.every(function (id) { return M.atomOf(p.s, id).el === 'O'; }));
+      ok('中心を切り替えると、もう一方の C を中心に数える', M.moleculeShape(e.s, e.c[1]).center === e.c[1] && M.moleculeShape(e.s, e.c[1]).shape === '平面正三角形');
+      ok('⚠ 候補に無い原子（H）を中心に指定しても候補の先頭に戻る', M.moleculeShape(e.s, M.atomOf(e.s, 3).id).center === e.c[0]);
+      ok('原子が2個の分子は候補を出さない', c('N2').c.length === 0);
+    })();
+
+    section('モデル: 6 理想の向き（3D の座標）');
+    (function () {
+      var allUnit = [2, 3, 4, 5, 6].every(function (n) {
+        return M.idealVectors(n).every(function (v) { return Math.abs(Math.hypot(v[0], v[1], v[2]) - 1) < 1e-9; });
+      });
+      ok('理想の向きはすべて単位ベクトル（2〜6）', allUnit);
+      var pairs = function (vs) { var a = []; for (var i = 0; i < vs.length; i++) for (var j = i + 1; j < vs.length; j++) a.push(M.angleDeg(vs[i], vs[j])); return a; };
+      ok('4: どの2本も 109.47°', pairs(M.idealVectors(4)).every(function (x) { return Math.abs(x - 109.47) < 0.01; }));
+      ok('3: どの2本も 120°・同じ平面（z = 0）', pairs(M.idealVectors(3)).every(function (x) { return Math.abs(x - 120) < 1e-6; }) &&
+        M.idealVectors(3).every(function (v) { return v[2] === 0; }));
+      ok('2: 180°', Math.abs(M.angleDeg(M.idealVectors(2)[0], M.idealVectors(2)[1]) - 180) < 1e-6);
+      var hcho = M.fromSpec(molecules.filter(function (x) { return x.id === 'HCHO'; })[0]).state;
+      var g = M.shapeGeometry(hcho, M.shapeCenters(hcho)[0]);
+      ok('HCHO: 二重結合の O が上（先に置く）・3本とも結合', g.length === 3 && g[0].kind === 'bond' && g[0].el === 'O' && g[0].v[1] === -1);
+      var nh3 = M.fromSpec(molecules.filter(function (x) { return x.id === 'NH3'; })[0]).state;
+      var gn = M.shapeGeometry(nh3, M.shapeCenters(nh3)[0]);
+      ok('NH₃: 非共有電子対1つ（上）＋結合3本', gn.filter(function (x) { return x.kind === 'lp'; }).length === 1 && gn[0].kind === 'lp' && gn[0].v[1] === -1 &&
+        gn.filter(function (x) { return x.kind === 'bond'; }).length === 3);
     })();
   }
 
@@ -282,7 +348,7 @@
     A = await openApp('index.html?m=H2O');
     var O = A.app.idsOf('O')[0], H = A.app.idsOf('H');
     tap(A, O, 1);
-    ok('O の右の扇形をタップ → その側の不対電子が選ばれる', st(A).sel && st(A).sel.id === O && st(A).sel.side === 1 &&
+    ok('O の右の扇形をタップ → その側の不対電子が選ばれる', st(A).sel && st(A).sel.id === O && st(A).slots[O][st(A).sel.slot].ang === 0 &&
       !!A.doc.querySelector('#board .selWedge'));
     ok('声かけ「相手の原子をタップしよう」', /相手の原子/.test(msg(A)));
     tap(A, H[0]);
@@ -380,7 +446,133 @@
     A.f.remove();
 
     await runEmbedTests();
+    await runShapeUITests();
     await runWidthTests();
+  }
+
+  /* ---- M2: 並べ方と形を見る ---- */
+  function q(A, sel) { return A.app.shapeSvg.querySelector(sel); }
+  function qa(A, sel) { return A.app.shapeSvg.querySelectorAll(sel); }
+  function near(a, b, tol) { return Math.abs(a - b) < (tol || 1); }
+  function anglesAround(A, c) {
+    var s = st(A), M2 = A.win.ChemShape.model;
+    var nb = M2.bondsOf(s.mol, c).map(function (b) { return b.a === c ? b.b : b.a; });
+    var out = [];
+    for (var i = 0; i < nb.length; i++) for (var j = i + 1; j < nb.length; j++) out.push(Math.round(A.app.angleAt(c, nb[i], nb[j])));
+    return out.sort(function (x, y) { return x - y; });
+  }
+
+  async function runShapeUITests() {
+    section('画面: 並べ方（結合角をできるだけ反映・ユーザー決定 2026-09-26）');
+    var A = await openApp('index.html?m=H2O');
+    var O = A.app.idsOf('O')[0], H = A.app.idsOf('H');
+    ok('⚠ 否定対照: 未完成のうちは「形」を押せない', A.doc.getElementById('shapeViewBtn').disabled);
+    tap(A, O, 1); tap(A, H[0]); tap(A, O, 2); tap(A, H[1]);
+    var hoh = A.app.angleAt(O, H[0], H[1]);
+    ok('H₂O: H−O−H は L 字（90°・まとまり4は十字）', near(hoh, 90));
+    ok('⚠ 否定対照: H₂O を一直線（180°）に並べない', Math.abs(hoh - 180) > 30);
+    var sl = st(A).slots[O];
+    var angs = sl.map(function (x) { return x.ang; });
+    var spread = true;
+    for (var i = 0; i < angs.length; i++) for (var j = i + 1; j < angs.length; j++) {
+      var d = Math.abs(((angs[i] - angs[j]) % 360 + 540) % 360 - 180);
+      if (d < 89) spread = false;
+    }
+    ok('O の非共有電子対2組は空いた向き（4つの枠が十字で重ならない）', sl.length === 4 && spread &&
+      sl.filter(function (x) { return x.k === 'p'; }).length === 2);
+    var ids = st(A).mol.atoms.map(function (a) { return a.id; });
+    var xs = ids.map(function (k) { return st(A).pos[k].x; }), ys = ids.map(function (k) { return st(A).pos[k].y; });
+    ok('組み終えた分子は台の中央（上下も左右も）', near((Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2, 200) &&
+      near((Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2, 150));
+    ok('完成すると「形」が押せる', !A.doc.getElementById('shapeViewBtn').disabled);
+    A.doc.getElementById('shapeViewBtn').click();
+    ok('「形」を押すと、台と同じ場所に形の画面が出る', st(A).view === 'shape' && A.app.svg.style.display === 'none' && A.app.shapeSvg.style.display === '');
+    ok('形の画面: H₂O は「正四面体の配置 → 折れ線形」', q(A, '.arr').textContent === '正四面体の配置' && q(A, '.shp').textContent === '折れ線形');
+    var hShape = A.app.shapeSvg.getBoundingClientRect().height;
+    A.doc.getElementById('buildView').click();
+    var hBoard = A.app.svg.getBoundingClientRect().height;
+    ok('「組む」に戻れて、台と形の画面は同じ高さ（' + Math.round(hBoard) + 'px）', st(A).view === 'build' && hBoard > 100 && near(hShape, hBoard));
+    A.f.remove();
+
+    var cases = [
+      ['H2O', 'O', [90], 'L 字（どちらの H も同じ向きを望んでも 180° にしない）'],
+      ['H2S', 'S', [90], 'L 字'],
+      ['NH3', 'N', [90, 90, 180], 'T 字（十字の3本）'],
+      ['CH4', 'C', [90, 90, 90, 90, 180, 180], '十字 ✜'],
+      ['CO2', 'C', [180], '一直線'],
+      ['HCHO', 'C', [120, 120, 120], '120°'],
+      ['C2H4', 'C', [120, 120, 120], '120°']
+    ];
+    for (var c = 0; c < cases.length; c++) {
+      var t = cases[c];
+      A = await openApp('index.html?m=' + t[0] + '&view=shape');
+      var ctr = st(A).shape.center;
+      var got = anglesAround(A, ctr);
+      ok(t[0] + ': 中心 ' + t[1] + ' のまわりは' + t[3] + '（' + got.join('・') + '）',
+        A.win.ChemShape.model.atomOf(st(A).mol, ctr).el === t[1] && got.join() === t[2].join());
+      if (t[0] === 'C2H4') {
+        var cs = A.app.idsOf('C'), other = cs[0] === ctr ? cs[1] : cs[0];
+        ok('⚠ 否定対照: C₂H₄ の C を十字（90°）で並べない・もう一方の C も 120°',
+          anglesAround(A, ctr).indexOf(90) < 0 && anglesAround(A, other).join() === '120,120,120');
+      }
+      A.f.remove();
+    }
+    A = await openApp('index.html?m=H2O2&view=shape');
+    var Os = A.app.idsOf('O');
+    ok('H₂O₂: どちらの O も十字（H−O−O は 90°）', anglesAround(A, Os[0]).join() === '90' && anglesAround(A, Os[1]).join() === '90');
+    A.f.remove();
+
+    section('画面: 形を見る（中心 → まとまり → 配置 → 形・§6 の 6）');
+    var S = [
+      ['CO2', 2, '直線', '直線形', 0, '180°'],
+      ['H2O', 4, '正四面体', '折れ線形', 2, null],
+      ['NH3', 4, '正四面体', '三角錐形', 1, null],
+      ['CH4', 4, '正四面体', '正四面体形', 0, '109.5°'],
+      ['HCHO', 3, '平面正三角形', '平面正三角形', 0, '120°']
+    ];
+    for (c = 0; c < S.length; c++) {
+      var e = S[c];
+      A = await openApp('index.html?m=' + e[0] + '&view=shape');
+      A.app.stopSpin();
+      var dom = q(A, '.dom'), lab = q(A, '.angLabel');
+      ok(e[0] + ': まとまり ' + e[1] + ' → 「' + e[2] + 'の配置」と「' + e[3] + '」を別々に出す',
+        st(A).view === 'shape' && !!dom && dom.textContent.indexOf('まとまり ' + e[1] + ' 組') >= 0 &&
+        q(A, '.arr').textContent === e[2] + 'の配置' && q(A, '.shp').textContent === e[3]);
+      ok(e[0] + ': 非共有電子対のふくらみ ' + e[4] + ' つ（模式図と立体の両方）・立体の結合相手 ' + (st(A).shape.bonded) + ' つ',
+        qa(A, '.pane2d .lobe').length === e[4] && qa(A, '.pane3d .lobe').length === e[4] && qa(A, '.pane3d .ball').length === st(A).shape.bonded);
+      if (e[5]) ok(e[0] + ': 結合角 ' + e[5] + ' を書く', !!lab && lab.textContent === e[5]);
+      else ok('⚠ ' + e[0] + ': 非共有電子対があるので 109.5° を書かず「少し狭い」と文で言う', !lab && /109\.5° より少し狭い/.test(msg(A)));
+      ok(e[0] + ': 中心の候補は1つ ＝ 切り替えのボタンは出さない', A.doc.getElementById('centerBtn').style.visibility === 'hidden');
+      A.f.remove();
+    }
+    A = await openApp('index.html?m=H2&view=shape');
+    ok('H₂: 原子が2個 → 数えずに「直線形」（まとまりは出さない）', st(A).view === 'shape' && q(A, '.shp').textContent === '直線形' &&
+      !q(A, '.dom') && /原子が2個/.test(A.app.shapeSvg.textContent) && qa(A, '.pane3d .ball').length === 2);
+    A.f.remove();
+
+    section('画面: 中心は自動・候補が2つなら切り替え（ユーザー決定）');
+    A = await openApp('index.html?m=C2H4&view=shape');
+    var cb = A.doc.getElementById('centerBtn');
+    var c0 = st(A).shape.center;
+    ok('C₂H₄: 「もう一方の中心」が出る', cb.style.display === '' && cb.style.visibility === '');
+    cb.click();
+    ok('押すと、もう一方の C を中心に数える（平面正三角形のまま）', st(A).shape.center !== c0 &&
+      A.win.ChemShape.model.atomOf(st(A).mol, st(A).shape.center).el === 'C' && q(A, '.shp').textContent === '平面正三角形');
+    cb.click();
+    ok('もう一度押すと最初の C に戻る', st(A).shape.center === c0);
+    A.app.stopSpin();
+    var r0 = st(A).rotY;
+    var box = A.app.shapeSvg.getBoundingClientRect();
+    var p0 = { x: box.left + box.width * 0.75, y: box.top + box.height * 0.6 };
+    A.app.shapeSvg.dispatchEvent(new A.win.PointerEvent('pointerdown', { clientX: p0.x, clientY: p0.y, pointerId: 2, bubbles: true }));
+    A.app.shapeSvg.dispatchEvent(new A.win.PointerEvent('pointermove', { clientX: p0.x + 40, clientY: p0.y, pointerId: 2, bubbles: true }));
+    A.app.shapeSvg.dispatchEvent(new A.win.PointerEvent('pointerup', { clientX: p0.x + 40, clientY: p0.y, pointerId: 2, bubbles: true }));
+    ok('立体はドラッグで回る', st(A).rotY > r0 + 0.2);
+    ok('形の画面では原子のパレットは隠れる（場所は残す）', A.doc.getElementById('palette').style.visibility === 'hidden');
+    A.f.remove();
+    A = await openApp('index.html?m=H2O2&view=shape');
+    ok('H₂O₂: 中心の候補は O が2つ（切り替えが出る）', st(A).shape.candidates.length === 2 && A.doc.getElementById('centerBtn').style.visibility === '');
+    A.f.remove();
   }
 
   /* ---- 7 埋め込み（ion-equation/tests.js の REF7〜REF10 を写した）---- */
@@ -427,6 +619,19 @@
       ok('embed=1: 読む js に location.href= などの遷移が無い（' + srcs.length + ' 本を見た）', clean);
       A.f.remove();
 
+      // 形の画面（立体が自動で回り続ける）でも高さは止まる。組む ⇄ 形 を切り替えても高さが行ったり来たりしない
+      var Sh = await openApp('index.html?m=NH3&view=shape&embed=1', 375, 700);
+      for (i = 0; i < 60 && !mine(Sh.win).length; i++) await wait(50);
+      await wait(900);
+      var ns = mine(Sh.win).length;
+      await wait(700);
+      ok('embed=1・形の画面: 立体が回っていても高さの message が止まる', ns >= 1 && mine(Sh.win).length === ns && st(Sh).view === 'shape');
+      Sh.doc.getElementById('buildView').click(); await wait(300);
+      Sh.doc.getElementById('shapeViewBtn').click(); await wait(300);
+      var hs2 = mine(Sh.win).map(function (g) { return g.data.h; });
+      ok('embed=1: 組む ⇄ 形 を切り替えても同じ高さを2度送らない（' + hs2.join('→') + '）', new Set(hs2).size === hs2.length);
+      Sh.f.remove();
+
       // 否定対照: embed が無ければ看板は在り・帯は出て・高さは送らない
       var B = await openApp('index.html?m=H2O&from=reference&page=covalent-bond', 375, 700);
       var bd = B.doc;
@@ -458,7 +663,7 @@
   }
   async function runWidthTests() {
     section('画面: 8 375px 幅・html/body の高さ');
-    var sizes = ['index.html?m=C2H4', 'index.html?m=C2H4&embed=1'];
+    var sizes = ['index.html?m=C2H4', 'index.html?m=C2H4&embed=1', 'index.html?m=NH3&view=shape'];
     for (var i = 0; i < sizes.length; i++) {
       var A = await openApp(sizes[i], 375, 700);
       var de = A.doc.documentElement;

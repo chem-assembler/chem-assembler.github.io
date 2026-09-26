@@ -10,6 +10,7 @@
 {"id":"CO2","formula":"CO₂","name":"二酸化炭素","atoms":["C","O","O"],"bonds":[[0,1,2],[0,2,2]]},
 {"id":"HCN","formula":"HCN","name":"シアン化水素","atoms":["H","C","N"],"bonds":[[0,1,1],[1,2,3]]},
 {"id":"C2H4","formula":"C₂H₄","name":"エチレン","atoms":["C","C","H","H","H","H"],"bonds":[[0,1,2],[0,2,1],[0,3,1],[1,4,1],[1,5,1]]},
+{"id":"HCHO","formula":"HCHO","name":"ホルムアルデヒド","atoms":["C","O","H","H"],"bonds":[[0,1,2],[0,2,1],[0,3,1]]},
 {"id":"H2O2","formula":"H₂O₂","name":"過酸化水素","atoms":["H","H","O","O"],"bonds":[[2,3,1],[0,2,1],[1,3,1]]},
 {"id":"H2S","formula":"H₂S","name":"硫化水素","atoms":["H","H","S"],"bonds":[[0,2,1],[1,2,1]]},
 {"id":"PH3","formula":"PH₃","name":"ホスフィン","atoms":["P","H","H","H"],"bonds":[[0,1,1],[0,2,1],[0,3,1]]}

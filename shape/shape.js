@@ -1,4 +1,4 @@
-/* shape.js — 電子対でみる分子のかたち（shape）の画面。M1: 原子を置く・タップで結合・電子式⇄構造式・判定・お題。
+/* shape.js — 電子対でみる分子のかたち（shape）の画面。M1: 原子を置く・タップで結合・電子式⇄構造式・判定・お題。M2: 形を見る（中心 → まとまり → 配置 → 形・2D と 3D）。
    設計の正は DESIGN_bond_app.md。化学の判断は model.js（window.ChemShape.model）だけが持つ。
    ここが持つのは「見た目」: 原子の位置・4つの側（スロット）・描画・タップ。
    ⚠ グローバルは window.ChemShape の1つだけ（IIFE・§2）。 */
@@ -60,30 +60,35 @@
   var HIT = 28;            // 原子の的の半径（viewBox 単位）。下で「CSS 22px 以上」も保証する（直径 44px）
   var TAP_SLOP = 8;        // 指がこれ以上動いたらタップではなく移動（client px・DESIGN_hit_areas.md §8-3）
   var MARGIN = 22;         // 原子を台の端から離す量
-  // 側の番号: 0 上・1 右・2 下・3 左
-  var DIRS = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }];
+  // 結合していない原子の4つの側（電子式の書き方）: 0 上・1 右・2 下・3 左 の角度（度・画面の向き＝ y 下）
+  var SIDE_ANG = [-90, 0, 90, 180];
   // 電子式の点の置き方（教科書・参考書の表と同じ: NH₃ の N は右・下・左に不対電子、上に非共有電子対）
   var PAIR_ORDER = [0, 3, 2, 1];
   var SINGLE_ORDER = [1, 2, 3, 0];
 
   /* ================================================================
      状態
-     sides[id] は原子ごとの4つの枠（スロット）。中身は null・'u'（不対電子）・'p'（非共有電子対）・{ b: 相手の id }。
+     slots[id] は原子ごとの枠（スロット）の並び: [{ ang: 向き（度）, k: null｜'u'（不対電子）｜'p'（非共有電子対）｜{ b: 相手の id } }]。
      ★ 電子式の赤い点と構造式の手（赤い線の端）は、この同じ枠の2つの見え方（§3-1: 入力は1系統）。
+     ★ 結合した原子の枠は「電子のまとまり」の数で開く（ユーザー決定 2026-09-26「結合角をできるだけ反映。
+        正四面体の場合は直交 ✜」）: 4つ → 十字・3つ → 120°・2つ → 一直線。非共有電子対は空いた向きに置く。
+        まとまりの数え方は model.js の domains と同じ（結合相手＋非共有電子対。組む途中は不対電子も1つずつ数える）
      ================================================================ */
   var st = {
-    mol: M.create(), pos: {}, sides: {},
+    mol: M.create(), pos: {}, slots: {},
     history: [], mode: 'dot', check: false, sel: null,
-    targets: [], taskIdx: 0, free: false, notice: null, ready: false
+    targets: [], taskIdx: 0, free: false, notice: null, ready: false,
+    view: 'build', centerId: null, rotY: 0.55, rotX: -0.35
   };
 
   var $ = function (id) { return document.getElementById(id); };
   var svg = $('board');
+  var svgShape = $('shapeView');
 
   /* ---- 座標変換（CLAUDE.md の約束: getScreenCTM 必須）----
      写した元: assembler/game.js `clientToSvg`（1725行）・`svgUnitsPerPixel`（1732行） */
-  function clientToSvg(clientX, clientY) {
-    var ctm = svg.getScreenCTM();
+  function clientToSvg(clientX, clientY, el) {
+    var ctm = (el || svg).getScreenCTM();
     if (!ctm) return null;
     return new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
   }
@@ -98,161 +103,180 @@
     return new DOMPoint(x, y).matrixTransform(ctm);
   }
 
+  /* ---- 角度の道具（度）---- */
+  function norm(a) { a = a % 360; if (a > 180) a -= 360; if (a <= -180) a += 360; return a; }
+  function angDist(a, b) { return Math.abs(norm(a - b)); }
+  function dirOf(a) { var r = a * Math.PI / 180; return { x: Math.cos(r), y: Math.sin(r) }; }
+  function angTo(from, to) { return Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI; }
+  function snap90(a) { return norm(Math.round(a / 90) * 90); }
+
   /* ================================================================
      枠（スロット）の割り当て
      ================================================================ */
-  function initialSides(el) {
-    var e = M.ELEMENTS[el];
-    var s = [null, null, null, null];
-    for (var i = 0; i < e.lp; i++) s[PAIR_ORDER[i]] = 'p';
-    var n = e.un;
-    SINGLE_ORDER.forEach(function (k) { if (n > 0 && s[k] === null) { s[k] = 'u'; n--; } });
+  // 結合していない原子: 上下左右の4か所（原子の電子式の書き方）
+  function looseSlots(id) {
+    var A = M.atomOf(st.mol, id);
+    var s = SIDE_ANG.map(function (a) { return { ang: a, k: null }; });
+    var lp = A.lp, un = A.un;
+    PAIR_ORDER.forEach(function (k) { if (lp > 0) { s[k].k = 'p'; lp--; } });
+    SINGLE_ORDER.forEach(function (k) { if (un > 0 && s[k].k === null) { s[k].k = 'u'; un--; } });
     return s;
   }
 
-  function sideToward(from, to) {
-    var dx = to.x - from.x, dy = to.y - from.y;
-    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 1 : 3;
-    return dy < 0 ? 0 : 2;
-  }
-  // 角度の近い順の4つの側（結合の向きが格子からずれたときの逃げ道）
-  function sidesByAngle(from, to) {
-    var ang = Math.atan2(to.y - from.y, to.x - from.x);
-    var base = [-Math.PI / 2, 0, Math.PI / 2, Math.PI]; // 上・右・下・左
-    return [0, 1, 2, 3].sort(function (a, b) {
-      var da = Math.abs(Math.atan2(Math.sin(ang - base[a]), Math.cos(ang - base[a])));
-      var db = Math.abs(Math.atan2(Math.sin(ang - base[b]), Math.cos(ang - base[b])));
-      return da - db;
-    });
-  }
-
-  /* 結合の向き（位置から）に結合の枠を置き、残りの枠に非共有電子対と不対電子を詰め直す。
-     前の置き場所をなるべく保つ（点が跳ねないように）。
-     ⚠ M1 の9元素は「まとまり ≤ 4」なので4つの枠に必ず収まる。手が5本・6本（M4）は放射状に置く（§3-5） */
-  function assignSides(id) {
+  // 組む途中の「まとまり」: 結合相手 ＋ 非共有電子対 ＋ 不対電子（1個ずつ）
+  function groups(id) {
     var A = M.atomOf(st.mol, id);
-    var prev = st.sides[id] || initialSides(A.el);
-    var s = [null, null, null, null];
-    M.bondsOf(st.mol, id).forEach(function (b) {
-      var p = b.a === id ? b.b : b.a;
-      var order = sidesByAngle(st.pos[id], st.pos[p]);
-      for (var i = 0; i < 4; i++) if (s[order[i]] === null) { s[order[i]] = { b: p }; break; }
-    });
-    var lp = A.lp, un = A.un;
-    if (un === 0 && lp > 0) {
-      // 手を使い切った原子は、非共有電子対を結合の反対側から置く（HCN の N は右に「:」＝ 教科書の書き方）
-      var vx = 0, vy = 0;
-      for (var q = 0; q < 4; q++) if (s[q] !== null) { vx += DIRS[q].x; vy += DIRS[q].y; }
-      PAIR_ORDER.filter(function (k3) { return s[k3] === null; })
-        .sort(function (p1, p2) { return (DIRS[p1].x * vx + DIRS[p1].y * vy) - (DIRS[p2].x * vx + DIRS[p2].y * vy); })
-        .forEach(function (k3) { if (lp > 0) { s[k3] = 'p'; lp--; } });
-    }
-    for (var k = 0; k < 4; k++) {
-      if (s[k] !== null) continue;
-      if (prev[k] === 'p' && lp > 0) { s[k] = 'p'; lp--; }
-      else if (prev[k] === 'u' && un > 0) { s[k] = 'u'; un--; }
-    }
-    PAIR_ORDER.forEach(function (k2) { if (lp > 0 && s[k2] === null) { s[k2] = 'p'; lp--; } });
-    SINGLE_ORDER.forEach(function (k2) { if (un > 0 && s[k2] === null) { s[k2] = 'u'; un--; } });
-    st.sides[id] = s;
+    return M.bondsOf(st.mol, id).length + A.lp + A.un;
   }
-
-  function unpairedSides(id) {
-    var s = st.sides[id] || [];
+  function openSlots(n, back) {
     var out = [];
-    for (var k = 0; k < 4; k++) if (s[k] === 'u') out.push(k);
+    for (var k = 0; k < n; k++) out.push({ ang: norm(back + k * 360 / n), k: null });
     return out;
   }
-  // タップした側に不対電子があればそれ、1か所しか無ければそれ、無ければ近い側
-  function pickUnpairedSide(id, side) {
-    var us = unpairedSides(id);
+
+  function unpairedSlots(id) {
+    var s = st.slots[id] || [];
+    var out = [];
+    for (var k = 0; k < s.length; k++) if (s[k].k === 'u') out.push(k);
+    return out;
+  }
+  // タップした向きに近い不対電子（1か所しか無ければそれ・§3-2）。ang が null（中心）なら最初のもの
+  function pickUnpaired(id, ang) {
+    var us = unpairedSlots(id);
     if (!us.length) return null;
-    if (us.length === 1) return us[0];
-    if (side !== null && us.indexOf(side) >= 0) return side;
-    if (side === null) return us[0];
-    var dist = function (k) { var d = Math.abs(k - side) % 4; return Math.min(d, 4 - d); };
-    return us.slice().sort(function (a, b) { return dist(a) - dist(b); })[0];
+    if (us.length === 1 || ang === null) return us[0];
+    var s = st.slots[id];
+    return us.slice().sort(function (a, b) { return angDist(s[a].ang, ang) - angDist(s[b].ang, ang); })[0];
   }
 
   /* ================================================================
-     置き直し（§3-5・見た目だけ）: 結合のたびに分子全体を組み直す（中心 → 上下左右 → その先）
+     置き直し（§3-5・見た目だけ）: 結合のたびに分子全体を組み直す（中心 → 枠の向き → その先）
      ================================================================ */
   function degree(id) { return M.bondsOf(st.mol, id).length; }
+  function other(b, u) { return b.a === u ? b.b : b.a; }
+  function prioBonds(u) {
+    return M.bondsOf(st.mol, u).slice().sort(function (p, q) {
+      var ep = M.atomOf(st.mol, other(p, u)).el === 'H' ? 1 : 0, eq = M.atomOf(st.mol, other(q, u)).el === 'H' ? 1 : 0;
+      return (q.order - p.order) || (ep - eq) || (other(p, u) - other(q, u));
+    });
+  }
+  // タップで選んだ向き（hint）から、u から見た相手の向き
+  function desired(b, u) {
+    if (!b.hint) return null;
+    if (b.hint.from === u) return b.hint.ang;
+    if (b.hint.from === other(b, u)) return norm(b.hint.ang + 180);
+    return null;
+  }
 
   function relayout(anyId) {
     var comp = M.componentOf(st.mol, anyId);
-    if (comp.length > 1) {
-      var root = comp.slice().sort(function (a, b) {
-        var ha = M.atomOf(st.mol, a).el === 'H' ? 1 : 0, hb = M.atomOf(st.mol, b).el === 'H' ? 1 : 0;
-        return (degree(b) - degree(a)) || (ha - hb) || (a - b);
-      })[0];
-      var anchor = st.pos[root];
-      var g = {}; g[root] = { x: 0, y: 0 };
-      var occ = new Set(['0,0']);
-      var inDir = {}; inDir[root] = null;
-      var queue = [root];
-      while (queue.length) {
-        var u = queue.shift();
-        var used = new Set();
-        var bs = M.bondsOf(st.mol, u);
-        bs.forEach(function (b) {
-          var v = b.a === u ? b.b : b.a;
-          if (g[v]) used.add(sideToward(g[u], g[v]));
+    if (comp.length === 1) { st.slots[anyId] = looseSlots(anyId); return; }
+    var root = comp.slice().sort(function (a, b) {
+      var ha = M.atomOf(st.mol, a).el === 'H' ? 1 : 0, hb = M.atomOf(st.mol, b).el === 'H' ? 1 : 0;
+      return (degree(b) - degree(a)) || (ha - hb) || (a - b);
+    })[0];
+    var rel = {}; rel[root] = { x: 0, y: 0 };
+    var slots = {};
+    var rb = prioBonds(root);
+    var d0 = rb.length ? desired(rb[0], root) : null;
+    slots[root] = openSlots(groups(root), d0 === null ? 0 : snap90(d0)); // 中心の十字・一直線は縦横にそろえる
+    var inAng = {};
+    var queue = [root];
+    var placedList = [root];
+    while (queue.length) {
+      var u = queue.shift();
+      prioBonds(u).forEach(function (b) {
+        var v = other(b, u);
+        if (rel[v]) return;
+        var want = desired(b, u);
+        if (want === null) want = inAng[u] !== undefined ? inAng[u] : null; // 指定が無ければまっすぐ先へ
+        var free = [];
+        slots[u].forEach(function (sl, k) { if (sl.k === null) free.push(k); });
+        if (!free.length) { slots[u].push({ ang: norm((inAng[u] || 0) + 45), k: null }); free = [slots[u].length - 1]; }
+        // まとまり4（正四面体）の原子の2本目の結合は、1本目の反対（180°）に置かない（H₂O・H₂O₂ は L 字 ＝ 109.5° を 90° で見せる）
+        var bondAngs = slots[u].filter(function (sl) { return sl.k && typeof sl.k === 'object'; }).map(function (sl) { return sl.ang; });
+        var opp = function (k) {
+          return (slots[u].length === 4 && bondAngs.length === 1 && angDist(slots[u][k].ang, bondAngs[0]) > 135) ? 1 : 0;
+        };
+        free.sort(function (p, q) {
+          return (opp(p) - opp(q)) || (want === null ? 0 : angDist(slots[u][p].ang, want) - angDist(slots[u][q].ang, want));
         });
-        bs.slice().sort(function (p, q) { return (p.a + p.b) - (q.a + q.b); }).forEach(function (b) {
-          var v = b.a === u ? b.b : b.a;
-          if (g[v]) return;
-          var cands = [];
-          if (b.hint) {
-            if (b.hint.from === u) cands.push(b.hint.side);
-            else if (b.hint.from === v) cands.push((b.hint.side + 2) % 4);
-          }
-          if (inDir[u] !== null) cands.push(inDir[u]); // まっすぐ先へ
-          cands.push(1, 2, 3, 0);
-          var pick = null;
-          for (var i = 0; i < cands.length && pick === null; i++) {
-            var d = cands[i];
-            if (used.has(d)) continue;
-            if (occ.has((g[u].x + DIRS[d].x) + ',' + (g[u].y + DIRS[d].y))) continue;
-            pick = d;
-          }
-          if (pick === null) for (var j = 0; j < 4 && pick === null; j++) if (!used.has(j)) pick = j;
-          if (pick === null) pick = 1;
-          used.add(pick);
-          g[v] = { x: g[u].x + DIRS[pick].x, y: g[u].y + DIRS[pick].y };
-          occ.add(g[v].x + ',' + g[v].y);
-          inDir[v] = pick;
-          queue.push(v);
-        });
-      }
-      comp.forEach(function (id) {
-        if (g[id]) st.pos[id] = { x: anchor.x + g[id].x * L, y: anchor.y + g[id].y * L };
+        // 分子の中の原子に重なる向きは避ける（避けられないときだけ重ねる）
+        var pick = free[0];
+        for (var i = 0; i < free.length; i++) {
+          var dd = dirOf(slots[u][free[i]].ang);
+          var tp = { x: rel[u].x + dd.x * L, y: rel[u].y + dd.y * L };
+          var clash = placedList.some(function (w) { return Math.hypot(rel[w].x - tp.x, rel[w].y - tp.y) < L * 0.6; });
+          if (!clash) { pick = free[i]; break; }
+        }
+        var ang = slots[u][pick].ang;
+        slots[u][pick].k = { b: v };
+        var d = dirOf(ang);
+        rel[v] = { x: rel[u].x + d.x * L, y: rel[u].y + d.y * L };
+        inAng[v] = ang;
+        slots[v] = openSlots(groups(v), norm(ang + 180));
+        slots[v][0].k = { b: u };
+        placedList.push(v);
+        queue.push(v);
       });
-      // 台の上がこの分子だけになったら、台の真ん中へ寄せる（お題を組み終えた姿を見やすく）
-      if (comp.length === st.mol.atoms.length) centerComponent(comp);
-      clampComponent(comp);
-      pushOthersAway(comp);
     }
-    comp.forEach(assignSides);
+    // 環を閉じる結合（木の外の辺）: 相手の向きにいちばん近い空き枠へ
+    comp.forEach(function (u) {
+      M.bondsOf(st.mol, u).forEach(function (b) {
+        var v = other(b, u);
+        if (slots[u].some(function (sl) { return sl.k && sl.k.b === v; })) return;
+        var a = angTo(rel[u], rel[v]);
+        var free = [];
+        slots[u].forEach(function (sl, k) { if (sl.k === null) free.push(k); });
+        if (free.length) {
+          free.sort(function (p, q) { return angDist(slots[u][p].ang, a) - angDist(slots[u][q].ang, a); });
+          slots[u][free[0]].ang = a;
+          slots[u][free[0]].k = { b: v };
+        } else slots[u].push({ ang: a, k: { b: v } });
+      });
+    });
+    // 非共有電子対と不対電子を空いた枠へ。非共有電子対は結合の反対側から（HCN の N は右に「:」）
+    comp.forEach(function (u) {
+      var A = M.atomOf(st.mol, u);
+      var vx = 0, vy = 0;
+      slots[u].forEach(function (sl) { if (sl.k) { var d = dirOf(sl.ang); vx += d.x; vy += d.y; } });
+      var free = [];
+      slots[u].forEach(function (sl, k) { if (sl.k === null) free.push(k); });
+      free.sort(function (p, q) {
+        var dp = dirOf(slots[u][p].ang), dq = dirOf(slots[u][q].ang);
+        return (dp.x * vx + dp.y * vy) - (dq.x * vx + dq.y * vy);
+      });
+      var lp = A.lp, un = A.un;
+      free.forEach(function (k) {
+        if (lp > 0) { slots[u][k].k = 'p'; lp--; }
+        else if (un > 0) { slots[u][k].k = 'u'; un--; }
+      });
+    });
+    comp.forEach(function (id) { st.slots[id] = slots[id]; st.pos[id] = { x: rel[id].x, y: rel[id].y }; });
+    centerComponent(comp); // 組んでいる分子を台の中央へ（ユーザー指摘: 分子が下に寄っていた）
+    clampComponent(comp);
+    pushOthersAway(comp);
   }
 
+  function bbox(ids) {
+    var xs = ids.map(function (id) { return st.pos[id].x; }), ys = ids.map(function (id) { return st.pos[id].y; });
+    return { minX: Math.min.apply(null, xs), maxX: Math.max.apply(null, xs), minY: Math.min.apply(null, ys), maxY: Math.max.apply(null, ys) };
+  }
+  function shiftIds(ids, dx, dy) { ids.forEach(function (id) { st.pos[id] = { x: st.pos[id].x + dx, y: st.pos[id].y + dy }; }); }
+
   function centerComponent(comp) {
-    var xs = comp.map(function (id) { return st.pos[id].x; }), ys = comp.map(function (id) { return st.pos[id].y; });
-    var dx = VIEW_W / 2 - (Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2;
-    var dy = VIEW_H / 2 - (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2;
-    comp.forEach(function (id) { st.pos[id] = { x: st.pos[id].x + dx, y: st.pos[id].y + dy }; });
+    var b = bbox(comp);
+    shiftIds(comp, VIEW_W / 2 - (b.minX + b.maxX) / 2, VIEW_H / 2 - (b.minY + b.maxY) / 2);
   }
 
   function clampComponent(comp) {
-    var xs = comp.map(function (id) { return st.pos[id].x; }), ys = comp.map(function (id) { return st.pos[id].y; });
-    var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
-    var minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+    var b = bbox(comp);
     var dx = 0, dy = 0;
-    if (maxX > VIEW_W - MARGIN) dx = VIEW_W - MARGIN - maxX;
-    if (minX + dx < MARGIN) dx = MARGIN - minX;
-    if (maxY > VIEW_H - MARGIN) dy = VIEW_H - MARGIN - maxY;
-    if (minY + dy < MARGIN) dy = MARGIN - minY;
-    if (dx || dy) comp.forEach(function (id) { st.pos[id] = { x: st.pos[id].x + dx, y: st.pos[id].y + dy }; });
+    if (b.maxX > VIEW_W - MARGIN) dx = VIEW_W - MARGIN - b.maxX;
+    if (b.minX + dx < MARGIN) dx = MARGIN - b.minX;
+    if (b.maxY > VIEW_H - MARGIN) dy = VIEW_H - MARGIN - b.maxY;
+    if (b.minY + dy < MARGIN) dy = MARGIN - b.minY;
+    if (dx || dy) shiftIds(comp, dx, dy);
   }
 
   function minDistTo(p, ids) {
@@ -271,22 +295,21 @@
     var done = new Set();
     st.mol.atoms.forEach(function (a) {
       if (inComp.has(a.id) || done.has(a.id)) return;
-      var other = M.componentOf(st.mol, a.id);
-      other.forEach(function (id) { done.add(id); });
-      var fixed = st.mol.atoms.map(function (x) { return x.id; }).filter(function (id) { return other.indexOf(id) < 0; });
-      var clash = other.some(function (id) { return minDistTo(st.pos[id], comp) < L * 0.9; });
-      if (!clash) return;
-      moveToFree(other, fixed);
+      var oth = M.componentOf(st.mol, a.id);
+      oth.forEach(function (id) { done.add(id); });
+      var fixed = st.mol.atoms.map(function (x) { return x.id; }).filter(function (id) { return oth.indexOf(id) < 0; });
+      var clash = oth.some(function (id) { return minDistTo(st.pos[id], comp) < L * 0.9; });
+      if (clash) moveToFree(oth, fixed);
     });
   }
 
   function moveToFree(ids, fixed) {
     var ref = st.pos[ids[0]];
-    var rel = ids.map(function (id) { return { id: id, x: st.pos[id].x - ref.x, y: st.pos[id].y - ref.y }; });
+    var rl = ids.map(function (id) { return { id: id, x: st.pos[id].x - ref.x, y: st.pos[id].y - ref.y }; });
     var best = null, bestD = Infinity;
     for (var y = MARGIN; y <= VIEW_H - MARGIN; y += 10) {
       for (var x = MARGIN; x <= VIEW_W - MARGIN; x += 10) {
-        var okAll = rel.every(function (r) {
+        var okAll = rl.every(function (r) {
           var p = { x: x + r.x, y: y + r.y };
           if (p.x < MARGIN || p.x > VIEW_W - MARGIN || p.y < MARGIN || p.y > VIEW_H - MARGIN) return false;
           return minDistTo(p, fixed) >= L;
@@ -297,7 +320,7 @@
       }
     }
     if (!best) return;
-    rel.forEach(function (r) { st.pos[r.id] = { x: best.x + r.x, y: best.y + r.y }; });
+    rl.forEach(function (r) { st.pos[r.id] = { x: best.x + r.x, y: best.y + r.y }; });
   }
 
   function freeSpot() {
@@ -320,7 +343,7 @@
     return {
       mol: M.clone(st.mol),
       pos: JSON.parse(JSON.stringify(st.pos)),
-      sides: JSON.parse(JSON.stringify(st.sides))
+      slots: JSON.parse(JSON.stringify(st.slots))
     };
   }
   function pushHistory() {
@@ -332,11 +355,12 @@
     var at = p || freeSpot(); // 置く前に場所を決める（置いた後だと位置の無い原子を数えてしまう）
     var id = M.addAtom(st.mol, el);
     st.pos[id] = at;
-    st.sides[id] = initialSides(el);
+    st.slots[id] = looseSlots(id);
     return id;
   }
 
   function addFromPalette(el) {
+    if (st.view !== 'build') return;
     pushHistory();
     st.sel = null;
     placeAtom(el);
@@ -344,15 +368,16 @@
     update();
   }
 
-  // お題の原子を並べて置く（結合はしない）
+  // お題の原子を並べて置く（結合はしない）。台の真ん中を中心に並べる
   function setupBoard() {
-    st.mol = M.create(); st.pos = {}; st.sides = {}; st.sel = null; st.history = []; st.notice = null;
+    st.mol = M.create(); st.pos = {}; st.slots = {}; st.sel = null; st.history = []; st.notice = null;
+    st.view = 'build'; st.centerId = null; st.wasComplete = false; st.check = false;
     if (!st.free && st.targets[st.taskIdx]) {
       var els = st.targets[st.taskIdx].atoms;
       var cols = Math.min(els.length, 3), rows = Math.ceil(els.length / 3);
       els.forEach(function (el, i) {
         var c = i % 3, r = Math.floor(i / 3);
-        placeAtom(el, { x: VIEW_W * (c + 1) / (cols + 1), y: VIEW_H * (r + 1) / (rows + 1) });
+        placeAtom(el, { x: VIEW_W / 2 + (c - (cols - 1) / 2) * 110, y: VIEW_H / 2 + (r - (rows - 1) / 2) * 100 });
       });
     }
     update();
@@ -360,20 +385,28 @@
 
   function say(text, kind) { st.notice = { text: text, kind: kind || 'warn' }; }
 
-  function tapAtom(id, side) {
+  // 不対電子どうしで結合し、分子を組み直す（タップとお題の自動組み立ての共通の入口）
+  function bondAtoms(a, sA, b) {
+    var hint = (sA !== null && st.slots[a][sA]) ? { from: a, ang: st.slots[a][sA].ang } : null;
+    var r = M.bond(st.mol, a, b, hint);
+    if (r.ok) relayout(a);
+    return r;
+  }
+
+  function tapAtom(id, ang) {
     var A = M.atomOf(st.mol, id);
     st.notice = null;
     if (!st.sel) {
       if (A.un < 1) { say('この原子には不対電子がありません'); update(); return; }
-      st.sel = { id: id, side: pickUnpairedSide(id, side) };
+      st.sel = { id: id, slot: pickUnpaired(id, ang) };
       say('相手の原子をタップしよう', 'info');
       update();
       return;
     }
     if (st.sel.id === id) {
-      var s2 = pickUnpairedSide(id, side);
-      if (s2 === st.sel.side) st.sel = null;
-      else { st.sel.side = s2; say('相手の原子をタップしよう', 'info'); }
+      var s2 = pickUnpaired(id, ang);
+      if (s2 === st.sel.slot) st.sel = null;
+      else { st.sel.slot = s2; say('相手の原子をタップしよう', 'info'); }
       update();
       return;
     }
@@ -386,21 +419,27 @@
       return;
     }
     // 相手に不対電子が1か所しか無ければ原子ごとのタップでよい（側を選ばせない・§3-2）
-    var sB = pickUnpairedSide(id, side);
-    var a = st.sel.id, sA = st.sel.side;
+    var a = st.sel.id, sA = st.sel.slot;
     pushHistory();
-    M.bond(st.mol, a, id, { from: a, side: sA });
-    st.sides[a][sA] = null;
-    st.sides[id][sB] = null;
     st.sel = null;
-    relayout(a);
+    bondAtoms(a, sA, id);
     update();
+  }
+
+  // お題をそのまま組む（?view=shape で形の画面から始めるとき）
+  function assembleTarget() {
+    var t = st.targets[st.taskIdx];
+    if (!t) return;
+    var ids = st.mol.atoms.map(function (x) { return x.id; });
+    t.bonds.forEach(function (bd) {
+      for (var o = 0; o < bd[2]; o++) bondAtoms(ids[bd[0]], pickUnpaired(ids[bd[0]], 0), ids[bd[1]]); // 右向きから（C=C・O=C=O を横に）
+    });
   }
 
   function undo() {
     var h = st.history.pop();
     if (!h) return;
-    st.mol = h.mol; st.pos = h.pos; st.sides = h.sides; st.sel = null; st.notice = null;
+    st.mol = h.mol; st.pos = h.pos; st.slots = h.slots; st.sel = null; st.notice = null;
     update();
   }
 
@@ -417,11 +456,11 @@
     });
     return best;
   }
-  // 原子の中心からの角度で、どの側（扇形）かを決める（§3-2）。中心の近くは「側なし」
-  function sideAt(id, p) {
+  // 原子の中心からの向き（度）。的は原子のまわりの扇形（§3-2）。中心の近くは「向きなし」
+  function angAt(id, p) {
     var q = st.pos[id];
     if (Math.hypot(p.x - q.x, p.y - q.y) < 4) return null;
-    return sideToward(q, p);
+    return angTo(q, p);
   }
 
   svg.addEventListener('pointerdown', function (e) {
@@ -467,7 +506,7 @@
       if (st.sel) { st.sel = null; st.notice = null; update(); }
       return;
     }
-    tapAtom(d.id, sideAt(d.id, p));
+    tapAtom(d.id, angAt(d.id, p));
   }
   svg.addEventListener('pointerup', function (e) { endPointer(e, false); });
   svg.addEventListener('pointercancel', function (e) { endPointer(e, true); });
@@ -498,21 +537,36 @@
     return res;
   }
 
+  // 形の画面の1行（配置と形の名前は SVG の中に別々に出す。ここは理由の1行）
+  function shapeLine(sh) {
+    if (sh.twoAtoms) return '原子が2個の分子は、いつも直線';
+    if (!sh.supported) return 'この形はここでは扱いません';
+    if (sh.lone === 0) return '非共有電子対が無いので、配置どおりの形';
+    if (sh.domains === 4) return '結合角は 109.5° より少し狭い';
+    if (sh.domains === 3) return '結合角は 120° より少し狭い';
+    return '非共有電子対は形の名前に数えない';
+  }
+
   function update() {
     var ev = evaluate();
     st.last = ev;
     if (ev.complete && !st.wasComplete) st.check = true; // 完成したら数を確かめる（参考書の確かめの図と同じ）
     st.wasComplete = ev.complete;
+    st.shape = M.moleculeShape(st.mol, st.centerId);
+    if (st.view === 'shape' && !st.shape) st.view = 'build';
     var msg = $('msg');
-    var n = st.notice;
-    msg.textContent = n ? n.text : ev.text;
-    msg.className = 'msg' + ((n ? n.kind : ev.kind) ? ' ' + (n ? n.kind : ev.kind) : '');
-    render();
+    var text, kind;
+    if (st.view === 'shape') { text = shapeLine(st.shape); kind = 'info'; }
+    else { var n = st.notice; text = n ? n.text : ev.text; kind = n ? n.kind : ev.kind; }
+    msg.textContent = text;
+    msg.className = 'msg' + (kind ? ' ' + kind : '');
+    if (st.view === 'shape') renderShape(); else render();
     renderBars();
+    spinControl();
   }
 
   /* ================================================================
-     描画
+     描画（組む台）
      ================================================================ */
   function el(name, attrs, parent) {
     var n = document.createElementNS(SVGNS, name);
@@ -520,12 +574,20 @@
     if (parent) parent.appendChild(n);
     return n;
   }
+  function txt(parent, x, y, s, cls, extra) {
+    var a = { x: x, y: y, 'class': cls, 'text-anchor': 'middle', 'dominant-baseline': 'central' };
+    for (var k in (extra || {})) a[k] = extra[k];
+    var t = el('text', a, parent);
+    t.textContent = s;
+    return t;
+  }
   function dot(g, x, y, cls) { el('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: 3.4, 'class': cls }, g); }
 
-  function sideOffset(sym, k) {
-    var wide = sym.length > 1;
-    var ox = wide ? 19 : 14, oy = 15;
-    return { x: DIRS[k].x * ox, y: DIRS[k].y * oy };
+  // 元素記号のまわりの点の位置（2文字の記号は横に広げる）
+  function slotPoint(p, sym, ang) {
+    var d = dirOf(ang);
+    var rx = sym.length > 1 ? 19 : 14, ry = 15;
+    return { x: p.x + d.x * rx, y: p.y + d.y * ry, d: d };
   }
 
   function render() {
@@ -545,11 +607,12 @@
       });
     }
 
-    // 選んだ側の扇形
-    if (st.sel && st.sel.side !== null) {
-      var sp = st.pos[st.sel.id], k = st.sel.side;
-      var mid = [-Math.PI / 2, 0, Math.PI / 2, Math.PI][k];
-      var R = HIT + 4, a0 = mid - Math.PI / 4, a1 = mid + Math.PI / 4;
+    // 選んだ枠の扇形
+    if (st.sel && st.sel.slot !== null && st.slots[st.sel.id]) {
+      var sp = st.pos[st.sel.id], sls = st.slots[st.sel.id];
+      var mid = sls[st.sel.slot].ang * Math.PI / 180;
+      var half = Math.min(45, 180 / Math.max(sls.length, 1)) * Math.PI / 180;
+      var R = HIT + 4, a0 = mid - half, a1 = mid + half;
       el('path', {
         d: 'M' + sp.x + ' ' + sp.y + ' L' + (sp.x + R * Math.cos(a0)).toFixed(1) + ' ' + (sp.y + R * Math.sin(a0)).toFixed(1) +
           ' A' + R + ' ' + R + ' 0 0 1 ' + (sp.x + R * Math.cos(a1)).toFixed(1) + ' ' + (sp.y + R * Math.sin(a1)).toFixed(1) + ' Z',
@@ -587,44 +650,274 @@
     st.mol.atoms.forEach(function (a) {
       var p = st.pos[a.id];
       var g = el('g', { 'class': 'atom', 'data-id': a.id, 'data-el': a.el }, gAtom);
-      var t = el('text', { x: p.x, y: p.y, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'class': 'sym' }, g);
-      t.textContent = a.el;
-      var s = st.sides[a.id] || [];
-      for (var k2 = 0; k2 < 4; k2++) {
-        var c = s[k2];
-        if (c !== 'u' && c !== 'p') continue;
-        var o = sideOffset(a.el, k2);
-        var qx = p.x + o.x, qy = p.y + o.y;
+      txt(g, p.x, p.y, a.el, 'sym');
+      (st.slots[a.id] || []).forEach(function (sl) {
+        if (sl.k !== 'u' && sl.k !== 'p') return;
+        var q = slotPoint(p, a.el, sl.ang);
         if (st.mode === 'dot') {
-          if (c === 'u') dot(g, qx, qy, 'e-un');
+          if (sl.k === 'u') dot(g, q.x, q.y, 'e-un');
           else {
-            var px = -DIRS[k2].y * 4.6, py = DIRS[k2].x * 4.6;
-            dot(g, qx + px, qy + py, 'e-lp');
-            dot(g, qx - px, qy - py, 'e-lp');
+            var px = -q.d.y * 4.6, py = q.d.x * 4.6;
+            dot(g, q.x + px, q.y + py, 'e-lp');
+            dot(g, q.x - px, q.y - py, 'e-lp');
           }
-        } else if (c === 'u') {
+        } else if (sl.k === 'u') {
           // 構造式では不対電子を「手」（赤い線の端）で描く。非共有電子対は構造式では書かない
-          var w = a.el.length > 1 ? 16 : 12;
+          var q2 = slotPoint(p, a.el, sl.ang);
           el('line', {
-            x1: p.x + DIRS[k2].x * w, y1: p.y + DIRS[k2].y * 12,
-            x2: p.x + DIRS[k2].x * (w + 10), y2: p.y + DIRS[k2].y * 22, 'class': 'hand'
+            x1: (p.x + (q2.x - p.x) * 0.8).toFixed(1), y1: (p.y + (q2.y - p.y) * 0.8).toFixed(1),
+            x2: (p.x + (q2.x - p.x) * 1.5).toFixed(1), y2: (p.y + (q2.y - p.y) * 1.5).toFixed(1), 'class': 'hand'
           }, g);
         }
-      }
+      });
     });
+  }
+
+  /* ================================================================
+     形を見る（M2・§3-4・§4-3）: 2D の模式図（左）と 3D（右・回せる）
+     3D は SVG の投影。写した元: assembler/stereo.js の `StereoView.rotateYX`（2457行）と
+     `drawPane`（2574行）の投影（k = PERSP / (PERSP − z·BOND)・z でソート・奥ほど暗い 0.45 + 0.55·(z+1)/2）、
+     `bindDrag`（2269行）の「掴んだら止め・離したら自動回転を再開」。three.js は使わない（§4-3 の決定）。
+     ⚠ SVG は台と同じ固定の viewBox・同じ高さ（中身で高さを決めさせない＝埋め込みの高さ通知が発振しない）
+     ================================================================ */
+  var P2 = { x: 100, y: 178 }, P3 = { x: 300, y: 178 };
+  var B2 = 60, B3 = 62, PERSP = 300, HUB = 15;
+
+  // 写した元: assembler/stereo.js `StereoView.rotateYX`（2457行）。中身は変えていない
+  function rotateYX(v, angleY, angleX) {
+    var cx = Math.cos(angleX), sx = Math.sin(angleX);
+    var cy = Math.cos(angleY), sy = Math.sin(angleY);
+    var x1 = v[0] * cy + v[2] * sy;
+    var y1 = v[1];
+    var z1 = -v[0] * sy + v[2] * cy;
+    return [x1, y1 * cx - z1 * sx, y1 * sx + z1 * cx];
+  }
+
+  function shapeItems() {
+    var sh = st.shape;
+    if (!sh) return [];
+    if (sh.twoAtoms) {
+      var b = st.mol.bonds[0];
+      return [
+        { kind: 'atom', el: M.atomOf(st.mol, b.a).el, v: [-0.5, 0, 0] },
+        { kind: 'atom', el: M.atomOf(st.mol, b.b).el, v: [0.5, 0, 0], order: b.order }
+      ];
+    }
+    return M.shapeGeometry(st.mol, sh.center);
+  }
+
+  function lobe(g, cx, cy, vx, vy, scale, cls) {
+    var len = Math.hypot(vx, vy);
+    var ang = Math.atan2(vy, vx) * 180 / Math.PI;
+    var rx = (8 + 15 * len) * scale, ry = 11 * scale;
+    var mx = cx + vx * 0.5 * B2 * scale, my = cy + vy * 0.5 * B2 * scale;
+    var gg = el('g', { transform: 'rotate(' + ang.toFixed(1) + ' ' + mx.toFixed(1) + ' ' + my.toFixed(1) + ')', 'class': cls }, g);
+    el('ellipse', { cx: mx.toFixed(1), cy: my.toFixed(1), rx: rx.toFixed(1), ry: ry.toFixed(1), 'class': 'lobe' }, gg);
+    dot(gg, mx, my - 4, 'e-lp');
+    dot(gg, mx, my + 4, 'e-lp');
+  }
+
+  function bondLines(g, x1, y1, x2, y2, order, width, cls) {
+    var dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+    var nx = -dy / len, ny = dx / len;
+    var offs = order === 2 ? [-3.2, 3.2] : order === 3 ? [-5, 0, 5] : [0];
+    offs.forEach(function (o) {
+      el('line', { x1: (x1 + nx * o).toFixed(1), y1: (y1 + ny * o).toFixed(1), x2: (x2 + nx * o).toFixed(1), y2: (y2 + ny * o).toFixed(1),
+        'class': cls || 'bond', 'stroke-width': width }, g);
+    });
+  }
+
+  /* 模式図の上での向き。紙面の結合（z≈0）はそのまま。手前・奥の結合は、正射影だと同じ点に重なる
+     （正四面体の右下の2本）ので、教科書の書き方の位置へ開く: 手前（くさび）は右下・奥（破線）は右 */
+  function disp2D(v, n) {
+    if (Math.abs(v[2]) < 0.3) return [v[0], v[1]];
+    if (n === 4) return v[2] > 0 ? [0.42, 0.78] : [0.95, -0.02];
+    return [v[0] + 0.35 * v[2], v[1] + 0.45 * v[2]]; // 5・6 まとまり（M4）は斜めの投影
+  }
+
+  function render2D(g) {
+    var sh = st.shape, items = shapeItems();
+    if (sh.twoAtoms) {
+      var a = items[0], b = items[1];
+      bondLines(g, P2.x - 30 + 13, P2.y, P2.x + 30 - 13, P2.y, b.order, 2.4);
+      txt(g, P2.x - 30, P2.y, a.el, 'sym s2');
+      txt(g, P2.x + 30, P2.y, b.el, 'sym s2');
+      return;
+    }
+    var bonds2 = [];
+    items.forEach(function (it) {
+      var dv = disp2D(it.v, items.length), v = [dv[0], dv[1], it.v[2]], ex = P2.x + v[0] * B2, ey = P2.y + v[1] * B2;
+      if (it.kind === 'lp') { lobe(g, P2.x, P2.y, v[0], v[1], 1, 'lp2d' + (v[2] < -0.3 ? ' back' : '')); return; }
+      var sx = P2.x + v[0] * 14, sy = P2.y + v[1] * 14, tx = P2.x + v[0] * (B2 - 12), ty = P2.y + v[1] * (B2 - 12);
+      if (v[2] > 0.3) {
+        // 手前へ出る結合は塗ったくさび
+        var nx = -(ty - sy), ny = tx - sx, nl = Math.hypot(nx, ny) || 1;
+        nx = nx / nl * 5; ny = ny / nl * 5;
+        el('path', { d: 'M' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' L' + (tx + nx).toFixed(1) + ' ' + (ty + ny).toFixed(1) +
+          ' L' + (tx - nx).toFixed(1) + ' ' + (ty - ny).toFixed(1) + ' Z', 'class': 'wedge' }, g);
+      } else if (v[2] < -0.3) {
+        // 奥へ向かう結合は破線のくさび
+        for (var i = 1; i <= 6; i++) {
+          var f = i / 6, cx = sx + (tx - sx) * f, cy = sy + (ty - sy) * f;
+          var px = -(ty - sy), py = tx - sx, pl = Math.hypot(px, py) || 1, w = 5 * f;
+          el('line', { x1: (cx + px / pl * w).toFixed(1), y1: (cy + py / pl * w).toFixed(1), x2: (cx - px / pl * w).toFixed(1), y2: (cy - py / pl * w).toFixed(1), 'class': 'hash' }, g);
+        }
+      } else {
+        bondLines(g, sx, sy, tx, ty, it.order, 2.4);
+        bonds2.push(it);
+      }
+      txt(g, ex, ey, it.el, 'sym s2');
+    });
+    txt(g, P2.x, P2.y, M.atomOf(st.mol, sh.center).el, 'sym s2 center');
+    // 結合角: 非共有電子対が無いときだけ、表の理想の角を紙面の2本のあいだに書く（あるときは文で「少し狭い」）
+    if (sh.lone === 0 && sh.idealAngle && bonds2.length >= 2) {
+      var a1 = Math.atan2(bonds2[0].v[1], bonds2[0].v[0]), a2 = Math.atan2(bonds2[1].v[1], bonds2[1].v[0]);
+      var d = Math.atan2(Math.sin(a2 - a1), Math.cos(a2 - a1));
+      var r = 24, mid = a1 + d / 2;
+      if (Math.abs(Math.abs(d) - Math.PI) < 1e-6) { d = Math.PI; mid = a1 + Math.PI / 2; } // 180° は下側に弧
+      el('path', { d: 'M' + (P2.x + r * Math.cos(a1)).toFixed(1) + ' ' + (P2.y + r * Math.sin(a1)).toFixed(1) +
+        ' A' + r + ' ' + r + ' 0 0 ' + (d > 0 ? 1 : 0) + ' ' + (P2.x + r * Math.cos(a1 + d)).toFixed(1) + ' ' + (P2.y + r * Math.sin(a1 + d)).toFixed(1),
+        'class': 'arc' }, g);
+      txt(g, P2.x + 44 * Math.cos(mid), P2.y + 44 * Math.sin(mid), sh.idealAngle, 'angLabel');
+    }
+  }
+
+  function render3D() {
+    var g = $('shape3d');
+    if (!g) return;
+    while (g.firstChild) g.removeChild(g.firstChild);
+    var sh = st.shape;
+    if (!sh) return;
+    var list = shapeItems().map(function (it) {
+      var v = rotateYX(it.v, st.rotY, st.rotX);
+      var k = PERSP / (PERSP - v[2] * B3); // 手前（z+）ほど大きい
+      return { it: it, v: v, z: v[2], k: k, x: P3.x + v[0] * B3 * k, y: P3.y + v[1] * B3 * k };
+    });
+    if (!sh.twoAtoms) list.push({ center: true, z: 0, k: 1, x: P3.x, y: P3.y });
+    list.sort(function (a, b) { return a.z - b.z; });
+    if (sh.twoAtoms) {
+      var gb = el('g', {}, g);
+      bondLines(gb, list[0].x, list[0].y, list[1].x, list[1].y, list[0].it.order || list[1].it.order, 2.6, 'bond3');
+    }
+    list.forEach(function (o) {
+      var gg = el('g', { opacity: (0.45 + 0.55 * (o.z + 1) / 2).toFixed(2) }, g); // 奥ほど暗い
+      if (o.center) {
+        el('circle', { cx: o.x, cy: o.y, r: HUB, 'class': 'hub' }, gg);
+        txt(gg, o.x, o.y, M.atomOf(st.mol, sh.center).el, 'sym s3');
+        return;
+      }
+      if (o.it.kind === 'lp') { lobe(gg, P3.x, P3.y, o.v[0] * o.k * B3 / B2, o.v[1] * o.k * B3 / B2, 1, 'lp3d'); return; }
+      if (!sh.twoAtoms) {
+        var len = Math.hypot(o.x - P3.x, o.y - P3.y), t = len > 1 ? Math.min(0.9, HUB / len) : 0; // 中心の円のふちから引く
+        bondLines(gg, P3.x + (o.x - P3.x) * t, P3.y + (o.y - P3.y) * t, o.x, o.y, o.it.order, (2.6 * o.k).toFixed(2), 'bond3');
+      }
+      el('circle', { cx: o.x.toFixed(1), cy: o.y.toFixed(1), r: (12 * o.k).toFixed(1), 'class': 'ball' }, gg);
+      txt(gg, o.x, o.y, o.it.el, 'sym s3', { style: 'font-size:' + (15 * o.k).toFixed(1) + 'px' });
+    });
+  }
+
+  function renderShape() {
+    while (svgShape.firstChild) svgShape.removeChild(svgShape.firstChild);
+    var sh = st.shape;
+    if (!sh) return;
+    var head = el('g', { 'class': 'shapeHead' }, svgShape);
+    if (sh.twoAtoms) {
+      txt(head, 200, 24, '原子が2個だけの分子', 'hd1');
+      txt(head, 200, 52, '直線形', 'hd2 shp');
+    } else {
+      txt(head, 200, 24, '中心 ' + sh.el + '・電子のまとまり ' + sh.domains + ' 組', 'hd1 dom');
+      var arr = el('text', { x: 200, y: 52, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'class': 'hd2' }, head);
+      var t1 = document.createElementNS(SVGNS, 'tspan'); t1.setAttribute('class', 'arr'); t1.textContent = (sh.arrangement || '？') + 'の配置';
+      var t2 = document.createElementNS(SVGNS, 'tspan'); t2.textContent = ' → ';
+      var t3 = document.createElementNS(SVGNS, 'tspan'); t3.setAttribute('class', 'shp');
+      t3.textContent = (sh.shape || 'この形は扱わない') + (sh.advanced ? '（発展）' : '');
+      arr.appendChild(t1); arr.appendChild(t2); arr.appendChild(t3);
+    }
+    render2D(el('g', { 'class': 'pane2d' }, svgShape));
+    el('g', { id: 'shape3d', 'class': 'pane3d' }, svgShape);
+    render3D();
+    txt(svgShape, P2.x, 286, '模式図', 'cap');
+    txt(svgShape, P3.x, 286, '立体（ドラッグで回る）', 'cap');
+  }
+
+  /* ---- 3D の回転（自動回転とドラッグ）---- */
+  var raf = null, spinLast = null, drag3 = null;
+  var reduceMotion = false;
+  try { reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* noop */ }
+  function spinControl() {
+    var want = st.view === 'shape' && !reduceMotion && !drag3 && !st.noSpin;
+    if (want && raf === null) {
+      spinLast = null;
+      var step = function (t) {
+        if (spinLast === null) spinLast = t;
+        var dt = Math.min(50, t - spinLast);
+        spinLast = t;
+        st.rotY += dt * 0.0007; // 約40°/秒（stereo.js と同じ）
+        render3D();
+        raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    } else if (!want && raf !== null) {
+      cancelAnimationFrame(raf);
+      raf = null;
+    }
+  }
+  svgShape.addEventListener('pointerdown', function (e) {
+    drag3 = { p: clientToSvg(e.clientX, e.clientY, svgShape), pid: e.pointerId };
+    spinControl();
+    try { svgShape.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+    e.preventDefault();
+  });
+  svgShape.addEventListener('pointermove', function (e) {
+    if (!drag3) return;
+    var now = clientToSvg(e.clientX, e.clientY, svgShape);
+    if (!now || !drag3.p) return;
+    st.rotY += (now.x - drag3.p.x) / B3;
+    st.rotX -= (now.y - drag3.p.y) / B3; // 下へドラッグ＝手前が下がる
+    drag3.p = now;
+    render3D();
+  });
+  function end3(e) {
+    if (!drag3) return;
+    try { svgShape.releasePointerCapture(drag3.pid); } catch (err) { /* noop */ }
+    drag3 = null;
+    spinControl(); // 離したら自動回転を再開
+  }
+  svgShape.addEventListener('pointerup', end3);
+  svgShape.addEventListener('pointercancel', end3);
+
+  function setView(v) {
+    if (v === 'shape' && !M.moleculeShape(st.mol, st.centerId)) return;
+    st.view = v;
+    st.sel = null;
+    update();
   }
 
   function renderBars() {
     var t = currentTarget();
+    var shapeMode = st.view === 'shape';
     $('taskMode').className = st.free ? '' : 'on';
     $('freeMode').className = st.free ? 'on' : '';
     $('taskLabel').textContent = t ? t.formula + '（' + t.name + '）をつくろう' : '原子を置いて組もう';
     $('prevTask').disabled = st.free || st.taskIdx <= 0;
     $('nextTask').disabled = st.free || st.taskIdx >= st.targets.length - 1;
+    $('buildView').className = shapeMode ? '' : 'on';
+    $('shapeViewBtn').className = shapeMode ? 'on' : '';
+    $('shapeViewBtn').disabled = !st.shape;
     $('dotMode').className = st.mode === 'dot' ? 'on' : '';
     $('lineMode').className = st.mode === 'line' ? 'on' : '';
+    $('dotMode').disabled = $('lineMode').disabled = shapeMode;
     $('checkBtn').className = st.check ? 'on' : '';
+    $('checkBtn').disabled = shapeMode;
     $('undoBtn').disabled = !st.history.length;
+    // 形の画面では、台と同じ場所に形を出す（高さは同じ）。台の道具は隠す（場所は残す）
+    svg.style.display = shapeMode ? 'none' : '';
+    svgShape.style.display = shapeMode ? '' : 'none';
+    $('palette').style.visibility = shapeMode ? 'hidden' : '';
+    $('undoBtn').style.display = $('resetBtn').style.display = shapeMode ? 'none' : '';
+    var cb = $('centerBtn');
+    cb.style.display = shapeMode ? '' : 'none';
+    cb.style.visibility = (shapeMode && st.shape && st.shape.candidates && st.shape.candidates.length > 1) ? '' : 'hidden';
   }
 
   /* ================================================================
@@ -648,11 +941,20 @@
     $('freeMode').addEventListener('click', function () { if (!st.free) { st.free = true; setupBoard(); } });
     $('prevTask').addEventListener('click', function () { if (st.taskIdx > 0) { st.taskIdx--; setupBoard(); } });
     $('nextTask').addEventListener('click', function () { if (st.taskIdx < st.targets.length - 1) { st.taskIdx++; setupBoard(); } });
+    $('buildView').addEventListener('click', function () { setView('build'); });
+    $('shapeViewBtn').addEventListener('click', function () { setView('shape'); });
     $('dotMode').addEventListener('click', function () { st.mode = 'dot'; update(); });
     $('lineMode').addEventListener('click', function () { st.mode = 'line'; update(); });
     $('checkBtn').addEventListener('click', function () { st.check = !st.check; update(); });
     $('undoBtn').addEventListener('click', undo);
     $('resetBtn').addEventListener('click', setupBoard);
+    // 中心の候補が2つ以上ある分子（C₂H₄・H₂O₂ など）だけ、もう一方の中心へ切り替える（ユーザー決定）
+    $('centerBtn').addEventListener('click', function () {
+      var c = st.shape && st.shape.candidates;
+      if (!c || c.length < 2) return;
+      st.centerId = c[(c.indexOf(st.shape.center) + 1) % c.length];
+      update();
+    });
   }
 
   // 自分の ?v= を molecules.json にも付ける（版の出どころを index.html の1か所にする。
@@ -678,7 +980,14 @@
     buildPalette();
     bindBars();
     setupBoard();
-    if (m && st.targets[st.taskIdx].id !== m) { say('そのお題はまだありません'); update(); }
+    var found = !m || st.targets[st.taskIdx].id === m;
+    if (!found) { say('そのお題はまだありません'); update(); }
+    // &view=shape … お題を組んだ姿で、形の画面から始める（§5-1。素の URL でも同じに効く）
+    if (found && m && q.get('view') === 'shape') {
+      assembleTarget();
+      st.history = [];
+      setView('shape');
+    }
     st.ready = true;
   }
 
@@ -695,13 +1004,20 @@
   CS.app = {
     state: function () { return st; },
     svg: svg,
-    // 原子の中心（side を渡すとその側の扇形の中の点）を client 座標で返す
+    shapeSvg: svgShape,
+    // 原子の中心（side 0 上・1 右・2 下・3 左 を渡すとその向きの扇形の中の点）を client 座標で返す
     clientOf: function (id, side) {
       var p = st.pos[id];
       if (!p) return null;
-      var q = side === undefined || side === null ? p : { x: p.x + DIRS[side].x * 18, y: p.y + DIRS[side].y * 18 };
+      var q = side === undefined || side === null ? p : { x: p.x + dirOf(SIDE_ANG[side]).x * 18, y: p.y + dirOf(SIDE_ANG[side]).y * 18 };
       return svgToClient(q.x, q.y);
     },
-    idsOf: function (elSym) { return st.mol.atoms.filter(function (a) { return a.el === elSym; }).map(function (a) { return a.id; }); }
+    idsOf: function (elSym) { return st.mol.atoms.filter(function (a) { return a.el === elSym; }).map(function (a) { return a.id; }); },
+    // 2つの結合の間の角（度・台の上の見た目）
+    angleAt: function (center, p, q) {
+      var a = angTo(st.pos[center], st.pos[p]), b = angTo(st.pos[center], st.pos[q]);
+      return angDist(a, b);
+    },
+    stopSpin: function () { st.noSpin = true; spinControl(); }
   };
 })();

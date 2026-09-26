@@ -44,12 +44,33 @@ main { max-width: 720px; margin: 0 auto; padding: 8px 12px 12px; }
 .taskLabel { flex: 1 1 auto; min-width: 0; text-align: center; font-weight: bold; font-size: 14px; }
 .bar .arrow { padding: 4px 8px; }
 
-#board {
-  display: block; width: 100%; height: auto;
+/* 組む台（#board）と形の画面（#shapeView）は同じ大きさ（viewBox 400×300 の縦横比で幅から決まる）。
+   ⚠ 中身で高さを決めさせない（埋め込みの高さ通知が発振しない・§4-3） */
+.stage {
+  display: block; width: 100%; height: auto; aspect-ratio: 4 / 3;
   background: #fff; border: 1px solid #cfdcda; border-radius: 10px;
   touch-action: none; user-select: none; -webkit-user-select: none;
 }
-#board text { font-family: "Segoe UI", "Hiragino Sans", sans-serif; pointer-events: none; }
+.stage text { font-family: "Segoe UI", "Hiragino Sans", sans-serif; pointer-events: none; }
+.subBar { min-height: 38px; }
+
+/* 形の画面 */
+.hd1 { font-size: 15px; fill: #34504c; }
+.hd2 { font-size: 19px; font-weight: bold; fill: #222; }
+.hd2 .arr { fill: #34504c; }
+.hd2 .shp, .hd2.shp { fill: #1d6b5f; }
+.cap { font-size: 12px; fill: #777; }
+.sym.s2 { font-size: 20px; }
+.sym.s3 { font-size: 15px; }
+.lobe { fill: var(--c-lp); fill-opacity: .18; stroke: var(--c-lp); stroke-opacity: .55; stroke-width: 1; }
+.lp2d.back .lobe { fill-opacity: .08; stroke-dasharray: 3 2; }
+.wedge { fill: var(--c-sh); }
+.hash { stroke: var(--c-sh); stroke-width: 1.4; }
+.arc { fill: none; stroke: #888; stroke-width: 1.2; }
+.angLabel { font-size: 13px; fill: #555; }
+.hub { fill: #fff; stroke: #222; stroke-width: 2; }
+.ball { fill: #fff; stroke: #666; stroke-width: 1.4; }
+.bond3 { stroke: #333; stroke-linecap: round; }
 .sym { font-size: 22px; font-weight: bold; fill: #222; }
 .e-un { fill: var(--c-un); }
 .e-lp { fill: var(--c-lp); }

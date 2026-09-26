@@ -31,7 +31,7 @@
 <title>電子対でみる分子のかたち — SchoolLenz</title>
 <meta name="description" content="原子を電子式の姿で並べ、不対電子をタップして共有結合をつくる。電子式と構造式を切り替えながら、分子を自分で組み立てる無料の学習アプリ。">
 <link rel="canonical" href="https://chem.schoollenz.com/shape/">
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 <!-- 参考書のページに埋め込まれたとき（?embed=1）の1つめ（DESIGN_reference_centric.md §2-4 (2) ①・ion-equation と同じ1行）。
      ⚠ head の同期な1行でなければならない（body の末尾で消すと看板が一瞬ちらつく）。
      ・`<html class="embed">` … style.css が header・footer・.refBack を隠す
@@ -41,7 +41,7 @@
 <body>
 <header>
   <h1>電子対でみる分子のかたち</h1>
-  <div class="version">v1</div>
+  <div class="version">v2</div>
   <a class="hubLink" href="../index.html">化学レンズ</a>
 </header>
 <main>
@@ -55,21 +55,30 @@
     <button type="button" id="nextTask" class="arrow" aria-label="次のお題">▶</button>
   </div>
   <div class="bar viewBar">
+    <div class="seg" role="group" aria-label="組む・形">
+      <button type="button" id="buildView" class="on">組む</button>
+      <button type="button" id="shapeViewBtn" disabled>形</button>
+    </div>
     <div class="seg" role="group" aria-label="書き方">
       <button type="button" id="dotMode" class="on">電子式</button>
       <button type="button" id="lineMode">構造式</button>
     </div>
     <button type="button" id="checkBtn">確かめ</button>
+  </div>
+  <!-- 組む台と形の画面は同じ場所・同じ大きさ（固定の viewBox）。切り替えても高さは変わらない -->
+  <svg id="board" class="stage" viewBox="0 0 400 300" role="img" aria-label="原子を並べる台"></svg>
+  <svg id="shapeView" class="stage" viewBox="0 0 400 300" role="img" aria-label="分子の形" style="display:none"></svg>
+  <p id="msg" class="msg" aria-live="polite"></p>
+  <div class="bar subBar">
     <button type="button" id="undoBtn">戻す</button>
     <button type="button" id="resetBtn">最初から</button>
+    <button type="button" id="centerBtn" style="display:none">もう一方の中心</button>
   </div>
-  <svg id="board" viewBox="0 0 400 300" role="img" aria-label="原子を並べる台"></svg>
-  <p id="msg" class="msg" aria-live="polite"></p>
   <div id="palette" class="palette" role="group" aria-label="置く原子"></div>
   <p class="legend"><span class="dotU"></span>不対電子 <span class="dotP"></span>非共有電子対 <span class="dotS"></span>共有電子対</p>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=1"></script>
-<script src="shape.js?v=1"></script>
+<script src="model.js?v=2"></script>
+<script src="shape.js?v=2"></script>
 </body>
 </html>
