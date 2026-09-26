@@ -248,7 +248,17 @@ async function auditRedox(seed) {
   const RD = frameRedox.contentDocument;
   const rnd = mulberry32(seed + 977);
   const navs = () => [...RD.querySelectorAll("#stageNav button")];
-  const ups = () => [...RD.querySelectorAll(".halfRow .stepper button")].filter((b) => b.textContent === "＋");
+  /* ⚠ 2026-09-26（I-0182）: 倍率の＋／−釦（.halfRow .stepper）は v197 で消え、倍率は模式図の下の釦
+     （#schematicAdd の [0]＝還元剤側・[1]＝酸化剤側）で1つずつ足す形になった。消えた釦を探して
+     監査がまるごと止まっていたので、いまの口に合わせる（回帰テストの setMultB と同じ道） */
+  const bump = (i) => RD.querySelectorAll("#schematicAdd button")[i].click();
+  const setMult = (m) => {
+    let g = 0;
+    while (RW.RedoxEq.state().mult[0] < m[0] && g++ < 20) bump(0);
+    while (RW.RedoxEq.state().mult[1] < m[1] && g++ < 40) bump(1);
+    const now = RW.RedoxEq.state().mult;
+    if (now[0] !== m[0] || now[1] !== m[1]) throw new Error(`倍率を ${m.join(":")} にできない（いま ${now.join(":")}）`);
+  };
   for (let i = 0; i < REDOX_STAGES.length && !stopReq; i++) {
     const st = REDOX_STAGES[i];
     // 模範倍率と、ランダムにずらした倍率の両方を試す
@@ -260,8 +270,7 @@ async function auditRedox(seed) {
         const mult = useAnswer
           ? st.answer.slice()
           : [1 + Math.floor(rnd() * 4), 1 + Math.floor(rnd() * 4)];
-        for (let k = 1; k < mult[0]; k++) ups()[0].click();
-        for (let k = 1; k < mult[1]; k++) ups()[1].click();
+        setMult(mult);
         RD.getElementById("playBtn").click();
         RW.RedoxEq.advance(60000);
         const s = RW.RedoxEq.state();
