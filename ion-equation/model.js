@@ -4007,7 +4007,41 @@ const BATTERY_STAGES = [
     intro: "板を2枚選んで電池を組み立てよう。選んだら、どちらが正極になるかを予想してからつなぐ。" +
       "同じ板を2枚選ぶこともできる（そのときどうなるかも、確かめてみる価値がある）。",
   },
+  /* b3: 燃料電池（アルカリ形）（2026-09-26・I-0181）。参考書 fuel-cell#alkaline と同じ式。
+     ★ **イオン化傾向で負極が決まる電池ではない** ＝ metals を持たない。電極は白金（不活性・溶けない）で、
+     送りこむ気体（gases）で電極を呼ぶ。負極は「酸化の式の左辺にある気体」＝ 燃料の H₂（fuelCellPair が導く）。
+     ⚠ 式はステージが名指しする（ox / red）。電極を選ばせないので、式を選び直す場面が無い。
+     予想の問いは ask: "neg"（どちらが負極 ＝ e⁻ を出す側になるか）。
+     showCancel … 足し合わせで e⁻ 以外（OH⁻・H₂O）も両辺で打ち消し合うので、打ち消す前の行を見せる */
+  {
+    id: "b3", kind: "battery", title: "燃料電池（アルカリ形）", fuel: true,
+    gases: ["H2", "O2"], electrode: "Pt", solution: "KOH",
+    ox: "H2_ox_basic", red: "O2_red_basic", ask: "neg", showCancel: true,
+    acidForm: { ox: "H_ox", red: "O2_red", condition: ["b5", "b6"] },
+    intro: "白金の電極2枚を KOH 水溶液にひたし、片方に H₂、もう片方に O₂ を送りこむ。" +
+      "どちらの電極が負極（e⁻ を出す側）になるか、電極をタップして予想しよう。",
+  },
 ];
+
+/* 燃料電池の両極（I-0181）。板の金属ではなく**送りこむ気体**で電極を呼ぶ。
+   負極 ＝ 酸化の式の左辺にいる気体（燃料）・正極 ＝ 還元の式の左辺にいる気体。
+   イオン化傾向（negativeOf）は使わない ＝ ここがダニエル電池との違い。
+   返す形は halvesForPair と同じ（画面は同じ口で両方を扱える） */
+function fuelCellPair(stage) {
+  const ox = HALF_REACTIONS[stage && stage.ox], red = HALF_REACTIONS[stage && stage.red];
+  const gases = (stage && stage.gases) || [];
+  const neg = gases.find((g) => ox && ox.left.some((t) => t.sp === g)) || null;
+  const pos = gases.find((g) => red && red.left.some((t) => t.sp === g)) || null;
+  if (!neg || !pos || neg === pos) return { neg: null, pos: null, reason: "no-half" };
+  return { neg, pos, ox: stage.ox, red: stage.red, stage: composeStage(stage.ox, stage.red) };
+}
+
+/* 電池ステージ → 両極（燃料電池は気体から、それ以外は板2枚から） */
+function cellPairOf(stage) {
+  if (stage && stage.fuel) return fuelCellPair(stage);
+  const ms = (stage && stage.metals) || [];
+  return halvesForPair(ms[0], ms[1]);
+}
 
 /* ================================================================================
    板の左右をふり分ける（M・2026-08-18 の実機指摘「電極の配置をランダムにしないと、
@@ -4049,9 +4083,13 @@ function arrangeElectrodes(metals, flip) {
    どちらが (−) かは negativeOf が決めるので、ここも順序を直書きしない
    （＝板を左右どちらに置いても電池式は変わらない。M の並べ替えと衝突しない）。 */
 function cellNotation(stage) {
-  const ms = (stage && stage.metals) || [];
-  const h = halvesForPair(ms[0], ms[1]);
+  const h = cellPairOf(stage);
   if (!h.neg) return null;
+  // 燃料電池は電解液が1つ（参考書 fuel-cell の（−）H₂｜KOHaq｜O₂（＋）と同じ並び）
+  if (stage.fuel) {
+    const sol = SPECIES[stage.solution] ? SPECIES[stage.solution].disp + " aq" : "?";
+    return `(−) ${SPECIES[h.neg].disp} | ${sol} | ${SPECIES[h.pos].disp} (+)`;
+  }
   const salt = (m) => {
     const sp = electrolyteFor(stage, m);
     return sp && SPECIES[sp] ? SPECIES[sp].disp + " aq" : "?";
@@ -4062,8 +4100,7 @@ function cellNotation(stage) {
 /* 電池ステージ → REDOX_STAGES と同じ形のステージ。
    これを既存の checkRedoxMultipliers / combineHalves にそのまま渡す。 */
 function batteryStageOf(stage) {
-  const ms = (stage && stage.metals) || [];
-  const h = halvesForPair(ms[0], ms[1]);
+  const h = cellPairOf(stage);
   if (!h.stage) return null;
   // composeStage が付ける "free:…" は自由組み立てモードの名札なので、電池のものに付け替える
   return Object.assign({}, h.stage, { id: "battery:" + stage.id, title: stage.title });

@@ -1694,7 +1694,7 @@ function runModelTests() {
     assert(electrodeTerms("なにか").ox === "負極(−)", "未知のモードで落ちる");
   });
 
-  t("B3 ステージ表: 電池2つ・電気分解6つが並び、id も種別も重複しない", () => {
+  t("B3 ステージ表: 電池3つ・電気分解6つが並び、id も種別も重複しない", () => {
     assert(CELL_STAGES.length === BATTERY_STAGES.length + ELECTROLYSIS_STAGES.length,
       "ステージ表の数が合わない: " + CELL_STAGES.length);
     const ids = CELL_STAGES.map((s) => s.id);
@@ -1832,8 +1832,8 @@ function runModelTests() {
       "断りを持つステージが e5 だけでない");
   });
 
-  t("B3-2 ページ分け: cellStagesOfKind が電池2件・電気分解6件を返し、番号が1から振り直される", () => {
-    assert(cellStagesOfKind("battery").map((s) => s.id).join() === "b1,b2",
+  t("B3-2 ページ分け: cellStagesOfKind が電池3件（b3 燃料電池・I-0181）・電気分解6件を返し、番号が1から振り直される", () => {
+    assert(cellStagesOfKind("battery").map((s) => s.id).join() === "b1,b2,b3",
       "電池のページ: " + cellStagesOfKind("battery").map((s) => s.id).join());
     assert(cellStagesOfKind("electrolysis").map((s) => s.id).join() === "e1,e2,e3,e4,e5,e6",
       "電気分解のページ: " + cellStagesOfKind("electrolysis").map((s) => s.id).join());
@@ -1842,7 +1842,7 @@ function runModelTests() {
     // 通し番号はページごとに1から（allStagesInOrder が cell と elyz に割れている）
     const all = allStagesInOrder();
     const cell = all.filter((s) => s.mode === "cell"), elyz = all.filter((s) => s.mode === "elyz");
-    assert(cell.map((s) => s.no).join() === "1,2", "電池の番号: " + cell.map((s) => s.no).join());
+    assert(cell.map((s) => s.no).join() === "1,2,3", "電池の番号: " + cell.map((s) => s.no).join());
     assert(elyz.map((s) => s.no).join() === "1,2,3,4,5,6", "電気分解の番号: " + elyz.map((s) => s.no).join());
     assert(cell.length + elyz.length === CELL_STAGES.length, "割ったら件数が変わった");
     // モードの表にも入口が2つ（帯はここからしか作られない）
@@ -1982,8 +1982,8 @@ function runModelTests() {
   });
 
   // ★ 2026-09-26（I-0178）: 酸化還元に rs4・ra1 を足して 18 → 20
-  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元26・電池と電気分解8）", () => {   // ★ I-0178 の追加4本（rs5・ro4・ro5・ri3）で 20 → 24、I-0181 の液性 b5・b6 で 26
-    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 26, "sr-cell": 8 };
+  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元26・電池と電気分解9）", () => {   // ★ I-0178 の追加4本（rs5・ro4・ro5・ri3）で 20 → 24、I-0181 の液性 b5・b6 で 26
+    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 26, "sr-cell": 9 };
     for (const g of stagesBySeries().groups) {
       assert(g.stages.length === want[g.series.id],
         g.series.id + " の件数が変わった: " + g.stages.length + "（想定 " + want[g.series.id] + "）");
@@ -2171,6 +2171,36 @@ function runModelTests() {
     // 単元（液性による書き換え）から辿れる
     const u = CURRICULUM.flatMap((s) => s.units).find((x) => x.id === "u-condition");
     assert(["b5", "b6"].every((id) => u.condition.includes(id)), "u-condition に b5・b6 が無い");
+  });
+
+  t("FC2 燃料電池（battery b3・I-0181）: 負極は燃料の H₂（イオン化傾向を使わない）・倍率 2:1・足すと 2H₂ ＋ O₂ → 2H₂O", () => {
+    const st = BATTERY_STAGES.find((s) => s.id === "b3");
+    assert(st && st.fuel && st.kind === "battery", "b3 が燃料電池として無い");
+    assert(!st.metals && !st.choose, "b3 が板の金属を持っている（イオン化傾向で決まる電池ではない）");
+    const p = cellPairOf(st);
+    assert(p.neg === "H2" && p.pos === "O2", "負極・正極: " + p.neg + " / " + p.pos);
+    assert(p.ox === "H2_ox_basic" && p.red === "O2_red_basic", "両極の式がアルカリ形でない: " + p.ox + " / " + p.red);
+    // 気体の並びを入れ替えても役は変わらない（左右のふり分け M で壊れない）
+    const q = cellPairOf(Object.assign({}, st, { gases: ["O2", "H2"] }));
+    assert(q.neg === "H2" && q.pos === "O2", "気体の並びで役が変わる");
+    // 参考書 fuel-cell と同じ式
+    assert(HALF_REACTIONS[p.ox].disp === "H₂ ＋ 2OH⁻ → 2H₂O ＋ 2e⁻", "負極の式: " + HALF_REACTIONS[p.ox].disp);
+    assert(HALF_REACTIONS[p.red].disp === "O₂ ＋ 2H₂O ＋ 4e⁻ → 4OH⁻", "正極の式: " + HALF_REACTIONS[p.red].disp);
+    const rs = batteryStageOf(st);
+    assert(rs && rs.answer.join(":") === "2:1", "倍率が 2:1 でない: " + (rs && rs.answer));
+    assert(checkRedoxMultipliers(rs, 2, 1).ok, "2:1 が通らない");
+    assert(!checkRedoxMultipliers(rs, 1, 1).ok && !checkRedoxMultipliers(rs, 4, 2).ok, "1:1 か 4:2 が通ってしまう");
+    const key = (ts) => ts.map((t) => (t.n > 1 ? t.n : "") + t.sp).sort().join(" + ");
+    const sum = combineHalves(rs, 2, 1);
+    assert(key(sum.left) === "2H2 + O2" && key(sum.right) === "2H2O",
+      "足し合わせ: " + key(sum.left) + " → " + key(sum.right));
+    assert(cellNotation(st) === "(−) H₂ | KOH aq | O₂ (+)", "電池式: " + cellNotation(st));
+    // ダニエル電池は今までどおり（cellPairOf が halvesForPair と同じ答え）
+    const b1 = BATTERY_STAGES.find((s) => s.id === "b1");
+    assert(cellPairOf(b1).neg === "Zn" && cellNotation(b1).startsWith("(−) Zn"), "b1 が変わった: " + cellNotation(b1));
+    // リン酸形の式と練習の面（condition b5・b6）が実在する
+    assert(st.acidForm.ox === "H_ox" && st.acidForm.red === "O2_red", "リン酸形の式の名指し");
+    assert(st.acidForm.condition.every((id) => CONDITION_STAGES.some((s) => s.id === id)), "練習の面が無い");
   });
 
   /* ---- はじめに入れたものから化学反応式を組み立てる（v180・DESIGN_redox.md）---- */
@@ -11090,14 +11120,14 @@ async function runBatteryUITests(iframe) {
      このページに残るのは電池だけ ＝ **帯に電気分解のステージが混ざらない**。
      用語の対の片側（電池の画面に陰極・陽極が1文字も無い）もここで見る
      ——もう片側は runElectrolysisUITests。 */
-  await t("BATTERY: このページは電池だけ（帯は b1・b2 の2つ・陰極／陽極が1文字も出ない）", async () => {
+  await t("BATTERY: このページは電池だけ（帯は b1・b2・b3 の3つ・陰極／陽極が1文字も出ない）", async () => {
     const labels = [...doc.querySelectorAll("#stageNav button")].map((b) => b.dataset.label);
     assert(labels.length === BATTERY_STAGES.length,
       "帯のステージ数が電池のぶんと違う: " + labels.join(" / "));
     assert(labels.join(",") === BATTERY_STAGES.map((s) => s.title).join(","),
       "帯の中身が電池のステージと違う: " + labels.join(" / "));
     assert(win.BatteryEq.pageKind() === "battery", "ページの名乗りが電池でない");
-    assert(win.BatteryEq.pageStages().join() === "b1,b2", "出しているステージ: " + win.BatteryEq.pageStages().join());
+    assert(win.BatteryEq.pageStages().join() === "b1,b2,b3", "出しているステージ: " + win.BatteryEq.pageStages().join());
     // 電気分解のステージは名指ししても開かない（?s= も goStage も PAGE_STAGES しか見ない）
     assert(win.BatteryEq.goStage("e1") === false, "電池のページで電気分解のステージが開けてしまう");
     goB1();
@@ -11109,6 +11139,50 @@ async function runBatteryUITests(iframe) {
     assert(!s.powerShown, "電池の画面に電源のマークが出ている");
     // 「先に済ませる段」の口はこのページには無い（電池の挙動は1文字も変わらない）
     assert(!win.CellPreStep, "電池のページに段1の口ができている");
+  });
+
+  /* 燃料電池（b3・I-0181）。予想 → 倍率 2:1 → 再生 → 足し合わせで OH⁻・H₂O が打ち消し合う */
+  await t("FUEL: 燃料電池は H₂ の電極が負極・2:1 でクリア・足すと 2H₂ ＋ O₂ → 2H₂O・発見の欄に混ざらない", async () => {
+    assert(win.BatteryEq.goStage("b3"), "b3 が開けない");
+    let s = state();
+    assert(s.stageId === "b3" && [...s.metals].sort().join() === "H2,O2", "電極が H₂・O₂ でない: " + s.metals.join());
+    assert(!s.halvesShown && !s.roleLabels.length && s.playDisabled, "予想する前に答えが出ている");
+    assert(s.svgText.includes("KOH aq") && s.svgText.includes("白金板"), "図に KOH 水溶液か白金が無い: " + s.svgText);
+    assert(doc.getElementById("predictHead").textContent.includes("負極"), "問いが負極を聞いていない");
+    tap("O2");                    // 外れ
+    s = state();
+    assert(!s.guessOk && s.predictMsg.includes("燃料") && !s.predictMsg.includes("イオン化傾向"),
+      "外れの説明: " + s.predictMsg);
+    tap("H2");                    // 当たり
+    s = state();
+    assert(s.guessOk && s.neg === "H2" && s.pos === "O2", "H₂ が負極として当たらない");
+    assert(s.halvesShown && s.halfTags.join() === "負極(−)・酸化,正極(+)・還元", "半反応式の段: " + s.halfTags.join());
+    assert(rowText("halfNeg").includes("H₂ ＋ 2OH⁻") && rowText("halfPos").includes("O₂ ＋ 2H₂O"),
+      "アルカリ形の式でない: " + rowText("halfNeg") + " / " + rowText("halfPos"));
+    // 1:1 では e⁻ がそろわない
+    win.BatteryEq.setMult(1, 1);
+    assert(state().sumBtn.disabled, "1:1 で足せてしまう");
+    win.BatteryEq.setMult(2, 1);
+    doc.getElementById("playBtn").click();
+    adv(30000);
+    s = state();
+    assert(s.cleared, "2:1 でクリアにならない: " + s.msg);
+    assert(s.msg.includes("OH⁻") && s.msg.includes("正極で O₂ と H₂O が e⁻ を受け取って"), "クリアの文: " + s.msg);
+    assert(!s.bites.length, "白金の電極が削れている");
+    assert(s.ionic.replace(/\s+/g, "") === "2H₂＋O₂→2H₂O全体の反応", "全体の式: " + s.ionic);
+    const raw = doc.getElementById("sumRaw");
+    assert(raw && raw.querySelectorAll(".cancel").length >= 4, "打ち消す前の行か斜線が無い");
+    const struck = [...raw.querySelectorAll(".cancel")].map((x) => x.textContent).join(" ");
+    assert(struck === "4OH⁻ 2H₂O 4e⁻ 2H₂O 4e⁻ 4OH⁻", "斜線を引いたもの: " + struck);
+    assert(s.cellShown.includes("(−) H₂ | KOH aq | O₂ (+)"), "電池式: " + s.cellShown);
+    const note = doc.getElementById("fuelNote");
+    assert(note && note.textContent.includes("イオン化傾向ではなく") && note.textContent.includes("燃料（H₂）"),
+      "燃料電池の1行が無い");
+    assert(!s.discovery, "発見の欄が出ている: " + s.discovery);
+    const acid = doc.getElementById("acidFormNote");
+    assert(acid && acid.querySelector('a[href="condition.html?s=b5"]') && acid.querySelector('a[href="condition.html?s=b6"]'),
+      "リン酸形からの書き換えへの道が無い");
+    goB1();
   });
 
   return results;
@@ -12609,7 +12683,7 @@ async function runPortalUITests(iframe) {
         checked++;
       });
     }
-    assert(checked === 74, "突き合わせた件数が 74 でない: " + checked);   // ★ I-0178 で酸化還元に rs4・ra1・rs5・ro4・ro5・ri3、I-0181 で液性に b5・b6
+    assert(checked === 75, "突き合わせた件数が 75 でない: " + checked);   // ★ I-0178 で酸化還元に rs4・ra1・rs5・ro4・ro5・ri3、I-0181 で液性に b5・b6・電池に b3
   });
 
   /* 系列（区画）と難度（札）は別の軸。両方が同時に見えること。
